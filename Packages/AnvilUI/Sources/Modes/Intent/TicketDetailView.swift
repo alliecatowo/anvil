@@ -53,27 +53,34 @@ struct TicketDetailView: View {
 
             Spacer()
 
-            // Create Branch button
+            // Show branch name if already created
             if let created = branchCreated {
                 HStack(spacing: AnvilSpacing.xxs) {
-                    Image(systemName: "checkmark.circle.fill")
+                    Image(systemName: "arrow.triangle.branch")
                         .font(.system(size: 11))
                         .foregroundStyle(AnvilColor.accentGreen)
                     Text(created)
                         .font(AnvilFont.code)
                         .foregroundStyle(AnvilColor.accentGreen)
                 }
-            } else {
-                AnvilButton("Create Branch", icon: "arrow.triangle.branch", style: .secondary) {
+            }
+
+            // Start Work: creates branch + dispatches agent in one click
+            AnvilButton(
+                isDispatching ? "Starting..." : "Start Work",
+                icon: "bolt.fill",
+                style: .primary
+            ) {
+                startWork(ticket)
+            }
+            .disabled(isDispatching)
+
+            // Separate actions for finer control
+            if branchCreated == nil {
+                AnvilButton("Branch Only", icon: "arrow.triangle.branch", style: .ghost) {
                     createBranchForTicket(ticket)
                 }
             }
-
-            // Dispatch to Agent button
-            AnvilButton("Dispatch to Agent", icon: "cpu", style: .primary) {
-                dispatchTicketToAgent(ticket)
-            }
-            .disabled(isDispatching)
 
             Text(ticket.id)
                 .font(AnvilFont.code)

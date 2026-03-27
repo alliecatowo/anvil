@@ -80,6 +80,7 @@ enum CommandAction: Sendable {
     case refreshDeploys
     case cycleWhitespace
     case toggleWordWrap
+    case clearRecentHistory
 
     @MainActor
     func perform(on appState: AppState) {
@@ -130,6 +131,8 @@ enum CommandAction: Sendable {
             appState.editorViewModel.cycleWhitespace()
         case .toggleWordWrap:
             appState.editorViewModel.toggleWordWrap()
+        case .clearRecentHistory:
+            break // Handled by the view model directly
         }
     }
 }
@@ -176,6 +179,7 @@ struct CommandItem: Identifiable, Sendable {
 }
 
 enum CommandCategory: String, CaseIterable, Sendable {
+    case recent = "Recent"
     case contextual = "Current Mode"
     case actions = "Actions"
     case modes = "Modes"
@@ -244,6 +248,17 @@ final class CommandPaletteViewModel: ObservableObject {
     private var fileSystemService: FileSystemService?
     private var scanTask: Task<Void, Never>?
     private var currentAppMode: AnvilMode?
+
+    // MARK: - Action History
+
+    /// Recently executed command IDs, most recent first. Capped at `maxRecentCount`.
+    private(set) var recentCommandIds: [String] = []
+    /// Recently opened file paths, most recent first. Capped at `maxRecentCount`.
+    private(set) var recentFilePaths: [String] = []
+    /// Recently navigated symbols (filePath:line), most recent first.
+    private(set) var recentSymbolKeys: [String] = []
+
+    private let maxRecentCount = 8
 
     init() {
         registerAllCommands(for: nil)
@@ -639,6 +654,76 @@ final class CommandPaletteViewModel: ObservableObject {
         return String(name)
     }
 
+    // MARK: - Action History
+
+    func recordCommand(_ id: String) {
+        recentCommandIds.removeAll { $0 == id }
+        recentCommandIds.insert(id, at: 0)
+        if recentCommandIds.count > maxRecentCount {
+            recentCommandIds = Array(recentCommandIds.prefix(maxRecentCount))
+        }
+    }
+
+    func recordFile(_ path: String) {
+        recentFilePaths.removeAll { $0 == path }
+        recentFilePaths.insert(path, at: 0)
+        if recentFilePaths.count > maxRecentCount {
+            recentFilePaths = Array(recentFilePaths.prefix(maxRecentCount))
+        }
+    }
+
+    func recordSymbol(filePath: String, line: Int) {
+        let key = "\(filePath):\(line)"
+        recentSymbolKeys.removeAll { $0 == key }
+        recentSymbolKeys.insert(key, at: 0)
+        if recentSymbolKeys.count > maxRecentCount {
+            recentSymbolKeys = Array(recentSymbolKeys.prefix(maxRecentCount))
+        }
+    }
+
+    func clearHistory() {
+        recentCommandIds.removeAll()
+        recentFilePaths.removeAll()
+        recentSymbolKeys.removeAll()
+    }
+
+    /// Returns recent command items for display above search results.
+    private var recentItems: [CommandItem] {
+        var items: [CommandItem] = []
+        for id in recentCommandIds {
+            if let item = allItems.first(where: { $0.id == id }) {
+                items.append(CommandItem(
+                    id: "recent-\(item.id)",
+                    title: item.title,
+                    subtitle: item.subtitle,
+                    icon: item.icon,
+                    iconColor: item.iconColor,
+                    shortcut: item.shortcut,
+                    category: .recent,
+                    action: item.action
+                ))
+            }
+        }
+        return items
+    }
+
+    /// Returns recent file results for display in file mode.
+    var recentFileResults: [FileResult] {
+        recentFilePaths.compactMap { path in
+            fileResults.first(where: { $0.path == path })
+        }
+    }
+
+    /// Returns recent symbol results for display in symbol mode.
+    var recentSymbolResults: [SymbolResult] {
+        recentSymbolKeys.compactMap { key in
+            let parts = key.split(separator: ":", maxSplits: 1)
+            guard parts.count == 2, let line = Int(parts[1]) else { return nil }
+            let filePath = String(parts[0])
+            return symbolResults.first(where: { $0.filePath == filePath && $0.line == line })
+        }
+    }
+
     // MARK: - Selection
 
     func moveSelection(_ direction: Int) {
@@ -659,17 +744,32 @@ final class CommandPaletteViewModel: ObservableObject {
         switch paletteMode {
         case .commands:
             guard !filteredItems.isEmpty, selectedIndex < filteredItems.count else { return }
-            filteredItems[selectedIndex].action.perform(on: appState)
+            let item = filteredItems[selectedIndex]
+
+            // Handle clear history specially
+            if case .clearRecentHistory = item.action {
+                clearHistory()
+                // Refresh the displayed items
+                handleQueryChange()
+                return
+            }
+
+            item.action.perform(on: appState)
+            // Record the original command ID (strip "recent-" prefix if present)
+            let originalId = item.id.hasPrefix("recent-") ? String(item.id.dropFirst(7)) : item.id
+            recordCommand(originalId)
 
         case .files:
             guard !filteredFileResults.isEmpty, selectedIndex < filteredFileResults.count else { return }
             let file = filteredFileResults[selectedIndex]
             CommandAction.openFile(path: file.path).perform(on: appState)
+            recordFile(file.path)
 
         case .symbols:
             guard !filteredSymbolResults.isEmpty, selectedIndex < filteredSymbolResults.count else { return }
             let symbol = filteredSymbolResults[selectedIndex]
             CommandAction.goToSymbol(filePath: symbol.filePath, line: symbol.line).perform(on: appState)
+            recordSymbol(filePath: symbol.filePath, line: symbol.line)
         }
 
         appState.toggleCommandPalette()

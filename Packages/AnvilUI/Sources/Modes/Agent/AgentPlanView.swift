@@ -113,7 +113,7 @@ struct AgentPlanView: View {
     private var progressColor: Color {
         switch plan.status {
         case .completed: return AnvilColor.accentGreen
-        case .cancelled: return AnvilColor.statusRed
+        case .cancelled: return AnvilColor.accentRed
         case .executing: return AnvilColor.accentBlue
         default: return AnvilColor.textTertiary
         }
@@ -181,7 +181,7 @@ private struct PlanHeader: View {
                         Text("Cancel")
                             .font(AnvilFont.label)
                     }
-                    .foregroundStyle(AnvilColor.statusRed)
+                    .foregroundStyle(AnvilColor.accentRed)
                 }
                 .buttonStyle(.plain)
             }
@@ -200,7 +200,7 @@ private struct PlanHeader: View {
         case .approved: return AnvilColor.accentBlue
         case .executing: return AnvilColor.accentPurple
         case .completed: return AnvilColor.accentGreen
-        case .cancelled: return AnvilColor.statusRed
+        case .cancelled: return AnvilColor.accentRed
         }
     }
 }
@@ -256,14 +256,14 @@ private struct PlanStepRow: View {
                         Button(action: onSkip) {
                             Image(systemName: "forward.fill")
                                 .font(.system(size: 11))
-                                .foregroundStyle(AnvilColor.statusAmber)
+                                .foregroundStyle(AnvilColor.accentAmber)
                         }
                         .buttonStyle(.plain)
 
                         Button(action: onRemove) {
                             Image(systemName: "trash")
                                 .font(.system(size: 11))
-                                .foregroundStyle(AnvilColor.statusRed)
+                                .foregroundStyle(AnvilColor.accentRed)
                         }
                         .buttonStyle(.plain)
                     }
@@ -340,11 +340,11 @@ private struct PlanStepRow: View {
         case .skipped:
             Image(systemName: "forward.circle.fill")
                 .font(.system(size: 16))
-                .foregroundStyle(AnvilColor.statusAmber)
+                .foregroundStyle(AnvilColor.accentAmber)
         case .failed:
             Image(systemName: "xmark.circle.fill")
                 .font(.system(size: 16))
-                .foregroundStyle(AnvilColor.statusRed)
+                .foregroundStyle(AnvilColor.accentRed)
         }
     }
 
@@ -352,7 +352,7 @@ private struct PlanStepRow: View {
         switch step.status {
         case .completed, .skipped: return AnvilColor.textTertiary
         case .active: return AnvilColor.accentPurple
-        case .failed: return AnvilColor.statusRed
+        case .failed: return AnvilColor.accentRed
         case .planned: return AnvilColor.textPrimary
         }
     }

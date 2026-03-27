@@ -17,6 +17,7 @@ public struct AgentSession: Sendable, Identifiable, Codable {
     public var hardStopOnBudget: Bool
     public var autonomyLevel: AutonomyLevel
     public var plan: AgentPlan?
+    public var isBackground: Bool
 
     /// Budget usage ratio (0.0 to 1.0+). Returns nil if no budget is set.
     public var budgetUsage: Double? {

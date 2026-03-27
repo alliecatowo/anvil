@@ -145,7 +145,7 @@ struct AutoPRSheet: View {
 
                 // Body
                 fieldLabel("Description")
-                TextEditor(text: $body)
+                TextEditor(text: $prBody)
                     .font(AnvilFont.body)
                     .foregroundStyle(AnvilColor.textPrimary)
                     .scrollContentBackground(.hidden)
@@ -308,7 +308,7 @@ struct AutoPRSheet: View {
         let conversationSummary = buildConversationSummary(session)
         guard !conversationSummary.isEmpty else {
             title = session.displayName
-            body = "*No conversation content to summarize.*"
+            prBody = "*No conversation content to summarize.*"
             state = .ready
             return
         }
@@ -344,13 +344,13 @@ struct AutoPRSheet: View {
             let response = try await client.complete(prompt: prompt)
             let parsed = parsePRDescription(response)
             title = parsed.title
-            body = parsed.body
+            prBody = parsed.body
             state = .ready
             titleFocused = true
         } catch {
             // Fall back to session name as title
             title = session.displayName
-            body = "Generated from agent session `\(session.id)`.\n\n\(conversationSummary.prefix(500))"
+            prBody = "Generated from agent session `\(session.id)`.\n\n\(conversationSummary.prefix(500))"
             state = .ready
         }
     }
@@ -367,7 +367,7 @@ struct AutoPRSheet: View {
             let pr = try await adapter.createPullRequest(
                 repo: repoName,
                 title: title,
-                body: body,
+                body: prBody,
                 source: sourceBranch,
                 target: targetBranch,
                 isDraft: isDraft
