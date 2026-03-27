@@ -10,6 +10,7 @@ public class AgentViewModel: ObservableObject {
     @Published public var selectedSessionId: String?
     @Published public var isLaunchSheetPresented = false
     @Published public var inputText = ""
+    @Published public var selectedModelId = "claude-sonnet-4-6"
 
     public var selectedSession: AgentSession? {
         sessions.first { $0.id == selectedSessionId }
@@ -28,13 +29,70 @@ public class AgentViewModel: ObservableObject {
         )
         sessions.insert(session, at: 0)
         selectedSessionId = session.id
+        selectedModelId = model
         logger.info("Session created: \(session.id), total sessions: \(self.sessions.count)")
+    }
+
+    // MARK: - Session Management
+
+    public func renameSession(_ sessionId: String, name: String) {
+        guard let index = sessions.firstIndex(where: { $0.id == sessionId }) else { return }
+        sessions[index].customName = name
+    }
+
+    public func deleteSession(_ sessionId: String) {
+        sessions.removeAll { $0.id == sessionId }
+        if selectedSessionId == sessionId {
+            selectedSessionId = sessions.first?.id
+        }
+    }
+
+    public func exportSession(_ sessionId: String) -> String {
+        guard let session = sessions.first(where: { $0.id == sessionId }) else { return "" }
+
+        var md = "# \(session.displayName)\n\n"
+        md += "**Model:** \(session.model)  \n"
+        md += "**Status:** \(session.status.rawValue)  \n"
+        md += "**Started:** \(session.startedAt.formatted())  \n"
+        md += "**Tokens:** \(session.tokenUsage.inputTokens) in / \(session.tokenUsage.outputTokens) out  \n"
+        md += "**Cost:** $\(NSDecimalNumber(decimal: session.cost).doubleValue)\n\n"
+        md += "---\n\n"
+
+        for message in session.messages {
+            let role = message.role == .user ? "You" : "Agent"
+            md += "### \(role) — \(message.timestamp.formatted(date: .omitted, time: .shortened))\n\n"
+            md += "\(message.content)\n\n"
+
+            for toolCall in message.toolCalls {
+                md += "> **Tool:** `\(toolCall.name)` (\(toolCall.status.rawValue))\n"
+                if let result = toolCall.result {
+                    md += "> ```\n> \(result.content.prefix(500))\n> ```\n"
+                }
+                md += "\n"
+            }
+        }
+
+        return md
+    }
+
+    public func exportSessionToClipboard(_ sessionId: String) {
+        let md = exportSession(sessionId)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(md, forType: .string)
+    }
+
+    public func updateSessionModel(_ sessionId: String, modelId: String) {
+        guard let index = sessions.firstIndex(where: { $0.id == sessionId }) else { return }
+        sessions[index].model = modelId
     }
 
     // MARK: - Send Message (ACP-powered)
 
     public func sendMessage(container: DependencyContainer, appState: AppState) {
         guard !inputText.isEmpty, let sessionId = selectedSessionId else { return }
+
+        // Update model if changed
+        updateSessionModel(sessionId, modelId: selectedModelId)
 
         // Add user message to the session
         let userMessage = AgentMessage(role: .user, content: inputText)

@@ -1,8 +1,13 @@
 import SwiftUI
 import AnvilDomain
+import AnvilGit
 
 struct TicketDetailView: View {
     @ObservedObject var viewModel: IntentViewModel
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var container: DependencyContainer
+
+    @State private var branchCreated: String?
 
     var body: some View {
         if let ticket = viewModel.selectedTicket {
@@ -47,12 +52,49 @@ struct TicketDetailView: View {
 
             Spacer()
 
+            // Create Branch button
+            if let created = branchCreated {
+                HStack(spacing: AnvilSpacing.xxs) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(AnvilColor.accentGreen)
+                    Text(created)
+                        .font(AnvilFont.code)
+                        .foregroundStyle(AnvilColor.accentGreen)
+                }
+            } else {
+                AnvilButton("Create Branch", icon: "arrow.triangle.branch", style: .secondary) {
+                    createBranchForTicket(ticket)
+                }
+            }
+
             Text(ticket.id)
                 .font(AnvilFont.code)
                 .foregroundStyle(AnvilColor.textTertiary)
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.sm)
+    }
+
+    // MARK: - Branch Creation
+
+    private func createBranchForTicket(_ ticket: Ticket) {
+        let branchName = generateBranchName(from: ticket)
+        guard let adapter = container.getOrCreateGitAdapter() else { return }
+        Task {
+            await appState.createBranch(branchName, using: adapter)
+            branchCreated = branchName
+        }
+    }
+
+    private func generateBranchName(from ticket: Ticket) -> String {
+        let id = ticket.id.lowercased()
+        let slug = ticket.title
+            .lowercased()
+            .replacingOccurrences(of: "[^a-z0-9]+", with: "-", options: .regularExpression)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+            .prefix(40)
+        return "\(id)/\(slug)"
     }
 
     // MARK: - Header

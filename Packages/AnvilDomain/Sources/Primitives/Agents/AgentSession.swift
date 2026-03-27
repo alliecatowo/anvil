@@ -3,7 +3,7 @@ import Foundation
 public struct AgentSession: Sendable, Identifiable, Codable {
     public let id: String
     public let providerId: String
-    public let model: String
+    public var model: String
     public var status: AgentSessionStatus
     public let workItemId: String?
     public let worktreePath: String?
@@ -12,8 +12,20 @@ public struct AgentSession: Sendable, Identifiable, Codable {
     public let startedAt: Date
     public var lastActivityAt: Date
     public var messages: [AgentMessage]
+    public var customName: String?
 
-    public init(id: String = UUID().uuidString, providerId: String, model: String, status: AgentSessionStatus = .idle, workItemId: String? = nil, worktreePath: String? = nil, tokenUsage: TokenUsage = .zero, cost: Decimal = 0, startedAt: Date = .now, lastActivityAt: Date = .now, messages: [AgentMessage] = []) {
+    /// Display name for the session — uses custom name, work item ID, or first message preview.
+    public var displayName: String {
+        if let customName, !customName.isEmpty { return customName }
+        if let workItemId { return workItemId }
+        if let firstUser = messages.first(where: { $0.role == .user }) {
+            let preview = firstUser.content.prefix(40)
+            return preview.count < firstUser.content.count ? "\(preview)..." : String(preview)
+        }
+        return "Session"
+    }
+
+    public init(id: String = UUID().uuidString, providerId: String, model: String, status: AgentSessionStatus = .idle, workItemId: String? = nil, worktreePath: String? = nil, tokenUsage: TokenUsage = .zero, cost: Decimal = 0, startedAt: Date = .now, lastActivityAt: Date = .now, messages: [AgentMessage] = [], customName: String? = nil) {
         self.id = id
         self.providerId = providerId
         self.model = model
@@ -25,6 +37,7 @@ public struct AgentSession: Sendable, Identifiable, Codable {
         self.startedAt = startedAt
         self.lastActivityAt = lastActivityAt
         self.messages = messages
+        self.customName = customName
     }
 }
 

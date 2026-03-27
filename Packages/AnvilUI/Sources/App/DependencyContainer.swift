@@ -143,14 +143,57 @@ public class DependencyContainer: ObservableObject {
 
     // MARK: - Project Management
 
+    /// Open a directory as a single-repo project. Creates or finds an existing project.
     public func openProject(at path: String) async {
-        currentProjectPath = path
+        let name = URL(fileURLWithPath: path).lastPathComponent
 
-        // Reset the cached adapter so getOrCreateGitAdapter() creates one for the new path
-        gitAdapter = nil
+        // Check if a project with this repo already exists
+        if let existing = await projectManager.project(containingRepo: path) {
+            await switchToProject(existing.id)
+            return
+        }
 
-        await projectManager.addProject(.init(name: URL(fileURLWithPath: path).lastPathComponent, path: path))
-        await projectManager.setCurrentProject(path)
+        let project = Project(name: name, repoPaths: [path])
+        await projectManager.addProject(project)
+        await switchToProject(project.id)
+    }
+
+    /// Switch to an existing project by ID. Updates git adapter, project path, etc.
+    public func switchToProject(_ projectId: String) async {
+        await projectManager.setCurrentProject(projectId)
+        guard let project = await projectManager.project(byId: projectId) else { return }
+
+        // Use primary repo path for git adapter
+        currentProjectPath = project.primaryRepoPath
+        gitAdapter = nil // Reset so next getOrCreateGitAdapter() picks up new path
+    }
+
+    /// Create a new project with the given name and repo paths.
+    public func createProject(name: String, description: String = "", repoPaths: [String]) async -> Project {
+        let project = Project(name: name, description: description, repoPaths: repoPaths)
+        await projectManager.addProject(project)
+        await switchToProject(project.id)
+        return project
+    }
+
+    /// Update project metadata (name, description, repos).
+    public func updateProject(_ project: Project) async {
+        await projectManager.updateProject(project)
+        // If this is the current project and repos changed, refresh the git adapter
+        if let currentId = await projectManager.getCurrentProjectId(), currentId == project.id {
+            currentProjectPath = project.primaryRepoPath
+            gitAdapter = nil
+        }
+    }
+
+    /// Remove a project from the store.
+    public func removeProject(_ id: String) async {
+        let wasCurrent = await projectManager.getCurrentProjectId() == id
+        await projectManager.removeProject(id)
+        if wasCurrent {
+            currentProjectPath = nil
+            gitAdapter = nil
+        }
     }
 
     // MARK: - Provider Configuration

@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import AnvilApplication
 
 public struct AnvilCommands: Commands {
     @ObservedObject public var appState: AppState
@@ -18,10 +19,26 @@ public struct AnvilCommands: Commands {
 
             Divider()
 
+            Button("New Project...") {
+                newProject()
+            }
+            .keyboardShortcut("n", modifiers: [.command, .shift, .option])
+
             Button("Open Project...") {
                 openProject()
             }
             .keyboardShortcut("o", modifiers: .command)
+
+            Button("Switch Project...") {
+                appState.toggleProjectSwitcher()
+            }
+            .keyboardShortcut("o", modifiers: [.command, .shift])
+
+            Button("Project Info...") {
+                appState.toggleProjectInfo()
+            }
+
+            Divider()
 
             Button("Load Demo Project") {
                 appState.loadDemoData()
@@ -82,6 +99,23 @@ public struct AnvilCommands: Commands {
         panel.allowsMultipleSelection = false
         if panel.runModal() == .OK, let url = panel.url {
             appState.currentProjectPath = url.path
+        }
+    }
+
+    private func newProject() {
+        let panel = NSOpenPanel()
+        panel.title = "Choose Project Directory"
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = true
+        panel.message = "Select one or more repository directories for your new project"
+        panel.prompt = "Create Project"
+        if panel.runModal() == .OK, !panel.urls.isEmpty {
+            let paths = panel.urls.map(\.path)
+            let name = panel.urls.first.map { $0.lastPathComponent } ?? "New Project"
+            // Store the project via AppState/container later when wired
+            appState.currentProjectPath = paths.first
+            appState.currentProject = Project(name: name, repoPaths: paths)
         }
     }
 }

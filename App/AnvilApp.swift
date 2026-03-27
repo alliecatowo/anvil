@@ -14,6 +14,12 @@ struct AnvilMain: App {
                 .environmentObject(container)
                 .preferredColorScheme(.dark)
                 .task {
+                    // Restore last-opened project from disk
+                    if let project = await container.projectManager.currentProject() {
+                        appState.currentProject = project
+                        appState.currentProjectPath = project.primaryRepoPath
+                        container.currentProjectPath = project.primaryRepoPath
+                    }
                     if let adapter = container.getOrCreateGitAdapter() {
                         await appState.loadGitStatus(from: adapter)
                     }

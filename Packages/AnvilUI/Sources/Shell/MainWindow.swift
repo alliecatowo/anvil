@@ -60,10 +60,18 @@ public struct MainWindow: View {
             if appState.isQuickCaptureVisible {
                 QuickCapture()
             }
+            if appState.isProjectSwitcherVisible {
+                ProjectSwitcher()
+            }
         }
         .sheet(isPresented: $appState.isProjectNotesVisible) {
             ProjectNotes()
                 .frame(minWidth: 500, minHeight: 400)
+                .environmentObject(appState)
+        }
+        .sheet(isPresented: $appState.isProjectInfoVisible) {
+            ProjectInfoPanel()
+                .frame(minWidth: 500, minHeight: 450)
                 .environmentObject(appState)
         }
         .keyEventRouter()

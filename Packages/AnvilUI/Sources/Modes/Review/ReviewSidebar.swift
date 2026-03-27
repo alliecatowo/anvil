@@ -1,8 +1,11 @@
 import SwiftUI
 import AnvilDomain
+import AnvilGit
 
 struct ReviewSidebar: View {
     @ObservedObject var viewModel: ReviewViewModel
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var container: DependencyContainer
 
     var body: some View {
         VStack(spacing: 0) {
@@ -10,8 +13,82 @@ struct ReviewSidebar: View {
             if let review = viewModel.selectedReview {
                 reviewFileList(review)
             } else {
+                branchSection
+                Divider().overlay(AnvilColor.borderSubtle)
                 groupedReviewList
             }
+        }
+    }
+
+    // MARK: - Branch Section
+
+    private var branchSection: some View {
+        VStack(spacing: 0) {
+            sectionHeader("BRANCHES", icon: "arrow.triangle.branch", count: appState.branches.count)
+
+            if appState.branches.isEmpty {
+                HStack {
+                    Text("No branches loaded")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                    Spacer()
+                }
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, AnvilSpacing.xs)
+            } else {
+                ForEach(localBranches) { branch in
+                    branchRow(branch)
+                }
+            }
+        }
+    }
+
+    private var localBranches: [Branch] {
+        appState.branches.filter { !$0.name.contains("/") }
+    }
+
+    private func branchRow(_ branch: Branch) -> some View {
+        HStack(spacing: AnvilSpacing.sm) {
+            Image(systemName: branch.isCurrent ? "checkmark.circle.fill" : "arrow.triangle.branch")
+                .font(.system(size: 11))
+                .foregroundStyle(branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textTertiary)
+                .frame(width: 16)
+
+            Text(branch.name)
+                .font(AnvilFont.code)
+                .foregroundStyle(
+                    viewModel.selectedBranchName == branch.name
+                        ? AnvilColor.accentBlue
+                        : (branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textPrimary)
+                )
+                .lineLimit(1)
+
+            Spacer()
+
+            if branch.aheadCount > 0 {
+                Text("+\(branch.aheadCount)")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.accentGreen)
+            }
+            if branch.behindCount > 0 {
+                Text("-\(branch.behindCount)")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.accentRed)
+            }
+        }
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, AnvilSpacing.xs)
+        .frame(height: AnvilSpacing.listItemHeight)
+        .background(
+            viewModel.selectedBranchName == branch.name
+                ? AnvilColor.selectionBackground
+                : Color.clear
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard !branch.isCurrent else { return }
+            guard let adapter = container.getOrCreateGitAdapter() else { return }
+            viewModel.loadBranchDiff(branch.name, using: adapter)
         }
     }
 

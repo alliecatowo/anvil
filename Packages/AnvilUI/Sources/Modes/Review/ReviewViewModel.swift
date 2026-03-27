@@ -1,5 +1,6 @@
 import SwiftUI
 import AnvilDomain
+import AnvilGit
 
 // DiffViewMode defined in DesignSystem/Components/AnvilDiffView.swift
 
@@ -25,6 +26,12 @@ public final class ReviewViewModel: ObservableObject {
     @Published var diffViewMode: DiffViewMode = .sideBySide
     @Published var focusedHunkIndex: Int = 0
     @Published var hunkDecisions: [String: HunkDecision] = [:]
+
+    // MARK: Branch diff (real git data)
+
+    @Published var selectedBranchName: String?
+    @Published var branchDiffFiles: [FileDiff] = []
+    @Published var isLoadingBranchDiff: Bool = false
 
     // MARK: Batch actions
 
@@ -114,6 +121,57 @@ public final class ReviewViewModel: ObservableObject {
             reviews[i].status = .approved
         }
         selectedReviewIDs.removeAll()
+    }
+
+    // MARK: - Branch Diff (real git)
+
+    /// Load the diff of a branch against main/master using the git adapter.
+    func loadBranchDiff(_ branchName: String, using adapter: GitSourceControlAdapter) {
+        selectedBranchName = branchName
+        isLoadingBranchDiff = true
+        branchDiffFiles = []
+
+        Task { @MainActor in
+            defer { isLoadingBranchDiff = false }
+
+            // Try diffing against main, fall back to master
+            let baseBranch: String
+            if let allBranches = try? await adapter.branches(),
+               allBranches.contains(where: { $0.name == "main" }) {
+                baseBranch = "main"
+            } else {
+                baseBranch = "master"
+            }
+
+            if let diffs = try? await adapter.diff(from: baseBranch, to: branchName) {
+                branchDiffFiles = diffs
+
+                // Auto-create a review entry so the existing DiffReviewView can display it
+                let review = Review(
+                    id: "branch-diff-\(branchName)",
+                    title: "\(branchName) vs \(baseBranch)",
+                    sourceType: .agentSession,
+                    sourceId: branchName,
+                    status: .pending,
+                    author: "git",
+                    diff: diffs,
+                    comments: []
+                )
+
+                // Replace any existing branch-diff review
+                reviews.removeAll { $0.id.hasPrefix("branch-diff-") }
+                reviews.insert(review, at: 0)
+                selectReview(review.id)
+            }
+        }
+    }
+
+    func clearBranchDiff() {
+        selectedBranchName = nil
+        branchDiffFiles = []
+        reviews.removeAll { $0.id.hasPrefix("branch-diff-") }
+        selectedReviewID = nil
+        selectedFileID = nil
     }
 
     // MARK: - Sample Data (for previews only)

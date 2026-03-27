@@ -8,7 +8,7 @@ struct AgentSidebar: View {
         VStack(spacing: 0) {
             // New session button
             Button(action: {
-                viewModel.startNewSession(prompt: "", model: "claude-sonnet-4-6")
+                viewModel.startNewSession(prompt: "", model: viewModel.selectedModelId)
             }) {
                 HStack {
                     Image(systemName: "plus.circle.fill")
@@ -38,6 +38,19 @@ struct AgentSidebar: View {
                         .onTapGesture {
                             viewModel.selectedSessionId = session.id
                         }
+                        .contextMenu {
+                            Button("Rename...") {
+                                // Handled via session header double-click
+                                viewModel.selectedSessionId = session.id
+                            }
+                            Button("Export to Clipboard") {
+                                viewModel.exportSessionToClipboard(session.id)
+                            }
+                            Divider()
+                            Button("Delete", role: .destructive) {
+                                viewModel.deleteSession(session.id)
+                            }
+                        }
                     }
                 }
             }
@@ -52,7 +65,7 @@ struct AgentSessionRow: View {
     var body: some View {
         AnvilListItem(
             icon: statusIcon,
-            title: session.workItemId ?? "Session",
+            title: session.displayName,
             subtitle: session.model,
             tag: session.status.rawValue,
             tagColor: statusColor,

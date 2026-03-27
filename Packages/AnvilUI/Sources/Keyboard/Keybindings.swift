@@ -60,6 +60,7 @@ public enum AnvilKeybindings {
         Keybinding(id: "cmd-w", key: "w", modifiers: .command, action: "closeTab", label: "Close Tab"),
         Keybinding(id: "cmd-comma", key: ",", modifiers: .command, action: "settings", label: "Settings"),
         Keybinding(id: "cmd-period", key: ".", modifiers: .command, action: "quickActions", label: "Quick Actions"),
+        Keybinding(id: "cmd-shift-o", key: "o", modifiers: [.command, .shift], action: "projectSwitcher", label: "Switch Project"),
 
         // MARK: - List Navigation
 

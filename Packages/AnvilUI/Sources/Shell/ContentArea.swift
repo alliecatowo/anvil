@@ -78,8 +78,18 @@ struct AgentModeContent: View {
             ConversationView(
                 session: session,
                 inputText: $viewModel.inputText,
+                selectedModelId: $viewModel.selectedModelId,
                 onSend: {
                     viewModel.sendMessage(container: container, appState: appState)
+                },
+                onRename: { name in
+                    viewModel.renameSession(session.id, name: name)
+                },
+                onDelete: {
+                    viewModel.deleteSession(session.id)
+                },
+                onExport: {
+                    viewModel.exportSessionToClipboard(session.id)
                 }
             )
         } else {

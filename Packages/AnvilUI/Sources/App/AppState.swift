@@ -1,5 +1,6 @@
 import SwiftUI
 import AnvilDomain
+import AnvilApplication
 import AnvilGit
 
 public enum AnvilMode: String, CaseIterable, Identifiable, Sendable {
@@ -64,8 +65,12 @@ public class AppState: ObservableObject {
     @Published public var isCommandPaletteVisible: Bool = false
     @Published public var isQuickCaptureVisible: Bool = false
     @Published public var isProjectNotesVisible: Bool = false
+    @Published public var isProjectSwitcherVisible: Bool = false
+    @Published public var isProjectInfoVisible: Bool = false
     @Published public var isTerminalPanelVisible: Bool = false
     @Published public var currentBranch: String = "main"
+    @Published public var uncommittedFileCount: Int = 0
+    @Published public var branches: [Branch] = []
     @Published public var agentStatus: String = "Idle"
     @Published public var sessionCost: Decimal = 0
     @Published public var todayCost: Decimal = 0
@@ -81,10 +86,41 @@ public class AppState: ObservableObject {
 
     // MARK: - Git Integration
 
-    /// Load the real branch name from the Git adapter and update the status bar.
+    /// Load real git state: current branch, uncommitted file count, and branch list.
     public func loadGitStatus(from adapter: GitSourceControlAdapter) async {
         if let branch = try? await adapter.currentBranch() {
             currentBranch = branch.name
+        }
+
+        // Count uncommitted files (staged + unstaged diffs)
+        let staged = (try? await adapter.stagedDiff()) ?? []
+        let unstaged = (try? await adapter.unstagedDiff()) ?? []
+        let allPaths = Set(staged.map(\.filePath) + unstaged.map(\.filePath))
+        uncommittedFileCount = allPaths.count
+
+        // Load branch list
+        if let allBranches = try? await adapter.branches() {
+            branches = allBranches.filter { !$0.name.contains("/") || $0.name.hasPrefix("origin/") == false }
+        }
+    }
+
+    /// Switch to a branch using the git adapter and refresh status.
+    public func switchBranch(_ name: String, using adapter: GitSourceControlAdapter) async {
+        do {
+            try await adapter.switchBranch(name: name)
+            await loadGitStatus(from: adapter)
+        } catch {
+            // Branch switch failed — status unchanged
+        }
+    }
+
+    /// Create a new branch and switch to it.
+    public func createBranch(_ name: String, using adapter: GitSourceControlAdapter) async {
+        do {
+            _ = try await adapter.createBranch(name: name, from: nil)
+            await loadGitStatus(from: adapter)
+        } catch {
+            // Branch creation failed
         }
     }
 
@@ -139,7 +175,20 @@ public class AppState: ObservableObject {
 
     // MARK: - Project
 
+    @Published public var currentProject: Project?
     @Published public var currentProjectPath: String?
+
+    public func toggleProjectSwitcher() {
+        withAnimation(AnvilAnimation.commandPaletteAppear) {
+            isProjectSwitcherVisible.toggle()
+        }
+    }
+
+    public func toggleProjectInfo() {
+        withAnimation(AnvilAnimation.standard) {
+            isProjectInfoVisible.toggle()
+        }
+    }
 
     // MARK: - Demo Data
 
