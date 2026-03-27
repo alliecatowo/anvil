@@ -63,16 +63,32 @@ public class DependencyContainer: ObservableObject {
                 let provider = OllamaProvider(baseURL: config.baseURL ?? "http://localhost:11434")
                 await client.registerProvider(provider)
                 if config.isDefault { await client.setDefaultProvider(provider.providerId) }
+            case "zed-acp":
+                let cmd = config.baseURL ?? "npx"
+                let cmdArgs = config.apiKey.map { [$0] } ?? ["@agentclientprotocol/claude-agent-acp"]
+                let provider = ZedACPProvider(command: cmd, args: cmdArgs)
+                await client.registerProvider(provider)
+                if config.isDefault { await client.setDefaultProvider(provider.providerId) }
             default:
                 break
             }
         }
 
-        // Auto-register Claude CLI if no providers are configured and the binary exists
-        if configuredProviders.isEmpty && ClaudeCLIProvider.isAvailable() {
-            let provider = ClaudeCLIProvider()
-            await client.registerProvider(provider)
-            await client.setDefaultProvider(provider.providerId)
+        // Auto-register Claude CLI if no providers are configured and the binary exists.
+        // Prefer Zed ACP adapter when available (bidirectional protocol with streaming).
+        if configuredProviders.isEmpty {
+            if ZedACPProvider.isAvailable() {
+                let provider = ZedACPProvider(
+                    command: "npx",
+                    args: ["@agentclientprotocol/claude-agent-acp"]
+                )
+                await client.registerProvider(provider)
+                await client.setDefaultProvider(provider.providerId)
+            } else if ClaudeCLIProvider.isAvailable() {
+                let provider = ClaudeCLIProvider()
+                await client.registerProvider(provider)
+                await client.setDefaultProvider(provider.providerId)
+            }
         }
 
         acpClient = client
