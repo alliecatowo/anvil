@@ -7,6 +7,10 @@ struct TerminalPanel: View {
     private let minHeight: CGFloat = 100
     private let maxHeight: CGFloat = 600
 
+    private var terminalVM: TerminalViewModel {
+        appState.terminalViewModel
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Resize handle
@@ -30,7 +34,13 @@ struct TerminalPanel: View {
             .fill(Color.clear)
             .frame(height: 4)
             .contentShape(Rectangle())
-            .cursor(.resizeUpDown)
+            .onHover { inside in
+                if inside {
+                    NSCursor.resizeUpDown.push()
+                } else {
+                    NSCursor.pop()
+                }
+            }
             .gesture(
                 DragGesture(minimumDistance: 1)
                     .onChanged { value in
@@ -44,7 +54,7 @@ struct TerminalPanel: View {
             )
             .overlay(
                 Rectangle()
-                    .fill(isResizing ? AnvilColor.accentBlue : Color.clear)
+                    .fill(isResizing ? AnvilColor.accentBlue : AnvilColor.borderSubtle)
                     .frame(height: 1)
                     .frame(maxWidth: .infinity),
                 alignment: .center
@@ -58,8 +68,8 @@ struct TerminalPanel: View {
             // Terminal tabs
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 0) {
-                    ForEach(appState.terminalTabs) { tab in
-                        terminalTab(tab)
+                    ForEach(terminalVM.tabs) { tab in
+                        terminalTabView(tab)
                     }
                 }
             }
@@ -70,7 +80,7 @@ struct TerminalPanel: View {
             HStack(spacing: AnvilSpacing.xs) {
                 // New terminal
                 Button {
-                    appState.addTerminalTab()
+                    terminalVM.addTab()
                 } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 10))
@@ -98,18 +108,18 @@ struct TerminalPanel: View {
         .background(AnvilColor.backgroundSecondary)
     }
 
-    private func terminalTab(_ tab: TerminalTab) -> some View {
-        let isSelected = appState.selectedTerminalTabId == tab.id
+    private func terminalTabView(_ tab: TerminalTab) -> some View {
+        let isSelected = terminalVM.selectedTabId == tab.id
 
         return HStack(spacing: AnvilSpacing.xxs) {
-            Image(systemName: "terminal.fill")
+            Image(systemName: tab.icon)
                 .font(.system(size: 9))
             Text(tab.name)
                 .font(AnvilFont.label)
                 .lineLimit(1)
 
-            // Close tab button (show on hover or when selected)
-            if appState.terminalTabs.count > 1 {
+            // Close tab button
+            if terminalVM.tabs.count > 1 {
                 Button {
                     appState.closeTerminalTab(tab.id)
                 } label: {
@@ -127,7 +137,7 @@ struct TerminalPanel: View {
         .clipShape(RoundedRectangle(cornerRadius: 4))
         .contentShape(Rectangle())
         .onTapGesture {
-            appState.selectedTerminalTabId = tab.id
+            terminalVM.selectTab(tab.id)
         }
         .padding(.horizontal, 2)
         .padding(.vertical, 2)
@@ -136,55 +146,61 @@ struct TerminalPanel: View {
     // MARK: - Terminal Content
 
     private var terminalContent: some View {
-        ZStack {
-            AnvilColor.backgroundPrimary
-
-            if let selectedTab = appState.terminalTabs.first(where: { $0.id == appState.selectedTerminalTabId }) {
-                VStack(alignment: .leading, spacing: 0) {
-                    // Simulated terminal prompt
-                    HStack(spacing: 0) {
-                        Text("~/project")
-                            .foregroundStyle(AnvilColor.accentBlue)
-                        Text(" on ")
-                            .foregroundStyle(AnvilColor.textTertiary)
-                        Text(appState.currentBranch)
-                            .foregroundStyle(AnvilColor.accentPurple)
-                        Text(" \u{276F} ")
-                            .foregroundStyle(AnvilColor.accentGreen)
+        Group {
+            if let tab = terminalVM.selectedTab {
+                VStack(spacing: 0) {
+                    // Terminal output
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            LazyVStack(alignment: .leading, spacing: 0) {
+                                ForEach(tab.lines) { line in
+                                    Text(line.content)
+                                        .font(AnvilFont.code)
+                                        .foregroundStyle(line.style.color)
+                                        .textSelection(.enabled)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.horizontal, AnvilSpacing.md)
+                                        .padding(.vertical, 1)
+                                        .id(line.id)
+                                }
+                            }
+                            .padding(.vertical, AnvilSpacing.xs)
+                        }
+                        .onChange(of: tab.lines.count) { _, _ in
+                            if let lastId = tab.lines.last?.id {
+                                proxy.scrollTo(lastId, anchor: .bottom)
+                            }
+                        }
                     }
-                    .font(AnvilFont.code)
+
+                    // Input bar
+                    HStack(spacing: AnvilSpacing.xs) {
+                        Text("$")
+                            .font(AnvilFont.code)
+                            .foregroundStyle(AnvilColor.accentGreen)
+
+                        TextField("", text: Binding(
+                            get: { terminalVM.inputText },
+                            set: { terminalVM.inputText = $0 }
+                        ))
+                        .textFieldStyle(.plain)
+                        .font(AnvilFont.code)
+                        .foregroundStyle(AnvilColor.textPrimary)
+                        .onSubmit {
+                            terminalVM.submitInput()
+                        }
+                    }
                     .padding(.horizontal, AnvilSpacing.md)
-                    .padding(.top, AnvilSpacing.sm)
-
-                    Spacer()
-
-                    // Placeholder hint
-                    Text("Terminal (\(selectedTab.shellPath)) — real shell integration coming soon")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-
-                    Spacer()
+                    .padding(.vertical, AnvilSpacing.xs)
+                    .background(AnvilColor.backgroundPrimary)
                 }
             } else {
                 Text("No terminal session")
                     .font(AnvilFont.label)
                     .foregroundStyle(AnvilColor.textTertiary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-    }
-}
-
-// MARK: - Cursor Modifier
-
-private extension View {
-    func cursor(_ cursor: NSCursor) -> some View {
-        self.onHover { inside in
-            if inside {
-                cursor.push()
-            } else {
-                NSCursor.pop()
-            }
-        }
+        .background(AnvilColor.backgroundPrimary)
     }
 }

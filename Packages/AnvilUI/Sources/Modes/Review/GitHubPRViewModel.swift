@@ -129,6 +129,91 @@ final class GitHubPRViewModel: ObservableObject {
         return pr.status == .open && pr.behindCount > 0
     }
 
+    // MARK: - Comment Threads
+
+    @Published var replyText: [String: String] = [:]   // threadId -> draft text
+    @Published var expandedThreads: Set<String> = []
+    @Published var resolvedThreads: Set<String> = []
+    @Published var isReplying = false
+    @Published var replyError: String?
+
+    /// Groups flat comments into threads. Root comments (no replyToId) start threads;
+    /// replies are grouped under their root.
+    var commentThreads: [PRCommentThread] {
+        var roots: [PRComment] = []
+        var repliesByRoot: [String: [PRComment]] = [:]
+
+        for comment in prComments {
+            if let parentId = comment.replyToId {
+                repliesByRoot[parentId, default: []].append(comment)
+            } else {
+                roots.append(comment)
+            }
+        }
+
+        return roots.map { root in
+            var thread = PRCommentThread(rootComment: root, replies: repliesByRoot[root.id] ?? [])
+            if resolvedThreads.contains(root.id) {
+                thread.isResolved = true
+            }
+            return thread
+        }.sorted { $0.rootComment.createdAt < $1.rootComment.createdAt }
+    }
+
+    var unresolvedThreadCount: Int {
+        commentThreads.filter { !$0.isResolved }.count
+    }
+
+    var resolvedThreadCount: Int {
+        commentThreads.filter { $0.isResolved }.count
+    }
+
+    func toggleThread(_ threadId: String) {
+        if expandedThreads.contains(threadId) {
+            expandedThreads.remove(threadId)
+        } else {
+            expandedThreads.insert(threadId)
+        }
+    }
+
+    func replyToThread(_ threadId: String, using adapter: GitHubSourceControlCloudAdapter) {
+        guard let pr = selectedPR else { return }
+        guard let text = replyText[threadId], !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        guard !isReplying else { return }
+        isReplying = true
+        replyError = nil
+
+        Task { @MainActor in
+            defer { isReplying = false }
+            do {
+                let newComment = try await adapter.replyToComment(repo: repoFullName, prNumber: pr.number, commentId: threadId, body: text)
+                prComments.append(newComment)
+                replyText[threadId] = ""
+                expandedThreads.insert(threadId)
+            } catch {
+                replyError = "Reply failed: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    func resolveThread(_ threadId: String, using adapter: GitHubSourceControlCloudAdapter) {
+        resolvedThreads.insert(threadId)
+        // Collapse resolved threads
+        expandedThreads.remove(threadId)
+
+        Task { @MainActor in
+            do {
+                try await adapter.resolveReviewThread(repo: repoFullName, threadId: threadId)
+            } catch {
+                // If API fails, keep local state — resolve is best-effort via REST
+            }
+        }
+    }
+
+    func unresolveThread(_ threadId: String) {
+        resolvedThreads.remove(threadId)
+    }
+
     // MARK: - Computed
 
     var openPRs: [PullRequest] {

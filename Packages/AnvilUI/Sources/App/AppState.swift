@@ -81,14 +81,6 @@ public enum LineEnding: String, CaseIterable, Sendable {
     case cr = "CR"
 }
 
-// MARK: - Terminal Tab
-
-public struct TerminalTab: Identifiable {
-    public let id = UUID().uuidString
-    public var name: String
-    public var shellPath: String = "/bin/zsh"
-}
-
 @MainActor
 public class AppState: ObservableObject {
     @Published public var currentMode: AnvilMode = .agent
@@ -109,8 +101,7 @@ public class AppState: ObservableObject {
     @Published public var isProjectInfoVisible: Bool = false
     @Published public var isTerminalPanelVisible: Bool = false
     @Published public var terminalPanelHeight: CGFloat = 200
-    @Published public var terminalTabs: [TerminalTab] = [TerminalTab(name: "zsh")]
-    @Published public var selectedTerminalTabId: String?
+    @Published var terminalViewModel = TerminalViewModel()
     @Published public var isSourceControlVisible: Bool = false
     @Published public var currentBranch: String = "main"
     @Published public var uncommittedFileCount: Int = 0
@@ -226,27 +217,15 @@ public class AppState: ObservableObject {
         withAnimation(AnvilAnimation.standard) {
             isTerminalPanelVisible.toggle()
         }
-        // Ensure at least one tab exists
-        if isTerminalPanelVisible && terminalTabs.isEmpty {
-            addTerminalTab()
-        }
-        if isTerminalPanelVisible && selectedTerminalTabId == nil {
-            selectedTerminalTabId = terminalTabs.first?.id
+        // Ensure at least one tab exists when opening
+        if isTerminalPanelVisible && terminalViewModel.tabs.isEmpty {
+            terminalViewModel.addTab()
         }
     }
 
-    public func addTerminalTab() {
-        let tab = TerminalTab(name: "zsh")
-        terminalTabs.append(tab)
-        selectedTerminalTabId = tab.id
-    }
-
-    public func closeTerminalTab(_ id: String) {
-        terminalTabs.removeAll { $0.id == id }
-        if selectedTerminalTabId == id {
-            selectedTerminalTabId = terminalTabs.last?.id
-        }
-        if terminalTabs.isEmpty {
+    public func closeTerminalTab(_ id: UUID) {
+        terminalViewModel.closeTab(id)
+        if terminalViewModel.tabs.isEmpty {
             withAnimation(AnvilAnimation.standard) {
                 isTerminalPanelVisible = false
             }

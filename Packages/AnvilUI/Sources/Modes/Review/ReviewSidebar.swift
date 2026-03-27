@@ -30,7 +30,22 @@ struct ReviewSidebar: View {
 
     private var branchSection: some View {
         VStack(spacing: 0) {
-            sectionHeader("BRANCHES", icon: "arrow.triangle.branch", count: appState.branches.count)
+            HStack {
+                sectionHeader("BRANCHES", icon: "arrow.triangle.branch", count: appState.branches.count)
+                Spacer()
+                Button {
+                    viewModel.isCommitGraphVisible.toggle()
+                } label: {
+                    Image(systemName: viewModel.isCommitGraphVisible ? "arrow.triangle.branch" : "point.3.connected.trianglepath.dotted")
+                        .font(.system(size: 11))
+                        .foregroundStyle(
+                            viewModel.isCommitGraphVisible ? AnvilColor.accentBlue : AnvilColor.textTertiary
+                        )
+                }
+                .buttonStyle(.plain)
+                .help(viewModel.isCommitGraphVisible ? "Show Branches" : "Show Commit Graph")
+                .padding(.trailing, AnvilSpacing.md)
+            }
 
             if appState.branches.isEmpty {
                 HStack {

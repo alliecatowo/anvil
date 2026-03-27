@@ -70,6 +70,14 @@ enum CommandAction: Sendable {
     case searchInFiles
     case openFile(path: String)
     case goToSymbol(filePath: String, line: Int)
+    // Mode-specific actions
+    case toggleSourceControl
+    case createTicket
+    case switchBoardView
+    case switchListView
+    case clearFilters
+    case refreshPRs
+    case refreshDeploys
 
     @MainActor
     func perform(on appState: AppState) {
@@ -101,6 +109,21 @@ enum CommandAction: Sendable {
             appState.switchMode(.editor)
             appState.pendingFileToOpen = filePath
             appState.pendingSymbolLine = line
+        case .toggleSourceControl:
+            appState.isSourceControlVisible.toggle()
+        case .createTicket:
+            appState.switchMode(.intent)
+            appState.intentViewModel.isCreatingTicket = true
+        case .switchBoardView:
+            appState.intentViewModel.viewMode = .board
+        case .switchListView:
+            appState.intentViewModel.viewMode = .list
+        case .clearFilters:
+            appState.intentViewModel.clearFilters()
+        case .refreshPRs:
+            break // Would trigger PR refresh in review mode
+        case .refreshDeploys:
+            break // Would trigger deploy refresh in ship mode
         }
     }
 }
@@ -147,6 +170,7 @@ struct CommandItem: Identifiable, Sendable {
 }
 
 enum CommandCategory: String, CaseIterable, Sendable {
+    case contextual = "Current Mode"
     case actions = "Actions"
     case modes = "Modes"
     case navigation = "Navigation"
@@ -213,18 +237,23 @@ final class CommandPaletteViewModel: ObservableObject {
     private var projectPath: String?
     private var fileSystemService: FileSystemService?
     private var scanTask: Task<Void, Never>?
+    private var currentAppMode: AnvilMode?
 
     init() {
-        registerAllCommands()
+        registerAllCommands(for: nil)
         filteredItems = allItems
     }
 
     // MARK: - Configuration
 
     /// Call when the palette is opened to set project context.
-    func configure(projectPath: String?, fileSystemService: FileSystemService?, initialMode: PaletteMode = .commands) {
+    func configure(projectPath: String?, fileSystemService: FileSystemService?, initialMode: PaletteMode = .commands, currentMode: AnvilMode? = nil) {
         self.projectPath = projectPath
         self.fileSystemService = fileSystemService
+        self.currentAppMode = currentMode
+
+        // Rebuild commands with mode context
+        registerAllCommands(for: currentMode)
 
         // Reset
         query = ""
@@ -268,8 +297,13 @@ final class CommandPaletteViewModel: ObservableObject {
 
     // MARK: - Command Registration
 
-    private func registerAllCommands() {
+    private func registerAllCommands(for mode: AnvilMode?) {
         var items: [CommandItem] = []
+
+        // Add contextual commands for the current mode first
+        if let mode {
+            items.append(contentsOf: contextualCommands(for: mode))
+        }
 
         items.append(CommandItem(
             id: "new-agent-session",
@@ -356,6 +390,48 @@ final class CommandPaletteViewModel: ObservableObject {
         ))
 
         allItems = items
+    }
+
+    // MARK: - Contextual Commands
+
+    private func contextualCommands(for mode: AnvilMode) -> [CommandItem] {
+        switch mode {
+        case .intent:
+            return [
+                CommandItem(id: "ctx-create-ticket", title: "Create Ticket", icon: "plus.square", iconColor: AnvilColor.accentBlue, category: .contextual, action: .createTicket),
+                CommandItem(id: "ctx-board-view", title: "Switch to Board View", icon: "square.grid.3x3", category: .contextual, action: .switchBoardView),
+                CommandItem(id: "ctx-list-view", title: "Switch to List View", icon: "list.bullet", category: .contextual, action: .switchListView),
+                CommandItem(id: "ctx-clear-filters", title: "Clear All Filters", icon: "line.3.horizontal.decrease.circle", category: .contextual, action: .clearFilters),
+            ]
+        case .agent:
+            return [
+                CommandItem(id: "ctx-new-session", title: "New Agent Session", icon: "cpu", iconColor: AnvilColor.accentGreen, shortcut: "\u{2318}\u{21E7}A", category: .contextual, action: .newAgentSession),
+            ]
+        case .review:
+            return [
+                CommandItem(id: "ctx-refresh-prs", title: "Refresh Pull Requests", icon: "arrow.clockwise", iconColor: AnvilColor.accentPurple, category: .contextual, action: .refreshPRs),
+                CommandItem(id: "ctx-source-control", title: "Toggle Source Control Panel", icon: "arrow.triangle.branch", category: .contextual, action: .toggleSourceControl),
+            ]
+        case .ship:
+            return [
+                CommandItem(id: "ctx-refresh-deploys", title: "Refresh Deployments", icon: "arrow.clockwise", iconColor: AnvilColor.accentAmber, category: .contextual, action: .refreshDeploys),
+            ]
+        case .editor:
+            return [
+                CommandItem(id: "ctx-source-control", title: "Toggle Source Control Panel", icon: "arrow.triangle.branch", category: .contextual, action: .toggleSourceControl),
+                CommandItem(id: "ctx-search-files", title: "Search in Files", icon: "magnifyingglass", shortcut: "\u{2318}\u{21E7}F", category: .contextual, action: .searchInFiles),
+            ]
+        case .database:
+            return [
+                CommandItem(id: "ctx-new-query", title: "New Query Tab", icon: "terminal", iconColor: AnvilColor.accentTeal, category: .contextual, action: .switchMode(.database)),
+            ]
+        case .terminal:
+            return [
+                CommandItem(id: "ctx-new-terminal", title: "New Terminal Tab", icon: "terminal", iconColor: AnvilColor.accentGreen, category: .contextual, action: .toggleTerminal),
+            ]
+        default:
+            return []
+        }
     }
 
     // MARK: - Command Search

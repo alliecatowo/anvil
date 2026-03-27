@@ -34,6 +34,10 @@ public final class ReviewViewModel: ObservableObject {
     @Published var branchDiffFiles: [FileDiff] = []
     @Published var isLoadingBranchDiff: Bool = false
 
+    // MARK: Commit graph
+
+    @Published var isCommitGraphVisible: Bool = false
+
     // MARK: Blame
 
     @Published var isBlameVisible: Bool = false

@@ -409,26 +409,160 @@ struct GitHubPRDetailView: View {
         }
     }
 
-    // MARK: - Comments
+    // MARK: - Comments (Threaded)
 
     private var commentsSection: some View {
         VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-            Text("COMMENTS (\(viewModel.prComments.count))")
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .tracking(0.3)
+            // Header with thread counts
+            HStack {
+                Text("COMMENTS (\(viewModel.prComments.count))")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .tracking(0.3)
 
-            if viewModel.prComments.isEmpty {
+                Spacer()
+
+                if viewModel.resolvedThreadCount > 0 {
+                    HStack(spacing: AnvilSpacing.xxs) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 10))
+                        Text("\(viewModel.resolvedThreadCount) resolved")
+                            .font(AnvilFont.label)
+                    }
+                    .foregroundStyle(AnvilColor.accentGreen)
+                }
+
+                if viewModel.unresolvedThreadCount > 0 {
+                    HStack(spacing: AnvilSpacing.xxs) {
+                        Image(systemName: "bubble.left.and.bubble.right")
+                            .font(.system(size: 10))
+                        Text("\(viewModel.unresolvedThreadCount) open")
+                            .font(AnvilFont.label)
+                    }
+                    .foregroundStyle(AnvilColor.accentAmber)
+                }
+            }
+
+            if viewModel.commentThreads.isEmpty {
                 Text("No comments yet")
                     .font(AnvilFont.body)
                     .foregroundStyle(AnvilColor.textTertiary)
                     .italic()
             } else {
-                ForEach(viewModel.prComments) { comment in
-                    commentRow(comment)
+                // Unresolved threads first, then resolved
+                let unresolved = viewModel.commentThreads.filter { !$0.isResolved }
+                let resolved = viewModel.commentThreads.filter { $0.isResolved }
+
+                ForEach(unresolved) { thread in
+                    threadView(thread)
+                }
+
+                if !resolved.isEmpty {
+                    DisclosureGroup {
+                        ForEach(resolved) { thread in
+                            threadView(thread)
+                        }
+                    } label: {
+                        Text("\(resolved.count) resolved thread\(resolved.count == 1 ? "" : "s")")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textTertiary)
+                    }
+                    .tint(AnvilColor.textTertiary)
                 }
             }
+
+            // Reply error
+            if let error = viewModel.replyError {
+                HStack(spacing: AnvilSpacing.xs) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 10))
+                    Text(error)
+                        .font(AnvilFont.label)
+                        .lineLimit(2)
+                }
+                .foregroundStyle(AnvilColor.accentRed)
+            }
         }
+    }
+
+    private func threadView(_ thread: PRCommentThread) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Root comment
+            commentRow(thread.rootComment)
+
+            // Thread controls
+            HStack(spacing: AnvilSpacing.md) {
+                // Expand/collapse replies
+                if thread.replyCount > 0 {
+                    Button {
+                        viewModel.toggleThread(thread.id)
+                    } label: {
+                        HStack(spacing: AnvilSpacing.xxs) {
+                            Image(systemName: viewModel.expandedThreads.contains(thread.id) ? "chevron.down" : "chevron.right")
+                                .font(.system(size: 9, weight: .bold))
+                            Text("\(thread.replyCount) repl\(thread.replyCount == 1 ? "y" : "ies")")
+                                .font(AnvilFont.label)
+                        }
+                        .foregroundStyle(AnvilColor.accentBlue)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Spacer()
+
+                // Resolve / unresolve
+                if thread.isResolved {
+                    Button {
+                        viewModel.unresolveThread(thread.id)
+                    } label: {
+                        HStack(spacing: AnvilSpacing.xxs) {
+                            Image(systemName: "arrow.uturn.backward")
+                                .font(.system(size: 9))
+                            Text("Unresolve")
+                                .font(AnvilFont.label)
+                        }
+                        .foregroundStyle(AnvilColor.textTertiary)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Button {
+                        guard let adapter = container.getOrCreateGitHubAdapter() else { return }
+                        viewModel.resolveThread(thread.id, using: adapter)
+                    } label: {
+                        HStack(spacing: AnvilSpacing.xxs) {
+                            Image(systemName: "checkmark.circle")
+                                .font(.system(size: 10))
+                            Text("Resolve")
+                                .font(AnvilFont.label)
+                        }
+                        .foregroundStyle(AnvilColor.accentGreen)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, AnvilSpacing.md)
+            .padding(.vertical, AnvilSpacing.xs)
+
+            // Expanded replies
+            if viewModel.expandedThreads.contains(thread.id) && thread.replyCount > 0 {
+                VStack(alignment: .leading, spacing: 1) {
+                    ForEach(thread.replies) { reply in
+                        replyRow(reply)
+                    }
+                }
+                .padding(.leading, AnvilSpacing.xl)
+            }
+
+            // Reply input (always visible for unresolved threads)
+            if !thread.isResolved {
+                replyInput(threadId: thread.id)
+                    .padding(.horizontal, AnvilSpacing.md)
+                    .padding(.bottom, AnvilSpacing.sm)
+            }
+        }
+        .background(AnvilColor.backgroundSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .opacity(thread.isResolved ? 0.7 : 1.0)
     }
 
     private func commentRow(_ comment: PRComment) -> some View {
@@ -473,8 +607,74 @@ struct GitHubPRDetailView: View {
                 .textSelection(.enabled)
         }
         .padding(AnvilSpacing.md)
-        .background(AnvilColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    private func replyRow(_ comment: PRComment) -> some View {
+        VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
+            HStack(spacing: AnvilSpacing.xs) {
+                Circle()
+                    .fill(AnvilColor.backgroundElevated)
+                    .frame(width: 16, height: 16)
+                    .overlay(
+                        Text(String(comment.author.prefix(1)).uppercased())
+                            .font(.system(size: 7, weight: .medium))
+                            .foregroundStyle(AnvilColor.textSecondary)
+                    )
+
+                Text(comment.author)
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textPrimary)
+
+                Spacer()
+
+                Text(comment.createdAt, style: .relative)
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+            }
+
+            Text(comment.body)
+                .font(AnvilFont.body)
+                .foregroundStyle(AnvilColor.textSecondary)
+                .textSelection(.enabled)
+        }
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, AnvilSpacing.xs)
+        .background(AnvilColor.backgroundPrimary.opacity(0.5))
+    }
+
+    private func replyInput(threadId: String) -> some View {
+        HStack(spacing: AnvilSpacing.xs) {
+            TextField("Reply...", text: Binding(
+                get: { viewModel.replyText[threadId] ?? "" },
+                set: { viewModel.replyText[threadId] = $0 }
+            ))
+            .textFieldStyle(.plain)
+            .font(AnvilFont.body)
+            .padding(.horizontal, AnvilSpacing.sm)
+            .padding(.vertical, AnvilSpacing.xs)
+            .background(AnvilColor.backgroundPrimary)
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+
+            if viewModel.isReplying {
+                ProgressView()
+                    .controlSize(.small)
+            } else {
+                Button {
+                    guard let adapter = container.getOrCreateGitHubAdapter() else { return }
+                    viewModel.replyToThread(threadId, using: adapter)
+                } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(
+                            (viewModel.replyText[threadId] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                            ? AnvilColor.textTertiary
+                            : AnvilColor.accentBlue
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled((viewModel.replyText[threadId] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
     }
 
     // MARK: - Helpers
