@@ -26,6 +26,7 @@ struct ConversationView: View {
     var pendingApproval: AgentViewModel.PendingToolApproval?
     var onApproveToolCall: ((Bool) -> Void)?
     var onRejectToolCall: ((Bool) -> Void)?
+    var onCreatePR: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -39,7 +40,8 @@ struct ConversationView: View {
                 onExportFile: onExportFile,
                 onSetBudget: onSetBudget,
                 onSetAutonomy: onSetAutonomy,
-                guardrailCount: guardrailCount
+                guardrailCount: guardrailCount,
+                onCreatePR: onCreatePR
             )
 
             Divider().overlay(AnvilColor.borderSubtle)
@@ -133,6 +135,7 @@ struct SessionHeader: View {
     var onSetBudget: ((Decimal?, Bool) -> Void)?
     var onSetAutonomy: ((AutonomyLevel) -> Void)?
     let guardrailCount: Int
+    var onCreatePR: (() -> Void)?
 
     @State private var isEditing = false
     @State private var editName = ""
@@ -178,6 +181,26 @@ struct SessionHeader: View {
                 AnvilBadge(text: session.status.rawValue, color: statusColor)
 
                 Spacer()
+
+                // Create PR button — only shown when session is complete
+                if session.status == .completed, let createPR = onCreatePR {
+                    Button {
+                        createPR()
+                    } label: {
+                        HStack(spacing: AnvilSpacing.xs) {
+                            Image(systemName: "arrow.triangle.pull")
+                                .font(.system(size: 11))
+                            Text("Create PR")
+                                .font(AnvilFont.label)
+                        }
+                        .foregroundStyle(AnvilColor.accentPurple)
+                        .padding(.horizontal, AnvilSpacing.sm)
+                        .padding(.vertical, AnvilSpacing.xxs)
+                        .background(AnvilColor.accentPurple.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 5))
+                    }
+                    .buttonStyle(.plain)
+                }
 
                 // Model picker
                 ModelPicker(selectedModelId: $selectedModelId)

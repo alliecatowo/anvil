@@ -423,6 +423,7 @@ final class CommandPaletteViewModel: ObservableObject {
             return [
                 CommandItem(id: "ctx-source-control", title: "Toggle Source Control Panel", icon: "arrow.triangle.branch", category: .contextual, action: .toggleSourceControl),
                 CommandItem(id: "ctx-search-files", title: "Search in Files", icon: "magnifyingglass", shortcut: "\u{2318}\u{21E7}F", category: .contextual, action: .searchInFiles),
+                CommandItem(id: "ctx-toggle-whitespace", title: "Toggle Whitespace Visibility", subtitle: "Cycle: None → Boundary → All", icon: "eye", category: .contextual, action: .cycleWhitespace),
             ]
         case .database:
             return [

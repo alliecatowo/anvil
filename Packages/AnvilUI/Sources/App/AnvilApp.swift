@@ -1,4 +1,6 @@
 import SwiftUI
+import UserNotifications
+import AnvilApplication
 
 public struct AnvilApp: App {
     @StateObject private var appState = AppState()
@@ -14,9 +16,17 @@ public struct AnvilApp: App {
                 .environmentObject(container)
                 .preferredColorScheme(.dark)
                 .task {
+                    // Set up desktop notifications
+                    let notificationService = DesktopNotificationService.shared
+                    UNUserNotificationCenter.current().delegate = notificationService
+                    await notificationService.requestPermission()
+
                     if let adapter = container.getOrCreateGitAdapter() {
                         await appState.loadGitStatus(from: adapter)
                     }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .anvilDesktopNotificationTapped)) { notification in
+                    handleDesktopNotificationTap(notification)
                 }
                 .sheet(isPresented: $showSetupWizard) {
                     SetupWizard {

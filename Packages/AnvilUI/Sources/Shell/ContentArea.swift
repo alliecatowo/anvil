@@ -75,6 +75,8 @@ struct AgentModeContent: View {
     @EnvironmentObject private var container: DependencyContainer
     @EnvironmentObject private var appState: AppState
 
+    @State private var showAutoPRSheet = false
+
     var body: some View {
         switch viewModel.viewMode {
         case .dashboard:
@@ -152,8 +154,18 @@ struct AgentModeContent: View {
                     },
                     onRejectToolCall: { remember in
                         viewModel.rejectToolCall(remember: remember)
+                    },
+                    onCreatePR: {
+                        showAutoPRSheet = true
                     }
                 )
+                .sheet(isPresented: $showAutoPRSheet) {
+                    AutoPRSheet(session: session) {
+                        showAutoPRSheet = false
+                    }
+                    .environmentObject(container)
+                    .environmentObject(appState)
+                }
             } else {
                 AgentEmptyState(onNewSession: { viewModel.isLaunchSheetPresented = true })
             }

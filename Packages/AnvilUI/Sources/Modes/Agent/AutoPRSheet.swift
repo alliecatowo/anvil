@@ -372,7 +372,7 @@ struct AutoPRSheet: View {
                 target: targetBranch,
                 isDraft: isDraft
             )
-            state = .submitted(url: pr.url ?? "https://github.com/\(repoName)/pulls")
+            state = .submitted(url: "https://github.com/\(repoName)/pull/\(pr.number)")
         } catch {
             state = .failed(error.localizedDescription)
         }

@@ -97,6 +97,8 @@ public class AppState: ObservableObject {
     @Published public var triggerInlineEdit: Bool = false
     /// Triggers find bar (⌘F) in editor mode.
     @Published public var triggerFindInFile: Bool = false
+    /// Project-wide search panel (⌘⇧F).
+    @Published public var isProjectSearchVisible: Bool = false
     @Published public var isQuickCaptureVisible: Bool = false
     @Published public var isProjectNotesVisible: Bool = false
     @Published public var isProjectSwitcherVisible: Bool = false
@@ -131,6 +133,7 @@ public class AppState: ObservableObject {
     @Published public var intentViewModel = IntentViewModel()
     @Published public var reviewViewModel = ReviewViewModel()
     @Published public var shipViewModel = ShipViewModel()
+    @Published var editorViewModel = EditorViewModel()
     @Published var gitHubPRViewModel = GitHubPRViewModel()
 
     public init() {}

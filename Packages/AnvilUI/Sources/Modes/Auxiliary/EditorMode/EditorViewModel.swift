@@ -147,6 +147,38 @@ class EditorViewModel: ObservableObject {
         return extractSymbols(from: file.content)
     }
 
+    /// The symbol (function/class/struct) containing the cursor position.
+    var symbolAtCursor: EditorSymbol? {
+        let sorted = symbols.sorted { $0.line < $1.line }
+        var best: EditorSymbol?
+        for symbol in sorted {
+            if symbol.line <= cursorLine {
+                best = symbol
+            } else {
+                break
+            }
+        }
+        return best
+    }
+
+    /// Returns sibling file/folder names at a given path depth in the file tree.
+    func siblingsAtPathLevel(_ components: [String], level: Int) -> [FileTreeNode] {
+        guard level >= 0 else { return [] }
+        var nodes = fileTree
+        for i in 0..<level {
+            guard i < components.count else { return [] }
+            if let parent = nodes.first(where: { $0.name == components[i] && $0.isFolder }) {
+                nodes = parent.children
+            } else {
+                return []
+            }
+        }
+        return nodes.sorted { lhs, rhs in
+            if lhs.isFolder != rhs.isFolder { return lhs.isFolder }
+            return lhs.name.localizedCompare(rhs.name) == .orderedAscending
+        }
+    }
+
     @Published var fileTree: [FileTreeNode] = []
 
     /// The project root path, if loaded from a real directory.

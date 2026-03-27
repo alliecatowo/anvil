@@ -1,9 +1,10 @@
 import SwiftUI
 
 struct EditorMode: View {
-    @StateObject private var viewModel = EditorViewModel()
     @EnvironmentObject private var deps: DependencyContainer
     @EnvironmentObject private var appState: AppState
+
+    private var viewModel: EditorViewModel { appState.editorViewModel }
 
     var body: some View {
         Group {
