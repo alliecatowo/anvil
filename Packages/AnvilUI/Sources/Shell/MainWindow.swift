@@ -75,6 +75,10 @@ public struct MainWindow: View {
             if appState.isProjectSwitcherVisible {
                 ProjectSwitcher()
             }
+            if appState.isCodebaseQAVisible {
+                CodebaseQAView()
+                    .environmentObject(container)
+            }
         }
         .sheet(isPresented: $appState.isProjectNotesVisible) {
             ProjectNotes()

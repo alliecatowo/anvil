@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import AnvilDomain
 import AnvilGitHub
 
@@ -132,6 +133,47 @@ final class NotificationsViewModel: ObservableObject {
                 source: item.source
             )
         }
+    }
+
+    // MARK: - Notification Actions
+
+    /// Open the relevant item — navigates to the right mode or opens the URL externally.
+    func openNotificationItem(_ item: InboxItem, appState: AppState) {
+        markAsRead(item.id)
+
+        // If the notification has a URL, try to navigate within the app first
+        switch item.source {
+        case .pr:
+            // Switch to Review mode for PR notifications
+            appState.switchMode(.review)
+        case .error:
+            // Error notifications could go to an observability mode in the future
+            openURLIfPresent(item.notification.url)
+        case .deploy:
+            // Deploy notifications go to Ship mode
+            appState.switchMode(.ship)
+        case .message, .mention:
+            // Message/mention notifications go to Messaging mode
+            appState.switchMode(.messaging)
+        }
+
+        // If we have a URL and it's a GitHub URL, also open externally
+        if let url = item.notification.url, item.source == .pr {
+            openURLIfPresent(url)
+        }
+    }
+
+    /// Approve a PR directly from the notification inbox (opens the PR URL for now).
+    func approvePR(for item: InboxItem) {
+        markAsRead(item.id)
+        // Open the PR URL so the user can approve in GitHub
+        // A future enhancement could use the GitHub API to approve directly
+        openURLIfPresent(item.notification.url)
+    }
+
+    private func openURLIfPresent(_ urlString: String?) {
+        guard let urlString, let url = URL(string: urlString) else { return }
+        NSWorkspace.shared.open(url)
     }
 
     // MARK: - Sample Data

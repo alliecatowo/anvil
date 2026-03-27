@@ -119,6 +119,11 @@ public struct AnvilCommands: Commands {
                 appState.toggleProjectNotes()
             }
             .keyboardShortcut("n", modifiers: [.command, .shift])
+
+            Button("Ask Codebase (Q&A)") {
+                appState.toggleCodebaseQA()
+            }
+            .keyboardShortcut("/", modifiers: .command)
         }
     }
 

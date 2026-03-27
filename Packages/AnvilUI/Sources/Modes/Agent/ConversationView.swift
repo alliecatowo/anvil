@@ -27,6 +27,14 @@ struct ConversationView: View {
     var onApproveToolCall: ((Bool) -> Void)?
     var onRejectToolCall: ((Bool) -> Void)?
     var onCreatePR: (() -> Void)?
+    var plan: AgentPlan?
+    var onApprovePlan: (() -> Void)?
+    var onCancelPlan: (() -> Void)?
+    var onSkipPlanStep: ((String) -> Void)?
+    var onAnnotatePlanStep: ((String, String) -> Void)?
+    var onReorderPlanStep: ((String, Int) -> Void)?
+    var onAddPlanStep: ((String, String?) -> Void)?
+    var onRemovePlanStep: ((String) -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -90,6 +98,23 @@ struct ConversationView: View {
                         }
                     }
                 }
+            }
+
+            // Agent plan view (shown when a plan exists)
+            if let plan = plan {
+                AgentPlanView(
+                    plan: plan,
+                    onApprove: { onApprovePlan?() },
+                    onCancel: { onCancelPlan?() },
+                    onSkipStep: { stepId in onSkipPlanStep?(stepId) },
+                    onAnnotateStep: { stepId, text in onAnnotatePlanStep?(stepId, text) },
+                    onReorderStep: { stepId, newOrder in onReorderPlanStep?(stepId, newOrder) },
+                    onAddStep: { title, afterId in onAddPlanStep?(title, afterId) },
+                    onRemoveStep: { stepId in onRemovePlanStep?(stepId) }
+                )
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, AnvilSpacing.sm)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
             // Tool approval banner (shown when a tool call needs user decision)

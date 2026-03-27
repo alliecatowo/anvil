@@ -36,7 +36,7 @@ struct KeyEventRouter: ViewModifier {
         if hasModifiers { return .ignored }
 
         // Skip when command palette, quick capture, or any overlay is active
-        if appState.isCommandPaletteVisible || appState.isQuickCaptureVisible {
+        if appState.isCommandPaletteVisible || appState.isQuickCaptureVisible || appState.isCodebaseQAVisible {
             return .ignored
         }
 
@@ -99,6 +99,18 @@ struct KeyEventRouter: ViewModifier {
         // Dismiss quick capture
         if appState.isQuickCaptureVisible {
             appState.toggleQuickCapture()
+            return .handled
+        }
+
+        // Dismiss codebase Q&A
+        if appState.isCodebaseQAVisible {
+            appState.toggleCodebaseQA()
+            return .handled
+        }
+
+        // Dismiss project search
+        if appState.isProjectSearchVisible {
+            appState.toggleProjectSearch()
             return .handled
         }
 

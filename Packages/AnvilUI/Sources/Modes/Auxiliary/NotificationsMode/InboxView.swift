@@ -1,8 +1,11 @@
 import SwiftUI
+import AppKit
 import AnvilDomain
 
 struct InboxView: View {
     @ObservedObject var viewModel: NotificationsViewModel
+    @EnvironmentObject var appState: AppState
+    @State private var hoveredItemID: String?
 
     private let timeFormatter: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
@@ -101,18 +104,81 @@ struct InboxView: View {
 
             Spacer()
 
-            // Timestamp
-            Text(timeFormatter.localizedString(for: item.notification.createdAt, relativeTo: .now))
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
+            // Action buttons (visible on hover) or timestamp
+            if hoveredItemID == item.id {
+                actionButtons(for: item)
+            } else {
+                Text(timeFormatter.localizedString(for: item.notification.createdAt, relativeTo: .now))
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+            }
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.md)
         .background(viewModel.selectedItemID == item.id ? AnvilColor.selectionBackground : .clear)
         .contentShape(Rectangle())
+        .onHover { isHovered in
+            hoveredItemID = isHovered ? item.id : nil
+        }
         .onTapGesture {
             viewModel.selectedItemID = item.id
         }
+    }
+
+    // MARK: - Action Buttons
+
+    private func actionButtons(for item: InboxItem) -> some View {
+        HStack(spacing: AnvilSpacing.xs) {
+            // Source-specific actions
+            switch item.source {
+            case .pr:
+                actionButton(icon: "eye", label: "View PR") {
+                    viewModel.openNotificationItem(item, appState: appState)
+                }
+                actionButton(icon: "checkmark.circle", label: "Approve") {
+                    viewModel.approvePR(for: item)
+                }
+
+            case .deploy:
+                actionButton(icon: "doc.text.magnifyingglass", label: "View Logs") {
+                    viewModel.openNotificationItem(item, appState: appState)
+                }
+
+            case .error:
+                actionButton(icon: "exclamationmark.magnifyingglass", label: "View Error") {
+                    viewModel.openNotificationItem(item, appState: appState)
+                }
+
+            case .message, .mention:
+                actionButton(icon: "arrowshape.turn.up.left", label: "Reply") {
+                    viewModel.openNotificationItem(item, appState: appState)
+                }
+            }
+
+            // Mark as read (all types)
+            if !item.notification.isRead {
+                actionButton(icon: "checkmark", label: "Mark Read") {
+                    viewModel.markAsRead(item.id)
+                }
+            }
+        }
+    }
+
+    private func actionButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 11))
+                .foregroundStyle(AnvilColor.textSecondary)
+                .frame(width: 24, height: 24)
+                .background(AnvilColor.backgroundElevated)
+                .clipShape(RoundedRectangle(cornerRadius: 5))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .stroke(AnvilColor.borderSubtle, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .help(label)
     }
 
     // MARK: - Keyboard Hints

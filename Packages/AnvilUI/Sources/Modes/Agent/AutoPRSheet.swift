@@ -24,7 +24,7 @@ struct AutoPRSheet: View {
 
     @State private var state: AutoPRState = .generating
     @State private var title: String = ""
-    @State private var body: String = ""
+    @State private var prBody: String = ""
     @State private var sourceBranch: String = ""
     @State private var targetBranch: String = "main"
     @State private var isDraft: Bool = false

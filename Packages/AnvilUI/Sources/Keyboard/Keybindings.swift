@@ -61,6 +61,7 @@ public enum AnvilKeybindings {
         Keybinding(id: "cmd-comma", key: ",", modifiers: .command, action: "settings", label: "Settings"),
         Keybinding(id: "cmd-period", key: ".", modifiers: .command, action: "quickActions", label: "Quick Actions"),
         Keybinding(id: "cmd-shift-o", key: "o", modifiers: [.command, .shift], action: "projectSwitcher", label: "Switch Project"),
+        Keybinding(id: "cmd-shift-f", key: "f", modifiers: [.command, .shift], action: "projectSearch", label: "Find in Project"),
         Keybinding(id: "ctrl-g", key: "g", modifiers: .control, action: "goToLine", label: "Go to Line"),
 
         // MARK: - List Navigation

@@ -100,6 +100,7 @@ public class AppState: ObservableObject {
     /// Project-wide search panel (⌘⇧F).
     @Published public var isProjectSearchVisible: Bool = false
     @Published public var isQuickCaptureVisible: Bool = false
+    @Published public var isCodebaseQAVisible: Bool = false
     @Published public var isProjectNotesVisible: Bool = false
     @Published public var isProjectSwitcherVisible: Bool = false
     @Published public var isProjectInfoVisible: Bool = false
@@ -240,6 +241,12 @@ public class AppState: ObservableObject {
     public func toggleQuickCapture() {
         withAnimation(AnvilAnimation.commandPaletteAppear) {
             isQuickCaptureVisible.toggle()
+        }
+    }
+
+    public func toggleCodebaseQA() {
+        withAnimation(AnvilAnimation.commandPaletteAppear) {
+            isCodebaseQAVisible.toggle()
         }
     }
 

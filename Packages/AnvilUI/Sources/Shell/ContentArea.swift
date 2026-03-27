@@ -157,6 +157,28 @@ struct AgentModeContent: View {
                     },
                     onCreatePR: {
                         showAutoPRSheet = true
+                    },
+                    plan: session.plan,
+                    onApprovePlan: {
+                        viewModel.approvePlan(sessionId: session.id)
+                    },
+                    onCancelPlan: {
+                        viewModel.cancelPlan(sessionId: session.id)
+                    },
+                    onSkipPlanStep: { stepId in
+                        viewModel.skipPlanStep(sessionId: session.id, stepId: stepId)
+                    },
+                    onAnnotatePlanStep: { stepId, text in
+                        viewModel.annotatePlanStep(sessionId: session.id, stepId: stepId, annotation: text)
+                    },
+                    onReorderPlanStep: { stepId, newOrder in
+                        viewModel.reorderPlanStep(sessionId: session.id, stepId: stepId, newOrder: newOrder)
+                    },
+                    onAddPlanStep: { title, afterId in
+                        viewModel.addPlanStep(sessionId: session.id, title: title, afterStepId: afterId)
+                    },
+                    onRemovePlanStep: { stepId in
+                        viewModel.removePlanStep(sessionId: session.id, stepId: stepId)
                     }
                 )
                 .sheet(isPresented: $showAutoPRSheet) {
