@@ -109,6 +109,22 @@ public final class IntentViewModel: ObservableObject {
         relations.filter { $0.sourceId == ticketId || $0.targetId == ticketId }
     }
 
+    func addRelation(type: TicketRelationType, sourceId: String, targetId: String) {
+        guard sourceId != targetId else { return }
+        // Avoid duplicates
+        let exists = relations.contains {
+            ($0.sourceId == sourceId && $0.targetId == targetId && $0.type == type) ||
+            ($0.sourceId == targetId && $0.targetId == sourceId && $0.type == type)
+        }
+        guard !exists else { return }
+        let relation = TicketRelation(type: type, sourceId: sourceId, targetId: targetId)
+        relations.append(relation)
+    }
+
+    func removeRelation(id: String) {
+        relations.removeAll { $0.id == id }
+    }
+
     /// Move a ticket to a new status (used by kanban drag-and-drop).
     func moveTicket(_ ticketId: String, toStatus newStatus: String) {
         guard let idx = tickets.firstIndex(where: { $0.id == ticketId }) else { return }

@@ -124,6 +124,18 @@ public struct AnvilCommands: Commands {
                 appState.toggleCodebaseQA()
             }
             .keyboardShortcut("/", modifiers: .command)
+
+            Divider()
+
+            Button("Split Editor Right") {
+                appState.triggerSplitVertical = true
+            }
+            .keyboardShortcut("\\", modifiers: .command)
+
+            Button("Split Editor Down") {
+                appState.triggerSplitHorizontal = true
+            }
+            .keyboardShortcut("\\", modifiers: [.command, .shift])
         }
     }
 

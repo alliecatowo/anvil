@@ -78,6 +78,23 @@ public struct CommandPalette: View {
                 .frame(width: 20)
                 .animation(.easeOut(duration: 0.12), value: viewModel.paletteMode)
 
+            // Group breadcrumb chip
+            if let group = viewModel.activeGroup {
+                HStack(spacing: 3) {
+                    Text(group.rawValue)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(AnvilColor.accentBlue)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(AnvilColor.textTertiary)
+                }
+                .padding(.horizontal, AnvilSpacing.xs)
+                .padding(.vertical, 3)
+                .background(AnvilColor.accentBlue.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+            }
+
             TextField(placeholder, text: $viewModel.query)
                 .textFieldStyle(.plain)
                 .font(AnvilFont.commandPaletteInput)

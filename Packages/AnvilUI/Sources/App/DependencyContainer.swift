@@ -155,10 +155,66 @@ public class DependencyContainer: ObservableObject {
         _acpPort
     }
 
+    // MARK: - Notification Store (for event-driven notifications)
+
+    @Published public var eventNotifications: [EventNotification] = []
+
+    public struct EventNotification: Identifiable, Sendable {
+        public let id: String
+        public let title: String
+        public let body: String
+        public let timestamp: Date
+
+        public init(id: String = UUID().uuidString, title: String, body: String, timestamp: Date = .now) {
+            self.id = id
+            self.title = title
+            self.body = body
+            self.timestamp = timestamp
+        }
+    }
+
     // MARK: - Init
 
     public init() {
         loadSavedConfiguration()
+        Task { await wireEventHandlers() }
+    }
+
+    // MARK: - Event Bus Wiring
+
+    private func wireEventHandlers() async {
+        // OnAgentCompleted → create review item notification
+        await eventBus.subscribe(to: String(describing: AgentCompletedEvent.self)) { [weak self] event in
+            guard let self, let e = event as? AgentCompletedEvent else { return }
+            let branch = e.branchName.map { " (branch: \($0))" } ?? ""
+            let notification = EventNotification(
+                title: "Agent session completed",
+                body: "Session \(e.sessionId) finished\(branch). Worktree ready for review."
+            )
+            await MainActor.run { self.eventNotifications.insert(notification, at: 0) }
+        }
+
+        // OnPRMerged → notify about linked ticket closure
+        await eventBus.subscribe(to: String(describing: PRMergedEvent.self)) { [weak self] event in
+            guard let self, let e = event as? PRMergedEvent else { return }
+            let ticketSuffix = e.linkedTicketId.map { " Ticket \($0) can be closed." } ?? ""
+            let notification = EventNotification(
+                title: "PR merged",
+                body: "PR \(e.pullRequestId) merged in \(e.repo) [\(e.branch)].\(ticketSuffix)"
+            )
+            await MainActor.run { self.eventNotifications.insert(notification, at: 0) }
+        }
+
+        // OnBuildFailed → create notification
+        await eventBus.subscribe(to: String(describing: BuildFailedEvent.self)) { [weak self] event in
+            guard let self, let e = event as? BuildFailedEvent else { return }
+            let body = e.failureReason.map { "[\(e.branch)] \($0)" } ?? "[\(e.branch)] Build failed in \(e.pipelineName)"
+            let notification = EventNotification(
+                title: "Build failed: \(e.pipelineName)",
+                body: body
+            )
+            await MainActor.run { self.eventNotifications.insert(notification, at: 0) }
+        }
     }
 
     // MARK: - Configuration
@@ -200,6 +256,13 @@ public class DependencyContainer: ObservableObject {
     public func switchToProject(_ projectId: String) async {
         await projectManager.setCurrentProject(projectId)
         guard let project = await projectManager.project(byId: projectId) else { return }
+
+        // Garbage collect stale worktrees from the previous project before switching
+        if let oldAdapter = gitAdapter {
+            Task {
+                try? await worktreeOrchestrator.cleanupStale(provider: oldAdapter)
+            }
+        }
 
         // Use primary repo path for git adapter
         currentProjectPath = project.primaryRepoPath

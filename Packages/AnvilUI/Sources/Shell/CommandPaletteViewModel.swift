@@ -80,6 +80,7 @@ enum CommandAction: Sendable {
     case refreshDeploys
     case cycleWhitespace
     case toggleWordWrap
+    case toggleIndentGuides
     case clearRecentHistory
 
     @MainActor
@@ -131,6 +132,8 @@ enum CommandAction: Sendable {
             appState.editorViewModel.cycleWhitespace()
         case .toggleWordWrap:
             appState.editorViewModel.toggleWordWrap()
+        case .toggleIndentGuides:
+            appState.editorViewModel.showIndentGuides.toggle()
         case .clearRecentHistory:
             break // Handled by the view model directly
         }
@@ -147,6 +150,19 @@ public enum PaletteMode: Equatable {
 
 // MARK: - Command Item
 
+/// Built-in command groups for prefix-based filtering.
+enum PaletteGroup: String, CaseIterable, Sendable {
+    case git = "Git"
+    case terminal = "Terminal"
+    case editor = "Editor"
+    case view = "View"
+    case file = "File"
+    case debug = "Debug"
+
+    /// The prefix the user types (e.g., "Git: ").
+    var prefix: String { "\(rawValue): " }
+}
+
 struct CommandItem: Identifiable, Sendable {
     let id: String
     let title: String
@@ -155,6 +171,7 @@ struct CommandItem: Identifiable, Sendable {
     let iconColor: Color?
     let shortcut: String?
     let category: CommandCategory
+    let group: PaletteGroup?
     let action: CommandAction
 
     init(
@@ -165,6 +182,7 @@ struct CommandItem: Identifiable, Sendable {
         iconColor: Color? = nil,
         shortcut: String? = nil,
         category: CommandCategory,
+        group: PaletteGroup? = nil,
         action: CommandAction
     ) {
         self.id = id
@@ -174,6 +192,7 @@ struct CommandItem: Identifiable, Sendable {
         self.iconColor = iconColor
         self.shortcut = shortcut
         self.category = category
+        self.group = group
         self.action = action
     }
 }
@@ -241,6 +260,8 @@ final class CommandPaletteViewModel: ObservableObject {
     @Published private(set) var fileMatchedIndicesMap: [String: Set<Int>] = [:]
     @Published private(set) var symbolMatchedIndicesMap: [String: Set<Int>] = [:]
     @Published var paletteMode: PaletteMode = .commands
+    /// Active command group when the user has typed a group prefix (e.g., "Git: ").
+    @Published private(set) var activeGroup: PaletteGroup? = nil
     @Published private(set) var isLoadingFiles = false
     /// Number of recent files at the start of filteredFileResults (for section headers in the view).
     @Published private(set) var recentFileCount = 0
@@ -309,10 +330,23 @@ final class CommandPaletteViewModel: ObservableObject {
         switch paletteMode {
         case .commands:
             let effectiveQuery = query.hasPrefix(">") ? String(query.dropFirst()).trimmingCharacters(in: .whitespaces) : query
-            searchCommands(effectiveQuery)
+            // Detect group prefix (e.g., "Git: ", "Editor: ")
+            let detectedGroup = PaletteGroup.allCases.first { group in
+                effectiveQuery.lowercased().hasPrefix(group.rawValue.lowercased() + ": ")
+            }
+            activeGroup = detectedGroup
+            let searchQuery: String
+            if let group = detectedGroup {
+                searchQuery = String(effectiveQuery.dropFirst(group.prefix.count)).trimmingCharacters(in: .whitespaces)
+            } else {
+                searchQuery = effectiveQuery
+            }
+            searchCommands(searchQuery)
         case .files:
+            activeGroup = nil
             searchFiles(query)
         case .symbols:
+            activeGroup = nil
             let effectiveQuery = query.hasPrefix("@") ? String(query.dropFirst()).trimmingCharacters(in: .whitespaces) : query
             searchSymbols(effectiveQuery)
         }
@@ -370,6 +404,7 @@ final class CommandPaletteViewModel: ObservableObject {
             icon: "magnifyingglass",
             shortcut: "\u{2318}\u{21E7}F",
             category: .actions,
+            group: .file,
             action: .searchInFiles
         ))
 
@@ -391,6 +426,7 @@ final class CommandPaletteViewModel: ObservableObject {
             icon: "sidebar.left",
             shortcut: "\u{2318}B",
             category: .navigation,
+            group: .view,
             action: .toggleSidebar
         ))
 
@@ -400,6 +436,7 @@ final class CommandPaletteViewModel: ObservableObject {
             icon: "sidebar.right",
             shortcut: "\u{2318}\u{21E7}I",
             category: .navigation,
+            group: .view,
             action: .toggleInspector
         ))
 
@@ -409,6 +446,7 @@ final class CommandPaletteViewModel: ObservableObject {
             icon: "terminal",
             shortcut: "\u{2318}J",
             category: .navigation,
+            group: .terminal,
             action: .toggleTerminal
         ))
 
@@ -432,8 +470,8 @@ final class CommandPaletteViewModel: ObservableObject {
             ]
         case .review:
             return [
-                CommandItem(id: "ctx-refresh-prs", title: "Refresh Pull Requests", icon: "arrow.clockwise", iconColor: AnvilColor.accentPurple, category: .contextual, action: .refreshPRs),
-                CommandItem(id: "ctx-source-control", title: "Toggle Source Control Panel", icon: "arrow.triangle.branch", category: .contextual, action: .toggleSourceControl),
+                CommandItem(id: "ctx-refresh-prs", title: "Refresh Pull Requests", icon: "arrow.clockwise", iconColor: AnvilColor.accentPurple, category: .contextual, group: .git, action: .refreshPRs),
+                CommandItem(id: "ctx-source-control", title: "Toggle Source Control Panel", icon: "arrow.triangle.branch", category: .contextual, group: .git, action: .toggleSourceControl),
             ]
         case .ship:
             return [
@@ -441,10 +479,11 @@ final class CommandPaletteViewModel: ObservableObject {
             ]
         case .editor:
             return [
-                CommandItem(id: "ctx-source-control", title: "Toggle Source Control Panel", icon: "arrow.triangle.branch", category: .contextual, action: .toggleSourceControl),
-                CommandItem(id: "ctx-search-files", title: "Search in Files", icon: "magnifyingglass", shortcut: "\u{2318}\u{21E7}F", category: .contextual, action: .searchInFiles),
-                CommandItem(id: "ctx-toggle-whitespace", title: "Toggle Whitespace Visibility", subtitle: "Cycle: None → Boundary → All", icon: "eye", category: .contextual, action: .cycleWhitespace),
-                CommandItem(id: "ctx-toggle-wordwrap", title: "Toggle Word Wrap", icon: "text.word.spacing", shortcut: "\u{2325}Z", category: .contextual, action: .toggleWordWrap),
+                CommandItem(id: "ctx-source-control", title: "Toggle Source Control Panel", icon: "arrow.triangle.branch", category: .contextual, group: .git, action: .toggleSourceControl),
+                CommandItem(id: "ctx-search-files", title: "Search in Files", icon: "magnifyingglass", shortcut: "\u{2318}\u{21E7}F", category: .contextual, group: .file, action: .searchInFiles),
+                CommandItem(id: "ctx-toggle-whitespace", title: "Toggle Whitespace Visibility", subtitle: "Cycle: None → Boundary → All", icon: "eye", category: .contextual, group: .editor, action: .cycleWhitespace),
+                CommandItem(id: "ctx-toggle-wordwrap", title: "Toggle Word Wrap", icon: "text.word.spacing", shortcut: "\u{2325}Z", category: .contextual, group: .editor, action: .toggleWordWrap),
+                CommandItem(id: "ctx-toggle-indent-guides", title: "Toggle Indent Guides", icon: "line.3.horizontal", category: .contextual, group: .editor, action: .toggleIndentGuides),
             ]
         case .database:
             return [
@@ -464,20 +503,30 @@ final class CommandPaletteViewModel: ObservableObject {
     func searchCommands(_ query: String) {
         var newMap: [String: Set<Int>] = [:]
 
+        // Filter items by active group
+        let sourceItems = activeGroup != nil
+            ? allItems.filter { $0.group == activeGroup }
+            : allItems
+
         if query.isEmpty {
-            // Show recent items above the full command list
-            let recents = recentItems
-            if recents.isEmpty {
-                filteredItems = allItems
+            if activeGroup != nil {
+                // In a group: show all group items
+                filteredItems = sourceItems
             } else {
-                let clearItem = CommandItem(
-                    id: "clear-recent-history",
-                    title: "Clear Recent History",
-                    icon: "xmark.circle",
-                    category: .recent,
-                    action: .clearRecentHistory
-                )
-                filteredItems = recents + [clearItem] + allItems
+                // Show recent items above the full command list
+                let recents = recentItems
+                if recents.isEmpty {
+                    filteredItems = sourceItems
+                } else {
+                    let clearItem = CommandItem(
+                        id: "clear-recent-history",
+                        title: "Clear Recent History",
+                        icon: "xmark.circle",
+                        category: .recent,
+                        action: .clearRecentHistory
+                    )
+                    filteredItems = recents + [clearItem] + sourceItems
+                }
             }
             matchedIndicesMap = [:]
             selectedIndex = 0
@@ -485,7 +534,7 @@ final class CommandPaletteViewModel: ObservableObject {
         }
 
         var scored: [(item: CommandItem, score: Int)] = []
-        for item in allItems {
+        for item in sourceItems {
             if let result = FuzzyMatch.match(query: query, target: item.title) {
                 scored.append((item, result.score))
                 newMap[item.id] = result.matchedIndices

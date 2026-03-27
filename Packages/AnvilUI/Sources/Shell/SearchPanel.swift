@@ -314,19 +314,18 @@ struct SearchPanel: View {
         }
     }
 
+    @ViewBuilder
     private func highlightedLineContent(_ match: SearchMatch) -> some View {
         let line = match.lineContent.trimmingCharacters(in: .whitespaces)
-        // Build attributed text with highlight
         let searchLower = viewModel.matchCase ? viewModel.searchText : viewModel.searchText.lowercased()
         let lineLower = viewModel.matchCase ? line : line.lowercased()
 
-        // Find match position in trimmed line
         if let range = lineLower.range(of: searchLower) {
             let before = String(line[line.startIndex..<range.lowerBound])
             let matched = String(line[range])
             let after = String(line[range.upperBound...])
 
-            return HStack(spacing: 0) {
+            HStack(spacing: 0) {
                 Text(before)
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(AnvilColor.textSecondary)
@@ -339,7 +338,7 @@ struct SearchPanel: View {
                     .foregroundStyle(AnvilColor.textSecondary)
             }
         } else {
-            return HStack(spacing: 0) {
+            HStack(spacing: 0) {
                 Text(line)
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(AnvilColor.textSecondary)

@@ -9,6 +9,9 @@ struct TicketDetailView: View {
 
     @State private var branchCreated: String?
     @State private var isDispatching = false
+    @State private var showingLinkPopover = false
+    @State private var linkRelationType: TicketRelationType = .related
+    @State private var linkTargetSearch = ""
 
     var body: some View {
         if let ticket = viewModel.selectedTicket {
@@ -274,20 +277,111 @@ struct TicketDetailView: View {
 
     private func relatedSection(_ ticket: Ticket) -> some View {
         let relations = viewModel.relationsFor(ticket.id)
-        return Group {
-            if !relations.isEmpty {
-                VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-                    Text("RELATED")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                        .tracking(0.3)
+        return VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+            HStack {
+                Text("RELATED")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .tracking(0.3)
 
-                    ForEach(relations) { relation in
-                        relationRow(relation, currentId: ticket.id)
-                    }
+                Spacer()
+
+                AnvilButton("Link Ticket", icon: "link.badge.plus", style: .ghost) {
+                    showingLinkPopover.toggle()
+                }
+                .popover(isPresented: $showingLinkPopover) {
+                    linkTicketPopover(ticket)
+                }
+            }
+
+            if relations.isEmpty {
+                Text("No linked tickets")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .italic()
+            } else {
+                ForEach(relations) { relation in
+                    relationRow(relation, currentId: ticket.id)
                 }
             }
         }
+    }
+
+    // MARK: - Link Ticket Popover
+
+    private func linkTicketPopover(_ ticket: Ticket) -> some View {
+        let candidates = viewModel.tickets.filter { $0.id != ticket.id }
+        let filtered = linkTargetSearch.isEmpty
+            ? candidates
+            : candidates.filter {
+                $0.id.localizedCaseInsensitiveContains(linkTargetSearch) ||
+                $0.title.localizedCaseInsensitiveContains(linkTargetSearch)
+            }
+
+        return VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+            Text("Link Ticket")
+                .font(AnvilFont.subheading)
+                .foregroundStyle(AnvilColor.textPrimary)
+
+            // Relation type picker
+            HStack(spacing: AnvilSpacing.xs) {
+                ForEach([TicketRelationType.blocks, .blockedBy, .parent, .child, .related, .duplicate], id: \.rawValue) { type in
+                    Button {
+                        linkRelationType = type
+                    } label: {
+                        Text(relationLabel(type, isSource: true))
+                            .font(AnvilFont.label)
+                            .foregroundStyle(linkRelationType == type ? AnvilColor.textPrimary : AnvilColor.textTertiary)
+                            .padding(.horizontal, AnvilSpacing.sm)
+                            .padding(.vertical, AnvilSpacing.xxs)
+                            .background(linkRelationType == type ? relationColor(type).opacity(0.2) : AnvilColor.backgroundSecondary)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            // Search
+            TextField("Search tickets...", text: $linkTargetSearch)
+                .textFieldStyle(.plain)
+                .font(AnvilFont.body)
+                .foregroundStyle(AnvilColor.textPrimary)
+                .padding(AnvilSpacing.sm)
+                .background(AnvilColor.backgroundSecondary)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+
+            // Results
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(filtered.prefix(10)) { candidate in
+                        Button {
+                            viewModel.addRelation(type: linkRelationType, sourceId: ticket.id, targetId: candidate.id)
+                            linkTargetSearch = ""
+                            showingLinkPopover = false
+                        } label: {
+                            HStack(spacing: AnvilSpacing.sm) {
+                                Text(candidate.id)
+                                    .font(AnvilFont.code)
+                                    .foregroundStyle(AnvilColor.accentBlue)
+                                Text(candidate.title)
+                                    .font(AnvilFont.body)
+                                    .foregroundStyle(AnvilColor.textSecondary)
+                                    .lineLimit(1)
+                                Spacer()
+                            }
+                            .padding(.vertical, AnvilSpacing.xs)
+                            .padding(.horizontal, AnvilSpacing.sm)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        Divider().overlay(AnvilColor.borderSubtle)
+                    }
+                }
+            }
+            .frame(maxHeight: 200)
+        }
+        .padding(AnvilSpacing.lg)
+        .frame(width: 400)
     }
 
     private func relationRow(_ relation: TicketRelation, currentId: String) -> some View {

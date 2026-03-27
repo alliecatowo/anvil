@@ -8,6 +8,7 @@ import AnvilGitHub
 enum NotificationsTab: String, CaseIterable {
     case inbox = "Inbox"
     case activity = "Activity"
+    case preferences = "Preferences"
 }
 
 // MARK: - Notification Source (UI-level)
@@ -69,8 +70,14 @@ final class NotificationsViewModel: ObservableObject {
 
     // MARK: Computed
 
+    /// Items filtered by the user's notification preferences (source toggles, urgency, rules).
+    var filteredInboxItems: [InboxItem] {
+        let preferences = NotificationPreferences.shared
+        return inboxItems.filter { preferences.shouldShow($0) }
+    }
+
     var unreadCount: Int {
-        inboxItems.filter { !$0.notification.isRead }.count
+        filteredInboxItems.filter { !$0.notification.isRead }.count
     }
 
     // MARK: Init

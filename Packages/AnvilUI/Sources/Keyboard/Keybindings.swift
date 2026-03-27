@@ -63,6 +63,8 @@ public enum AnvilKeybindings {
         Keybinding(id: "cmd-shift-o", key: "o", modifiers: [.command, .shift], action: "projectSwitcher", label: "Switch Project"),
         Keybinding(id: "cmd-shift-f", key: "f", modifiers: [.command, .shift], action: "projectSearch", label: "Find in Project"),
         Keybinding(id: "ctrl-g", key: "g", modifiers: .control, action: "goToLine", label: "Go to Line"),
+        Keybinding(id: "cmd-backslash", key: "\\", modifiers: .command, action: "splitVertical", context: .editor, label: "Split Editor Right"),
+        Keybinding(id: "cmd-shift-backslash", key: "\\", modifiers: [.command, .shift], action: "splitHorizontal", context: .editor, label: "Split Editor Down"),
 
         // MARK: - List Navigation
 

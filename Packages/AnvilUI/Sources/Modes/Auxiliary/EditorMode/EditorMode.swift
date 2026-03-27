@@ -5,6 +5,7 @@ struct EditorMode: View {
     @EnvironmentObject private var appState: AppState
 
     private var viewModel: EditorViewModel { appState.editorViewModel }
+    private var splitState: SplitEditorState { appState.splitEditorState }
 
     var body: some View {
         Group {
@@ -47,7 +48,25 @@ struct EditorMode: View {
         .onChange(of: appState.triggerFindInFile) { _, trigger in
             if trigger {
                 appState.triggerFindInFile = false
-                viewModel.toggleFindBar()
+                splitState.activePane.viewModel.toggleFindBar()
+            }
+        }
+        .onChange(of: appState.triggerSplitVertical) { _, trigger in
+            if trigger {
+                appState.triggerSplitVertical = false
+                splitState.splitVertical(
+                    projectPath: deps.currentProjectPath,
+                    fileSystemService: deps.fileSystemService
+                )
+            }
+        }
+        .onChange(of: appState.triggerSplitHorizontal) { _, trigger in
+            if trigger {
+                appState.triggerSplitHorizontal = false
+                splitState.splitHorizontal(
+                    projectPath: deps.currentProjectPath,
+                    fileSystemService: deps.fileSystemService
+                )
             }
         }
         .toolbar {
@@ -67,11 +86,11 @@ struct EditorMode: View {
 
             ToolbarItem(placement: .automatic) {
                 Button {
-                    viewModel.toggleSymbolOutline()
+                    splitState.activePane.viewModel.toggleSymbolOutline()
                 } label: {
                     Image(systemName: "list.bullet.indent")
                         .foregroundStyle(
-                            viewModel.isSymbolOutlineVisible
+                            splitState.activePane.viewModel.isSymbolOutlineVisible
                                 ? AnvilColor.accentBlue
                                 : AnvilColor.textTertiary
                         )
@@ -98,39 +117,66 @@ struct EditorMode: View {
 
             Divider().overlay(AnvilColor.borderSubtle)
 
-            // Center: Code editor
-            VStack(spacing: 0) {
-                EditorTabBar(viewModel: viewModel)
+            // Center: Editor pane(s)
+            editorPaneArea
 
+            // Right: Symbol outline for active pane
+            if splitState.activePane.viewModel.isSymbolOutlineVisible {
                 Divider().overlay(AnvilColor.borderSubtle)
 
-                BreadcrumbBar(viewModel: viewModel)
-
-                Divider().overlay(AnvilColor.borderSubtle)
-
-                // Find & Replace bar
-                if viewModel.isFindBarVisible {
-                    FindReplaceBar(viewModel: viewModel)
-
-                    Divider().overlay(AnvilColor.borderSubtle)
-                }
-
-                // Read-only banner
-                if viewModel.isSelectedFileReadOnly {
-                    ReadOnlyBanner(viewModel: viewModel)
-                }
-
-                EditorView(viewModel: viewModel)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-
-            // Right: Symbol outline (toggleable)
-            if viewModel.isSymbolOutlineVisible {
-                Divider().overlay(AnvilColor.borderSubtle)
-
-                SymbolOutline(viewModel: viewModel)
+                SymbolOutline(viewModel: splitState.activePane.viewModel)
                     .frame(width: 220)
                     .background(AnvilColor.backgroundSecondary)
+            }
+        }
+    }
+
+    // MARK: - Editor Pane Area
+
+    @ViewBuilder
+    private var editorPaneArea: some View {
+        let primary = splitState.primaryPane
+        let activeId = splitState.activePaneId
+
+        if splitState.splitDirection == .none {
+            // Single pane — no split
+            EditorPaneView(
+                viewModel: primary.viewModel,
+                splitState: splitState,
+                paneId: primary.id,
+                isActive: true,
+                onFocus: { splitState.setActivePane(primary.id) },
+                onClose: nil
+            )
+        } else if let secondary = splitState.secondaryPane {
+            // Split mode — use AnvilSplitView
+            let orientation: SplitOrientation = splitState.splitDirection == .vertical
+                ? .horizontal  // vertical split = side by side = horizontal layout
+                : .vertical    // horizontal split = top/bottom = vertical layout
+
+            AnvilSplitView(
+                initialRatio: 0.5,
+                minLeftWidth: 200,
+                minRightWidth: 200,
+                orientation: orientation
+            ) {
+                EditorPaneView(
+                    viewModel: primary.viewModel,
+                    splitState: splitState,
+                    paneId: primary.id,
+                    isActive: activeId == primary.id,
+                    onFocus: { splitState.setActivePane(primary.id) },
+                    onClose: { splitState.closePane(primary.id) }
+                )
+            } right: {
+                EditorPaneView(
+                    viewModel: secondary.viewModel,
+                    splitState: splitState,
+                    paneId: secondary.id,
+                    isActive: activeId == secondary.id,
+                    onFocus: { splitState.setActivePane(secondary.id) },
+                    onClose: { splitState.closePane(secondary.id) }
+                )
             }
         }
     }

@@ -105,6 +105,13 @@ struct EditorView: View {
                         )
                         .frame(width: gutterWidth, alignment: .trailing)
                         .padding(.trailing, AnvilSpacing.sm)
+
+                    // Git change indicator
+                    if viewModel.showGitGutter, let change = viewModel.gitLineChanges[lineNumber] {
+                        gitChangeIndicator(change)
+                    } else {
+                        Color.clear.frame(width: 3)
+                    }
                 }
                 .frame(height: 20)
                 .background(
@@ -123,7 +130,11 @@ struct EditorView: View {
     // MARK: - Code Content
 
     private func codeContent(lines: [String], selectedRange: ClosedRange<Int>?) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        let activeIndent = viewModel.showIndentGuides
+            ? activeIndentLevel(lines: lines, cursorLine: viewModel.cursorLine)
+            : 0
+
+        return VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
                 let lineNumber = index + 1
                 let isSelected = selectedRange?.contains(lineNumber) ?? false
@@ -134,6 +145,15 @@ struct EditorView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.leading, AnvilSpacing.md)
                     .padding(.trailing, AnvilSpacing.xxl)
+                    .overlay(alignment: .leading) {
+                        if viewModel.showIndentGuides {
+                            indentGuides(
+                                for: line,
+                                activeLevel: activeIndent
+                            )
+                            .padding(.leading, AnvilSpacing.md)
+                        }
+                    }
                     .background(
                         lineBackground(
                             lineNumber: lineNumber,
@@ -150,6 +170,70 @@ struct EditorView: View {
                     )
             }
         }
+    }
+
+    // MARK: - Indent Guides
+
+    /// Returns the indent level of a line (number of indentation stops).
+    private func indentLevel(of line: String) -> Int {
+        let tabSize = viewModel.tabSize
+        var spaces = 0
+        for char in line {
+            if char == " " {
+                spaces += 1
+            } else if char == "\t" {
+                spaces += tabSize
+            } else {
+                break
+            }
+        }
+        return spaces / max(tabSize, 1)
+    }
+
+    /// Determines the active indent level based on the cursor line's indentation.
+    private func activeIndentLevel(lines: [String], cursorLine: Int) -> Int {
+        let index = cursorLine - 1
+        guard index >= 0 && index < lines.count else { return 0 }
+        let level = indentLevel(of: lines[index])
+        // If the cursor line is blank/empty, look at surrounding lines for context
+        if lines[index].trimmingCharacters(in: .whitespaces).isEmpty && level == 0 {
+            // Search backward for a non-empty line
+            for i in stride(from: index - 1, through: 0, by: -1) {
+                let trimmed = lines[i].trimmingCharacters(in: .whitespaces)
+                if !trimmed.isEmpty {
+                    return indentLevel(of: lines[i])
+                }
+            }
+        }
+        return level
+    }
+
+    /// Renders vertical indent guide lines for a given line.
+    private func indentGuides(for line: String, activeLevel: Int) -> some View {
+        let lineLevel = indentLevel(of: line)
+        // Show guides for all indentation levels visible on this line.
+        // For a line at level 3, show guides at levels 1, 2, 3.
+        // For blank lines, use the maximum of surrounding context (we approximate with lineLevel).
+        let maxLevel = max(lineLevel, line.trimmingCharacters(in: .whitespaces).isEmpty ? activeLevel : lineLevel)
+        let charWidth: CGFloat = 7.7 // approximate monospace character width at code font size
+        let tabSize = CGFloat(viewModel.tabSize)
+
+        return ZStack(alignment: .leading) {
+            ForEach(1...max(maxLevel, 1), id: \.self) { level in
+                if level <= maxLevel {
+                    Rectangle()
+                        .fill(
+                            level == activeLevel
+                                ? AnvilColor.textTertiary.opacity(0.35)
+                                : AnvilColor.textTertiary.opacity(0.12)
+                        )
+                        .frame(width: 1)
+                        .offset(x: CGFloat(level - 1) * tabSize * charWidth + tabSize * charWidth * 0.5)
+                }
+            }
+        }
+        .frame(height: 20)
+        .allowsHitTesting(false)
     }
 
     // MARK: - Line Click Handling

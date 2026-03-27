@@ -23,7 +23,7 @@ struct InboxView: View {
             // Items
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    ForEach(viewModel.inboxItems) { item in
+                    ForEach(viewModel.filteredInboxItems) { item in
                         inboxRow(item)
                         Divider().overlay(AnvilColor.borderSubtle)
                     }

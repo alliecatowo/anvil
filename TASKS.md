@@ -1,6 +1,6 @@
 # Anvil Task List
 
-**Total: 399 tasks | Completed: 70 | In Progress: 4 | Pending: 325**
+**Total: 399 tasks | Completed: 73 | In Progress: 3 | Pending: 323**
 
 ## Completed
 
@@ -32,6 +32,7 @@
 - [x] #36 Implement drag-and-drop on kanban board
 - [x] #37 Add quick-create ticket inline on kanban board
 - [x] #39 Build notification badges on mode tabs in sidebar
+- [x] #42 Implement split editor (vertical/horizontal panes)
 - [x] #43 Add file search in command palette (open any file by name)
 - [x] #44 Add symbol search in command palette (go to function/class)
 - [x] #45 Implement stash management in source control panel
@@ -46,10 +47,12 @@
 - [x] #77 Add terminal bottom panel (always available across modes)
 - [x] #83 Build real notification sources (GitHub webhooks, CI events)
 - [x] #84 Implement desktop notifications (macOS native)
+- [x] #85 Add notification preferences and filtering rules
 - [x] #86 Add action buttons on notifications (approve PR, view error)
 - [x] #89 Build git graph visualization (branch topology)
 - [x] #95 Implement breadcrumb navigation at top of editor
 - [x] #98 Add contextual commands per mode in command palette
+- [x] #99 Add nested commands with prefix grouping in command palette
 - [x] #103 Build ticket-to-branch-to-agent pipeline button
 - [x] #105 Implement due date and overdue highlighting on tickets
 - [x] #145 Build plugin marketplace browser — search, install, manage plugins
@@ -77,9 +80,8 @@
 
 ## In Progress
 
-- [ ] #42 Implement split editor (vertical/horizontal panes)
-- [ ] #85 Add notification preferences and filtering rules
-- [ ] #99 Add nested commands with prefix grouping in command palette
+- [ ] #33 Implement git decorations in editor gutter
+- [ ] #66 Implement ticket linking (blocks, blocked-by, related)
 - [ ] #345 Build worktree engine — automatic git worktree per agent session, invisible to user
 
 ## Pending
@@ -92,7 +94,6 @@
 - [ ] #30 Implement LSP client for autocomplete and go-to-definition
 - [ ] #31 Add error/warning squiggles from LSP diagnostics
 - [ ] #32 Build problems/diagnostics panel with error list
-- [ ] #33 Implement git decorations in editor gutter
 - [ ] #34 Add inline comments on specific lines in review mode
 - [ ] #38 Implement real deployment provider integration (Vercel/Railway)
 - [ ] #40 Implement code folding in editor
@@ -110,7 +111,6 @@
 - [ ] #63 Add bulk actions for tickets (select multiple, change status)
 - [ ] #64 Implement ticket comments and activity log
 - [ ] #65 Add saved filters and complex queries for tickets
-- [ ] #66 Implement ticket linking (blocks, blocked-by, related)
 - [ ] #67 Build review checklist (customizable per project)
 - [ ] #68 Add "Review against X" — pick base branch for diff
 - [ ] #69 Add AI review summary generation

@@ -11,11 +11,12 @@ enum SplitDirection: String, CaseIterable {
 // MARK: - Editor Pane
 
 /// Represents a single editor pane with its own file state.
+@MainActor
 class EditorPane: ObservableObject, Identifiable {
     let id = UUID()
     @Published var viewModel: EditorViewModel
 
-    init(viewModel: EditorViewModel = EditorViewModel()) {
+    init(viewModel: EditorViewModel) {
         self.viewModel = viewModel
     }
 }

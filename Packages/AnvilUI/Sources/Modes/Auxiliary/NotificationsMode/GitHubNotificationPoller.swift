@@ -38,22 +38,26 @@ final class GitHubNotificationPoller: ObservableObject {
             lastFetchDate = Date()
             pollError = nil
 
+            let preferences = NotificationPreferences.shared
             let newItems = notifications.map { mapToInboxItem($0) }
             let existingIds = Set(viewModel.inboxItems.map(\.id))
             let fresh = newItems.filter { !existingIds.contains($0.id) }
 
             if !fresh.isEmpty {
+                // Add all items to inbox (unfiltered) so they exist for later preference changes
                 viewModel.inboxItems.insert(contentsOf: fresh, at: 0)
 
-                // Fire native macOS desktop notifications for unread items
+                // Fire native macOS desktop notifications only for items passing preference filters
                 let desktopService = DesktopNotificationService.shared
                 for item in fresh where !item.notification.isRead {
-                    desktopService.send(
-                        notification: item.notification,
-                        source: item.source.rawValue,
-                        targetMode: "Notifications",
-                        targetItemId: item.id
-                    )
+                    if preferences.shouldSendDesktopNotification(item) {
+                        desktopService.send(
+                            notification: item.notification,
+                            source: item.source.rawValue,
+                            targetMode: "Notifications",
+                            targetItemId: item.id
+                        )
+                    }
                 }
             }
         } catch {

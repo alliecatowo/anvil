@@ -1,5 +1,6 @@
 import SwiftUI
 import AnvilDomain
+import AnvilApplication
 import UniformTypeIdentifiers
 import UserNotifications
 import os.log
@@ -305,6 +306,13 @@ public class AgentViewModel: ObservableObject {
         appState.agentRunStartedAt = .now
         appState.agentCurrentTool = nil
 
+        // On first user message: spin up a worktree for this session (fire-and-forget)
+        let isFirstMessage = sessions.first(where: { $0.id == sessionId })?.messages
+            .filter({ $0.role == .user }).count == 1
+        if isFirstMessage {
+            Task { await createWorktreeForSession(sessionId: sessionId, container: container) }
+        }
+
         // Stream the response asynchronously
         Task {
             await streamResponse(
@@ -313,6 +321,28 @@ public class AgentViewModel: ObservableObject {
                 container: container,
                 appState: appState
             )
+        }
+    }
+
+    private func createWorktreeForSession(sessionId: String, container: DependencyContainer) async {
+        guard let gitAdapter = container.getOrCreateGitAdapter(),
+              let projectPath = container.currentProjectPath else { return }
+        let projectName = URL(fileURLWithPath: projectPath).lastPathComponent
+
+        // Use the session's workItemId as a branch hint, fallback to sessionId prefix
+        let sessionRef = sessions.first(where: { $0.id == sessionId })
+        let branchName = "anvil/session/\(sessionRef?.workItemId ?? String(sessionId.prefix(8)))"
+
+        do {
+            let path = try await container.worktreeOrchestrator.createForSession(
+                sessionId: sessionId,
+                branch: branchName,
+                projectName: projectName,
+                provider: gitAdapter
+            )
+            logger.info("Worktree created for session \(sessionId) at \(path)")
+        } catch {
+            logger.warning("Worktree creation skipped for session \(sessionId): \(error.localizedDescription)")
         }
     }
 
@@ -370,6 +400,16 @@ public class AgentViewModel: ObservableObject {
 
             // Auto-name the session after its first completed exchange
             autoNameSessionIfNeeded(sessionId: sessionId)
+
+            // Publish AgentCompleted domain event
+            let completedSession = sessions.first(where: { $0.id == sessionId })
+            let worktreePath = await container.worktreeOrchestrator.worktreePath(for: sessionId)
+            let event = AgentCompletedEvent(
+                sessionId: sessionId,
+                workItemId: completedSession?.workItemId,
+                branchName: worktreePath.map { URL(fileURLWithPath: $0).lastPathComponent }
+            )
+            await container.eventBus.publish(event)
 
             // Drain queued messages — send the next one if any are waiting
             drainQueuedMessage(container: container, appState: appState)

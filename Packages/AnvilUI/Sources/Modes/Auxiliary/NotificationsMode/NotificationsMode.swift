@@ -4,6 +4,7 @@ import AnvilApplication
 
 struct NotificationsMode: View {
     @StateObject private var viewModel = NotificationsViewModel()
+    @StateObject private var preferences = NotificationPreferences.shared
     @EnvironmentObject var container: DependencyContainer
 
     var body: some View {
@@ -19,6 +20,8 @@ struct NotificationsMode: View {
                         InboxView(viewModel: viewModel)
                     case .activity:
                         ActivityFeedView(viewModel: viewModel)
+                    case .preferences:
+                        NotificationPreferencesView(preferences: preferences)
                     }
                 }
             }
@@ -55,6 +58,11 @@ struct NotificationsMode: View {
                     viewModel.selectedTab = tab
                 } label: {
                     HStack(spacing: AnvilSpacing.xs) {
+                        if tab == .preferences {
+                            Image(systemName: "gearshape")
+                                .font(.system(size: 11))
+                        }
+
                         Text(tab.rawValue)
                             .font(AnvilFont.label)
                             .foregroundStyle(

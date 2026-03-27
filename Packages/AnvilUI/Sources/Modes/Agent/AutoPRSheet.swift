@@ -419,7 +419,7 @@ struct AutoPRSheet: View {
         // Fallback: if parsing fails, use first line as title
         if extractedTitle.isEmpty {
             let lines = text.components(separatedBy: "\n").filter { !$0.isEmpty }
-            extractedTitle = String(lines.first ?? "Changes from agent session").prefix(72)
+            extractedTitle = String(String(lines.first ?? "Changes from agent session").prefix(72))
             extractedBody = lines.dropFirst().joined(separator: "\n")
         }
 

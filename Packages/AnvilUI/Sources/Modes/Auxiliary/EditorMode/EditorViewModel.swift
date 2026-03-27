@@ -52,6 +52,14 @@ struct EditorSymbol: Identifiable {
     let line: Int
 }
 
+// MARK: - Git Line Change
+
+enum GitLineChange: Sendable {
+    case added
+    case modified
+    case deleted  // Shown as a marker on the line *after* the deletion
+}
+
 enum SymbolKind: String {
     case classDecl = "class"
     case structDecl = "struct"
@@ -122,6 +130,9 @@ class EditorViewModel: ObservableObject {
     @Published var isWordWrapEnabled: Bool = false
     @Published var showIndentGuides: Bool = true
     @Published var tabSize: Int = 4
+    @Published var showGitGutter: Bool = true
+    /// Maps line number → change type for the currently open file.
+    @Published var gitLineChanges: [Int: GitLineChange] = [:]
 
     // MARK: Find & Replace (⌘F)
     @Published var isFindBarVisible: Bool = false
