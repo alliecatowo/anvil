@@ -214,7 +214,7 @@ struct CodebaseQAView: View {
                 .font(AnvilFont.label)
                 .foregroundStyle(AnvilColor.textTertiary)
 
-            FlowLayout(spacing: AnvilSpacing.xs) {
+            QACitationFlowLayout(spacing: AnvilSpacing.xs) {
                 ForEach(files) { file in
                     Button {
                         openFile(file.path)
@@ -431,10 +431,10 @@ private struct QAEntryView: View {
     }
 }
 
-// MARK: - FlowLayout
+// MARK: - QACitationFlowLayout
 
 /// Simple left-to-right wrapping layout for citation chips.
-private struct FlowLayout: Layout {
+private struct QACitationFlowLayout: Layout {
     let spacing: CGFloat
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {

@@ -35,6 +35,7 @@ struct ConversationView: View {
     var onReorderPlanStep: ((String, Int) -> Void)?
     var onAddPlanStep: ((String, String?) -> Void)?
     var onRemovePlanStep: ((String) -> Void)?
+    var onSendToBackground: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -49,7 +50,8 @@ struct ConversationView: View {
                 onSetBudget: onSetBudget,
                 onSetAutonomy: onSetAutonomy,
                 guardrailCount: guardrailCount,
-                onCreatePR: onCreatePR
+                onCreatePR: onCreatePR,
+                onSendToBackground: onSendToBackground
             )
 
             Divider().overlay(AnvilColor.borderSubtle)
@@ -161,6 +163,7 @@ struct SessionHeader: View {
     var onSetAutonomy: ((AutonomyLevel) -> Void)?
     let guardrailCount: Int
     var onCreatePR: (() -> Void)?
+    var onSendToBackground: (() -> Void)?
 
     @State private var isEditing = false
     @State private var editName = ""
@@ -225,6 +228,27 @@ struct SessionHeader: View {
                         .clipShape(RoundedRectangle(cornerRadius: 5))
                     }
                     .buttonStyle(.plain)
+                }
+
+                // Send to background button — shown when session is running
+                if session.status == .running, let sendBg = onSendToBackground {
+                    Button {
+                        sendBg()
+                    } label: {
+                        HStack(spacing: AnvilSpacing.xs) {
+                            Image(systemName: "arrow.down.to.line")
+                                .font(.system(size: 11))
+                            Text("Background")
+                                .font(AnvilFont.label)
+                        }
+                        .foregroundStyle(AnvilColor.accentTeal)
+                        .padding(.horizontal, AnvilSpacing.sm)
+                        .padding(.vertical, AnvilSpacing.xxs)
+                        .background(AnvilColor.accentTeal.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 5))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Send this session to the background")
                 }
 
                 // Model picker

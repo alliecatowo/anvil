@@ -1,6 +1,7 @@
 import SwiftUI
 import AnvilDomain
 import UniformTypeIdentifiers
+import UserNotifications
 import os.log
 
 private let logger = Logger(subsystem: "com.anvil.app", category: "AgentViewModel")
@@ -995,6 +996,110 @@ public class AgentViewModel: ObservableObject {
             value = String(value.dropFirst().dropLast())
         }
         return value
+    }
+
+    // MARK: - Background Sessions (#60)
+
+    public var backgroundSessions: [AgentSession] {
+        sessions.filter { $0.isBackground }
+    }
+
+    public var runningBackgroundSessions: [AgentSession] {
+        sessions.filter { $0.isBackground && $0.status == .running }
+    }
+
+    /// Send the current session to the background. It continues running but doesn't
+    /// occupy the conversation view. The user can work on other things.
+    public func sendToBackground(_ sessionId: String) {
+        guard let index = sessions.firstIndex(where: { $0.id == sessionId }) else { return }
+        sessions[index].isBackground = true
+
+        // If this was the selected session, switch to another or dashboard
+        if selectedSessionId == sessionId {
+            let nextForeground = sessions.first { !$0.isBackground && $0.id != sessionId }
+            if let next = nextForeground {
+                selectedSessionId = next.id
+            } else {
+                viewMode = .dashboard
+            }
+        }
+        logger.info("Session \(sessionId) sent to background")
+    }
+
+    /// Bring a background session back to the foreground.
+    public func bringToForeground(_ sessionId: String) {
+        guard let index = sessions.firstIndex(where: { $0.id == sessionId }) else { return }
+        sessions[index].isBackground = false
+        selectedSessionId = sessionId
+        viewMode = .conversation
+        logger.info("Session \(sessionId) brought to foreground")
+    }
+
+    /// Start a new session directly in the background with a prompt.
+    public func startBackgroundSession(prompt: String, model: String, container: DependencyContainer, appState: AppState) {
+        let session = AgentSession(
+            providerId: "anthropic",
+            model: model,
+            status: .idle,
+            isBackground: true
+        )
+        sessions.insert(session, at: 0)
+
+        // Add user message
+        let userMessage = AgentMessage(role: .user, content: prompt)
+        if let index = sessions.firstIndex(where: { $0.id == session.id }) {
+            sessions[index].messages.append(userMessage)
+        }
+
+        // Create assistant placeholder and start streaming
+        let assistantMessage = AgentMessage(role: .assistant, content: "")
+        let assistantId = assistantMessage.id
+        if let index = sessions.firstIndex(where: { $0.id == session.id }) {
+            sessions[index].messages.append(assistantMessage)
+            sessions[index].status = .running
+        }
+
+        Task {
+            await streamResponse(
+                sessionId: session.id,
+                assistantMessageId: assistantId,
+                container: container,
+                appState: appState
+            )
+            // Post notification when background session completes
+            await notifyBackgroundSessionCompleted(sessionId: session.id, appState: appState)
+        }
+
+        logger.info("Started background session \(session.id)")
+    }
+
+    /// Post a notification when a background session finishes.
+    private func notifyBackgroundSessionCompleted(sessionId: String, appState: AppState) async {
+        guard let session = sessions.first(where: { $0.id == sessionId }),
+              session.isBackground else { return }
+
+        let statusText: String
+        switch session.status {
+        case .idle, .completed: statusText = "completed"
+        case .failed: statusText = "failed"
+        case .paused: statusText = "paused (budget)"
+        default: return // still running, don't notify
+        }
+
+        // Send macOS notification
+        let content = UNMutableNotificationContent()
+        content.title = "Agent Session \(statusText.capitalized)"
+        content.body = "\(session.displayName) has \(statusText)."
+        content.sound = .default
+
+        let request = UNNotificationRequest(
+            identifier: "bg-session-\(sessionId)",
+            content: content,
+            trigger: nil
+        )
+        try? await UNUserNotificationCenter.current().add(request)
+
+        logger.info("Background session \(sessionId) \(statusText)")
     }
 
     // MARK: - Agent Plan View (#354)

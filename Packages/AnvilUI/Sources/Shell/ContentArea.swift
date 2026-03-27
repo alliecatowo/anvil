@@ -179,6 +179,9 @@ struct AgentModeContent: View {
                     },
                     onRemovePlanStep: { stepId in
                         viewModel.removePlanStep(sessionId: session.id, stepId: stepId)
+                    },
+                    onSendToBackground: {
+                        viewModel.sendToBackground(session.id)
                     }
                 )
                 .sheet(isPresented: $showAutoPRSheet) {

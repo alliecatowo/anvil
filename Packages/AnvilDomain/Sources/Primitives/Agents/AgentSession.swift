@@ -36,7 +36,7 @@ public struct AgentSession: Sendable, Identifiable, Codable {
         return "Session"
     }
 
-    public init(id: String = UUID().uuidString, providerId: String, model: String, status: AgentSessionStatus = .idle, workItemId: String? = nil, worktreePath: String? = nil, tokenUsage: TokenUsage = .zero, cost: Decimal = 0, startedAt: Date = .now, lastActivityAt: Date = .now, messages: [AgentMessage] = [], customName: String? = nil, costBudget: Decimal? = nil, hardStopOnBudget: Bool = false, autonomyLevel: AutonomyLevel = .ask, plan: AgentPlan? = nil) {
+    public init(id: String = UUID().uuidString, providerId: String, model: String, status: AgentSessionStatus = .idle, workItemId: String? = nil, worktreePath: String? = nil, tokenUsage: TokenUsage = .zero, cost: Decimal = 0, startedAt: Date = .now, lastActivityAt: Date = .now, messages: [AgentMessage] = [], customName: String? = nil, costBudget: Decimal? = nil, hardStopOnBudget: Bool = false, autonomyLevel: AutonomyLevel = .ask, plan: AgentPlan? = nil, isBackground: Bool = false) {
         self.id = id
         self.providerId = providerId
         self.model = model
@@ -53,6 +53,7 @@ public struct AgentSession: Sendable, Identifiable, Codable {
         self.hardStopOnBudget = hardStopOnBudget
         self.autonomyLevel = autonomyLevel
         self.plan = plan
+        self.isBackground = isBackground
     }
 }
 

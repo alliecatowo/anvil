@@ -242,6 +242,8 @@ final class CommandPaletteViewModel: ObservableObject {
     @Published private(set) var symbolMatchedIndicesMap: [String: Set<Int>] = [:]
     @Published var paletteMode: PaletteMode = .commands
     @Published private(set) var isLoadingFiles = false
+    /// Number of recent files at the start of filteredFileResults (for section headers in the view).
+    @Published private(set) var recentFileCount = 0
 
     private var allItems: [CommandItem] = []
     private var projectPath: String?
@@ -463,7 +465,20 @@ final class CommandPaletteViewModel: ObservableObject {
         var newMap: [String: Set<Int>] = [:]
 
         if query.isEmpty {
-            filteredItems = allItems
+            // Show recent items above the full command list
+            let recents = recentItems
+            if recents.isEmpty {
+                filteredItems = allItems
+            } else {
+                let clearItem = CommandItem(
+                    id: "clear-recent-history",
+                    title: "Clear Recent History",
+                    icon: "xmark.circle",
+                    category: .recent,
+                    action: .clearRecentHistory
+                )
+                filteredItems = recents + [clearItem] + allItems
+            }
             matchedIndicesMap = [:]
             selectedIndex = 0
             return
@@ -536,11 +551,17 @@ final class CommandPaletteViewModel: ObservableObject {
         var newMap: [String: Set<Int>] = [:]
 
         if query.isEmpty {
-            filteredFileResults = Array(fileResults.prefix(50))
+            // Show recent files first, then remaining files (excluding duplicates)
+            let recents = recentFileResults
+            let recentPaths = Set(recents.map(\.path))
+            let remaining = fileResults.filter { !recentPaths.contains($0.path) }
+            filteredFileResults = recents + Array(remaining.prefix(50 - recents.count))
+            recentFileCount = recents.count
             fileMatchedIndicesMap = [:]
             selectedIndex = 0
             return
         }
+        recentFileCount = 0
 
         var scored: [(result: FileResult, score: Int)] = []
         for file in fileResults {

@@ -234,17 +234,61 @@ public struct CommandPalette: View {
             emptyState(message: "No files match \"\(viewModel.query)\"")
         } else {
             let results = viewModel.filteredFileResults
-            ForEach(Array(results.enumerated()), id: \.element.path) { index, file in
-                FileResultItem(
-                    file: file,
-                    isSelected: viewModel.selectedIndex == index,
-                    matchedIndices: viewModel.fileMatchedIndicesMap[file.path] ?? []
-                )
-                .id(file.path)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    viewModel.selectedIndex = index
-                    viewModel.execute(appState: appState)
+            let recentCount = viewModel.recentFileCount
+
+            // Recent files section
+            if recentCount > 0 {
+                CommandSection(title: "Recent") {
+                    ForEach(Array(results.prefix(recentCount).enumerated()), id: \.element.path) { index, file in
+                        FileResultItem(
+                            file: file,
+                            isSelected: viewModel.selectedIndex == index,
+                            matchedIndices: viewModel.fileMatchedIndicesMap[file.path] ?? []
+                        )
+                        .id(file.path)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            viewModel.selectedIndex = index
+                            viewModel.execute(appState: appState)
+                        }
+                    }
+                }
+            }
+
+            // All files section (or just files when no recents)
+            let remainingFiles = Array(results.dropFirst(recentCount))
+            if !remainingFiles.isEmpty {
+                if recentCount > 0 {
+                    CommandSection(title: "Files") {
+                        ForEach(Array(remainingFiles.enumerated()), id: \.element.path) { offset, file in
+                            let index = offset + recentCount
+                            FileResultItem(
+                                file: file,
+                                isSelected: viewModel.selectedIndex == index,
+                                matchedIndices: viewModel.fileMatchedIndicesMap[file.path] ?? []
+                            )
+                            .id(file.path)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                viewModel.selectedIndex = index
+                                viewModel.execute(appState: appState)
+                            }
+                        }
+                    }
+                } else {
+                    ForEach(Array(results.enumerated()), id: \.element.path) { index, file in
+                        FileResultItem(
+                            file: file,
+                            isSelected: viewModel.selectedIndex == index,
+                            matchedIndices: viewModel.fileMatchedIndicesMap[file.path] ?? []
+                        )
+                        .id(file.path)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            viewModel.selectedIndex = index
+                            viewModel.execute(appState: appState)
+                        }
+                    }
                 }
             }
 

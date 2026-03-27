@@ -111,25 +111,39 @@ struct TicketDetailView: View {
         return "\(id)/\(slug)"
     }
 
-    // MARK: - Dispatch to Agent
+    // MARK: - Start Work (Branch + Agent)
 
-    private func dispatchTicketToAgent(_ ticket: Ticket) {
+    private func startWork(_ ticket: Ticket) {
         isDispatching = true
 
-        // Create branch if not already created
-        if branchCreated == nil {
-            createBranchForTicket(ticket)
+        let branchName = generateBranchName(from: ticket)
+        guard let adapter = container.getOrCreateGitAdapter() else {
+            isDispatching = false
+            return
         }
 
-        // Dispatch to agent mode: create session, switch mode
-        appState.agentViewModel.dispatchFromTicket(
-            ticketId: ticket.id,
-            title: ticket.title,
-            description: ticket.description
-        )
-        appState.switchMode(.agent)
+        Task {
+            // 1. Create branch if not already done
+            if branchCreated == nil {
+                await appState.createBranch(branchName, using: adapter)
+                branchCreated = branchName
+            }
 
-        isDispatching = false
+            // 2. Move ticket to in-progress
+            viewModel.moveTicket(ticket.id, toStatus: "in progress")
+
+            // 3. Dispatch to agent with ticket context
+            appState.agentViewModel.dispatchFromTicket(
+                ticketId: ticket.id,
+                title: ticket.title,
+                description: ticket.description
+            )
+
+            // 4. Switch to agent mode
+            appState.switchMode(.agent)
+
+            isDispatching = false
+        }
     }
 
     // MARK: - Header
