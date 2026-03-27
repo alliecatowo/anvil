@@ -8,6 +8,7 @@ struct TicketDetailView: View {
     @EnvironmentObject var container: DependencyContainer
 
     @State private var branchCreated: String?
+    @State private var isDispatching = false
 
     var body: some View {
         if let ticket = viewModel.selectedTicket {
@@ -68,6 +69,12 @@ struct TicketDetailView: View {
                 }
             }
 
+            // Dispatch to Agent button
+            AnvilButton("Dispatch to Agent", icon: "cpu", style: .primary) {
+                dispatchTicketToAgent(ticket)
+            }
+            .disabled(isDispatching)
+
             Text(ticket.id)
                 .font(AnvilFont.code)
                 .foregroundStyle(AnvilColor.textTertiary)
@@ -95,6 +102,27 @@ struct TicketDetailView: View {
             .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
             .prefix(40)
         return "\(id)/\(slug)"
+    }
+
+    // MARK: - Dispatch to Agent
+
+    private func dispatchTicketToAgent(_ ticket: Ticket) {
+        isDispatching = true
+
+        // Create branch if not already created
+        if branchCreated == nil {
+            createBranchForTicket(ticket)
+        }
+
+        // Dispatch to agent mode: create session, switch mode
+        appState.agentViewModel.dispatchFromTicket(
+            ticketId: ticket.id,
+            title: ticket.title,
+            description: ticket.description
+        )
+        appState.switchMode(.agent)
+
+        isDispatching = false
     }
 
     // MARK: - Header

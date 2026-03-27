@@ -86,6 +86,42 @@ public class AgentViewModel: ObservableObject {
         sessions[index].model = modelId
     }
 
+    // MARK: - Ticket-to-Agent Pipeline
+
+    /// Creates a new agent session pre-loaded with ticket context.
+    /// Called from TicketDetailView after branch checkout.
+    public func dispatchFromTicket(ticketId: String, title: String, description: String, model: String? = nil) {
+        let sessionModel = model ?? selectedModelId
+        let session = AgentSession(
+            providerId: "anthropic",
+            model: sessionModel,
+            status: .idle,
+            workItemId: ticketId
+        )
+        sessions.insert(session, at: 0)
+        selectedSessionId = session.id
+        selectedModelId = sessionModel
+
+        // Pre-populate with a system context message and the ticket as the first user message
+        let contextPrompt = buildTicketPrompt(ticketId: ticketId, title: title, description: description)
+        if let index = sessions.firstIndex(where: { $0.id == session.id }) {
+            sessions[index].messages.append(
+                AgentMessage(role: .user, content: contextPrompt)
+            )
+        }
+
+        logger.info("Dispatched agent session \(session.id) for ticket \(ticketId)")
+    }
+
+    private func buildTicketPrompt(ticketId: String, title: String, description: String) -> String {
+        var prompt = "Implement ticket \(ticketId): \(title)"
+        if !description.isEmpty {
+            prompt += "\n\n**Description:**\n\(description)"
+        }
+        prompt += "\n\nStart by reading the relevant files and understanding the codebase, then implement the changes."
+        return prompt
+    }
+
     // MARK: - Send Message (ACP-powered)
 
     public func sendMessage(container: DependencyContainer, appState: AppState) {

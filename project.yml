@@ -45,3 +45,14 @@ targets:
         MACOSX_DEPLOYMENT_TARGET: "15.0"
         SWIFT_VERSION: "6.0"
         ENABLE_STRICT_CONCURRENCY: complete
+
+  AnvilUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - Tests/UITests
+    dependencies:
+      - target: Anvil
+    settings:
+      base:
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Anvil.app/Contents/MacOS/Anvil"
