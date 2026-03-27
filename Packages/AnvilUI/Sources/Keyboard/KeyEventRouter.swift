@@ -42,10 +42,11 @@ struct KeyEventRouter: ViewModifier {
 
         let character = keyPress.characters.first ?? Character("\0")
 
-        // Only handle single-char navigation keys, not regular typing
-        // This prevents eating button/textfield input
-        let navigationKeys: Set<Character> = ["j", "k", "g", "n", "p", "a", "r", "c", "d", "x", "y", "/"]
-        guard character == "\u{1B}" /* escape */ || navigationKeys.contains(character) else {
+        // DISABLED: Non-modifier key interception causes too many conflicts
+        // with text fields, buttons, and normal typing. All shortcuts should
+        // use modifier keys (⌘, ⌥, ⌃) via AnvilCommands instead.
+        // Vim-style j/k/g navigation will be re-enabled with proper focus tracking.
+        if character != "\u{1B}" { // Only handle Escape
             return .ignored
         }
 
