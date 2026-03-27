@@ -17,6 +17,8 @@ struct ReviewSidebar: View {
                 // PR detail is shown in content area; sidebar shows back option
                 prSelectedBar
             } else {
+                gitHubAuthBar
+                Divider().overlay(AnvilColor.borderSubtle)
                 branchSection
                 Divider().overlay(AnvilColor.borderSubtle)
                 pullRequestsSection
@@ -31,21 +33,36 @@ struct ReviewSidebar: View {
     private var branchSection: some View {
         VStack(spacing: 0) {
             HStack {
-                sectionHeader("BRANCHES", icon: "arrow.triangle.branch", count: appState.branches.count)
+                Image(systemName: "arrow.triangle.branch")
+                    .font(.system(size: 10))
+                    .foregroundStyle(AnvilColor.textTertiary)
+
+                Text("BRANCHES")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textSecondary)
+                    .tracking(0.3)
+
                 Spacer()
+
+                Text("\(appState.branches.count)")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+
                 Button {
                     viewModel.isCommitGraphVisible.toggle()
                 } label: {
-                    Image(systemName: viewModel.isCommitGraphVisible ? "arrow.triangle.branch" : "point.3.connected.trianglepath.dotted")
+                    Image(systemName: "point.3.connected.trianglepath.dotted")
                         .font(.system(size: 11))
                         .foregroundStyle(
                             viewModel.isCommitGraphVisible ? AnvilColor.accentBlue : AnvilColor.textTertiary
                         )
                 }
                 .buttonStyle(.plain)
-                .help(viewModel.isCommitGraphVisible ? "Show Branches" : "Show Commit Graph")
-                .padding(.trailing, AnvilSpacing.md)
+                .help(viewModel.isCommitGraphVisible ? "Hide Commit Graph" : "Show Commit Graph")
             }
+            .padding(.horizontal, AnvilSpacing.md)
+            .padding(.vertical, AnvilSpacing.xs)
+            .background(AnvilColor.backgroundSecondary)
 
             if appState.branches.isEmpty {
                 HStack {
@@ -110,6 +127,61 @@ struct ReviewSidebar: View {
             guard !branch.isCurrent else { return }
             guard let adapter = container.getOrCreateGitAdapter() else { return }
             viewModel.loadBranchDiff(branch.name, using: adapter)
+        }
+    }
+
+    // MARK: - GitHub Auth Bar
+
+    @State private var isLoginSheetPresented = false
+
+    private var gitHubAuthBar: some View {
+        let auth = container.gitHubAuth
+        return Group {
+            if auth.isLoggedIn, let username = auth.username {
+                HStack(spacing: AnvilSpacing.sm) {
+                    Circle()
+                        .fill(AnvilColor.accentGreen.opacity(0.15))
+                        .frame(width: 20, height: 20)
+                        .overlay(
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(AnvilColor.accentGreen)
+                        )
+                    Text(username)
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textSecondary)
+                    Spacer()
+                    Button {
+                        isLoginSheetPresented = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 11))
+                            .foregroundStyle(AnvilColor.textTertiary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, AnvilSpacing.xs)
+            } else {
+                Button {
+                    isLoginSheetPresented = true
+                } label: {
+                    HStack(spacing: AnvilSpacing.xs) {
+                        Image(systemName: "person.crop.circle.badge.plus")
+                            .font(.system(size: 12))
+                        Text("Sign in to GitHub")
+                            .font(AnvilFont.label)
+                    }
+                    .foregroundStyle(AnvilColor.accentBlue)
+                    .padding(.horizontal, AnvilSpacing.md)
+                    .padding(.vertical, AnvilSpacing.xs)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .sheet(isPresented: $isLoginSheetPresented) {
+            GitHubLoginView(viewModel: container.gitHubAuth)
+                .environmentObject(container)
         }
     }
 

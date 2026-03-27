@@ -15,6 +15,7 @@ public struct AgentSession: Sendable, Identifiable, Codable {
     public var customName: String?
     public var costBudget: Decimal?
     public var hardStopOnBudget: Bool
+    public var autonomyLevel: AutonomyLevel
 
     /// Budget usage ratio (0.0 to 1.0+). Returns nil if no budget is set.
     public var budgetUsage: Double? {
@@ -33,7 +34,7 @@ public struct AgentSession: Sendable, Identifiable, Codable {
         return "Session"
     }
 
-    public init(id: String = UUID().uuidString, providerId: String, model: String, status: AgentSessionStatus = .idle, workItemId: String? = nil, worktreePath: String? = nil, tokenUsage: TokenUsage = .zero, cost: Decimal = 0, startedAt: Date = .now, lastActivityAt: Date = .now, messages: [AgentMessage] = [], customName: String? = nil, costBudget: Decimal? = nil, hardStopOnBudget: Bool = false) {
+    public init(id: String = UUID().uuidString, providerId: String, model: String, status: AgentSessionStatus = .idle, workItemId: String? = nil, worktreePath: String? = nil, tokenUsage: TokenUsage = .zero, cost: Decimal = 0, startedAt: Date = .now, lastActivityAt: Date = .now, messages: [AgentMessage] = [], customName: String? = nil, costBudget: Decimal? = nil, hardStopOnBudget: Bool = false, autonomyLevel: AutonomyLevel = .ask) {
         self.id = id
         self.providerId = providerId
         self.model = model
@@ -48,11 +49,35 @@ public struct AgentSession: Sendable, Identifiable, Codable {
         self.customName = customName
         self.costBudget = costBudget
         self.hardStopOnBudget = hardStopOnBudget
+        self.autonomyLevel = autonomyLevel
     }
 }
 
 public enum AgentSessionStatus: String, Sendable, Codable {
     case idle, running, paused, completed, failed, cancelled
+}
+
+/// Controls how tool calls are handled in a session.
+public enum AutonomyLevel: String, Sendable, Codable, CaseIterable {
+    case ask      // Every tool call requires approval
+    case review   // Show tool calls with quick approve/reject, auto-timeout to approve
+    case auto     // Execute all tools without approval
+
+    public var displayName: String {
+        switch self {
+        case .ask: return "Ask"
+        case .review: return "Review"
+        case .auto: return "Auto"
+        }
+    }
+
+    public var description: String {
+        switch self {
+        case .ask: return "Approve every tool call"
+        case .review: return "Quick approve/reject"
+        case .auto: return "Execute without approval"
+        }
+    }
 }
 
 public struct TokenUsage: Sendable, Codable {

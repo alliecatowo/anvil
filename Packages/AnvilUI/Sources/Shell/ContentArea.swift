@@ -153,9 +153,13 @@ struct AgentModeContent: View {
 struct ReviewModeContent: View {
     @ObservedObject var viewModel: ReviewViewModel
     @EnvironmentObject private var appState: AppState
+    @EnvironmentObject private var container: DependencyContainer
 
     var body: some View {
-        if appState.gitHubPRViewModel.selectedPR != nil {
+        if viewModel.isCommitGraphVisible {
+            GitGraphContainerView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if appState.gitHubPRViewModel.selectedPR != nil {
             GitHubPRDetailView(viewModel: appState.gitHubPRViewModel)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if viewModel.reviews.isEmpty {

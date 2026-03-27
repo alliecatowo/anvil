@@ -10,11 +10,23 @@ public struct GitGraphBuilder: Sendable {
         public let parents: [String]
         public let column: Int
         public let isHead: Bool
+
+        public init(commit: Commit, parents: [String], column: Int, isHead: Bool) {
+            self.commit = commit
+            self.parents = parents
+            self.column = column
+            self.isHead = isHead
+        }
     }
 
     public struct CommitGraph: Sendable {
         public let nodes: [GraphNode]
         public let maxColumns: Int
+
+        public init(nodes: [GraphNode], maxColumns: Int) {
+            self.nodes = nodes
+            self.maxColumns = maxColumns
+        }
     }
 
     public init() {}

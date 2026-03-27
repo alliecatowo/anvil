@@ -31,6 +31,10 @@ public class DependencyContainer: ObservableObject {
         return adapter
     }
 
+    // MARK: - GitHub Auth
+
+    public let gitHubAuth = GitHubAuthViewModel()
+
     // MARK: - GitHub Adapter
 
     private var gitHubAdapter: GitHubSourceControlCloudAdapter?
@@ -40,6 +44,12 @@ public class DependencyContainer: ObservableObject {
         // Look for a GitHub PAT in configured providers or env
         if let ghConfig = configuredProviders.values.first(where: { $0.providerType == "github" }),
            let token = ghConfig.apiKey {
+            let adapter = GitHubSourceControlCloudAdapter(token: token)
+            gitHubAdapter = adapter
+            return adapter
+        }
+        // Check Keychain for OAuth token
+        if let token = KeychainHelper.load(account: GitHubOAuthService.keychainAccount) {
             let adapter = GitHubSourceControlCloudAdapter(token: token)
             gitHubAdapter = adapter
             return adapter

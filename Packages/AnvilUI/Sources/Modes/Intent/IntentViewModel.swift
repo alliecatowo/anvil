@@ -16,6 +16,7 @@ enum TicketGrouping: String, CaseIterable {
 
 enum TicketSortField: String, CaseIterable {
     case priority = "Priority"
+    case dueDate = "Due Date"
     case updated = "Updated"
     case created = "Created"
     case title = "Title"
@@ -79,6 +80,7 @@ public final class IntentViewModel: ObservableObject {
 
         switch sortField {
         case .priority: result.sort { $0.priority < $1.priority }
+        case .dueDate:  result.sort { ($0.dueDate ?? .distantFuture) < ($1.dueDate ?? .distantFuture) }
         case .updated:  result.sort { $0.updatedAt > $1.updatedAt }
         case .created:  result.sort { $0.createdAt > $1.createdAt }
         case .title:    result.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
@@ -175,6 +177,13 @@ public final class IntentViewModel: ObservableObject {
         case "done":        "checkmark.circle.fill"
         default:            "circle.dashed"
         }
+    }
+
+    static func dueDateColor(_ date: Date) -> Color {
+        let days = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: .now), to: Calendar.current.startOfDay(for: date)).day ?? 0
+        if days < 0 { return AnvilColor.accentRed }
+        if days <= 2 { return AnvilColor.accentAmber }
+        return AnvilColor.textTertiary
     }
 
     static func statusColor(_ status: String) -> Color {
