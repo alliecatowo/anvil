@@ -136,4 +136,39 @@ public class AppState: ObservableObject {
             isProjectNotesVisible.toggle()
         }
     }
+
+    // MARK: - Project
+
+    @Published public var currentProjectPath: String?
+
+    // MARK: - Demo Data
+
+    public func loadDemoData() {
+        // Agent: sample conversation
+        let sampleMessages = [
+            AgentMessage(role: .user, content: "Fix the authentication bug in the login flow"),
+            AgentMessage(role: .assistant, content: "I'll start by examining the auth module to understand the current login flow.\n\nLet me read the relevant files...", toolCalls: [
+                ToolCall(name: "read_file", arguments: "{\"path\": \"src/auth/handler.ts\"}", status: .completed, result: ToolResult(content: "// Auth handler with 142 lines of code...\nfunction validateToken(token) {\n  const exp = token.exp;\n  return exp > Date.now();\n}", type: .text)),
+            ]),
+            AgentMessage(role: .assistant, content: "I found the issue. The token validation is checking expiry against UTC but the token was issued with local time. Here's the fix:"),
+        ]
+        let session = AgentSession(providerId: "claude-cli", model: "claude-sonnet-4-6", status: .completed, workItemId: "ANV-42", tokenUsage: TokenUsage(inputTokens: 12500, outputTokens: 3200), cost: 0.42, messages: sampleMessages)
+        agentViewModel.sessions = [session]
+        agentViewModel.selectedSessionId = session.id
+
+        // Intent: sample tickets
+        let tickets = [
+            Ticket(id: "ANV-101", title: "Fix SSO token refresh", status: "in-progress", priority: .critical, assignee: "allie", labels: ["auth", "bug"]),
+            Ticket(id: "ANV-102", title: "Add dark mode to settings", status: "open", priority: .medium, labels: ["ui"]),
+            Ticket(id: "ANV-103", title: "Migrate to new API v3", status: "open", priority: .high, assignee: "allie", labels: ["api", "migration"]),
+            Ticket(id: "ANV-104", title: "Write E2E tests for checkout", status: "in-review", priority: .medium, labels: ["testing"]),
+            Ticket(id: "ANV-105", title: "Update dependencies", status: "done", priority: .low, labels: ["chore"]),
+        ]
+        intentViewModel.tickets = tickets
+
+        // Review: sample reviews
+        reviewViewModel.reviews = ReviewViewModel.makeSampleReviews()
+
+        switchMode(.agent)
+    }
 }

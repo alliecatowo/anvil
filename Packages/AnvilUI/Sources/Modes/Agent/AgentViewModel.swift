@@ -1,5 +1,8 @@
 import SwiftUI
 import AnvilDomain
+import os.log
+
+private let logger = Logger(subsystem: "com.anvil.app", category: "AgentViewModel")
 
 @MainActor
 public class AgentViewModel: ObservableObject {
@@ -12,16 +15,20 @@ public class AgentViewModel: ObservableObject {
         sessions.first { $0.id == selectedSessionId }
     }
 
-    public init() {}
+    public init() {
+        logger.info("AgentViewModel initialized")
+    }
 
     public func startNewSession(prompt: String, model: String) {
+        logger.info("Starting new session with model: \(model)")
         let session = AgentSession(
             providerId: "anthropic",
             model: model,
-            status: .running
+            status: .idle
         )
         sessions.insert(session, at: 0)
         selectedSessionId = session.id
+        logger.info("Session created: \(session.id), total sessions: \(self.sessions.count)")
     }
 
     // MARK: - Send Message (ACP-powered)

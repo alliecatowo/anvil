@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 public struct AnvilCommands: Commands {
     @ObservedObject public var appState: AppState
@@ -9,15 +10,22 @@ public struct AnvilCommands: Commands {
 
     public var body: some Commands {
         CommandGroup(replacing: .newItem) {
-            Button("New Item") {
-                // Context-dependent new item
-            }
-            .keyboardShortcut("n", modifiers: .command)
-
             Button("New Agent Session") {
                 appState.switchMode(.agent)
+                appState.agentViewModel.startNewSession(prompt: "", model: "claude-sonnet-4-6")
             }
             .keyboardShortcut("a", modifiers: [.command, .shift])
+
+            Divider()
+
+            Button("Open Project...") {
+                openProject()
+            }
+            .keyboardShortcut("o", modifiers: .command)
+
+            Button("Load Demo Project") {
+                appState.loadDemoData()
+            }
         }
 
         CommandMenu("Mode") {
@@ -53,6 +61,27 @@ public struct AnvilCommands: Commands {
                 appState.toggleCommandPalette()
             }
             .keyboardShortcut("k", modifiers: .command)
+
+            Button("Quick Capture") {
+                appState.toggleQuickCapture()
+            }
+            .keyboardShortcut(.space, modifiers: [.command, .shift])
+
+            Button("Project Notes") {
+                appState.toggleProjectNotes()
+            }
+            .keyboardShortcut("n", modifiers: [.command, .shift])
+        }
+    }
+
+    private func openProject() {
+        let panel = NSOpenPanel()
+        panel.title = "Open Project"
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        if panel.runModal() == .OK, let url = panel.url {
+            appState.currentProjectPath = url.path
         }
     }
 }
