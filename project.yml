@@ -1,0 +1,47 @@
+name: Anvil
+options:
+  bundleIdPrefix: com.anvil
+  deploymentTarget:
+    macOS: "15.0"
+  xcodeVersion: "16.0"
+  minimumXcodeGenVersion: "2.40.0"
+
+packages:
+  AnvilDomain:
+    path: Packages/AnvilDomain
+  AnvilApplication:
+    path: Packages/AnvilApplication
+  AnvilACP:
+    path: Packages/AnvilACP
+  AnvilInfrastructure:
+    path: Packages/AnvilInfrastructure
+  AnvilUI:
+    path: Packages/AnvilUI
+  AnvilPluginSDK:
+    path: Packages/AnvilPluginSDK
+  AnvilGit:
+    path: Packages/AnvilGit
+
+targets:
+  Anvil:
+    type: application
+    platform: macOS
+    sources:
+      - App
+    dependencies:
+      - package: AnvilDomain
+      - package: AnvilApplication
+      - package: AnvilACP
+      - package: AnvilInfrastructure
+      - package: AnvilUI
+      - package: AnvilPluginSDK
+      - package: AnvilGit
+    info:
+      path: App/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.anvil.app
+        PRODUCT_NAME: Anvil
+        MACOSX_DEPLOYMENT_TARGET: "15.0"
+        SWIFT_VERSION: "6.0"
+        ENABLE_STRICT_CONCURRENCY: complete
