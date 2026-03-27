@@ -192,7 +192,9 @@ struct AgentModeContent: View {
                     .environmentObject(appState)
                 }
             } else {
-                AgentEmptyState(onNewSession: { viewModel.isLaunchSheetPresented = true })
+                AgentEmptyState(onNewSession: {
+                    viewModel.startNewSession(prompt: "", model: viewModel.selectedModelId)
+                })
             }
         }
     }

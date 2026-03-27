@@ -67,9 +67,7 @@ public struct ModeTabBar: View {
             .buttonStyle(.plain)
 
             // Settings gear
-            Button {
-                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-            } label: {
+            SettingsLink {
                 Image(systemName: "gearshape")
                     .font(.system(size: 12))
                     .foregroundStyle(AnvilColor.textTertiary)
