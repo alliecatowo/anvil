@@ -1,0 +1,411 @@
+# Anvil Task List
+
+**Total: 399 tasks | Completed: 70 | In Progress: 4 | Pending: 325**
+
+## Completed
+
+- [x] #1 Research modern IDE/agent UX patterns and create design vision doc
+- [x] #2 Fix project management — multi-project, project switching, project info
+- [x] #3 Make agent mode production-ready — slash commands, @ refs, inline edits
+- [x] #4 Build real GitHub provider — PRs, issues, branches, CI status
+- [x] #5 Make Git operations real and visible — branches, commits, graph
+- [x] #7 Polish UI — mode tabs, liquid glass, profile, notification badges
+- [x] #8 Build XCUITest suite for every clickable feature
+- [x] #9 Add Testing primitive mode with test runner UI
+- [x] #10 Ticket-to-agent pipeline — checkout branch, dispatch agent from ticket
+- [x] #11 Implement slash command framework for agent mode
+- [x] #12 Implement @ reference autocomplete for agent input
+- [x] #13 Build inline code edit suggestions (accept/reject per hunk)
+- [x] #14 Add model picker per agent session
+- [x] #15 Implement token usage visualization with context limit progress bar
+- [x] #16 Add streaming code blocks with syntax highlighting
+- [x] #17 Build agent activity indicator in status bar
+- [x] #18 Implement context injection (drag files/tickets/errors into conversation)
+- [x] #19 Build source control panel with changed files list and staging
+- [x] #20 Add commit message input and commit button to source control
+- [x] #21 Build branch picker with create/switch/delete functionality
+- [x] #22 Implement push/pull/fetch remote operations in source control
+- [x] #23 Implement find and replace in current file
+- [x] #24 Implement find and replace across project files
+- [x] #29 Build AI inline edit (Cmd+K select-and-edit) in editor
+- [x] #35 Add merge button and CI status display in review mode
+- [x] #36 Implement drag-and-drop on kanban board
+- [x] #37 Add quick-create ticket inline on kanban board
+- [x] #39 Build notification badges on mode tabs in sidebar
+- [x] #43 Add file search in command palette (open any file by name)
+- [x] #44 Add symbol search in command palette (go to function/class)
+- [x] #45 Implement stash management in source control panel
+- [x] #46 Build welcome/start page with recent projects
+- [x] #47 Add cursor position display (line:col) in status bar
+- [x] #52 Add indent guides in editor
+- [x] #54 Add word wrap toggle to editor
+- [x] #56 Add session export (markdown and JSON formats)
+- [x] #60 Implement background agent sessions
+- [x] #61 Add cost budget per session with warnings
+- [x] #70 Implement git blame integration in diff view
+- [x] #77 Add terminal bottom panel (always available across modes)
+- [x] #83 Build real notification sources (GitHub webhooks, CI events)
+- [x] #84 Implement desktop notifications (macOS native)
+- [x] #86 Add action buttons on notifications (approve PR, view error)
+- [x] #89 Build git graph visualization (branch topology)
+- [x] #95 Implement breadcrumb navigation at top of editor
+- [x] #98 Add contextual commands per mode in command palette
+- [x] #103 Build ticket-to-branch-to-agent pipeline button
+- [x] #105 Implement due date and overdue highlighting on tickets
+- [x] #145 Build plugin marketplace browser — search, install, manage plugins
+- [x] #154 Add whitespace visualization toggle in editor
+- [x] #155 Add file encoding indicator and switcher in status bar
+- [x] #158 Implement GitHub OAuth login flow
+- [x] #169 Implement tag management for git in source control
+- [x] #170 Add cherry-pick, rebase, and revert UI in source control
+- [x] #197 Add comment threads with replies in review mode
+- [x] #201 Add rebase/update branch button from review mode
+- [x] #223 Add read-only file indicator in editor
+- [x] #254 Build codebase Q&A mode — ask questions about the project and get grounded answers with file citations
+- [x] #261 Build auto-PR creation from agent session — one-click PR from completed agent work
+- [x] #277 Build Windsurf-style queued message input — type next instruction while agent is still running
+- [x] #283 Build Cline-style autonomous mode with tool call approval flow and always-allow memory
+- [x] #287 Add recent files list to command palette
+- [x] #289 Add action history to command palette
+- [x] #299 Build "session memory" — agent remembers project-specific facts across sessions via .anvil/memory.md
+- [x] #306 Build smart session naming — AI auto-names agent sessions from first message instead of "Session 1, Session 2"
+- [x] #307 Add remote management (add/remove/rename remotes) in source control
+- [x] #308 Build multi-agent synthesis rooms (Task #136)
+- [x] #313 Build agent guardrails — configurable rules that prevent agents from modifying certain files or running certain commands
+- [x] #354 Build agent plan view — structured editable plan with step status tracking and user annotations
+- [x] #399 Build git graph visualization — interactive DAG with branch topology, filtering, commit detail
+
+## In Progress
+
+- [ ] #42 Implement split editor (vertical/horizontal panes)
+- [ ] #85 Add notification preferences and filtering rules
+- [ ] #99 Add nested commands with prefix grouping in command palette
+- [ ] #345 Build worktree engine — automatic git worktree per agent session, invisible to user
+
+## Pending
+
+- [ ] #6 Build real terminal with zsh shell integration
+- [ ] #25 Build real PTY terminal with shell integration
+- [ ] #26 Add multiple terminal tabs and split support
+- [ ] #27 Implement real database connection support (PostgreSQL, SQLite)
+- [ ] #28 Implement multi-project support with project switcher
+- [ ] #30 Implement LSP client for autocomplete and go-to-definition
+- [ ] #31 Add error/warning squiggles from LSP diagnostics
+- [ ] #32 Build problems/diagnostics panel with error list
+- [ ] #33 Implement git decorations in editor gutter
+- [ ] #34 Add inline comments on specific lines in review mode
+- [ ] #38 Implement real deployment provider integration (Vercel/Railway)
+- [ ] #40 Implement code folding in editor
+- [ ] #41 Add bracket matching and auto-close in editor
+- [ ] #48 Implement session search across all agent conversations
+- [ ] #49 Add image/screenshot attachment support in agent conversations
+- [ ] #50 Add per-file error indicators in file tree
+- [ ] #51 Implement multi-cursor editing in editor
+- [ ] #53 Build editor minimap with scroll position indicator
+- [ ] #55 Implement conversation forking (branch from any message)
+- [ ] #57 Implement tool approval memory ("always allow read_file")
+- [ ] #58 Build system prompt editor per session
+- [ ] #59 Add conversation templates ("Fix bug in {file}", "Review PR #{num}")
+- [ ] #62 Implement ticket sub-tasks and checklists
+- [ ] #63 Add bulk actions for tickets (select multiple, change status)
+- [ ] #64 Implement ticket comments and activity log
+- [ ] #65 Add saved filters and complex queries for tickets
+- [ ] #66 Implement ticket linking (blocks, blocked-by, related)
+- [ ] #67 Build review checklist (customizable per project)
+- [ ] #68 Add "Review against X" — pick base branch for diff
+- [ ] #69 Add AI review summary generation
+- [ ] #71 Add deployment history with rollback support
+- [ ] #72 Add environment variable comparison across environments
+- [ ] #73 Build query autocomplete from database schema
+- [ ] #74 Add query history with timestamps and saved queries
+- [ ] #75 Implement result export (CSV, JSON) from database queries
+- [ ] #76 Build table data browser with pagination and filtering
+- [ ] #78 Implement link detection and clickable URLs in terminal
+- [ ] #79 Add command output capture for AI context from terminal
+- [ ] #80 Implement rich markdown editing toolbar and shortcuts
+- [ ] #81 Add live markdown preview (real-time render)
+- [ ] #82 Implement full-text document search in docs mode
+- [ ] #87 Implement real Sentry/error tracking integration for observability
+- [ ] #88 Add error-to-code navigation (click stack frame to open file)
+- [ ] #90 Implement merge conflict resolution UI
+- [ ] #91 Add settings search functionality
+- [ ] #92 Implement per-project settings override
+- [ ] #93 Add theme editor and picker with preview
+- [ ] #94 Add font picker for editor with preview
+- [ ] #96 Add diff editor for comparing two files
+- [ ] #97 Implement large file handling with virtualized rendering
+- [ ] #100 Build quick capture to ticket conversion
+- [ ] #101 Add note search across all quick capture notes
+- [ ] #102 Implement send note to agent context action
+- [ ] #104 Add assignee picker with team member list on tickets
+- [ ] #106 Add ticket search across all projects
+- [ ] #107 Implement real Slack integration for messaging mode
+- [ ] #108 Add thread view for messaging with replies
+- [ ] #109 Implement read/unread tracking for messages and channels
+- [ ] #110 Add "Turn this into a ticket" from message action
+- [ ] #111 Add voice input integration for agent conversations
+- [ ] #112 Implement multi-agent orchestration (dispatch agents from agents)
+- [ ] #113 Add session sharing and linking
+- [ ] #114 Build ticket templates for quick creation
+- [ ] #115 Add sprint planning view with drag from backlog
+- [ ] #116 Build velocity and burndown charts for tickets
+- [ ] #117 Add AI-powered ticket auto-triage (suggest priority/labels)
+- [ ] #118 Implement import from Linear/Jira for tickets
+- [ ] #119 Add suggested changes in review (edit and propose as suggestion)
+- [ ] #120 Add coverage overlay on diff in review (which lines have tests)
+- [ ] #121 Build preview URL rendering with inline browser for deploys
+- [ ] #122 Add deploy locks and freeze indicators
+- [ ] #123 Build ER diagram visualization for database
+- [ ] #124 Add query explain plan visualization
+- [ ] #125 Build connection profiles for multiple databases
+- [ ] #126 Add terminal profiles (different shells and environments)
+- [ ] #127 Implement smart command suggestions from AI in terminal
+- [ ] #128 Add document versioning backed by git
+- [ ] #129 Build wiki-style document linking with [[links]]
+- [ ] #130 Add real calendar integration (Apple Calendar, Google Cal)
+- [ ] #131 Implement AI ghost text code completion (autocomplete)
+- [ ] #132 Build rename symbol refactoring across project
+- [ ] #133 Implement extract function/variable refactoring
+- [ ] #134 Build code snippets library with insertion
+- [ ] #135 Implement debug launch configurations (like launch.json)
+- [ ] #136 Build multi-agent session collaboration — synthesis rooms, shared context
+- [ ] #137 Build breakpoint management UI
+- [ ] #138 Build subagent dispatch — agents spawning agents for parallel work
+- [ ] #139 Build multi-session dashboard with resource allocation view
+- [ ] #140 Implement debug variable inspector and call stack
+- [ ] #141 Build adversarial review — dispatch critique agent against working agent
+- [ ] #142 Build HTTP/API client request builder
+- [ ] #143 Add API request collection management and history
+- [ ] #144 Build Docker container management panel
+- [ ] #146 Build plugin loading and activation system
+- [ ] #147 Build dependency tree visualization and outdated package alerts
+- [ ] #148 Build "install skill to agent" flow — add MCP tools/skills per provider
+- [ ] #149 Build first-party plugin examples using the same plugin API
+- [ ] #150 Implement VoiceOver accessibility support
+- [ ] #151 Add keyboard navigation for all features
+- [ ] #152 Add high contrast mode and reduced motion support
+- [ ] #153 Implement settings import/export
+- [ ] #156 Implement Tree-sitter based syntax highlighting
+- [ ] #157 Build user profile and account page
+- [ ] #159 Add notification grouping (by project and type)
+- [ ] #160 Implement AI smart notification triage
+- [ ] #161 Add error trends over time charts in observability
+- [ ] #162 Add error-to-deployment correlation in observability
+- [ ] #163 Build calendar week and month views
+- [ ] #164 Add focus mode with distraction blocking
+- [ ] #165 Add code block sharing with syntax highlighting in messages
+- [ ] #166 Implement @mention autocomplete in messaging
+- [ ] #167 Add reactions support in messaging
+- [ ] #168 Build extension/plugin marketplace browser
+- [ ] #171 Build search results with preview pane in command palette
+- [ ] #172 Add parameter input for commands in command palette
+- [ ] #173 Add screenshot capture to quick capture
+- [ ] #174 Build tag system for notes with filtering
+- [ ] #175 Add timestamped collapsible entries to notes
+- [ ] #176 Implement multiple window support
+- [ ] #177 Add window layout save and restore
+- [ ] #178 Add AI-powered refactoring suggestions
+- [ ] #179 Implement document export (PDF, HTML) in docs mode
+- [ ] #180 Build API documentation auto-generation from code
+- [ ] #181 Add message search in messaging mode
+- [ ] #182 Add presence indicators (online/offline) in messaging
+- [ ] #183 Build alert configuration for observability
+- [ ] #184 Add service health map in observability
+- [ ] #185 Implement drag-to-create time blocks in schedule
+- [ ] #186 Add meeting join buttons in schedule view
+- [ ] #187 Implement search scopes and filters for project search
+- [ ] #188 Add search history with recent searches
+- [ ] #189 Build review statistics dashboard (time to review, comments per PR)
+- [ ] #190 Add linked tickets display in PR review
+- [ ] #191 Implement time tracking on tickets
+- [ ] #192 Add custom fields per project on tickets
+- [ ] #193 Implement multi-agent orchestration UI with agent dispatch panel
+- [ ] #194 Add cost budget tracking with per-session spend warnings
+- [ ] #195 Add ticket archive and done-state management
+- [ ] #196 Add estimation poker / story point voting on tickets
+- [ ] #198 Implement file-level approve/reject in review mode
+- [ ] #199 Add code owners and auto-reviewer assignment
+- [ ] #200 Add review request notifications
+- [ ] #202 Add review templates for standardized reviews
+- [ ] #203 Implement batch review (review multiple PRs)
+- [ ] #204 Add CI status display in review mode (tests passing indicator)
+- [ ] #205 Add review history (previously reviewed PRs)
+- [ ] #206 Add cross-repo review support (monorepo)
+- [ ] #207 Implement one-click deploy button that triggers real deployment
+- [ ] #208 Add health checks and uptime monitoring to ship mode
+- [ ] #209 Add domain management to ship mode
+- [ ] #210 Build deployment pipeline visualization
+- [ ] #211 Add auto-deploy on merge configuration
+- [ ] #212 Add deploy notifications (Slack/email integration)
+- [ ] #213 Add resource usage monitoring (CPU, memory, bandwidth) to ship mode
+- [ ] #214 Add cost per environment display in ship mode
+- [ ] #215 Add feature flags integration to ship mode
+- [ ] #216 Add deployment approval workflow
+- [ ] #217 Add secrets rotation reminders in ship mode
+- [ ] #218 Add deployment log search in ship mode
+- [ ] #219 Add multi-service deploy coordination
+- [ ] #220 Add rollback dry-run preview
+- [ ] #221 Add canary/blue-green deployment support
+- [ ] #222 Add code actions and quick fixes from LSP
+- [ ] #224 Implement database migration runner in database mode
+- [ ] #225 Add index analysis for database tables
+- [ ] #226 Add schema diff between environments for database
+- [ ] #227 Add AI data seed generation for database
+- [ ] #228 Add row-level editing in database table browser
+- [ ] #229 Add foreign key navigation in database browser
+- [ ] #230 Add terminal resize handling with proper reflow
+- [ ] #231 Add command history search in terminal (Ctrl+R)
+- [ ] #232 Add copy/paste with proper selection in terminal
+- [ ] #233 Add kill/restart terminal functionality
+- [ ] #234 Add per-terminal environment variable management
+- [ ] #235 Add terminal split with editor side-by-side
+- [ ] #236 Add external docs browsing (DevDocs, MDN integration)
+- [ ] #237 Add document templates in docs mode
+- [ ] #238 Add table of contents / outline sidebar for documents
+- [ ] #239 Add collaborative editing indicators in docs
+- [ ] #240 Add image embedding in docs editor
+- [ ] #241 Add code snippet embedding with syntax highlighting in docs
+- [ ] #242 Add README generator using AI
+- [ ] #243 Add personal vs team vs external doc sections
+- [ ] #244 Add file sharing in messages
+- [ ] #245 Build agent work-in-progress timeline panel showing all active agents and their current steps
+- [ ] #246 Add channel creation and management in messaging
+- [ ] #247 Add message pinning in messaging
+- [ ] #248 Build agent synthesis room — shared canvas where multiple agents post findings and one orchestrator agent consolidates
+- [ ] #249 Build conflict detection for concurrent agent edits — warn when two agents modify the same file
+- [ ] #250 Add DM (direct message) conversations in messaging
+- [ ] #251 Add notification preferences per channel in messaging
+- [ ] #252 Build predictive next-action suggestions — AI proposes "what to do next" after each agent session
+- [ ] #253 Add message formatting toolbar in messaging
+- [ ] #255 Add snooze functionality for notifications
+- [ ] #256 Build AI documentation generator — one-click doc generation for selected functions or entire files
+- [ ] #257 Add batch actions for notifications (mark all read, archive)
+- [ ] #258 Add filter by source/type for notifications
+- [ ] #259 Build AI test generator — generate test cases for selected function with one command
+- [ ] #260 Add Do Not Disturb mode for notifications
+- [ ] #262 Add notification digest (daily summary email)
+- [ ] #263 Build CI/CD pipeline trigger from Anvil — run builds and watch results in-app after merging
+- [ ] #264 Add priority-based sorting for notifications
+- [ ] #265 Build release notes generator — AI drafts release notes from commits between two tags/branches
+- [ ] #266 Add sound preferences for notifications
+- [ ] #267 Build shared agent session — invite a teammate to observe and co-steer a live agent session
+- [ ] #268 Add macOS Notification Center integration
+- [ ] #269 Build team productivity dashboard — shows all team members' active sessions, recent completions, and output stats
+- [ ] #270 Add error grouping and deduplication in observability
+- [ ] #271 Build "follow mode" in editor — track a teammate's file navigation in real-time
+- [ ] #272 Add metric time-series charts in observability
+- [ ] #273 Build Aider-style "architect + editor" dual-agent mode — one agent plans, another implements
+- [ ] #274 Add real-time streaming errors in observability
+- [ ] #275 Build Continue.dev-style slash context injection — /file, /folder, /git-diff, /terminal as context blocks
+- [ ] #276 Add error assignment (assign to team member) in observability
+- [ ] #278 Add schedule conflict detection
+- [ ] #279 Build named checkpoints — snapshot agent session state and restore to any point
+- [ ] #280 Add availability sharing in schedule
+- [ ] #281 Build Augment-style codebase indexing — background index for fast semantic search across all files
+- [ ] #282 Add recurring events in schedule
+- [ ] #284 Add ticket deadline integration in schedule
+- [ ] #285 Build smart auto-commit — agent automatically stages and commits after successful task completion
+- [ ] #286 Add AI schedule optimization
+- [ ] #288 Build iPad companion app for PR review — optimized for reviewing diffs on large touch screen
+- [ ] #290 Build "explain this code" hover popup — hover any symbol to get an AI explanation without leaving the editor
+- [ ] #291 Add custom command registration from plugins
+- [ ] #292 Add settings sync across machines
+- [ ] #293 Build agent event triggers — fire an agent automatically on GitHub webhook events (PR opened, CI failed)
+- [ ] #294 Add proxy configuration in settings
+- [ ] #295 Build dependency vulnerability scanner — agent checks package dependencies against CVE database and suggests fixes
+- [ ] #296 Add telemetry opt-in/out in settings
+- [ ] #297 Build ambient agent — always-on background agent that watches for compile errors and suggests fixes proactively
+- [ ] #298 Add reset to defaults per section in settings
+- [ ] #300 Add voice note capture to quick capture
+- [ ] #301 Build multi-file refactor preview — show all files that will change before committing a large rename or refactor
+- [ ] #302 Add link/bookmark saving to quick capture
+- [ ] #303 Add note templates to quick capture
+- [ ] #304 Build voice-to-agent — dictate agent instructions via microphone using on-device speech recognition
+- [ ] #305 Add daily log auto-generation in quick capture
+- [ ] #309 Build macOS menu bar companion — quick-fire agent task from menu bar without opening the full app
+- [ ] #310 Add search results with file preview and match context
+- [ ] #311 Build code review AI assistant — agent explains every comment in a PR and suggests how to respond
+- [ ] #312 Add auto-fix suggestions in problems panel
+- [ ] #314 Implement debug console for evaluating expressions
+- [ ] #315 Build "agent persona" system — configure custom system prompts per project role (backend, frontend, DevOps)
+- [ ] #316 Implement step through/over/out debug controls
+- [ ] #317 Build agent cost estimator — show predicted token cost before running a task based on context size
+- [ ] #318 Build plugin settings management UI
+- [ ] #319 Build "diff since last session" view — show all files changed by agents since the developer last manually reviewed
+- [ ] #320 Add plugin update management
+- [ ] #321 Add plugin recommendations based on project type
+- [ ] #322 Implement "Move to File" refactoring
+- [ ] #323 Implement "Inline Variable" refactoring
+- [ ] #324 Build shared agent sessions (pair programming with AI)
+- [ ] #325 Build team activity feed
+- [ ] #326 Add shared bookmarks and notes for team
+- [ ] #327 Add code review assignments and tracking
+- [ ] #328 Add context-aware AI completions using open files and recent edits
+- [ ] #329 Add AI completion provider selection (Claude, Copilot, local model)
+- [ ] #330 Build 3-way merge tool for conflict resolution
+- [ ] #331 Build folder comparison view
+- [ ] #332 Add merge preview before executing merge
+- [ ] #333 Add environment variables for API client requests
+- [ ] #334 Add response visualization in API client
+- [ ] #335 Add Docker image management
+- [ ] #336 Add container resource monitoring
+- [ ] #337 Build plugin SDK — PluginProtocol, ViewRegistration, CommandRegistration, ACPAccess, StorageAccess
+- [ ] #338 Add vulnerability scanning for dependencies
+- [ ] #339 Add license compliance checking for dependencies
+- [ ] #340 Build plugin loading and sandboxing system — PluginManager, dynamic loading, permission enforcement
+- [ ] #341 Add dependency update assistant
+- [ ] #342 Build plugin marketplace browser — search Anvil marketplace + MCP registry, install/uninstall skills
+- [ ] #343 Add detachable panels support
+- [ ] #344 Add full-screen mode
+- [ ] #346 Add usage statistics dashboard
+- [ ] #347 Build event bus — domain event pub/sub with OnPRMerged, OnBuildFailed, OnAgentCompleted handlers
+- [ ] #348 Add billing and subscription info to profile
+- [ ] #349 Add team management page
+- [ ] #350 Build stacked diff view — layered dependent changes with per-layer approve/reject in Review mode
+- [ ] #351 Add dynamic type support (font scaling)
+- [ ] #352 Build agent workspace view — file tree of agent's worktree with diff-against-baseline per file
+- [ ] #353 Add AI-generated snippets in editor
+- [ ] #355 Add snippet sharing between team members
+- [ ] #356 Build secrets vault — macOS Keychain-backed secret store with vault browser UI and env injection
+- [ ] #357 Add ghost text suggestions from AI inline edit
+- [ ] #358 Add multi-file edit proposals from AI
+- [ ] #359 Build remote environments mode — SSH connections, port tunnels, cloud dev environments (Codespaces/Gitpod)
+- [ ] #360 Add AI edit history with undo support
+- [ ] #361 Build containers mode — Docker dashboard with compose visualizer, image browser, and IaC plan viewer
+- [ ] #362 Build API mode (Primitive 16) — request builder, response viewer, collection browser, schema explorer
+- [ ] #363 Build design mode (Primitive 19) — Figma browser, component inspection panel, design token manager
+- [ ] #364 Build voice mode (Primitive 18) — dictation, voice commands, live transcription overlay
+- [ ] #365 Build package management mode (Primitive 25) — dependency tree, vulnerability report, update dashboard
+- [ ] #366 Build analytics mode (Primitive 24) — AI cost breakdown, velocity charts, activity timeline dashboard
+- [ ] #367 Build personal tasks mode (Primitive 20) — task list, daily log, bookmarks, quick capture integration
+- [ ] #368 Build schedule mode (Primitive 21) — calendar view, time blocks, focus planner, agenda sidebar
+- [ ] #369 Build CI/CD mode (Primitive 13) — pipeline dashboard, build detail, test report, build queue
+- [ ] #370 Build review inbox — Superhuman-style triage with j/k navigation, a/r approve/reject, batch operations
+- [ ] #371 Build ACP router — per-task-type model selection, cost budgets, fallback chains, per-project overrides
+- [ ] #372 Build global search mode (Primitive 23) — ⌘K everything search across all primitives with full-text index
+- [ ] #373 Build agent launch sheet — new session configuration sheet with model picker, context injection, worktree setup
+- [ ] #374 Build AnvilGitHubPlugin first-party plugin — GitHub as Source Control Cloud provider using plugin SDK
+- [ ] #375 Build AnvilSlackPlugin first-party plugin — Slack as Messaging provider
+- [ ] #376 Build AnvilVercelPlugin first-party plugin — Vercel as Hosting provider
+- [ ] #377 Build AnvilSentryPlugin first-party plugin — Sentry as Observability provider
+- [ ] #378 Build AnvilDockerPlugin first-party plugin — Docker as Containers provider
+- [ ] #379 Build AnvilNeonPlugin first-party plugin — Neon as Database provider with branch explorer
+- [ ] #380 Build AnvilFigmaPlugin first-party plugin — Figma as Design provider
+- [ ] #381 Build keyboard system — KeyboardManager, ChordTracker, configurable keybindings, Keybinding Settings
+- [ ] #382 Build project lifecycle flows — new project from blank/template/clone/existing, graduation to GitHub
+- [ ] #383 Build inter-primitive link system — bidirectional links between tickets, branches, PRs, agent sessions, deploys
+- [ ] #384 Build full settings window — General, Providers, Appearance, Keybindings, Plugins, Projects tabs
+- [ ] #385 Build sidebar resize and collapse — 260px default, resizable, collapses to 48px icon rail
+- [ ] #386 Build inspector panel (right detail panel) — contextual content, 320px default, ⌘⇧I toggle
+- [ ] #387 Build tab system in content area — ⌘T new tab, ⌘W close, ⌘⇧[/] switch, split views
+- [ ] #388 Build agent session forking — branch conversation from any message to explore different approaches
+- [ ] #389 Build ACP provider settings UI — configure Claude/OpenAI/Ollama/Gemini with API keys, models, routing
+- [ ] #390 Build inlay hints and code lens — LSP-powered inline metadata above functions showing test status, git blame, coverage
+- [ ] #391 Build Linear plugin — implement TicketPort for Linear with real-time sync and issue creation
+- [ ] #392 Build ⌘E quick switch — recent items overlay for instant navigation between recently viewed files, tickets, sessions
+- [ ] #393 Build AI-powered PR description generator — auto-generate PR body from diff + linked ticket + project notes
+- [ ] #394 Build "My Work" view — cross-project personal queue of in-progress tickets, PRs awaiting review, active sessions
+- [ ] #395 Build ACP cost tracking — real-time token counting, session cost, daily total in status bar
+- [ ] #396 Build snapshot manager in testing mode — list test snapshots, review/approve/reject mismatches
+- [ ] #397 Build "AI review current file" — ⌘⇧R dispatches AI code review of the active file with security/style/correctness checks
+- [ ] #398 Build Ollama local model adapter — connect to local Ollama server as ACP provider for privacy-first workflows
