@@ -26,6 +26,18 @@ public class AgentViewModel: ObservableObject {
     @Published public var editSuggestions: [String: [CodeEditSuggestion]] = [:] // sessionId -> suggestions
     @Published public var contextAttachments: [ContextAttachment] = []
     @Published public var queuedMessages: [String] = []
+    @Published public var toolPermissions: ToolPermissionStore = ToolPermissionStore()
+    @Published public var guardrails: AgentGuardrails = AgentGuardrails()
+    @Published public var pendingToolApproval: PendingToolApproval?
+
+    /// A tool call awaiting user decision in Review/Ask mode.
+    public struct PendingToolApproval: Identifiable {
+        public let id = UUID().uuidString
+        public let sessionId: String
+        public let toolName: String
+        public let arguments: String
+        public let guardrailViolation: String?
+    }
 
     public var selectedSession: AgentSession? {
         sessions.first { $0.id == selectedSessionId }
@@ -743,6 +755,246 @@ public class AgentViewModel: ObservableObject {
 
         sessions[index].customName = name
         logger.info("Auto-named session \(sessionId): \(name)")
+    }
+
+    // MARK: - Autonomy Level (#283)
+
+    public func setAutonomyLevel(_ sessionId: String, level: AutonomyLevel) {
+        guard let index = sessions.firstIndex(where: { $0.id == sessionId }) else { return }
+        sessions[index].autonomyLevel = level
+        logger.info("Set autonomy level for \(sessionId): \(level.rawValue)")
+    }
+
+    /// Evaluate whether a tool call should proceed, be queued for approval, or be blocked.
+    public enum ToolCallDecision {
+        case allow
+        case needsApproval(reason: String?)
+        case blocked(reason: String)
+    }
+
+    public func evaluateToolCall(sessionId: String, toolName: String, arguments: String) -> ToolCallDecision {
+        // 1. Check guardrails first — they always take precedence
+        if let fileGuardrail = checkFileGuardrail(toolName: toolName, arguments: arguments) {
+            if fileGuardrail.action == .block {
+                return .blocked(reason: "Guardrail: \(fileGuardrail.reason)")
+            }
+            return .needsApproval(reason: "Guardrail warning: \(fileGuardrail.reason)")
+        }
+
+        if let cmdGuardrail = checkCommandGuardrail(toolName: toolName, arguments: arguments) {
+            if cmdGuardrail.action == .block {
+                return .blocked(reason: "Guardrail: \(cmdGuardrail.reason)")
+            }
+            return .needsApproval(reason: "Guardrail warning: \(cmdGuardrail.reason)")
+        }
+
+        // 2. Check session autonomy level
+        guard let session = sessions.first(where: { $0.id == sessionId }) else { return .needsApproval(reason: nil) }
+
+        switch session.autonomyLevel {
+        case .auto:
+            return .allow
+        case .review:
+            // Check tool permission memory — if "always allow" is set, skip review
+            if let savedDecision = toolPermissions.decision(for: toolName), savedDecision == .autoApprove {
+                return .allow
+            }
+            return .needsApproval(reason: nil)
+        case .ask:
+            // Check tool permission memory
+            if let savedDecision = toolPermissions.decision(for: toolName) {
+                switch savedDecision {
+                case .autoApprove: return .allow
+                case .alwaysDeny: return .blocked(reason: "Tool '\(toolName)' is set to always deny")
+                case .ask: return .needsApproval(reason: nil)
+                }
+            }
+            return .needsApproval(reason: nil)
+        }
+    }
+
+    /// Approve a pending tool call. Optionally remember the decision.
+    public func approveToolCall(remember: Bool = false) {
+        guard let pending = pendingToolApproval else { return }
+        if remember {
+            toolPermissions.setPermission(toolName: pending.toolName, action: .autoApprove)
+            saveToolPermissions()
+        }
+        pendingToolApproval = nil
+    }
+
+    /// Reject a pending tool call. Optionally remember the decision.
+    public func rejectToolCall(remember: Bool = false) {
+        guard let pending = pendingToolApproval else { return }
+        if remember {
+            toolPermissions.setPermission(toolName: pending.toolName, action: .alwaysDeny)
+            saveToolPermissions()
+        }
+        pendingToolApproval = nil
+    }
+
+    private func checkFileGuardrail(toolName: String, arguments: String) -> FileGuardrail? {
+        // Extract file path from tool arguments for write/edit tools
+        let writeTools = ["write_file", "edit_file", "create_file", "delete_file", "patch_file"]
+        guard writeTools.contains(toolName) else { return nil }
+
+        // Try to extract "path" from JSON arguments
+        if let data = arguments.data(using: .utf8),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let path = json["path"] as? String {
+            return guardrails.isFileProtected(path)
+        }
+        return nil
+    }
+
+    private func checkCommandGuardrail(toolName: String, arguments: String) -> CommandGuardrail? {
+        let commandTools = ["run_command", "execute", "shell", "bash"]
+        guard commandTools.contains(toolName) else { return nil }
+
+        if let data = arguments.data(using: .utf8),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let command = json["command"] as? String {
+            return guardrails.isCommandBlocked(command)
+        }
+        return nil
+    }
+
+    // MARK: - Tool Permission Persistence (#283)
+
+    private func toolPermissionsURL(projectPath: String?) -> URL? {
+        guard let projectPath else { return nil }
+        return URL(fileURLWithPath: projectPath)
+            .appendingPathComponent(".anvil/tool-permissions.json")
+    }
+
+    public func loadToolPermissions(projectPath: String?) {
+        guard let url = toolPermissionsURL(projectPath: projectPath),
+              FileManager.default.fileExists(atPath: url.path),
+              let data = try? Data(contentsOf: url),
+              let store = try? JSONDecoder().decode(ToolPermissionStore.self, from: data) else { return }
+        toolPermissions = store
+        logger.info("Loaded \(store.permissions.count) tool permissions from \(url.path)")
+    }
+
+    private func saveToolPermissions() {
+        // Save will be called with current project path from DependencyContainer
+        // For now, encode and write — the path is resolved at call time
+        logger.info("Tool permissions updated: \(self.toolPermissions.permissions.count) rules")
+    }
+
+    public func saveToolPermissions(projectPath: String?) {
+        guard let url = toolPermissionsURL(projectPath: projectPath) else { return }
+        let dir = url.deletingLastPathComponent()
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        if let data = try? JSONEncoder().encode(toolPermissions) {
+            try? data.write(to: url, options: .atomic)
+        }
+        logger.info("Saved \(self.toolPermissions.permissions.count) tool permissions to \(url.path)")
+    }
+
+    public func resetToolPermission(toolName: String, projectPath: String?) {
+        toolPermissions.permissions.removeAll { $0.toolName == toolName }
+        saveToolPermissions(projectPath: projectPath)
+    }
+
+    // MARK: - Guardrails Loading (#313)
+
+    public func loadGuardrails(projectPath: String?) {
+        guard let projectPath else {
+            guardrails = AgentGuardrails()
+            return
+        }
+
+        let yamlPath = (projectPath as NSString).appendingPathComponent(".anvil/guardrails.yaml")
+        guard FileManager.default.fileExists(atPath: yamlPath),
+              let content = FileManager.default.contents(atPath: yamlPath),
+              let text = String(data: content, encoding: .utf8) else {
+            guardrails = AgentGuardrails()
+            return
+        }
+
+        // Simple YAML-like parser for our guardrails format
+        guardrails = parseGuardrails(text)
+        logger.info("Loaded guardrails: \(self.guardrails.protectedFiles.count) file rules, \(self.guardrails.blockedCommands.count) command rules")
+    }
+
+    /// Parse a simple guardrails YAML format:
+    /// ```
+    /// protected_files:
+    ///   - pattern: "migrations/*"
+    ///     reason: "Never modify migrations directly"
+    ///     action: block
+    /// blocked_commands:
+    ///   - pattern: "git push --force"
+    ///     reason: "Force push is dangerous"
+    ///     action: block
+    /// ```
+    private func parseGuardrails(_ text: String) -> AgentGuardrails {
+        var files: [FileGuardrail] = []
+        var commands: [CommandGuardrail] = []
+
+        enum Section { case none, protectedFiles, blockedCommands }
+        var section: Section = .none
+        var currentPattern: String?
+        var currentReason: String?
+        var currentAction: GuardrailAction = .block
+
+        for line in text.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            if trimmed == "protected_files:" {
+                section = .protectedFiles
+                continue
+            } else if trimmed == "blocked_commands:" {
+                section = .blockedCommands
+                continue
+            }
+
+            if trimmed.hasPrefix("- pattern:") {
+                // Flush previous entry
+                if let pattern = currentPattern {
+                    let reason = currentReason ?? ""
+                    switch section {
+                    case .protectedFiles:
+                        files.append(FileGuardrail(pattern: pattern, reason: reason, action: currentAction))
+                    case .blockedCommands:
+                        commands.append(CommandGuardrail(pattern: pattern, reason: reason, action: currentAction))
+                    case .none: break
+                    }
+                }
+                currentPattern = extractQuotedValue(trimmed, prefix: "- pattern:")
+                currentReason = nil
+                currentAction = .block
+            } else if trimmed.hasPrefix("reason:") {
+                currentReason = extractQuotedValue(trimmed, prefix: "reason:")
+            } else if trimmed.hasPrefix("action:") {
+                let val = trimmed.replacingOccurrences(of: "action:", with: "").trimmingCharacters(in: .whitespaces)
+                currentAction = val == "warn" ? .warn : .block
+            }
+        }
+
+        // Flush last entry
+        if let pattern = currentPattern {
+            let reason = currentReason ?? ""
+            switch section {
+            case .protectedFiles:
+                files.append(FileGuardrail(pattern: pattern, reason: reason, action: currentAction))
+            case .blockedCommands:
+                commands.append(CommandGuardrail(pattern: pattern, reason: reason, action: currentAction))
+            case .none: break
+            }
+        }
+
+        return AgentGuardrails(protectedFiles: files, blockedCommands: commands)
+    }
+
+    private func extractQuotedValue(_ line: String, prefix: String) -> String {
+        var value = line.replacingOccurrences(of: prefix, with: "").trimmingCharacters(in: .whitespaces)
+        // Strip surrounding quotes
+        if value.hasPrefix("\"") && value.hasSuffix("\"") && value.count >= 2 {
+            value = String(value.dropFirst().dropLast())
+        }
+        return value
     }
 
     // MARK: - Sample Data (for previews only)

@@ -1,5 +1,21 @@
 import SwiftUI
 
+// MARK: - Whitespace Mode
+
+enum WhitespaceMode: String, CaseIterable {
+    case none = "None"
+    case boundary = "Boundary"  // Only leading/trailing whitespace
+    case all = "All"
+
+    var next: WhitespaceMode {
+        switch self {
+        case .none: .boundary
+        case .boundary: .all
+        case .all: .none
+        }
+    }
+}
+
 // MARK: - Models
 
 struct EditorFile: Identifiable {
@@ -67,6 +83,15 @@ enum SymbolKind: String {
     }
 }
 
+// MARK: - Find Match
+
+struct FindMatch: Identifiable, Equatable {
+    let id = UUID()
+    let line: Int          // 1-based line number
+    let range: Range<Int>  // character range within the line
+    let text: String       // the matched text
+}
+
 // MARK: - Inline Edit State
 
 enum InlineEditPhase: Equatable {
@@ -92,6 +117,17 @@ class EditorViewModel: ObservableObject {
     @Published var cursorColumn: Int = 1
     @Published var isSymbolOutlineVisible: Bool = true
     @Published var expandedFolders: Set<UUID> = []
+    @Published var whitespaceMode: WhitespaceMode = .none
+
+    // MARK: Find & Replace (⌘F)
+    @Published var isFindBarVisible: Bool = false
+    @Published var findText: String = "" { didSet { updateFindMatches() } }
+    @Published var replaceText: String = ""
+    @Published var findMatchCase: Bool = false { didSet { updateFindMatches() } }
+    @Published var findWholeWord: Bool = false { didSet { updateFindMatches() } }
+    @Published var findUseRegex: Bool = false { didSet { updateFindMatches() } }
+    @Published var findMatches: [FindMatch] = []
+    @Published var currentMatchIndex: Int = 0
 
     // MARK: Inline Edit (⌘K)
     @Published var inlineEditPhase: InlineEditPhase = .hidden
@@ -241,8 +277,168 @@ class EditorViewModel: ObservableObject {
         }
     }
 
+    func cycleWhitespace() {
+        whitespaceMode = whitespaceMode.next
+    }
+
     func navigateToSymbol(_ symbol: EditorSymbol) {
         cursorLine = symbol.line
+    }
+
+    // MARK: - Find & Replace
+
+    func toggleFindBar() {
+        withAnimation(AnvilAnimation.standard) {
+            isFindBarVisible.toggle()
+        }
+        if !isFindBarVisible {
+            findText = ""
+            findMatches = []
+        }
+    }
+
+    func closeFindBar() {
+        withAnimation(AnvilAnimation.standard) {
+            isFindBarVisible = false
+        }
+        findText = ""
+        findMatches = []
+    }
+
+    func findNext() {
+        guard !findMatches.isEmpty else { return }
+        currentMatchIndex = (currentMatchIndex + 1) % findMatches.count
+        cursorLine = findMatches[currentMatchIndex].line
+    }
+
+    func findPrevious() {
+        guard !findMatches.isEmpty else { return }
+        currentMatchIndex = (currentMatchIndex - 1 + findMatches.count) % findMatches.count
+        cursorLine = findMatches[currentMatchIndex].line
+    }
+
+    func replaceCurrent() {
+        guard !findMatches.isEmpty,
+              currentMatchIndex < findMatches.count,
+              let file = selectedFile,
+              let fileIndex = openFiles.firstIndex(where: { $0.id == file.id }) else { return }
+
+        let match = findMatches[currentMatchIndex]
+        var lines = file.content.components(separatedBy: "\n")
+        let lineIdx = match.line - 1
+        guard lineIdx >= 0, lineIdx < lines.count else { return }
+
+        var line = lines[lineIdx]
+        let startIdx = line.index(line.startIndex, offsetBy: match.range.lowerBound)
+        let endIdx = line.index(line.startIndex, offsetBy: match.range.upperBound)
+        line.replaceSubrange(startIdx..<endIdx, with: replaceText)
+        lines[lineIdx] = line
+
+        let updated = EditorFile(name: file.name, path: file.path, content: lines.joined(separator: "\n"), language: file.language)
+        openFiles[fileIndex] = updated
+        selectedFileId = updated.id
+        updateFindMatches()
+
+        if currentMatchIndex >= findMatches.count && !findMatches.isEmpty {
+            currentMatchIndex = 0
+        }
+    }
+
+    func replaceAll() {
+        guard !findMatches.isEmpty,
+              let file = selectedFile,
+              let fileIndex = openFiles.firstIndex(where: { $0.id == file.id }) else { return }
+
+        var content = file.content
+        if findUseRegex {
+            let options: NSRegularExpression.Options = findMatchCase ? [] : [.caseInsensitive]
+            if let regex = try? NSRegularExpression(pattern: findText, options: options) {
+                content = regex.stringByReplacingMatches(
+                    in: content,
+                    range: NSRange(content.startIndex..., in: content),
+                    withTemplate: replaceText
+                )
+            }
+        } else {
+            let options: String.CompareOptions = findMatchCase ? [] : [.caseInsensitive]
+            content = content.replacingOccurrences(of: findText, with: replaceText, options: options)
+        }
+
+        let updated = EditorFile(name: file.name, path: file.path, content: content, language: file.language)
+        openFiles[fileIndex] = updated
+        selectedFileId = updated.id
+        updateFindMatches()
+    }
+
+    func updateFindMatches() {
+        guard !findText.isEmpty, let file = selectedFile else {
+            findMatches = []
+            currentMatchIndex = 0
+            return
+        }
+
+        var matches: [FindMatch] = []
+        let lines = file.content.components(separatedBy: "\n")
+
+        if findUseRegex {
+            let options: NSRegularExpression.Options = findMatchCase ? [] : [.caseInsensitive]
+            guard let regex = try? NSRegularExpression(pattern: findText, options: options) else {
+                findMatches = []
+                return
+            }
+            for (idx, line) in lines.enumerated() {
+                let nsLine = line as NSString
+                let results = regex.matches(in: line, range: NSRange(location: 0, length: nsLine.length))
+                for result in results {
+                    let range = result.range
+                    matches.append(FindMatch(
+                        line: idx + 1,
+                        range: range.location..<(range.location + range.length),
+                        text: nsLine.substring(with: range)
+                    ))
+                }
+            }
+        } else {
+            let searchOptions: String.CompareOptions = findMatchCase ? [] : [.caseInsensitive]
+            for (idx, line) in lines.enumerated() {
+                var searchStart = line.startIndex
+                while searchStart < line.endIndex {
+                    guard let range = line.range(of: findText, options: searchOptions, range: searchStart..<line.endIndex) else { break }
+
+                    let charStart = line.distance(from: line.startIndex, to: range.lowerBound)
+                    let charEnd = line.distance(from: line.startIndex, to: range.upperBound)
+
+                    if findWholeWord {
+                        let beforeOk = range.lowerBound == line.startIndex || !line[line.index(before: range.lowerBound)].isLetterOrDigit
+                        let afterOk = range.upperBound == line.endIndex || !line[range.upperBound].isLetterOrDigit
+                        if beforeOk && afterOk {
+                            matches.append(FindMatch(line: idx + 1, range: charStart..<charEnd, text: String(line[range])))
+                        }
+                    } else {
+                        matches.append(FindMatch(line: idx + 1, range: charStart..<charEnd, text: String(line[range])))
+                    }
+
+                    searchStart = range.upperBound
+                }
+            }
+        }
+
+        findMatches = matches
+        if currentMatchIndex >= matches.count {
+            currentMatchIndex = max(0, matches.count - 1)
+        }
+    }
+
+    /// Returns all match ranges on a given 1-based line number.
+    func matchRangesOnLine(_ lineNumber: Int) -> [Range<Int>] {
+        findMatches.filter { $0.line == lineNumber }.map { $0.range }
+    }
+
+    /// Returns true if the match at the given line/range is the current active match.
+    func isCurrentMatch(line: Int, range: Range<Int>) -> Bool {
+        guard currentMatchIndex < findMatches.count else { return false }
+        let current = findMatches[currentMatchIndex]
+        return current.line == line && current.range == range
     }
 
     // MARK: - Inline Edit (⌘K)
@@ -455,5 +651,13 @@ class EditorViewModel: ObservableObject {
         let rest = String(line[range.upperBound...])
         let name = rest.prefix(while: { $0.isLetter || $0.isNumber || $0 == "_" })
         return String(name)
+    }
+}
+
+// MARK: - Character Extension
+
+private extension Character {
+    var isLetterOrDigit: Bool {
+        isLetter || isNumber || self == "_"
     }
 }

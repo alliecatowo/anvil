@@ -233,7 +233,7 @@ struct BoardView: View {
                     if let due = ticket.dueDate {
                         Text(due, style: .date)
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(IntentViewModel.dueDateColor(due))
                     }
                 }
             }

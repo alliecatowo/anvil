@@ -133,11 +133,11 @@ struct EditorView: View {
                     .padding(.leading, AnvilSpacing.md)
                     .padding(.trailing, AnvilSpacing.xxl)
                     .background(
-                        isSelected
-                            ? AnvilColor.accentBlue.opacity(0.06)
-                            : isCursor
-                                ? AnvilColor.selectionBackground.opacity(0.3)
-                                : Color.clear
+                        lineBackground(
+                            lineNumber: lineNumber,
+                            isSelected: isSelected,
+                            isCursor: isCursor
+                        )
                     )
                     .contentShape(Rectangle())
                     .gesture(
@@ -179,13 +179,21 @@ struct EditorView: View {
     // MARK: - Syntax Highlighting
 
     private func highlightedLine(_ line: String) -> Text {
+        let wsMode = viewModel.whitespaceMode
         let trimmed = line.trimmingCharacters(in: .whitespaces)
 
         // Comment line
         if trimmed.hasPrefix("//") || trimmed.hasPrefix("///") {
+            if wsMode != .none {
+                return tokenizeLineWithWhitespace(line, wsMode: wsMode, isComment: true)
+            }
             return Text(line)
                 .font(AnvilFont.code)
                 .foregroundColor(AnvilColor.textTertiary)
+        }
+
+        if wsMode != .none {
+            return tokenizeLineWithWhitespace(line, wsMode: wsMode, isComment: false)
         }
 
         // Tokenize and color
@@ -247,6 +255,79 @@ struct EditorView: View {
         return result
     }
 
+    // MARK: - Whitespace Visualization
+
+    /// Tokenizes a line with whitespace characters rendered as visible symbols.
+    private func tokenizeLineWithWhitespace(_ line: String, wsMode: WhitespaceMode, isComment: Bool) -> Text {
+        let leadingCount = line.prefix(while: { $0 == " " || $0 == "\t" }).count
+        let trailingCount = line.reversed().prefix(while: { $0 == " " || $0 == "\t" }).count
+        let trailingStart = line.count - trailingCount
+
+        var result = Text("")
+        var current = line.startIndex
+        let end = line.endIndex
+
+        while current < end {
+            let i = line.distance(from: line.startIndex, to: current)
+            let char = line[current]
+            let isWS = char == " " || char == "\t"
+
+            let shouldVisualize: Bool
+            if wsMode == .all {
+                shouldVisualize = isWS
+            } else {
+                shouldVisualize = isWS && (i < leadingCount || i >= trailingStart)
+            }
+
+            if shouldVisualize {
+                let symbol: String = char == "\t" ? "\u{2192}" : "\u{00B7}"
+                result = result + Text(symbol)
+                    .font(AnvilFont.code)
+                    .foregroundColor(AnvilColor.textTertiary.opacity(0.4))
+                current = line.index(after: current)
+            } else if isComment {
+                result = result + Text(String(char))
+                    .font(AnvilFont.code)
+                    .foregroundColor(AnvilColor.textTertiary)
+                current = line.index(after: current)
+            } else if char == "\"" {
+                let stringResult = consumeString(line, from: current)
+                result = result + Text(stringResult.text)
+                    .font(AnvilFont.code)
+                    .foregroundColor(AnvilColor.accentGreen)
+                current = stringResult.end
+            } else if char.isNumber && (current == line.startIndex || !line[line.index(before: current)].isLetter) {
+                let numResult = consumeNumber(line, from: current)
+                result = result + Text(numResult.text)
+                    .font(AnvilFont.code)
+                    .foregroundColor(AnvilColor.accentAmber)
+                current = numResult.end
+            } else if char.isLetter || char == "_" || char == "@" {
+                let wordResult = consumeWord(line, from: current)
+                let color: Color = swiftKeywords.contains(wordResult.text)
+                    ? AnvilColor.accentPurple
+                    : AnvilColor.textPrimary
+                result = result + Text(wordResult.text)
+                    .font(AnvilFont.code)
+                    .foregroundColor(color)
+                current = wordResult.end
+            } else if char == "/" && line.index(after: current) < end && line[line.index(after: current)] == "/" {
+                let remaining = String(line[current...])
+                result = result + Text(remaining)
+                    .font(AnvilFont.code)
+                    .foregroundColor(AnvilColor.textTertiary)
+                current = end
+            } else {
+                result = result + Text(String(char))
+                    .font(AnvilFont.code)
+                    .foregroundColor(AnvilColor.textPrimary)
+                current = line.index(after: current)
+            }
+        }
+
+        return result
+    }
+
     // MARK: - Tokenizer Helpers
 
     private func consumeString(_ line: String, from start: String.Index) -> (text: String, end: String.Index) {
@@ -279,6 +360,26 @@ struct EditorView: View {
             pos = line.index(after: pos)
         }
         return (String(line[start..<pos]), pos)
+    }
+
+    // MARK: - Find Match Highlighting
+
+    private func lineBackground(lineNumber: Int, isSelected: Bool, isCursor: Bool) -> Color {
+        let hasMatch = !viewModel.matchRangesOnLine(lineNumber).isEmpty
+        let hasCurrentMatch = viewModel.matchRangesOnLine(lineNumber).contains(where: {
+            viewModel.isCurrentMatch(line: lineNumber, range: $0)
+        })
+
+        if hasCurrentMatch {
+            return AnvilColor.accentAmber.opacity(0.15)
+        } else if hasMatch {
+            return AnvilColor.accentAmber.opacity(0.06)
+        } else if isSelected {
+            return AnvilColor.accentBlue.opacity(0.06)
+        } else if isCursor {
+            return AnvilColor.selectionBackground.opacity(0.3)
+        }
+        return .clear
     }
 
     // MARK: - Layout Helpers

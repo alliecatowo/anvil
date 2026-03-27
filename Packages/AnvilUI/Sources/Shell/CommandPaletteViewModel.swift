@@ -78,6 +78,7 @@ enum CommandAction: Sendable {
     case clearFilters
     case refreshPRs
     case refreshDeploys
+    case cycleWhitespace
 
     @MainActor
     func perform(on appState: AppState) {
@@ -124,6 +125,8 @@ enum CommandAction: Sendable {
             break // Would trigger PR refresh in review mode
         case .refreshDeploys:
             break // Would trigger deploy refresh in ship mode
+        case .cycleWhitespace:
+            appState.editorViewModel.cycleWhitespace()
         }
     }
 }

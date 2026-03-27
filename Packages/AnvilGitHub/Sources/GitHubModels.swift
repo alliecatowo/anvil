@@ -107,6 +107,27 @@ struct GHCheckSuiteResponse: Decodable, Sendable {
     let checkRuns: [GHCheckRun]
 }
 
+struct GHNotification: Decodable, Sendable {
+    let id: String
+    let reason: String           // "review_requested", "mentioned", "assign", "comment", "ci_activity", etc.
+    let unread: Bool
+    let subject: GHNotificationSubject
+    let repository: GHNotificationRepo
+    let updatedAt: Date
+    let url: String?
+}
+
+struct GHNotificationSubject: Decodable, Sendable {
+    let title: String
+    let url: String?
+    let type: String             // "PullRequest", "Issue", "CheckSuite", "Release", etc.
+}
+
+struct GHNotificationRepo: Decodable, Sendable {
+    let fullName: String
+    let htmlUrl: String
+}
+
 // MARK: - Request Bodies
 
 struct CreatePRRequest: Encodable, Sendable {

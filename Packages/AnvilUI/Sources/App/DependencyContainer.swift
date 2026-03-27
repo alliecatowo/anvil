@@ -33,7 +33,7 @@ public class DependencyContainer: ObservableObject {
 
     // MARK: - GitHub Auth
 
-    public let gitHubAuth = GitHubAuthViewModel()
+    let gitHubAuth = GitHubAuthViewModel()
 
     // MARK: - GitHub Adapter
 

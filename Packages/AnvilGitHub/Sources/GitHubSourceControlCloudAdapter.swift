@@ -159,6 +159,53 @@ public actor GitHubSourceControlCloudAdapter: SourceControlCloudPort {
         throw GitHubError.notConfigured
     }
 
+    // MARK: - Notifications
+
+    public func fetchNotifications(since: Date? = nil) async throws -> [GitHubNotification] {
+        var query: [String: String] = ["per_page": "50"]
+        if let since = since {
+            let formatter = ISO8601DateFormatter()
+            query["since"] = formatter.string(from: since)
+        }
+        let notifications: [GHNotification] = try await client.get("/notifications", query: query)
+        return notifications.map { mapNotification($0) }
+    }
+
+    public func markNotificationRead(threadId: String) async throws {
+        try await client.patch("/notifications/threads/\(threadId)")
+    }
+
+    private func mapNotification(_ n: GHNotification) -> GitHubNotification {
+        let type: GitHubNotification.NotificationType
+        switch n.subject.type {
+        case "PullRequest": type = .pullRequest
+        case "Issue":       type = .issue
+        case "CheckSuite":  type = .ciCheck
+        case "Release":     type = .release
+        default:            type = .other
+        }
+
+        let urgency: GitHubNotification.Urgency
+        switch n.reason {
+        case "review_requested", "assign":     urgency = .high
+        case "ci_activity":                    urgency = .normal
+        case "mention":                        urgency = .high
+        default:                               urgency = .normal
+        }
+
+        return GitHubNotification(
+            id: n.id,
+            title: n.subject.title,
+            reason: n.reason,
+            type: type,
+            repoFullName: n.repository.fullName,
+            url: n.subject.url,
+            unread: n.unread,
+            urgency: urgency,
+            updatedAt: n.updatedAt
+        )
+    }
+
     // MARK: - Mapping
 
     private func mapRepo(_ repo: GHRepo) -> RemoteRepo {

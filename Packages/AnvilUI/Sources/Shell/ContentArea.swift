@@ -141,6 +141,17 @@ struct AgentModeContent: View {
                     },
                     onSetBudget: { budget, hardStop in
                         viewModel.setSessionBudget(session.id, budget: budget, hardStop: hardStop)
+                    },
+                    onSetAutonomy: { level in
+                        viewModel.setAutonomyLevel(session.id, level: level)
+                    },
+                    guardrailCount: viewModel.guardrails.protectedFiles.count + viewModel.guardrails.blockedCommands.count,
+                    pendingApproval: viewModel.pendingToolApproval,
+                    onApproveToolCall: { remember in
+                        viewModel.approveToolCall(remember: remember)
+                    },
+                    onRejectToolCall: { remember in
+                        viewModel.rejectToolCall(remember: remember)
                     }
                 )
             } else {

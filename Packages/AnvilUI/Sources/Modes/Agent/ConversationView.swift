@@ -21,6 +21,11 @@ struct ConversationView: View {
     let onRemoveAttachment: (String) -> Void
     let onAddAttachment: (ContextAttachment) -> Void
     var onSetBudget: ((Decimal?, Bool) -> Void)?
+    var onSetAutonomy: ((AutonomyLevel) -> Void)?
+    var guardrailCount: Int = 0
+    var pendingApproval: AgentViewModel.PendingToolApproval?
+    var onApproveToolCall: ((Bool) -> Void)?
+    var onRejectToolCall: ((Bool) -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -32,7 +37,9 @@ struct ConversationView: View {
                 onDelete: onDelete,
                 onExport: onExport,
                 onExportFile: onExportFile,
-                onSetBudget: onSetBudget
+                onSetBudget: onSetBudget,
+                onSetAutonomy: onSetAutonomy,
+                guardrailCount: guardrailCount
             )
 
             Divider().overlay(AnvilColor.borderSubtle)
@@ -83,6 +90,20 @@ struct ConversationView: View {
                 }
             }
 
+            // Tool approval banner (shown when a tool call needs user decision)
+            if let approval = pendingApproval {
+                ToolApprovalBanner(
+                    toolName: approval.toolName,
+                    arguments: approval.arguments,
+                    guardrailViolation: approval.guardrailViolation,
+                    onApprove: { remember in onApproveToolCall?(remember) },
+                    onReject: { remember in onRejectToolCall?(remember) }
+                )
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, AnvilSpacing.sm)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+
             Divider().overlay(AnvilColor.borderSubtle)
 
             // Input bar with slash commands, @ references, and context attachments
@@ -110,6 +131,8 @@ struct SessionHeader: View {
     let onExport: () -> Void
     let onExportFile: ((SessionExportFormat) -> Void)?
     var onSetBudget: ((Decimal?, Bool) -> Void)?
+    var onSetAutonomy: ((AutonomyLevel) -> Void)?
+    let guardrailCount: Int
 
     @State private var isEditing = false
     @State private var editName = ""
@@ -158,6 +181,21 @@ struct SessionHeader: View {
 
                 // Model picker
                 ModelPicker(selectedModelId: $selectedModelId)
+
+                // Autonomy level picker
+                AutonomyPicker(level: session.autonomyLevel, onChange: onSetAutonomy)
+
+                // Guardrail indicator
+                if guardrailCount > 0 {
+                    HStack(spacing: 2) {
+                        Image(systemName: "shield.checkered")
+                            .font(.system(size: 10))
+                        Text("\(guardrailCount)")
+                            .font(AnvilFont.label)
+                    }
+                    .foregroundStyle(AnvilColor.accentAmber)
+                    .help("\(guardrailCount) guardrail\(guardrailCount == 1 ? "" : "s") active")
+                }
 
                 // Token usage compact — click to expand
                 Button {
@@ -773,5 +811,152 @@ struct SparklesButton: View {
         .menuStyle(.borderlessButton)
         .fixedSize()
         .help("AI Actions")
+    }
+}
+
+// MARK: - Autonomy Picker
+
+struct AutonomyPicker: View {
+    let level: AutonomyLevel
+    let onChange: ((AutonomyLevel) -> Void)?
+
+    var body: some View {
+        Menu {
+            ForEach(AutonomyLevel.allCases, id: \.self) { option in
+                Button {
+                    onChange?(option)
+                } label: {
+                    HStack {
+                        if option == level {
+                            Image(systemName: "checkmark")
+                        }
+                        Text(option.displayName)
+                        Text("- \(option.description)")
+                            .foregroundStyle(AnvilColor.textTertiary)
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: autonomyIcon)
+                    .font(.system(size: 10))
+                Text(level.displayName)
+                    .font(AnvilFont.label)
+            }
+            .foregroundStyle(autonomyColor)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(autonomyColor.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help("Autonomy: \(level.description)")
+    }
+
+    private var autonomyIcon: String {
+        switch level {
+        case .ask: return "hand.raised"
+        case .review: return "eye"
+        case .auto: return "bolt"
+        }
+    }
+
+    private var autonomyColor: Color {
+        switch level {
+        case .ask: return AnvilColor.accentBlue
+        case .review: return AnvilColor.accentAmber
+        case .auto: return AnvilColor.accentGreen
+        }
+    }
+}
+
+// MARK: - Tool Approval Banner
+
+struct ToolApprovalBanner: View {
+    let toolName: String
+    let arguments: String
+    let guardrailViolation: String?
+    let onApprove: (Bool) -> Void  // Bool = remember
+    let onReject: (Bool) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+            HStack {
+                Image(systemName: guardrailViolation != nil ? "shield.slash" : "wrench.and.screwdriver")
+                    .foregroundStyle(guardrailViolation != nil ? AnvilColor.accentRed : AnvilColor.accentAmber)
+                Text("Tool call requires approval")
+                    .font(AnvilFont.sidebarHeader)
+                    .foregroundStyle(AnvilColor.textPrimary)
+                Spacer()
+            }
+
+            HStack(spacing: AnvilSpacing.sm) {
+                Text(toolName)
+                    .font(AnvilFont.code)
+                    .foregroundStyle(AnvilColor.accentPurple)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(AnvilColor.accentPurple.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                Text(arguments.prefix(120))
+                    .font(AnvilFont.code)
+                    .foregroundStyle(AnvilColor.textSecondary)
+                    .lineLimit(2)
+            }
+
+            if let violation = guardrailViolation {
+                HStack(spacing: AnvilSpacing.xs) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(AnvilColor.accentRed)
+                        .font(.system(size: 11))
+                    Text(violation)
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.accentRed)
+                }
+            }
+
+            HStack(spacing: AnvilSpacing.sm) {
+                Button("Approve") { onApprove(false) }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(AnvilColor.accentGreen.opacity(0.15))
+                    .foregroundStyle(AnvilColor.accentGreen)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                Button("Always Allow") { onApprove(true) }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(AnvilColor.accentGreen.opacity(0.08))
+                    .foregroundStyle(AnvilColor.accentGreen)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                Button("Reject") { onReject(false) }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(AnvilColor.accentRed.opacity(0.15))
+                    .foregroundStyle(AnvilColor.accentRed)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                Button("Always Deny") { onReject(true) }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(AnvilColor.accentRed.opacity(0.08))
+                    .foregroundStyle(AnvilColor.accentRed)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+            }
+        }
+        .padding(AnvilSpacing.md)
+        .background(AnvilColor.backgroundSecondary)
+        .overlay(
+            RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
+                .stroke(guardrailViolation != nil ? AnvilColor.accentRed.opacity(0.3) : AnvilColor.accentAmber.opacity(0.3), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
     }
 }

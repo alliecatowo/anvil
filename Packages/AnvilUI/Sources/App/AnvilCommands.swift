@@ -83,6 +83,13 @@ public struct AnvilCommands: Commands {
             }
             .keyboardShortcut("k", modifiers: .command)
 
+            Button("Find in File") {
+                if appState.currentMode == .editor {
+                    appState.triggerFindInFile = true
+                }
+            }
+            .keyboardShortcut("f", modifiers: .command)
+
             Button("Go to File...") {
                 appState.openFilePalette()
             }

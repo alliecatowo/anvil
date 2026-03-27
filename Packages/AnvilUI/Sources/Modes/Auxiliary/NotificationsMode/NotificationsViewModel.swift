@@ -1,5 +1,6 @@
 import SwiftUI
 import AnvilDomain
+import AnvilGitHub
 
 // MARK: - Notifications Tab
 
@@ -79,14 +80,58 @@ final class NotificationsViewModel: ObservableObject {
         self.activityEvents = events
     }
 
+    // MARK: - GitHub Poller
+
+    let gitHubPoller = GitHubNotificationPoller()
+
+    func startGitHubPolling(adapter: GitHubSourceControlCloudAdapter) {
+        gitHubPoller.start(adapter: adapter, viewModel: self)
+    }
+
+    func stopGitHubPolling() {
+        gitHubPoller.stop()
+    }
+
     // MARK: Actions
 
     func markAsRead(_ id: String) {
-        // Stub: would call NotificationPort
+        if let index = inboxItems.firstIndex(where: { $0.id == id }) {
+            let item = inboxItems[index]
+            let updated = InboxItem(
+                id: item.id,
+                notification: AnvilDomain.Notification(
+                    id: item.notification.id,
+                    title: item.notification.title,
+                    body: item.notification.body,
+                    source: item.notification.source,
+                    urgency: item.notification.urgency,
+                    isRead: true,
+                    url: item.notification.url,
+                    createdAt: item.notification.createdAt
+                ),
+                source: item.source
+            )
+            inboxItems[index] = updated
+        }
     }
 
     func markAllAsRead() {
-        // Stub: would call NotificationPort
+        inboxItems = inboxItems.map { item in
+            InboxItem(
+                id: item.id,
+                notification: AnvilDomain.Notification(
+                    id: item.notification.id,
+                    title: item.notification.title,
+                    body: item.notification.body,
+                    source: item.notification.source,
+                    urgency: item.notification.urgency,
+                    isRead: true,
+                    url: item.notification.url,
+                    createdAt: item.notification.createdAt
+                ),
+                source: item.source
+            )
+        }
     }
 
     // MARK: - Sample Data

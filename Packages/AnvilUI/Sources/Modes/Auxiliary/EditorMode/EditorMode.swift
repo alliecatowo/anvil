@@ -43,6 +43,12 @@ struct EditorMode: View {
                 handleCmdK()
             }
         }
+        .onChange(of: appState.triggerFindInFile) { _, trigger in
+            if trigger {
+                appState.triggerFindInFile = false
+                viewModel.toggleFindBar()
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .automatic) {
                 Button {
@@ -100,6 +106,13 @@ struct EditorMode: View {
                 BreadcrumbBar(viewModel: viewModel)
 
                 Divider().overlay(AnvilColor.borderSubtle)
+
+                // Find & Replace bar
+                if viewModel.isFindBarVisible {
+                    FindReplaceBar(viewModel: viewModel)
+
+                    Divider().overlay(AnvilColor.borderSubtle)
+                }
 
                 EditorView(viewModel: viewModel)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

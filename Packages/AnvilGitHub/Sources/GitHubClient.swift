@@ -50,6 +50,10 @@ actor GitHubClient {
         _ = try await request("PUT", path: path)
     }
 
+    func patch(_ path: String) async throws {
+        _ = try await request("PATCH", path: path)
+    }
+
     // MARK: - Private
 
     private func request(_ method: String, path: String, query: [String: String] = [:], body: Data? = nil) async throws -> Data {

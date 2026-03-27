@@ -95,6 +95,8 @@ public class AppState: ObservableObject {
     @Published public var pendingSymbolLine: Int? = nil
     /// Triggers inline edit (⌘K) in editor mode.
     @Published public var triggerInlineEdit: Bool = false
+    /// Triggers find bar (⌘F) in editor mode.
+    @Published public var triggerFindInFile: Bool = false
     @Published public var isQuickCaptureVisible: Bool = false
     @Published public var isProjectNotesVisible: Bool = false
     @Published public var isProjectSwitcherVisible: Bool = false

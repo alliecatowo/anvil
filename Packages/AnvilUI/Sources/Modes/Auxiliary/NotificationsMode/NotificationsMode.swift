@@ -3,6 +3,7 @@ import AnvilDomain
 
 struct NotificationsMode: View {
     @StateObject private var viewModel = NotificationsViewModel()
+    @EnvironmentObject var container: DependencyContainer
 
     var body: some View {
         HStack(spacing: 0) {
@@ -23,6 +24,14 @@ struct NotificationsMode: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(AnvilColor.backgroundPrimary)
+        .onAppear {
+            if let adapter = container.getOrCreateGitHubAdapter() {
+                viewModel.startGitHubPolling(adapter: adapter)
+            }
+        }
+        .onDisappear {
+            viewModel.stopGitHubPolling()
+        }
     }
 
     // MARK: - Tab Selector
