@@ -11,7 +11,7 @@ public struct ModeTabBar: View {
             // Traffic light spacer
             Color.clear.frame(width: 78, height: 1)
 
-            // Core modes
+            // Core modes (always visible with labels)
             ForEach(AnvilMode.coreModes) { mode in
                 ModeTab(
                     mode: mode,
@@ -21,68 +21,71 @@ public struct ModeTabBar: View {
                 ) {
                     appState.switchMode(mode)
                 }
-                .onHover { isHovered in
-                    hoveredMode = isHovered ? mode : nil
-                }
+                .onHover { hoveredMode = $0 ? mode : nil }
             }
 
             Divider()
-                .frame(height: 16)
+                .frame(height: 14)
                 .overlay(AnvilColor.borderSubtle)
-                .padding(.horizontal, AnvilSpacing.sm)
+                .padding(.horizontal, 6)
 
-            // Auxiliary modes
-            ForEach(AnvilMode.auxiliaryModes) { mode in
-                ModeTab(
-                    mode: mode,
-                    isActive: appState.currentMode == mode,
-                    isHovered: hoveredMode == mode,
-                    isCompact: true,
-                    badgeCount: badgeCount(for: mode)
-                ) {
-                    appState.switchMode(mode)
-                }
-                .onHover { isHovered in
-                    hoveredMode = isHovered ? mode : nil
+            // Auxiliary modes (compact icons only, tightly packed)
+            HStack(spacing: 2) {
+                ForEach(AnvilMode.auxiliaryModes) { mode in
+                    ModeTab(
+                        mode: mode,
+                        isActive: appState.currentMode == mode,
+                        isHovered: hoveredMode == mode,
+                        isCompact: true,
+                        badgeCount: badgeCount(for: mode)
+                    ) {
+                        appState.switchMode(mode)
+                    }
+                    .onHover { hoveredMode = $0 ? mode : nil }
                 }
             }
 
             Spacer()
 
-            // Profile avatar
-            ProfileAvatar()
-                .padding(.trailing, AnvilSpacing.sm)
-
             // Search trigger
             Button {
                 appState.toggleCommandPalette()
             } label: {
-                HStack(spacing: AnvilSpacing.xxs) {
+                HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
-                    Text("Search")
-                        .font(AnvilFont.label)
+                        .font(.system(size: 11))
                     Text("\u{2318}K")
-                        .font(AnvilFont.label)
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
                         .foregroundStyle(AnvilColor.textTertiary)
                 }
                 .foregroundStyle(AnvilColor.textSecondary)
-                .padding(.horizontal, AnvilSpacing.sm)
-                .padding(.vertical, AnvilSpacing.xxs)
-                .background(AnvilColor.backgroundTertiary)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(AnvilColor.backgroundTertiary.opacity(0.6))
+                .clipShape(RoundedRectangle(cornerRadius: 5))
             }
             .buttonStyle(.plain)
-            .padding(.trailing, AnvilSpacing.md)
+
+            // Settings gear
+            Button {
+                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 12))
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .help("Settings")
+            .padding(.trailing, 8)
         }
-        .frame(height: 38)
-        .background(.ultraThinMaterial)
-        .background(AnvilColor.backgroundSecondary.opacity(0.7))
+        .frame(height: 36)
+        .background(AnvilColor.backgroundSecondary)
     }
 
     private func badgeCount(for mode: AnvilMode) -> Int {
         switch mode {
         case .agent:
-            // Count pending tool calls across all running sessions
             return appState.agentViewModel.sessions
                 .filter { $0.status == .running }
                 .flatMap(\.messages)
@@ -91,11 +94,6 @@ public struct ModeTabBar: View {
                 .count
         case .review:
             return appState.reviewViewModel.reviews.filter { $0.status == .pending }.count
-        case .messaging:
-            // Unread message count (channels with activity)
-            return appState.intentViewModel.tickets.filter { $0.labels.contains("unread") }.count
-        case .notifications:
-            return appState.intentViewModel.tickets.filter { $0.status == "open" }.count
         default:
             return 0
         }
@@ -114,93 +112,38 @@ struct ModeTab: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 0) {
-                HStack(spacing: AnvilSpacing.xxs) {
-                    Image(systemName: mode.icon)
-                        .font(.system(size: isCompact ? 12 : 13, weight: isActive ? .semibold : .regular))
+            HStack(spacing: 3) {
+                Image(systemName: mode.icon)
+                    .font(.system(size: isCompact ? 11 : 12, weight: isActive ? .semibold : .regular))
 
-                    if !isCompact {
-                        Text(mode.rawValue)
-                            .font(.system(size: 12, weight: isActive ? .semibold : .regular))
-                    }
-
-                    if badgeCount > 0 {
-                        Text("\(badgeCount)")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(AnvilColor.accentRed)
-                            .clipShape(Capsule())
-                    }
+                if !isCompact {
+                    Text(mode.rawValue)
+                        .font(.system(size: 11, weight: isActive ? .semibold : .regular))
                 }
-                .foregroundStyle(foregroundColor)
-                .padding(.horizontal, isCompact ? AnvilSpacing.sm : AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xxs)
-                .background(backgroundFill)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .frame(height: 34)
 
-                // Active indicator line
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(isActive ? AnvilColor.accentPurple : .clear)
-                    .frame(height: 2)
-                    .padding(.horizontal, isCompact ? AnvilSpacing.xs : AnvilSpacing.sm)
+                if badgeCount > 0 {
+                    Text("\(badgeCount)")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 3)
+                        .padding(.vertical, 1)
+                        .background(AnvilColor.accentRed)
+                        .clipShape(Capsule())
+                }
             }
+            .foregroundStyle(foregroundColor)
+            .padding(.horizontal, isCompact ? 6 : 10)
+            .padding(.vertical, 4)
+            .background(isActive ? AnvilColor.backgroundTertiary : (isHovered ? AnvilColor.backgroundTertiary.opacity(0.4) : .clear))
+            .clipShape(RoundedRectangle(cornerRadius: 5))
         }
         .buttonStyle(.plain)
         .help(isCompact ? mode.rawValue : "")
-        .animation(AnvilAnimation.modeSwitch, value: isActive)
     }
 
     private var foregroundColor: Color {
         if isActive { return AnvilColor.textPrimary }
         if isHovered { return AnvilColor.textSecondary }
         return AnvilColor.textTertiary
-    }
-
-    private var backgroundFill: Color {
-        if isActive { return AnvilColor.backgroundTertiary }
-        if isHovered { return AnvilColor.backgroundTertiary.opacity(0.5) }
-        return .clear
-    }
-}
-
-// MARK: - ProfileAvatar
-
-struct ProfileAvatar: View {
-    @State private var isHovered = false
-
-    var body: some View {
-        Button {
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        } label: {
-            ZStack {
-                Circle()
-                    .fill(AnvilColor.accentPurple.opacity(0.2))
-                    .frame(width: 24, height: 24)
-
-                Text(initials)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(AnvilColor.accentPurple)
-            }
-            .overlay(
-                Circle()
-                    .stroke(isHovered ? AnvilColor.accentPurple.opacity(0.5) : .clear, lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-        .onHover { isHovered = $0 }
-        .help("Settings")
-    }
-
-    private var initials: String {
-        // Use first letter of username from system
-        let name = NSFullUserName()
-        let parts = name.split(separator: " ")
-        if parts.count >= 2 {
-            return String(parts[0].prefix(1) + parts[1].prefix(1)).uppercased()
-        }
-        return String(name.prefix(2)).uppercased()
     }
 }
