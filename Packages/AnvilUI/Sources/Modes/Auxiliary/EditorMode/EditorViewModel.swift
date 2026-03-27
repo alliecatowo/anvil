@@ -133,6 +133,7 @@ class EditorViewModel: ObservableObject {
     @Published var showGitGutter: Bool = true
     /// Maps line number → change type for the currently open file.
     @Published var gitLineChanges: [Int: GitLineChange] = [:]
+    @Published var showBracketMatching: Bool = true
 
     // MARK: Find & Replace (⌘F)
     @Published var isFindBarVisible: Bool = false
