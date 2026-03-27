@@ -80,68 +80,72 @@ struct ReviewInboxView: View {
     }
 
     private func reviewRow(_ review: Review) -> some View {
-        HStack(spacing: AnvilSpacing.md) {
-            // Selection checkbox
-            Image(systemName: viewModel.selectedReviewIDs.contains(review.id) ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 14))
-                .foregroundStyle(
-                    viewModel.selectedReviewIDs.contains(review.id)
-                        ? AnvilColor.accentBlue
-                        : AnvilColor.textTertiary
-                )
-                .onTapGesture { viewModel.toggleSelection(review.id) }
-
-            // Status indicator
-            statusIcon(for: review.status)
-
-            // Content
-            VStack(alignment: .leading, spacing: AnvilSpacing.xxxs) {
-                HStack {
-                    Text(review.title)
-                        .font(AnvilFont.body)
-                        .foregroundStyle(AnvilColor.textPrimary)
-                        .lineLimit(1)
-
-                    Spacer()
-
-                    AnvilBadge(
-                        text: review.sourceId,
-                        color: review.sourceType == .pullRequest
+        Button {
+            viewModel.selectReview(review.id)
+        } label: {
+            HStack(spacing: AnvilSpacing.md) {
+                // Selection checkbox
+                Image(systemName: viewModel.selectedReviewIDs.contains(review.id) ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 14))
+                    .foregroundStyle(
+                        viewModel.selectedReviewIDs.contains(review.id)
                             ? AnvilColor.accentBlue
-                            : AnvilColor.accentPurple
+                            : AnvilColor.textTertiary
                     )
-                }
+                    .onTapGesture { viewModel.toggleSelection(review.id) }
 
-                HStack(spacing: AnvilSpacing.sm) {
-                    Text(review.author)
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textSecondary)
+                // Status indicator
+                statusIcon(for: review.status)
 
-                    Text("\(review.diff.count) file\(review.diff.count == 1 ? "" : "s")")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                // Content
+                VStack(alignment: .leading, spacing: AnvilSpacing.xxxs) {
+                    HStack {
+                        Text(review.title)
+                            .font(AnvilFont.body)
+                            .foregroundStyle(AnvilColor.textPrimary)
+                            .lineLimit(1)
 
-                    if !review.comments.isEmpty {
-                        HStack(spacing: AnvilSpacing.xxxs) {
-                            Image(systemName: "bubble.left")
-                                .font(.system(size: 10))
-                            Text("\(review.comments.count)")
-                                .font(AnvilFont.label)
+                        Spacer()
+
+                        AnvilBadge(
+                            text: review.sourceId,
+                            color: review.sourceType == .pullRequest
+                                ? AnvilColor.accentBlue
+                                : AnvilColor.accentPurple
+                        )
+                    }
+
+                    HStack(spacing: AnvilSpacing.sm) {
+                        Text(review.author)
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textSecondary)
+
+                        Text("\(review.diff.count) file\(review.diff.count == 1 ? "" : "s")")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textTertiary)
+
+                        if !review.comments.isEmpty {
+                            HStack(spacing: AnvilSpacing.xxxs) {
+                                Image(systemName: "bubble.left")
+                                    .font(.system(size: 10))
+                                Text("\(review.comments.count)")
+                                    .font(AnvilFont.label)
+                            }
+                            .foregroundStyle(AnvilColor.textTertiary)
                         }
-                        .foregroundStyle(AnvilColor.textTertiary)
                     }
                 }
             }
+            .padding(.horizontal, AnvilSpacing.lg)
+            .padding(.vertical, AnvilSpacing.sm)
+            .background(
+                viewModel.selectedReviewID == review.id
+                    ? AnvilColor.selectionBackground
+                    : Color.clear
+            )
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, AnvilSpacing.lg)
-        .padding(.vertical, AnvilSpacing.sm)
-        .background(
-            viewModel.selectedReviewID == review.id
-                ? AnvilColor.selectionBackground
-                : Color.clear
-        )
-        .contentShape(Rectangle())
-        .onTapGesture { viewModel.selectReview(review.id) }
+        .buttonStyle(.plain)
     }
 
     private var batchActionBar: some View {

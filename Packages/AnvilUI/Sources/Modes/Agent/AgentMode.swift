@@ -13,28 +13,19 @@ public struct AgentMode: View {
 }
 
 struct AgentEmptyState: View {
-    let onNewSession: () -> Void
+    let onNewSession: @MainActor @Sendable () -> Void
 
     var body: some View {
-        VStack(spacing: AnvilSpacing.lg) {
-            Image(systemName: "cpu")
-                .font(.system(size: 48, weight: .thin))
-                .foregroundStyle(AnvilColor.accentPurple.opacity(0.5))
-
-            Text("Agent Mode")
-                .font(AnvilFont.heading)
-                .foregroundStyle(AnvilColor.textPrimary)
-
-            Text("Start an AI-powered development session")
-                .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textSecondary)
-
-            AnvilButton("New Session", icon: "plus", style: .primary, action: onNewSession)
-                .padding(.top, AnvilSpacing.sm)
-
-            Text("\u{2318}\u{21E7}A")
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-        }
+        AnvilEmptyState(
+            icon: "cpu",
+            title: "Start an AI session",
+            message: "Send a task to an AI agent and watch it work.",
+            actions: [
+                EmptyStateAction("New Session", icon: "plus", style: .primary, action: onNewSession),
+                EmptyStateAction("Configure Provider", icon: "gearshape", style: .secondary) {
+                    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                }
+            ]
+        )
     }
 }

@@ -169,6 +169,14 @@ public class AppState: ObservableObject {
         // Review: sample reviews
         reviewViewModel.reviews = ReviewViewModel.makeSampleReviews()
 
+        // Ship: sample environments and deployments
+        let (envs, deploys, logs, vars) = ShipViewModel.makeSampleData()
+        shipViewModel.environments = envs
+        shipViewModel.deployments = deploys
+        shipViewModel.buildLogs = logs
+        shipViewModel.envVars = vars
+        shipViewModel.selectedEnvironmentID = envs.first?.id
+
         switchMode(.agent)
     }
 }

@@ -41,9 +41,24 @@ public struct ContentArea: View {
 
 struct IntentModeContent: View {
     @ObservedObject var viewModel: IntentViewModel
+    @EnvironmentObject private var appState: AppState
 
     var body: some View {
-        if viewModel.selectedTicket != nil {
+        if viewModel.tickets.isEmpty {
+            AnvilEmptyState(
+                icon: "target",
+                title: "No tickets yet",
+                message: "Create a ticket or connect a project tracker.",
+                actions: [
+                    EmptyStateAction("Create Ticket", icon: "plus", style: .primary) {
+                        viewModel.isCreatingTicket = true
+                    },
+                    EmptyStateAction("Load Demo Data", icon: "tray.and.arrow.down", style: .secondary) {
+                        appState.loadDemoData()
+                    }
+                ]
+            )
+        } else if viewModel.selectedTicket != nil {
             TicketDetailView(viewModel: viewModel)
         } else if viewModel.viewMode == .board {
             BoardView(viewModel: viewModel)
@@ -77,7 +92,13 @@ struct ReviewModeContent: View {
     @ObservedObject var viewModel: ReviewViewModel
 
     var body: some View {
-        if viewModel.selectedReview != nil {
+        if viewModel.reviews.isEmpty {
+            AnvilEmptyState(
+                icon: "checkmark.circle",
+                title: "Review inbox is empty",
+                message: "Nothing to review right now."
+            )
+        } else if viewModel.selectedReview != nil {
             DiffReviewView(viewModel: viewModel)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
@@ -89,19 +110,36 @@ struct ReviewModeContent: View {
 
 struct ShipModeContent: View {
     @ObservedObject var viewModel: ShipViewModel
+    @EnvironmentObject private var appState: AppState
 
     var body: some View {
-        Group {
-            switch viewModel.selectedTab {
-            case .dashboard:
-                DeployDashboardView(viewModel: viewModel)
-            case .logs:
-                BuildLogView(viewModel: viewModel)
-            case .envVars:
-                EnvVarManagerView(viewModel: viewModel)
+        if viewModel.environments.isEmpty {
+            AnvilEmptyState(
+                icon: "shippingbox",
+                title: "No deployments configured",
+                message: "Connect a hosting provider to deploy.",
+                actions: [
+                    EmptyStateAction("Configure Provider", icon: "gearshape", style: .primary) {
+                        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                    },
+                    EmptyStateAction("Load Demo Data", icon: "tray.and.arrow.down", style: .secondary) {
+                        appState.loadDemoData()
+                    }
+                ]
+            )
+        } else {
+            Group {
+                switch viewModel.selectedTab {
+                case .dashboard:
+                    DeployDashboardView(viewModel: viewModel)
+                case .logs:
+                    BuildLogView(viewModel: viewModel)
+                case .envVars:
+                    EnvVarManagerView(viewModel: viewModel)
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -109,11 +147,10 @@ struct PlaceholderModeContent: View {
     let mode: AnvilMode
 
     var body: some View {
-        ModeWelcomeView(
+        AnvilEmptyState(
             icon: mode.icon,
             title: mode.rawValue,
-            subtitle: "Coming soon.",
-            hint: ""
+            message: "Coming soon."
         )
     }
 }

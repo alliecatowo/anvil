@@ -51,6 +51,21 @@ public struct StatusBar: View {
                     .foregroundStyle(AnvilColor.textTertiary)
             }
             .foregroundStyle(AnvilColor.textSecondary)
+
+            Divider()
+                .frame(height: 12)
+                .overlay(AnvilColor.borderSubtle)
+
+            // Settings gear
+            Button {
+                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 11))
+                    .foregroundStyle(AnvilColor.textSecondary)
+            }
+            .buttonStyle(.borderless)
+            .help("Settings")
         }
         .padding(.horizontal, AnvilSpacing.md)
         .frame(height: AnvilSpacing.statusBarHeight)

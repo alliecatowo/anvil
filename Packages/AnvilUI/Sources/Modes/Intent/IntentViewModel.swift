@@ -46,6 +46,7 @@ public final class IntentViewModel: ObservableObject {
 
     // MARK: Editing
 
+    @Published var isCreatingTicket = false
     @Published var editingTitle = ""
 
     // MARK: Computed
