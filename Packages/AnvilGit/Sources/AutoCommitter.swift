@@ -85,6 +85,6 @@ public actor AutoCommitter {
     @discardableResult
     public func autoCommit() async throws -> Commit {
         let message = try await generateMessage()
-        return try await adapter.commit(message: message)
+        return try await adapter.commit(message: message, amend: false)
     }
 }

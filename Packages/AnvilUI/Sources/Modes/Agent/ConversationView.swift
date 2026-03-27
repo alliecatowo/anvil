@@ -182,8 +182,17 @@ struct SessionHeader: View {
                     editName = session.displayName
                     isEditing = true
                 }
-                Button("Export to Markdown") {
-                    onExport()
+                Menu("Export") {
+                    Button("Copy as Markdown") {
+                        onExport()
+                    }
+                    Divider()
+                    Button("Save as Markdown...") {
+                        onExportFile?(.markdown)
+                    }
+                    Button("Save as JSON...") {
+                        onExportFile?(.json)
+                    }
                 }
                 Divider()
                 Button("Set Budget...") {

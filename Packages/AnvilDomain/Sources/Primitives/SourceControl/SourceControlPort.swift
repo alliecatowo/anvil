@@ -21,7 +21,7 @@ public protocol SourceControlPort: AnvilProviderDefinition {
     func stashList() async throws -> [Stash]
     func stage(paths: [String]) async throws
     func unstage(paths: [String]) async throws
-    func commit(message: String) async throws -> Commit
+    func commit(message: String, amend: Bool) async throws -> Commit
     func createWorktree(branch: String, path: String) async throws
     func removeWorktree(path: String) async throws
     func worktrees() async throws -> [Worktree]

@@ -10,6 +10,6 @@ public struct AutoCommitUseCase: Sendable {
         provider: any SourceControlPort
     ) async throws -> Commit {
         try await provider.stage(paths: paths)
-        return try await provider.commit(message: message)
+        return try await provider.commit(message: message, amend: false)
     }
 }

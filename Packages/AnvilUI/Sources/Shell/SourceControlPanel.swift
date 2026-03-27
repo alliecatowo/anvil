@@ -14,6 +14,7 @@ final class SourceControlViewModel: ObservableObject {
     @Published var commitMessage = ""
     @Published var syncError: String?
     @Published var isSyncing = false
+    @Published var isAmend = false
     @Published var stashes: [Stash] = []
     @Published var isStashSectionExpanded = true
     @Published var stashMessage = ""
@@ -24,13 +25,74 @@ final class SourceControlViewModel: ObservableObject {
     @Published var recentCommits: [Commit] = []
     @Published var isHistorySectionExpanded = false
     @Published var actionError: String?
+    @Published var isBranchPickerVisible = false
+    @Published var branchSearchText = ""
+    @Published var newBranchName = ""
+    @Published var isCreatingBranch = false
+    @Published var branchError: String?
+
+    // MARK: - Branch Operations
+
+    func switchBranch(_ name: String, using adapter: GitSourceControlAdapter, appState: AppState) {
+        branchError = nil
+        Task { @MainActor in
+            do {
+                try await adapter.switchBranch(name: name)
+                isBranchPickerVisible = false
+                branchSearchText = ""
+                refresh(using: adapter)
+                await appState.loadGitStatus(from: adapter)
+            } catch {
+                branchError = "Switch failed: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    func createBranch(using adapter: GitSourceControlAdapter, appState: AppState) {
+        let name = newBranchName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        isCreatingBranch = true
+        branchError = nil
+        Task { @MainActor in
+            defer { isCreatingBranch = false }
+            do {
+                _ = try await adapter.createBranch(name: name, from: nil)
+                newBranchName = ""
+                isBranchPickerVisible = false
+                branchSearchText = ""
+                refresh(using: adapter)
+                await appState.loadGitStatus(from: adapter)
+            } catch {
+                branchError = "Create failed: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    func deleteBranch(_ name: String, force: Bool, using adapter: GitSourceControlAdapter, appState: AppState) {
+        branchError = nil
+        Task { @MainActor in
+            do {
+                try await adapter.deleteBranch(name: name, force: force)
+                await appState.loadGitStatus(from: adapter)
+            } catch {
+                branchError = "Delete failed: \(error.localizedDescription)"
+            }
+        }
+    }
 
     var totalChangeCount: Int {
         stagedFiles.count + unstagedFiles.count + untrackedFiles.count
     }
 
     var canCommit: Bool {
-        !stagedFiles.isEmpty && !commitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasMessage = !commitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        if isAmend { return hasMessage }
+        return !stagedFiles.isEmpty && hasMessage
+    }
+
+    /// First line of the commit message (subject).
+    var subjectLine: String {
+        commitMessage.components(separatedBy: "\n").first ?? ""
     }
 
     // MARK: - Load
@@ -85,11 +147,14 @@ final class SourceControlViewModel: ObservableObject {
 
     func commit(using adapter: GitSourceControlAdapter, appState: AppState) {
         let message = commitMessage.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !message.isEmpty, !stagedFiles.isEmpty else { return }
+        guard canCommit else { return }
+        let amendFlag = isAmend
         Task { @MainActor in
-            _ = try? await adapter.commit(message: message)
+            _ = try? await adapter.commit(message: message, amend: amendFlag)
             commitMessage = ""
+            isAmend = false
             refresh(using: adapter)
+            refreshHistory(using: adapter)
             await appState.loadGitStatus(from: adapter)
         }
     }
@@ -245,6 +310,61 @@ final class SourceControlViewModel: ObservableObject {
             }
         }
     }
+
+    // MARK: - Remotes
+
+    @Published var remotes: [GitRemote] = []
+    @Published var isRemoteSectionExpanded = false
+    @Published var newRemoteName = ""
+    @Published var newRemoteURL = ""
+    @Published var remoteError: String?
+
+    func refreshRemotes(using adapter: GitSourceControlAdapter) {
+        Task { @MainActor in
+            remotes = (try? await adapter.listRemotes()) ?? []
+        }
+    }
+
+    func addRemote(using adapter: GitSourceControlAdapter) {
+        let name = newRemoteName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let url = newRemoteURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, !url.isEmpty else { return }
+        remoteError = nil
+        Task { @MainActor in
+            do {
+                try await adapter.addRemote(name: name, url: url)
+                newRemoteName = ""
+                newRemoteURL = ""
+                refreshRemotes(using: adapter)
+            } catch {
+                remoteError = "Add remote failed: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    func removeRemote(_ name: String, using adapter: GitSourceControlAdapter) {
+        remoteError = nil
+        Task { @MainActor in
+            do {
+                try await adapter.removeRemote(name: name)
+                refreshRemotes(using: adapter)
+            } catch {
+                remoteError = "Remove failed: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    func renameRemote(oldName: String, newName: String, using adapter: GitSourceControlAdapter) {
+        remoteError = nil
+        Task { @MainActor in
+            do {
+                try await adapter.renameRemote(oldName: oldName, newName: newName)
+                refreshRemotes(using: adapter)
+            } catch {
+                remoteError = "Rename failed: \(error.localizedDescription)"
+            }
+        }
+    }
 }
 
 // MARK: - View
@@ -335,6 +455,9 @@ struct SourceControlPanel: View {
                     // History section (cherry-pick / revert)
                     historySection
 
+                    // Remotes section
+                    remoteSection
+
                     // Empty state
                     if viewModel.totalChangeCount == 0 && viewModel.stashes.isEmpty && !viewModel.isLoading {
                         VStack(spacing: AnvilSpacing.md) {
@@ -359,6 +482,7 @@ struct SourceControlPanel: View {
             viewModel.refreshStashes(using: adapter)
             viewModel.refreshTags(using: adapter)
             viewModel.refreshHistory(using: adapter)
+            viewModel.refreshRemotes(using: adapter)
         }
     }
 
@@ -394,11 +518,14 @@ struct SourceControlPanel: View {
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
 
+            // Branch picker bar
+            branchBar
+
             // Sync actions bar
             syncBar
 
             // Error banner
-            if let error = viewModel.syncError {
+            if let error = viewModel.branchError ?? viewModel.syncError {
                 HStack(spacing: AnvilSpacing.xs) {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 10))
@@ -408,6 +535,7 @@ struct SourceControlPanel: View {
                     Spacer()
                     Button {
                         viewModel.syncError = nil
+                        viewModel.branchError = nil
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 9, weight: .bold))
@@ -419,6 +547,165 @@ struct SourceControlPanel: View {
                 .padding(.vertical, AnvilSpacing.xs)
                 .background(AnvilColor.accentRed.opacity(0.1))
             }
+        }
+    }
+
+    // MARK: - Branch Bar
+
+    private var branchBar: some View {
+        HStack(spacing: AnvilSpacing.sm) {
+            Button {
+                viewModel.isBranchPickerVisible.toggle()
+            } label: {
+                HStack(spacing: AnvilSpacing.xxs) {
+                    Image(systemName: "arrow.triangle.branch")
+                        .font(.system(size: 10))
+                    Text(appState.currentBranch)
+                        .font(AnvilFont.code)
+                        .lineLimit(1)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 8, weight: .bold))
+                }
+                .foregroundStyle(AnvilColor.accentBlue)
+                .padding(.horizontal, AnvilSpacing.sm)
+                .padding(.vertical, 4)
+                .background(AnvilColor.accentBlue.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+            .buttonStyle(.plain)
+            .popover(isPresented: $viewModel.isBranchPickerVisible, arrowEdge: .bottom) {
+                branchPickerPopover
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, AnvilSpacing.xs)
+    }
+
+    private var branchPickerPopover: some View {
+        VStack(spacing: 0) {
+            // Search field
+            HStack(spacing: AnvilSpacing.xs) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 11))
+                    .foregroundStyle(AnvilColor.textTertiary)
+                TextField("Search or create branch...", text: $viewModel.branchSearchText)
+                    .textFieldStyle(.plain)
+                    .font(AnvilFont.code)
+                    .foregroundStyle(AnvilColor.textPrimary)
+            }
+            .padding(AnvilSpacing.sm)
+            .background(AnvilColor.backgroundPrimary)
+
+            Divider().overlay(AnvilColor.borderSubtle)
+
+            // Create branch option (shows when search text doesn't match existing)
+            let trimmed = viewModel.branchSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            let exactMatch = appState.branches.contains { $0.name == trimmed }
+            if !trimmed.isEmpty && !exactMatch {
+                Button {
+                    viewModel.newBranchName = trimmed
+                    guard let adapter = container.getOrCreateGitAdapter() else { return }
+                    viewModel.createBranch(using: adapter, appState: appState)
+                } label: {
+                    HStack(spacing: AnvilSpacing.sm) {
+                        Image(systemName: "plus.circle")
+                            .font(.system(size: 12))
+                            .foregroundStyle(AnvilColor.accentGreen)
+                        Text("Create branch \"\(trimmed)\"")
+                            .font(AnvilFont.code)
+                            .foregroundStyle(AnvilColor.textPrimary)
+                        Spacer()
+                        if viewModel.isCreatingBranch {
+                            ProgressView().controlSize(.small)
+                        }
+                    }
+                    .padding(.horizontal, AnvilSpacing.md)
+                    .padding(.vertical, AnvilSpacing.sm)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                Divider().overlay(AnvilColor.borderSubtle)
+            }
+
+            // Branch list
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    let filtered: [Branch] = {
+                        let query = trimmed.lowercased()
+                        if query.isEmpty { return appState.branches }
+                        return appState.branches.filter { $0.name.lowercased().contains(query) }
+                    }()
+
+                    ForEach(filtered) { branch in
+                        branchRow(branch)
+                    }
+
+                    if filtered.isEmpty {
+                        Text("No matching branches")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textTertiary)
+                            .italic()
+                            .padding(AnvilSpacing.md)
+                    }
+                }
+            }
+            .frame(maxHeight: 300)
+        }
+        .frame(width: 320)
+        .background(AnvilColor.backgroundSecondary)
+    }
+
+    private func branchRow(_ branch: Branch) -> some View {
+        HStack(spacing: AnvilSpacing.sm) {
+            if branch.isCurrent {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(AnvilColor.accentGreen)
+                    .frame(width: 14)
+            } else {
+                Color.clear.frame(width: 14, height: 1)
+            }
+
+            Text(branch.name)
+                .font(AnvilFont.code)
+                .foregroundStyle(branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textPrimary)
+                .lineLimit(1)
+
+            Spacer()
+
+            if let msg = branch.lastCommitMessage {
+                Text(msg)
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .lineLimit(1)
+                    .frame(maxWidth: 120, alignment: .trailing)
+            }
+
+            if !branch.isCurrent {
+                Button {
+                    guard let adapter = container.getOrCreateGitAdapter() else { return }
+                    viewModel.deleteBranch(branch.name, force: false, using: adapter, appState: appState)
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 9))
+                        .foregroundStyle(AnvilColor.accentRed.opacity(0.6))
+                        .frame(width: 18, height: 18)
+                }
+                .buttonStyle(.plain)
+                .help("Delete branch")
+            }
+        }
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, AnvilSpacing.xs)
+        .background(branch.isCurrent ? AnvilColor.accentGreen.opacity(0.06) : Color.clear)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard !branch.isCurrent else { return }
+            guard let adapter = container.getOrCreateGitAdapter() else { return }
+            viewModel.switchBranch(branch.name, using: adapter, appState: appState)
         }
     }
 
@@ -515,20 +802,44 @@ struct SourceControlPanel: View {
 
     private var commitInput: some View {
         VStack(spacing: AnvilSpacing.sm) {
-            TextField("Commit message", text: $viewModel.commitMessage, axis: .vertical)
-                .textFieldStyle(.plain)
-                .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textPrimary)
-                .lineLimit(1...4)
-                .padding(AnvilSpacing.sm)
-                .background(AnvilColor.backgroundPrimary)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-                )
+            // Message input
+            VStack(spacing: 0) {
+                TextField(viewModel.isAmend ? "Amend commit message" : "Commit message", text: $viewModel.commitMessage, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .font(AnvilFont.body)
+                    .foregroundStyle(AnvilColor.textPrimary)
+                    .lineLimit(1...6)
+                    .padding(AnvilSpacing.sm)
+                    .onSubmit {
+                        if viewModel.canCommit {
+                            guard let adapter = container.getOrCreateGitAdapter() else { return }
+                            viewModel.commit(using: adapter, appState: appState)
+                        }
+                    }
 
-            HStack {
+                // Subject line character count
+                if !viewModel.commitMessage.isEmpty {
+                    HStack {
+                        Spacer()
+                        let count = viewModel.subjectLine.count
+                        Text("\(count)/50")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(count > 72 ? AnvilColor.accentRed : count > 50 ? AnvilColor.accentAmber : AnvilColor.textTertiary)
+                    }
+                    .padding(.horizontal, AnvilSpacing.sm)
+                    .padding(.bottom, AnvilSpacing.xs)
+                }
+            }
+            .background(AnvilColor.backgroundPrimary)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(viewModel.isAmend ? AnvilColor.accentAmber.opacity(0.5) : AnvilColor.borderSubtle, lineWidth: 1)
+            )
+
+            // Action row
+            HStack(spacing: AnvilSpacing.sm) {
+                // Staged count
                 Text("\(viewModel.stagedFiles.count) staged")
                     .font(AnvilFont.label)
                     .foregroundStyle(
@@ -537,12 +848,33 @@ struct SourceControlPanel: View {
                             : AnvilColor.accentGreen
                     )
 
+                // Amend toggle
+                Button {
+                    viewModel.isAmend.toggle()
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: viewModel.isAmend ? "checkmark.square.fill" : "square")
+                            .font(.system(size: 10))
+                        Text("Amend")
+                            .font(AnvilFont.label)
+                    }
+                    .foregroundStyle(viewModel.isAmend ? AnvilColor.accentAmber : AnvilColor.textTertiary)
+                }
+                .buttonStyle(.plain)
+                .help("Amend the previous commit")
+
                 Spacer()
 
-                AnvilButton("Commit", icon: "checkmark", style: .primary) {
+                // Commit button
+                AnvilButton(
+                    viewModel.isAmend ? "Amend" : "Commit",
+                    icon: "checkmark",
+                    style: .primary
+                ) {
                     guard let adapter = container.getOrCreateGitAdapter() else { return }
                     viewModel.commit(using: adapter, appState: appState)
                 }
+                .disabled(!viewModel.canCommit)
                 .opacity(viewModel.canCommit ? 1.0 : 0.5)
             }
         }
@@ -781,6 +1113,178 @@ struct SourceControlPanel: View {
             }
             .buttonStyle(.plain)
             .help("Revert this commit")
+        }
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, AnvilSpacing.xs)
+        .contentShape(Rectangle())
+    }
+
+    // MARK: - Remote Section
+
+    private var remoteSection: some View {
+        Section {
+            if viewModel.isRemoteSectionExpanded {
+                // Error banner
+                if let error = viewModel.remoteError {
+                    HStack(spacing: AnvilSpacing.xs) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 10))
+                        Text(error)
+                            .font(AnvilFont.label)
+                            .lineLimit(2)
+                        Spacer()
+                        Button {
+                            viewModel.remoteError = nil
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .foregroundStyle(AnvilColor.accentRed)
+                    .padding(.horizontal, AnvilSpacing.md)
+                    .padding(.vertical, AnvilSpacing.xs)
+                    .background(AnvilColor.accentRed.opacity(0.1))
+                }
+
+                // Add remote form
+                VStack(spacing: AnvilSpacing.xs) {
+                    HStack(spacing: AnvilSpacing.sm) {
+                        TextField("Name", text: $viewModel.newRemoteName)
+                            .textFieldStyle(.plain)
+                            .font(AnvilFont.code)
+                            .foregroundStyle(AnvilColor.textPrimary)
+                            .padding(.horizontal, AnvilSpacing.xs)
+                            .padding(.vertical, 4)
+                            .background(AnvilColor.backgroundPrimary)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(AnvilColor.borderSubtle, lineWidth: 1)
+                            )
+                            .frame(width: 100)
+
+                        TextField("URL", text: $viewModel.newRemoteURL)
+                            .textFieldStyle(.plain)
+                            .font(AnvilFont.code)
+                            .foregroundStyle(AnvilColor.textPrimary)
+                            .padding(.horizontal, AnvilSpacing.xs)
+                            .padding(.vertical, 4)
+                            .background(AnvilColor.backgroundPrimary)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(AnvilColor.borderSubtle, lineWidth: 1)
+                            )
+
+                        Button {
+                            guard let adapter = container.getOrCreateGitAdapter() else { return }
+                            viewModel.addRemote(using: adapter)
+                        } label: {
+                            Text("Add")
+                                .font(AnvilFont.label)
+                                .foregroundStyle(
+                                    viewModel.newRemoteName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                                    viewModel.newRemoteURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                        ? AnvilColor.textTertiary
+                                        : AnvilColor.accentBlue
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, AnvilSpacing.xs)
+
+                // Remote list
+                if viewModel.remotes.isEmpty {
+                    HStack {
+                        Text("No remotes configured")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textTertiary)
+                            .italic()
+                        Spacer()
+                    }
+                    .padding(.horizontal, AnvilSpacing.md)
+                    .padding(.vertical, AnvilSpacing.xs)
+                } else {
+                    ForEach(viewModel.remotes) { remote in
+                        remoteRow(remote)
+                    }
+                }
+            }
+        } header: {
+            HStack {
+                Button {
+                    withAnimation(AnvilAnimation.standard) {
+                        viewModel.isRemoteSectionExpanded.toggle()
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: viewModel.isRemoteSectionExpanded ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(AnvilColor.textTertiary)
+                            .frame(width: 10)
+
+                        Image(systemName: "network")
+                            .font(.system(size: 10))
+                            .foregroundStyle(AnvilColor.textTertiary)
+
+                        Text("REMOTES")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textSecondary)
+                            .tracking(0.3)
+                    }
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                Text("\(viewModel.remotes.count)")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+            }
+            .padding(.horizontal, AnvilSpacing.md)
+            .padding(.vertical, AnvilSpacing.xs)
+            .background(AnvilColor.backgroundSecondary)
+        }
+    }
+
+    private func remoteRow(_ remote: GitRemote) -> some View {
+        HStack(spacing: AnvilSpacing.sm) {
+            Image(systemName: "network")
+                .font(.system(size: 11))
+                .foregroundStyle(AnvilColor.accentBlue)
+                .frame(width: 16)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text(remote.name)
+                    .font(AnvilFont.code)
+                    .foregroundStyle(AnvilColor.textPrimary)
+                    .lineLimit(1)
+
+                Text(remote.fetchURL)
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            // Remove button
+            Button {
+                guard let adapter = container.getOrCreateGitAdapter() else { return }
+                viewModel.removeRemote(remote.name, using: adapter)
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(AnvilColor.accentRed)
+                    .frame(width: 22, height: 22)
+                    .background(AnvilColor.backgroundTertiary)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+            }
+            .buttonStyle(.plain)
+            .help("Remove remote")
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)

@@ -107,7 +107,22 @@ public final class IntentViewModel: ObservableObject {
         relations.filter { $0.sourceId == ticketId || $0.targetId == ticketId }
     }
 
+    /// Move a ticket to a new status (used by kanban drag-and-drop).
+    func moveTicket(_ ticketId: String, toStatus newStatus: String) {
+        guard let idx = tickets.firstIndex(where: { $0.id == ticketId }) else { return }
+        tickets[idx].status = newStatus
+        tickets[idx].updatedAt = .now
+    }
+
     // MARK: Actions
+
+    /// Quick-create a ticket with just a title and status.
+    func createTicket(title: String, status: String = "open") {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let ticket = Ticket(title: trimmed, status: status)
+        tickets.append(ticket)
+    }
 
     func selectTicket(_ id: String?) {
         selectedTicketId = id

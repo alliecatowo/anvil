@@ -157,6 +157,41 @@ public actor GitSourceControlAdapter: SourceControlPort {
         _ = try await shell.run(args)
     }
 
+    /// Lists all configured remotes with their fetch and push URLs.
+    public func listRemotes() async throws -> [GitRemote] {
+        let output = try await shell.run(["remote", "-v"])
+        var remotes: [String: (fetch: String, push: String)] = [:]
+        for line in output.components(separatedBy: "\n") where !line.isEmpty {
+            let parts = line.components(separatedBy: "\t")
+            guard parts.count == 2 else { continue }
+            let name = parts[0]
+            let urlAndType = parts[1]
+            let url = urlAndType.components(separatedBy: " ").first ?? urlAndType
+            if urlAndType.hasSuffix("(fetch)") {
+                remotes[name, default: (fetch: "", push: "")].fetch = url
+            } else if urlAndType.hasSuffix("(push)") {
+                remotes[name, default: (fetch: "", push: "")].push = url
+            }
+        }
+        return remotes.map { GitRemote(name: $0.key, fetchURL: $0.value.fetch, pushURL: $0.value.push) }
+            .sorted { $0.name < $1.name }
+    }
+
+    /// Adds a new remote.
+    public func addRemote(name: String, url: String) async throws {
+        _ = try await shell.run(["remote", "add", name, url])
+    }
+
+    /// Removes a remote.
+    public func removeRemote(name: String) async throws {
+        _ = try await shell.run(["remote", "remove", name])
+    }
+
+    /// Renames a remote.
+    public func renameRemote(oldName: String, newName: String) async throws {
+        _ = try await shell.run(["remote", "rename", oldName, newName])
+    }
+
     // MARK: - Working Tree Status
 
     /// Returns all changed files in the working tree (staged, unstaged, and untracked).
@@ -272,8 +307,10 @@ public actor GitSourceControlAdapter: SourceControlPort {
     // MARK: - Commit
 
     @discardableResult
-    public func commit(message: String) async throws -> Commit {
-        _ = try await shell.run(["commit", "-m", message])
+    public func commit(message: String, amend: Bool = false) async throws -> Commit {
+        var args = ["commit", "-m", message]
+        if amend { args.append("--amend") }
+        _ = try await shell.run(args)
 
         // Get the commit we just created
         let commits = try await commits(branch: "HEAD", limit: 1)

@@ -83,6 +83,10 @@ public actor GitHubSourceControlCloudAdapter: SourceControlCloudPort {
         let _: GHPullRequest = try await client.patch("/repos/\(repo)/pulls/\(number)", body: CloseBody())
     }
 
+    public func updatePullRequestBranch(repo: String, number: Int) async throws {
+        try await client.put("/repos/\(repo)/pulls/\(number)/update-branch")
+    }
+
     // MARK: - Comments
 
     public func pullRequestComments(repo: String, number: Int) async throws -> [PRComment] {

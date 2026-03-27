@@ -3,6 +3,10 @@ import AnvilDomain
 
 struct BoardView: View {
     @ObservedObject var viewModel: IntentViewModel
+    @State private var draggingTicketId: String?
+    @State private var creatingInColumnId: String?
+    @State private var newTicketTitle = ""
+    @FocusState private var isNewTicketFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -85,14 +89,19 @@ struct BoardView: View {
             // Cards
             ForEach(tickets) { ticket in
                 boardCard(ticket)
+                    .draggable(ticket.id) {
+                        // Drag preview
+                        boardCardPreview(ticket)
+                    }
+                    .opacity(draggingTicketId == ticket.id ? 0.4 : 1.0)
             }
 
-            // Drop hint
+            // Drop zone
             RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
                 .strokeBorder(AnvilColor.borderSubtle, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
                 .frame(height: 48)
                 .overlay(
-                    Text("Drag here")
+                    Text("Drop here")
                         .font(AnvilFont.label)
                         .foregroundStyle(AnvilColor.textTertiary)
                 )
@@ -101,6 +110,16 @@ struct BoardView: View {
         .padding(AnvilSpacing.sm)
         .background(AnvilColor.backgroundSecondary)
         .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
+        .dropDestination(for: String.self) { items, _ in
+            guard let ticketId = items.first else { return false }
+            withAnimation(AnvilAnimation.standard) {
+                viewModel.moveTicket(ticketId, toStatus: column.status)
+            }
+            draggingTicketId = nil
+            return true
+        } isTargeted: { isTargeted in
+            // Could add highlighting here in the future
+        }
     }
 
     // MARK: - Board Card
@@ -166,5 +185,25 @@ struct BoardView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { viewModel.selectTicket(ticket.id) }
+    }
+
+    /// Compact preview shown while dragging a card.
+    private func boardCardPreview(_ ticket: Ticket) -> some View {
+        HStack(spacing: AnvilSpacing.xs) {
+            Circle()
+                .fill(IntentViewModel.priorityColor(ticket.priority))
+                .frame(width: 6, height: 6)
+            Text(ticket.id)
+                .font(AnvilFont.label)
+                .foregroundStyle(AnvilColor.textTertiary)
+            Text(ticket.title)
+                .font(AnvilFont.sidebarItem)
+                .foregroundStyle(AnvilColor.textPrimary)
+                .lineLimit(1)
+        }
+        .padding(AnvilSpacing.sm)
+        .background(AnvilColor.backgroundElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
+        .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
     }
 }

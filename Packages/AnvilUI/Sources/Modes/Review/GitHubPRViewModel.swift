@@ -95,6 +95,40 @@ final class GitHubPRViewModel: ObservableObject {
         return pr.status == .open && !pr.isDraft && ciSummary.failed == 0
     }
 
+    // MARK: - Update Branch
+
+    @Published var isUpdatingBranch = false
+    @Published var updateBranchError: String?
+
+    func updateBranch(using adapter: GitHubSourceControlCloudAdapter) {
+        guard let pr = selectedPR, pr.status == .open else { return }
+        guard !isUpdatingBranch else { return }
+        isUpdatingBranch = true
+        updateBranchError = nil
+
+        Task { @MainActor in
+            defer { isUpdatingBranch = false }
+            do {
+                try await adapter.updatePullRequestBranch(repo: repoFullName, number: pr.number)
+                // Refresh PR detail to get updated state
+                if let updated = try? await adapter.pullRequestDetail(repo: repoFullName, number: pr.number) {
+                    selectedPR = updated
+                }
+                // Refresh CI checks since new commits may trigger new checks
+                if let checks = try? await adapter.ciStatus(repo: repoFullName, prNumber: pr.number) {
+                    ciChecks = checks
+                }
+            } catch {
+                updateBranchError = "Update branch failed: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    var needsUpdate: Bool {
+        guard let pr = selectedPR else { return false }
+        return pr.status == .open && pr.behindCount > 0
+    }
+
     // MARK: - Computed
 
     var openPRs: [PullRequest] {

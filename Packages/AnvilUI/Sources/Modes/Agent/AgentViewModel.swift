@@ -1,5 +1,6 @@
 import SwiftUI
 import AnvilDomain
+import UniformTypeIdentifiers
 import os.log
 
 private let logger = Logger(subsystem: "com.anvil.app", category: "AgentViewModel")
@@ -436,6 +437,225 @@ public class AgentViewModel: ObservableObject {
               session.hardStopOnBudget,
               let usage = session.budgetUsage else { return false }
         return usage >= 1.0
+    }
+
+    // MARK: - Agent View Mode
+
+    public enum AgentViewMode: Equatable {
+        case conversation
+        case dashboard
+        case synthesisRoom(String) // room ID
+    }
+
+    @Published public var viewMode: AgentViewMode = .conversation
+    @Published public var synthesisRooms: [SynthesisRoom] = []
+    @Published public var sessionLinks: [SessionLink] = []
+    @Published public var dashboardSelectedSessionIds: Set<String> = []
+
+    public func showDashboard() {
+        viewMode = .dashboard
+        dashboardSelectedSessionIds = []
+    }
+
+    public func showConversation() {
+        viewMode = .conversation
+    }
+
+    public func showSynthesisRoom(_ roomId: String) {
+        viewMode = .synthesisRoom(roomId)
+    }
+
+    // MARK: - Synthesis Rooms
+
+    public func createSynthesisRoom(sessionIds: [String], title: String? = nil) -> SynthesisRoom {
+        let sessionNames = sessionIds.compactMap { id in
+            sessions.first(where: { $0.id == id })?.displayName
+        }
+        let roomTitle = title ?? "Synthesis: \(sessionNames.prefix(2).joined(separator: " + "))"
+
+        let room = SynthesisRoom(
+            title: roomTitle,
+            inputSessionIds: sessionIds,
+            synthesisModel: selectedModelId
+        )
+        synthesisRooms.append(room)
+        viewMode = .synthesisRoom(room.id)
+        logger.info("Created synthesis room \(room.id) with \(sessionIds.count) sessions")
+        return room
+    }
+
+    public func deleteSynthesisRoom(_ roomId: String) {
+        synthesisRooms.removeAll { $0.id == roomId }
+        if case .synthesisRoom(let id) = viewMode, id == roomId {
+            viewMode = .dashboard
+        }
+    }
+
+    public func runSynthesis(roomId: String, container: DependencyContainer, appState: AppState) {
+        guard let index = synthesisRooms.firstIndex(where: { $0.id == roomId }) else { return }
+        synthesisRooms[index].status = .running
+        synthesisRooms[index].output = ""
+
+        // Gather context from all input sessions
+        let inputSessions = synthesisRooms[index].inputSessionIds.compactMap { id in
+            sessions.first(where: { $0.id == id })
+        }
+
+        var synthesisPrompt = "You are synthesizing the work of multiple AI agent sessions. Analyze their outputs, find common themes, conflicts, and produce a unified summary with actionable next steps.\n\n"
+
+        for (i, session) in inputSessions.enumerated() {
+            synthesisPrompt += "--- SESSION \(i + 1): \(session.displayName) ---\n"
+            synthesisPrompt += "Model: \(session.model) | Status: \(session.status.rawValue)\n"
+            synthesisPrompt += "Tokens: \(session.tokenUsage.totalTokens) | Cost: $\(NSDecimalNumber(decimal: session.cost).doubleValue)\n\n"
+            for message in session.messages.suffix(10) {
+                let role = message.role == .user ? "User" : "Agent"
+                synthesisPrompt += "[\(role)] \(message.content.prefix(2000))\n\n"
+            }
+            synthesisPrompt += "\n"
+        }
+
+        synthesisPrompt += "--- SYNTHESIS TASK ---\nProvide:\n1. Key findings across all sessions\n2. Conflicts or contradictions between sessions\n3. Recommended next steps\n4. A unified summary"
+
+        Task {
+            await streamSynthesis(
+                roomId: roomId,
+                prompt: synthesisPrompt,
+                container: container,
+                appState: appState
+            )
+        }
+    }
+
+    private func streamSynthesis(
+        roomId: String,
+        prompt: String,
+        container: DependencyContainer,
+        appState: AppState
+    ) async {
+        let client = await container.getOrCreateACPClient()
+
+        guard let provider = await client.provider() else {
+            updateSynthesisOutput(roomId: roomId, text: "No ACP provider configured.")
+            setSynthesisStatus(roomId: roomId, status: .failed)
+            return
+        }
+
+        do {
+            let models = try await provider.availableModels()
+            guard let model = models.first else {
+                updateSynthesisOutput(roomId: roomId, text: "No models available.")
+                setSynthesisStatus(roomId: roomId, status: .failed)
+                return
+            }
+
+            let messages = [ACPMessage(role: .user, content: prompt)]
+            let stream = provider.complete(messages: messages, model: model, tools: [], stream: true)
+
+            for try await event in stream {
+                switch event {
+                case .textDelta(let delta):
+                    updateSynthesisOutput(roomId: roomId, text: delta)
+                default:
+                    break
+                }
+            }
+
+            setSynthesisStatus(roomId: roomId, status: .completed)
+        } catch {
+            updateSynthesisOutput(roomId: roomId, text: "\n\nError: \(error.localizedDescription)")
+            setSynthesisStatus(roomId: roomId, status: .failed)
+        }
+    }
+
+    private func updateSynthesisOutput(roomId: String, text: String) {
+        guard let index = synthesisRooms.firstIndex(where: { $0.id == roomId }) else { return }
+        synthesisRooms[index].output = (synthesisRooms[index].output ?? "") + text
+    }
+
+    private func setSynthesisStatus(roomId: String, status: SynthesisStatus) {
+        guard let index = synthesisRooms.firstIndex(where: { $0.id == roomId }) else { return }
+        synthesisRooms[index].status = status
+    }
+
+    // MARK: - Critique Agent (Adversarial Review)
+
+    public func dispatchCritiqueAgent(for sessionId: String) {
+        guard let session = sessions.first(where: { $0.id == sessionId }) else { return }
+
+        let critiqueSession = AgentSession(
+            providerId: "anthropic",
+            model: "claude-opus-4-6",
+            status: .idle,
+            workItemId: session.workItemId.map { "REVIEW-\($0)" }
+        )
+        sessions.insert(critiqueSession, at: 0)
+        selectedSessionId = critiqueSession.id
+
+        // Build critique prompt from the source session
+        var prompt = "You are a senior code reviewer performing adversarial review. Analyze the following agent session output critically. Find bugs, security issues, missed edge cases, performance problems, and design concerns.\n\n"
+        prompt += "Session: \(session.displayName)\n"
+        prompt += "Model: \(session.model)\n\n"
+
+        for message in session.messages {
+            let role = message.role == .user ? "User" : "Agent"
+            prompt += "[\(role)] \(message.content.prefix(3000))\n\n"
+        }
+
+        prompt += "\n--- YOUR TASK ---\nProvide a thorough critique with severity ratings (critical/warning/info) for each finding."
+
+        if let index = sessions.firstIndex(where: { $0.id == critiqueSession.id }) {
+            sessions[index].messages.append(
+                AgentMessage(role: .user, content: prompt)
+            )
+        }
+
+        // Link the critique session to the original
+        linkSessions(from: critiqueSession.id, to: sessionId, label: "critiques")
+
+        viewMode = .conversation
+        logger.info("Dispatched critique agent \(critiqueSession.id) for session \(sessionId)")
+    }
+
+    // MARK: - Session Links
+
+    public func linkSessions(from: String, to: String, label: String = "related") {
+        guard !sessionLinks.contains(where: {
+            ($0.fromSessionId == from && $0.toSessionId == to) ||
+            ($0.fromSessionId == to && $0.toSessionId == from)
+        }) else { return }
+
+        let link = SessionLink(fromSessionId: from, toSessionId: to, label: label)
+        sessionLinks.append(link)
+    }
+
+    public func unlinkSessions(linkId: String) {
+        sessionLinks.removeAll { $0.id == linkId }
+    }
+
+    public func linkedSessions(for sessionId: String) -> [(session: AgentSession, label: String)] {
+        var results: [(AgentSession, String)] = []
+        for link in sessionLinks {
+            if link.fromSessionId == sessionId, let s = sessions.first(where: { $0.id == link.toSessionId }) {
+                results.append((s, link.label))
+            } else if link.toSessionId == sessionId, let s = sessions.first(where: { $0.id == link.fromSessionId }) {
+                results.append((s, link.label))
+            }
+        }
+        return results
+    }
+
+    // MARK: - Dashboard Stats
+
+    public var totalCost: Decimal {
+        sessions.reduce(0) { $0 + $1.cost }
+    }
+
+    public var totalTokens: Int {
+        sessions.reduce(0) { $0 + $1.tokenUsage.totalTokens }
+    }
+
+    public var activeSessions: [AgentSession] {
+        sessions.filter { $0.status == .running }
     }
 
     // MARK: - Sample Data (for previews only)

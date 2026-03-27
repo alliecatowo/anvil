@@ -74,49 +74,75 @@ struct AgentModeContent: View {
     @EnvironmentObject private var appState: AppState
 
     var body: some View {
-        if let session = viewModel.selectedSession {
-            ConversationView(
-                session: session,
-                inputText: $viewModel.inputText,
-                selectedModelId: $viewModel.selectedModelId,
-                editSuggestions: viewModel.suggestionsForCurrentSession(),
-                onSend: {
-                    viewModel.sendMessage(container: container, appState: appState)
+        switch viewModel.viewMode {
+        case .dashboard:
+            SessionDashboard(
+                viewModel: viewModel,
+                onCreateSynthesis: { sessionIds in
+                    _ = viewModel.createSynthesisRoom(sessionIds: sessionIds)
                 },
-                onRename: { name in
-                    viewModel.renameSession(session.id, name: name)
-                },
-                onDelete: {
-                    viewModel.deleteSession(session.id)
-                },
-                onExport: {
-                    viewModel.exportSessionToClipboard(session.id)
-                },
-                onAcceptHunk: { sugId, hunkId in
-                    viewModel.acceptHunk(suggestionId: sugId, hunkId: hunkId)
-                },
-                onRejectHunk: { sugId, hunkId in
-                    viewModel.rejectHunk(suggestionId: sugId, hunkId: hunkId)
-                },
-                onAcceptAll: { sugId in
-                    viewModel.acceptAllHunks(suggestionId: sugId)
-                },
-                onRejectAll: { sugId in
-                    viewModel.rejectAllHunks(suggestionId: sugId)
-                },
-                attachments: viewModel.contextAttachments,
-                onRemoveAttachment: { id in
-                    viewModel.removeAttachment(id: id)
-                },
-                onAddAttachment: { attachment in
-                    viewModel.addAttachment(attachment)
-                },
-                onSetBudget: { budget, hardStop in
-                    viewModel.setSessionBudget(session.id, budget: budget, hardStop: hardStop)
+                onDispatchCritique: { sessionId in
+                    viewModel.dispatchCritiqueAgent(for: sessionId)
                 }
             )
-        } else {
-            AgentEmptyState(onNewSession: { viewModel.isLaunchSheetPresented = true })
+
+        case .synthesisRoom(let roomId):
+            SynthesisRoomView(
+                viewModel: viewModel,
+                roomId: roomId,
+                onRunSynthesis: {
+                    viewModel.runSynthesis(roomId: roomId, container: container, appState: appState)
+                }
+            )
+
+        case .conversation:
+            if let session = viewModel.selectedSession {
+                ConversationView(
+                    session: session,
+                    inputText: $viewModel.inputText,
+                    selectedModelId: $viewModel.selectedModelId,
+                    editSuggestions: viewModel.suggestionsForCurrentSession(),
+                    onSend: {
+                        viewModel.sendMessage(container: container, appState: appState)
+                    },
+                    onRename: { name in
+                        viewModel.renameSession(session.id, name: name)
+                    },
+                    onDelete: {
+                        viewModel.deleteSession(session.id)
+                    },
+                    onExport: {
+                        viewModel.exportSessionToClipboard(session.id)
+                    },
+                    onExportFile: { format in
+                        viewModel.exportSessionToFile(session.id, format: format)
+                    },
+                    onAcceptHunk: { sugId, hunkId in
+                        viewModel.acceptHunk(suggestionId: sugId, hunkId: hunkId)
+                    },
+                    onRejectHunk: { sugId, hunkId in
+                        viewModel.rejectHunk(suggestionId: sugId, hunkId: hunkId)
+                    },
+                    onAcceptAll: { sugId in
+                        viewModel.acceptAllHunks(suggestionId: sugId)
+                    },
+                    onRejectAll: { sugId in
+                        viewModel.rejectAllHunks(suggestionId: sugId)
+                    },
+                    attachments: viewModel.contextAttachments,
+                    onRemoveAttachment: { id in
+                        viewModel.removeAttachment(id: id)
+                    },
+                    onAddAttachment: { attachment in
+                        viewModel.addAttachment(attachment)
+                    },
+                    onSetBudget: { budget, hardStop in
+                        viewModel.setSessionBudget(session.id, budget: budget, hardStop: hardStop)
+                    }
+                )
+            } else {
+                AgentEmptyState(onNewSession: { viewModel.isLaunchSheetPresented = true })
+            }
         }
     }
 }
