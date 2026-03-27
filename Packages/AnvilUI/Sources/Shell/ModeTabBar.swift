@@ -81,8 +81,19 @@ public struct ModeTabBar: View {
 
     private func badgeCount(for mode: AnvilMode) -> Int {
         switch mode {
+        case .agent:
+            // Count pending tool calls across all running sessions
+            return appState.agentViewModel.sessions
+                .filter { $0.status == .running }
+                .flatMap(\.messages)
+                .flatMap(\.toolCalls)
+                .filter { $0.status == .pending }
+                .count
         case .review:
             return appState.reviewViewModel.reviews.filter { $0.status == .pending }.count
+        case .messaging:
+            // Unread message count (channels with activity)
+            return appState.intentViewModel.tickets.filter { $0.labels.contains("unread") }.count
         case .notifications:
             return appState.intentViewModel.tickets.filter { $0.status == "open" }.count
         default:

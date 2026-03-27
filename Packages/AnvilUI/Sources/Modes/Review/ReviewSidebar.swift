@@ -1,6 +1,7 @@
 import SwiftUI
 import AnvilDomain
 import AnvilGit
+import AnvilGitHub
 
 struct ReviewSidebar: View {
     @ObservedObject var viewModel: ReviewViewModel
@@ -12,8 +13,13 @@ struct ReviewSidebar: View {
             // File list for selected review
             if let review = viewModel.selectedReview {
                 reviewFileList(review)
+            } else if appState.gitHubPRViewModel.selectedPR != nil {
+                // PR detail is shown in content area; sidebar shows back option
+                prSelectedBar
             } else {
                 branchSection
+                Divider().overlay(AnvilColor.borderSubtle)
+                pullRequestsSection
                 Divider().overlay(AnvilColor.borderSubtle)
                 groupedReviewList
             }
@@ -90,6 +96,164 @@ struct ReviewSidebar: View {
             guard let adapter = container.getOrCreateGitAdapter() else { return }
             viewModel.loadBranchDiff(branch.name, using: adapter)
         }
+    }
+
+    // MARK: - Pull Requests Section
+
+    private var pullRequestsSection: some View {
+        VStack(spacing: 0) {
+            let prVM = appState.gitHubPRViewModel
+            sectionHeader("PULL REQUESTS", icon: "arrow.triangle.pull", count: prVM.pullRequests.count)
+
+            if prVM.isLoading {
+                HStack {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Loading PRs...")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                    Spacer()
+                }
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, AnvilSpacing.xs)
+            } else if let error = prVM.error {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 10))
+                        .foregroundStyle(AnvilColor.accentAmber)
+                    Text(error)
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                        .lineLimit(2)
+                    Spacer()
+                }
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, AnvilSpacing.xs)
+            } else if prVM.pullRequests.isEmpty {
+                HStack {
+                    Text("No open pull requests")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                    Spacer()
+                }
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, AnvilSpacing.xs)
+            } else {
+                ForEach(prVM.pullRequests) { pr in
+                    prRow(pr)
+                }
+            }
+        }
+        .task {
+            loadPRsIfNeeded()
+        }
+    }
+
+    private func prRow(_ pr: PullRequest) -> some View {
+        HStack(spacing: AnvilSpacing.sm) {
+            Image(systemName: pr.isDraft ? "circle.dashed" : "arrow.triangle.pull")
+                .font(.system(size: 11))
+                .foregroundStyle(prStatusColor(pr.status))
+                .frame(width: 16)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(pr.title)
+                    .font(AnvilFont.code)
+                    .foregroundStyle(AnvilColor.textPrimary)
+                    .lineLimit(1)
+
+                Text("#\(pr.number) by \(pr.author)")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            if pr.isDraft {
+                Text("Draft")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+            }
+        }
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, AnvilSpacing.xs)
+        .frame(minHeight: AnvilSpacing.listItemHeight)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard let adapter = container.getOrCreateGitHubAdapter() else { return }
+            appState.gitHubPRViewModel.selectPR(pr, using: adapter)
+        }
+    }
+
+    private var prSelectedBar: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: AnvilSpacing.sm) {
+                Button {
+                    appState.gitHubPRViewModel.clearSelection()
+                } label: {
+                    HStack(spacing: AnvilSpacing.xxs) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 10, weight: .bold))
+                        Text("All PRs")
+                            .font(AnvilFont.label)
+                    }
+                    .foregroundStyle(AnvilColor.textSecondary)
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+            }
+            .padding(.horizontal, AnvilSpacing.md)
+            .padding(.vertical, AnvilSpacing.sm)
+
+            Divider().overlay(AnvilColor.borderSubtle)
+        }
+    }
+
+    private func prStatusColor(_ status: PRStatus) -> Color {
+        switch status {
+        case .open:   AnvilColor.accentGreen
+        case .merged: AnvilColor.accentPurple
+        case .closed: AnvilColor.accentRed
+        }
+    }
+
+    private func loadPRsIfNeeded() {
+        let prVM = appState.gitHubPRViewModel
+        guard prVM.pullRequests.isEmpty, !prVM.isLoading else { return }
+        guard let adapter = container.getOrCreateGitHubAdapter() else { return }
+
+        // Try to derive repo name from git remote
+        if let gitAdapter = container.getOrCreateGitAdapter() {
+            Task {
+                if let url = try? await gitAdapter.remoteURL() {
+                    let repo = Self.extractRepoFullName(from: url)
+                    if !repo.isEmpty {
+                        prVM.loadPullRequests(using: adapter, repo: repo)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Extract "owner/repo" from a GitHub remote URL.
+    private static func extractRepoFullName(from url: String) -> String {
+        // Handle SSH: git@github.com:owner/repo.git
+        if url.contains("github.com:") {
+            let parts = url.components(separatedBy: "github.com:")
+            if let path = parts.last {
+                return path.replacingOccurrences(of: ".git", with: "")
+            }
+        }
+        // Handle HTTPS: https://github.com/owner/repo.git
+        if url.contains("github.com/") {
+            let parts = url.components(separatedBy: "github.com/")
+            if let path = parts.last {
+                return path.replacingOccurrences(of: ".git", with: "")
+            }
+        }
+        return ""
     }
 
     // MARK: - Grouped Review List (no review selected)

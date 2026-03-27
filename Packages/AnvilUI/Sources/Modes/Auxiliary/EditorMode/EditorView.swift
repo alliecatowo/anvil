@@ -1,7 +1,10 @@
 import SwiftUI
+import AppKit
 
 struct EditorView: View {
     @ObservedObject var viewModel: EditorViewModel
+
+    @State private var selectionAnchor: Int?
 
     private let swiftKeywords: Set<String> = [
         "func", "let", "var", "class", "struct", "import", "if", "else",
@@ -45,54 +48,84 @@ struct EditorView: View {
 
     private func codeView(for file: EditorFile) -> some View {
         let lines = file.content.components(separatedBy: "\n")
+        let selectedRange: ClosedRange<Int>? = viewModel.inlineEditPhase != .hidden
+            ? viewModel.inlineEditSelectedRange
+            : nil
 
-        return ScrollView([.horizontal, .vertical]) {
-            HStack(alignment: .top, spacing: 0) {
-                // Line numbers gutter
-                lineNumberGutter(lineCount: lines.count)
+        return ZStack(alignment: .topLeading) {
+            ScrollView([.horizontal, .vertical]) {
+                HStack(alignment: .top, spacing: 0) {
+                    // Line numbers gutter
+                    lineNumberGutter(lines: lines, selectedRange: selectedRange)
 
-                // Divider between gutter and code
-                Rectangle()
-                    .fill(AnvilColor.borderSubtle)
-                    .frame(width: 1)
+                    // Divider between gutter and code
+                    Rectangle()
+                        .fill(AnvilColor.borderSubtle)
+                        .frame(width: 1)
 
-                // Code content
-                codeContent(lines: lines)
+                    // Code content
+                    codeContent(lines: lines, selectedRange: selectedRange)
+                }
             }
+
+            // Inline edit overlay (positioned over the selected lines)
+            InlineEditOverlay(viewModel: viewModel)
         }
         .background(AnvilColor.backgroundPrimary)
     }
 
-    private func lineNumberGutter(lineCount: Int) -> some View {
-        let gutterWidth = gutterWidth(for: lineCount)
+    // MARK: - Line Number Gutter
+
+    private func lineNumberGutter(lines: [String], selectedRange: ClosedRange<Int>?) -> some View {
+        let gutterWidth = gutterWidth(for: lines.count)
 
         return VStack(alignment: .trailing, spacing: 0) {
-            ForEach(1...max(lineCount, 1), id: \.self) { lineNumber in
-                Text("\(lineNumber)")
-                    .font(AnvilFont.code)
-                    .foregroundStyle(
-                        lineNumber == viewModel.cursorLine
-                            ? AnvilColor.textSecondary
-                            : AnvilColor.textTertiary
-                    )
-                    .frame(width: gutterWidth, alignment: .trailing)
-                    .frame(height: 20)
-                    .padding(.trailing, AnvilSpacing.sm)
-                    .background(
-                        lineNumber == viewModel.cursorLine
+            ForEach(1...max(lines.count, 1), id: \.self) { lineNumber in
+                let isSelected = selectedRange?.contains(lineNumber) ?? false
+                let isCursor = lineNumber == viewModel.cursorLine && selectedRange == nil
+
+                HStack(spacing: 0) {
+                    // Selection bar
+                    if isSelected {
+                        Rectangle()
+                            .fill(AnvilColor.accentBlue)
+                            .frame(width: 3)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Text("\(lineNumber)")
+                        .font(AnvilFont.code)
+                        .foregroundStyle(
+                            isSelected ? AnvilColor.accentBlue :
+                            isCursor ? AnvilColor.textSecondary :
+                            AnvilColor.textTertiary
+                        )
+                        .frame(width: gutterWidth, alignment: .trailing)
+                        .padding(.trailing, AnvilSpacing.sm)
+                }
+                .frame(height: 20)
+                .background(
+                    isSelected
+                        ? AnvilColor.accentBlue.opacity(0.08)
+                        : isCursor
                             ? AnvilColor.backgroundTertiary.opacity(0.5)
                             : Color.clear
-                    )
+                )
             }
         }
         .padding(.leading, AnvilSpacing.sm)
         .background(AnvilColor.backgroundSecondary.opacity(0.5))
     }
 
-    private func codeContent(lines: [String]) -> some View {
+    // MARK: - Code Content
+
+    private func codeContent(lines: [String], selectedRange: ClosedRange<Int>?) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
                 let lineNumber = index + 1
+                let isSelected = selectedRange?.contains(lineNumber) ?? false
+                let isCursor = lineNumber == viewModel.cursorLine && selectedRange == nil
 
                 highlightedLine(line)
                     .frame(height: 20, alignment: .leading)
@@ -100,15 +133,46 @@ struct EditorView: View {
                     .padding(.leading, AnvilSpacing.md)
                     .padding(.trailing, AnvilSpacing.xxl)
                     .background(
-                        lineNumber == viewModel.cursorLine
-                            ? AnvilColor.selectionBackground.opacity(0.3)
-                            : Color.clear
+                        isSelected
+                            ? AnvilColor.accentBlue.opacity(0.06)
+                            : isCursor
+                                ? AnvilColor.selectionBackground.opacity(0.3)
+                                : Color.clear
                     )
                     .contentShape(Rectangle())
-                    .onTapGesture {
-                        viewModel.cursorLine = lineNumber
-                    }
+                    .gesture(
+                        TapGesture()
+                            .onEnded {
+                                handleLineClick(lineNumber: lineNumber)
+                            }
+                    )
             }
+        }
+    }
+
+    // MARK: - Line Click Handling
+
+    private func handleLineClick(lineNumber: Int) {
+        guard viewModel.inlineEditPhase == .hidden else { return }
+
+        if let anchor = selectionAnchor {
+            // Extend selection from anchor
+            let start = min(anchor, lineNumber)
+            let end = max(anchor, lineNumber)
+            viewModel.inlineEditSelectedRange = start...end
+            viewModel.cursorLine = lineNumber
+        } else if NSEvent.modifierFlags.contains(.shift) {
+            // Shift-click: select from cursor to clicked line
+            let start = min(viewModel.cursorLine, lineNumber)
+            let end = max(viewModel.cursorLine, lineNumber)
+            viewModel.inlineEditSelectedRange = start...end
+            selectionAnchor = viewModel.cursorLine
+            viewModel.cursorLine = lineNumber
+        } else {
+            // Plain click: move cursor, clear selection
+            viewModel.cursorLine = lineNumber
+            viewModel.inlineEditSelectedRange = lineNumber...lineNumber
+            selectionAnchor = nil
         }
     }
 

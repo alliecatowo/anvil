@@ -2,6 +2,7 @@ import SwiftUI
 
 public struct MainWindow: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var container: DependencyContainer
 
     public init() {}
 
@@ -13,37 +14,43 @@ public struct MainWindow: View {
             Divider()
                 .overlay(AnvilColor.borderSubtle)
 
-            // Main content area
-            HStack(spacing: 0) {
-                // Sidebar
-                if appState.isSidebarVisible {
-                    Sidebar()
-                        .frame(width: appState.isSidebarCollapsed ? AnvilSpacing.sidebarCollapsedWidth : AnvilSpacing.sidebarWidth)
+            // Show welcome page when no project is open
+            if container.currentProjectPath == nil {
+                WelcomePage()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                // Main content area
+                HStack(spacing: 0) {
+                    // Sidebar
+                    if appState.isSidebarVisible {
+                        Sidebar()
+                            .frame(width: appState.isSidebarCollapsed ? AnvilSpacing.sidebarCollapsedWidth : AnvilSpacing.sidebarWidth)
 
-                    Divider()
-                        .overlay(AnvilColor.borderSubtle)
+                        Divider()
+                            .overlay(AnvilColor.borderSubtle)
+                    }
+
+                    // Content
+                    ContentArea()
+
+                    // Inspector
+                    if appState.isInspectorVisible {
+                        Divider()
+                            .overlay(AnvilColor.borderSubtle)
+
+                        InspectorPanel()
+                            .frame(width: AnvilSpacing.inspectorWidth)
+                    }
                 }
 
-                // Content
-                ContentArea()
-
-                // Inspector
-                if appState.isInspectorVisible {
+                // Terminal panel (bottom)
+                if appState.isTerminalPanelVisible {
                     Divider()
                         .overlay(AnvilColor.borderSubtle)
 
-                    InspectorPanel()
-                        .frame(width: AnvilSpacing.inspectorWidth)
+                    TerminalPanel()
+                        .frame(height: 200)
                 }
-            }
-
-            // Terminal panel (bottom)
-            if appState.isTerminalPanelVisible {
-                Divider()
-                    .overlay(AnvilColor.borderSubtle)
-
-                TerminalPanel()
-                    .frame(height: 200)
             }
 
             Divider()

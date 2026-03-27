@@ -112,7 +112,7 @@ struct KeyEventRouter: ViewModifier {
         case .agent: .agent
         case .editor: .editor
         // Modes that show list-based sidebars use list context
-        case .intent, .ship, .database, .docs, .messaging, .notifications, .terminal:
+        case .intent, .ship, .database, .docs, .messaging, .notifications, .terminal, .testing:
             .list
         }
     }

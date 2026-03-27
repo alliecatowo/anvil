@@ -3,6 +3,7 @@ import AnvilDomain
 import AnvilApplication
 import AnvilACP
 import AnvilGit
+import AnvilGitHub
 
 /// Central dependency container that wires all layers together.
 /// ViewModels access ports and services through this container.
@@ -28,6 +29,33 @@ public class DependencyContainer: ObservableObject {
         let adapter = GitSourceControlAdapter(workingDirectory: path)
         gitAdapter = adapter
         return adapter
+    }
+
+    // MARK: - GitHub Adapter
+
+    private var gitHubAdapter: GitHubSourceControlCloudAdapter?
+
+    public func getOrCreateGitHubAdapter() -> GitHubSourceControlCloudAdapter? {
+        if let adapter = gitHubAdapter { return adapter }
+        // Look for a GitHub PAT in configured providers or env
+        if let ghConfig = configuredProviders.values.first(where: { $0.providerType == "github" }),
+           let token = ghConfig.apiKey {
+            let adapter = GitHubSourceControlCloudAdapter(token: token)
+            gitHubAdapter = adapter
+            return adapter
+        }
+        // Fall back to GITHUB_TOKEN env var
+        if let token = ProcessInfo.processInfo.environment["GITHUB_TOKEN"], !token.isEmpty {
+            let adapter = GitHubSourceControlCloudAdapter(token: token)
+            gitHubAdapter = adapter
+            return adapter
+        }
+        return nil
+    }
+
+    /// Reset the cached GitHub adapter (e.g. after token change).
+    public func resetGitHubAdapter() {
+        gitHubAdapter = nil
     }
 
     // MARK: - ACP Client

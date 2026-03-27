@@ -4,6 +4,17 @@ import os.log
 
 private let logger = Logger(subsystem: "com.anvil.app", category: "AgentViewModel")
 
+public enum SessionExportFormat {
+    case markdown, json
+
+    var fileExtension: String {
+        switch self {
+        case .markdown: "md"
+        case .json: "json"
+        }
+    }
+}
+
 @MainActor
 public class AgentViewModel: ObservableObject {
     @Published public var sessions: [AgentSession] = []
@@ -11,6 +22,8 @@ public class AgentViewModel: ObservableObject {
     @Published public var isLaunchSheetPresented = false
     @Published public var inputText = ""
     @Published public var selectedModelId = "claude-sonnet-4-6"
+    @Published public var editSuggestions: [String: [CodeEditSuggestion]] = [:] // sessionId -> suggestions
+    @Published public var contextAttachments: [ContextAttachment] = []
 
     public var selectedSession: AgentSession? {
         sessions.first { $0.id == selectedSessionId }
@@ -81,9 +94,127 @@ public class AgentViewModel: ObservableObject {
         NSPasteboard.general.setString(md, forType: .string)
     }
 
+    public func exportSessionJSON(_ sessionId: String) -> Data? {
+        guard let session = sessions.first(where: { $0.id == sessionId }) else { return nil }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        return try? encoder.encode(session)
+    }
+
+    public func exportSessionToFile(_ sessionId: String, format: SessionExportFormat) {
+        guard let session = sessions.first(where: { $0.id == sessionId }) else { return }
+
+        let panel = NSSavePanel()
+        panel.title = "Export Session"
+        panel.nameFieldStringValue = "\(session.displayName).\(format.fileExtension)"
+
+        switch format {
+        case .markdown:
+            panel.allowedContentTypes = [.plainText]
+        case .json:
+            panel.allowedContentTypes = [.json]
+        }
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        switch format {
+        case .markdown:
+            let md = exportSession(sessionId)
+            try? md.write(to: url, atomically: true, encoding: .utf8)
+        case .json:
+            if let data = exportSessionJSON(sessionId) {
+                try? data.write(to: url, options: .atomic)
+            }
+        }
+    }
+
     public func updateSessionModel(_ sessionId: String, modelId: String) {
         guard let index = sessions.firstIndex(where: { $0.id == sessionId }) else { return }
         sessions[index].model = modelId
+    }
+
+    public func setSessionBudget(_ sessionId: String, budget: Decimal?, hardStop: Bool) {
+        guard let index = sessions.firstIndex(where: { $0.id == sessionId }) else { return }
+        sessions[index].costBudget = budget
+        sessions[index].hardStopOnBudget = hardStop
+    }
+
+    // MARK: - Context Attachments
+
+    public func addAttachment(_ attachment: ContextAttachment) {
+        // Avoid duplicates
+        guard !contextAttachments.contains(where: { $0.id == attachment.id }) else { return }
+        contextAttachments.append(attachment)
+    }
+
+    public func removeAttachment(id: String) {
+        contextAttachments.removeAll { $0.id == id }
+    }
+
+    public func clearAttachments() {
+        contextAttachments.removeAll()
+    }
+
+    /// Builds context prefix from attachments to prepend to user messages.
+    private func buildContextPrefix() -> String {
+        guard !contextAttachments.isEmpty else { return "" }
+        var parts = ["[Context]"]
+        for attachment in contextAttachments {
+            parts.append(attachment.contextString)
+        }
+        parts.append("[/Context]\n\n")
+        return parts.joined(separator: "\n")
+    }
+
+    // MARK: - Inline Edit Suggestions
+
+    public func suggestionsForCurrentSession() -> [CodeEditSuggestion] {
+        guard let sessionId = selectedSessionId else { return [] }
+        return editSuggestions[sessionId] ?? []
+    }
+
+    public func addEditSuggestion(_ suggestion: CodeEditSuggestion) {
+        guard let sessionId = selectedSessionId else { return }
+        editSuggestions[sessionId, default: []].append(suggestion)
+    }
+
+    public func acceptHunk(suggestionId: String, hunkId: String) {
+        guard let sessionId = selectedSessionId else { return }
+        guard var suggestions = editSuggestions[sessionId],
+              let sugIdx = suggestions.firstIndex(where: { $0.id == suggestionId }),
+              let hunkIdx = suggestions[sugIdx].hunks.firstIndex(where: { $0.id == hunkId }) else { return }
+        suggestions[sugIdx].hunks[hunkIdx].state = .accepted
+        editSuggestions[sessionId] = suggestions
+    }
+
+    public func rejectHunk(suggestionId: String, hunkId: String) {
+        guard let sessionId = selectedSessionId else { return }
+        guard var suggestions = editSuggestions[sessionId],
+              let sugIdx = suggestions.firstIndex(where: { $0.id == suggestionId }),
+              let hunkIdx = suggestions[sugIdx].hunks.firstIndex(where: { $0.id == hunkId }) else { return }
+        suggestions[sugIdx].hunks[hunkIdx].state = .rejected
+        editSuggestions[sessionId] = suggestions
+    }
+
+    public func acceptAllHunks(suggestionId: String) {
+        guard let sessionId = selectedSessionId else { return }
+        guard var suggestions = editSuggestions[sessionId],
+              let sugIdx = suggestions.firstIndex(where: { $0.id == suggestionId }) else { return }
+        for i in suggestions[sugIdx].hunks.indices {
+            suggestions[sugIdx].hunks[i].state = .accepted
+        }
+        editSuggestions[sessionId] = suggestions
+    }
+
+    public func rejectAllHunks(suggestionId: String) {
+        guard let sessionId = selectedSessionId else { return }
+        guard var suggestions = editSuggestions[sessionId],
+              let sugIdx = suggestions.firstIndex(where: { $0.id == suggestionId }) else { return }
+        for i in suggestions[sugIdx].hunks.indices {
+            suggestions[sugIdx].hunks[i].state = .rejected
+        }
+        editSuggestions[sessionId] = suggestions
     }
 
     // MARK: - Ticket-to-Agent Pipeline
@@ -130,13 +261,15 @@ public class AgentViewModel: ObservableObject {
         // Update model if changed
         updateSessionModel(sessionId, modelId: selectedModelId)
 
-        // Add user message to the session
-        let userMessage = AgentMessage(role: .user, content: inputText)
+        // Add user message to the session (with context prefix if attachments exist)
+        let contextPrefix = buildContextPrefix()
+        let fullContent = contextPrefix + inputText
+        let userMessage = AgentMessage(role: .user, content: fullContent)
         if let index = sessions.firstIndex(where: { $0.id == sessionId }) {
             sessions[index].messages.append(userMessage)
         }
-        _ = inputText  // prompt text already captured in userMessage
         inputText = ""
+        clearAttachments()
 
         // Create assistant message placeholder and mark session as running
         let assistantMessage = AgentMessage(role: .assistant, content: "")
@@ -146,6 +279,9 @@ public class AgentViewModel: ObservableObject {
             sessions[index].status = .running
         }
         appState.agentStatus = "Running"
+        appState.agentActiveSessionId = sessionId
+        appState.agentRunStartedAt = .now
+        appState.agentCurrentTool = nil
 
         // Stream the response asynchronously
         Task {
@@ -169,7 +305,7 @@ public class AgentViewModel: ObservableObject {
         guard let provider = await client.provider() else {
             updateMessageContent(sessionId: sessionId, messageId: assistantMessageId, appendText: "No ACP provider configured. Go to Settings -> Providers to add one.")
             setSessionStatus(sessionId: sessionId, status: .failed)
-            appState.agentStatus = "Failed"
+            clearAgentActivity(appState: appState, status: "Failed")
             return
         }
 
@@ -178,7 +314,7 @@ public class AgentViewModel: ObservableObject {
             guard let model = models.first else {
                 updateMessageContent(sessionId: sessionId, messageId: assistantMessageId, appendText: "No models available from the provider.")
                 setSessionStatus(sessionId: sessionId, status: .failed)
-                appState.agentStatus = "Failed"
+                clearAgentActivity(appState: appState, status: "Failed")
                 return
             }
 
@@ -193,20 +329,27 @@ public class AgentViewModel: ObservableObject {
                     updateMessageContent(sessionId: sessionId, messageId: assistantMessageId, appendText: delta)
                 case .usage(let usage):
                     updateTokenUsage(sessionId: sessionId, usage: usage, model: model, appState: appState)
+                    if shouldHardStop(sessionId: sessionId) {
+                        updateMessageContent(sessionId: sessionId, messageId: assistantMessageId, appendText: "\n\n**Budget exceeded** — session stopped.")
+                        setSessionStatus(sessionId: sessionId, status: .paused)
+                        clearAgentActivity(appState: appState, status: "Budget Exceeded")
+                        return
+                    }
                 case .toolCallStart(let id, let name):
                     addToolCallToMessage(sessionId: sessionId, messageId: assistantMessageId, toolCallId: id, name: name)
+                    appState.agentCurrentTool = name
                 default:
                     break
                 }
             }
 
             setSessionStatus(sessionId: sessionId, status: .idle)
-            appState.agentStatus = "Idle"
+            clearAgentActivity(appState: appState, status: "Idle")
 
         } catch {
             updateMessageContent(sessionId: sessionId, messageId: assistantMessageId, appendText: "\n\nError: \(error.localizedDescription)")
             setSessionStatus(sessionId: sessionId, status: .failed)
-            appState.agentStatus = "Failed"
+            clearAgentActivity(appState: appState, status: "Failed")
         }
     }
 
@@ -260,6 +403,13 @@ public class AgentViewModel: ObservableObject {
         )
     }
 
+    private func clearAgentActivity(appState: AppState, status: String) {
+        appState.agentStatus = status
+        appState.agentCurrentTool = nil
+        appState.agentActiveSessionId = nil
+        appState.agentRunStartedAt = nil
+    }
+
     private func setSessionStatus(sessionId: String, status: AgentSessionStatus) {
         guard let index = sessions.firstIndex(where: { $0.id == sessionId }) else { return }
         sessions[index].status = status
@@ -278,6 +428,14 @@ public class AgentViewModel: ObservableObject {
 
         appState.sessionCost = sessions[index].cost
         appState.todayCost += cost
+    }
+
+    /// Returns true if the session has exceeded its budget and hard stop is enabled.
+    func shouldHardStop(sessionId: String) -> Bool {
+        guard let session = sessions.first(where: { $0.id == sessionId }),
+              session.hardStopOnBudget,
+              let usage = session.budgetUsage else { return false }
+        return usage >= 1.0
     }
 
     // MARK: - Sample Data (for previews only)

@@ -67,6 +67,21 @@ enum SymbolKind: String {
     }
 }
 
+// MARK: - Inline Edit State
+
+enum InlineEditPhase: Equatable {
+    case hidden
+    case prompting          // Prompt bar visible, user typing instruction
+    case generating         // Agent streaming the edit
+    case reviewing          // Diff shown, waiting for accept/reject
+}
+
+struct InlineEditDiff {
+    let originalLines: [String]     // The lines being replaced
+    let proposedLines: [String]     // The agent's proposed replacement
+    let startLine: Int              // 1-based line number of first replaced line
+}
+
 // MARK: - ViewModel
 
 @MainActor
@@ -77,6 +92,15 @@ class EditorViewModel: ObservableObject {
     @Published var cursorColumn: Int = 1
     @Published var isSymbolOutlineVisible: Bool = true
     @Published var expandedFolders: Set<UUID> = []
+
+    // MARK: Inline Edit (⌘K)
+    @Published var inlineEditPhase: InlineEditPhase = .hidden
+    @Published var inlineEditSelectedRange: ClosedRange<Int> = 1...1   // 1-based line range
+    @Published var inlineEditPrompt: String = ""
+    @Published var inlineEditDiff: InlineEditDiff? = nil
+    @Published var inlineEditStreamingText: String = ""
+
+    private var inlineEditTask: Task<Void, Never>?
 
     var selectedFile: EditorFile? {
         openFiles.first { $0.id == selectedFileId }
@@ -219,6 +243,163 @@ class EditorViewModel: ObservableObject {
 
     func navigateToSymbol(_ symbol: EditorSymbol) {
         cursorLine = symbol.line
+    }
+
+    // MARK: - Inline Edit (⌘K)
+
+    /// Open the inline edit prompt bar for the given line range.
+    func beginInlineEdit(range: ClosedRange<Int>) {
+        inlineEditSelectedRange = range
+        inlineEditPrompt = ""
+        inlineEditDiff = nil
+        inlineEditStreamingText = ""
+        inlineEditPhase = .prompting
+    }
+
+    /// Cancel inline edit at any stage.
+    func cancelInlineEdit() {
+        inlineEditTask?.cancel()
+        inlineEditTask = nil
+        inlineEditPhase = .hidden
+        inlineEditPrompt = ""
+        inlineEditDiff = nil
+        inlineEditStreamingText = ""
+    }
+
+    /// Submit the inline edit prompt — streams a simulated (or real ACP) response.
+    func submitInlineEdit() {
+        guard inlineEditPhase == .prompting,
+              !inlineEditPrompt.isEmpty,
+              let file = selectedFile else { return }
+
+        inlineEditPhase = .generating
+        inlineEditStreamingText = ""
+
+        let lines = file.content.components(separatedBy: "\n")
+        let start = max(0, inlineEditSelectedRange.lowerBound - 1)
+        let end = min(lines.count - 1, inlineEditSelectedRange.upperBound - 1)
+        let selectedLines = Array(lines[start...end])
+        let prompt = inlineEditPrompt
+        let startLine = inlineEditSelectedRange.lowerBound
+
+        inlineEditTask = Task { @MainActor in
+            let proposed = await generateInlineEdit(
+                originalLines: selectedLines,
+                prompt: prompt
+            )
+            guard !Task.isCancelled else { return }
+            inlineEditDiff = InlineEditDiff(
+                originalLines: selectedLines,
+                proposedLines: proposed,
+                startLine: startLine
+            )
+            inlineEditPhase = .reviewing
+        }
+    }
+
+    /// Accept the proposed diff — applies it to the file content.
+    func acceptInlineEdit() {
+        guard let diff = inlineEditDiff,
+              let file = selectedFile,
+              let fileIndex = openFiles.firstIndex(where: { $0.id == file.id }) else {
+            cancelInlineEdit()
+            return
+        }
+
+        var lines = file.content.components(separatedBy: "\n")
+        let start = max(0, diff.startLine - 1)
+        let end = min(lines.count - 1, start + diff.originalLines.count - 1)
+        guard start <= end, start < lines.count else {
+            cancelInlineEdit()
+            return
+        }
+
+        lines.replaceSubrange(start...end, with: diff.proposedLines)
+        let newContent = lines.joined(separator: "\n")
+        let updated = EditorFile(
+            name: file.name,
+            path: file.path,
+            content: newContent,
+            language: file.language
+        )
+        openFiles[fileIndex] = updated
+        selectedFileId = updated.id
+
+        // Move cursor to end of edited region
+        cursorLine = diff.startLine + diff.proposedLines.count - 1
+
+        cancelInlineEdit()
+    }
+
+    /// Reject the diff — discard and return to prompting so user can refine.
+    func rejectInlineEdit() {
+        inlineEditDiff = nil
+        inlineEditStreamingText = ""
+        inlineEditPhase = .prompting
+    }
+
+    // MARK: - Edit Generation (stub — replace with real ACP call)
+
+    private func generateInlineEdit(originalLines: [String], prompt: String) async -> [String] {
+        // Simulate streaming delay
+        try? await Task.sleep(nanoseconds: 800_000_000)
+
+        // Stub: apply simple transformations based on common prompt keywords
+        // In production this calls ACPClient with the file context + prompt
+        let lower = prompt.lowercased()
+
+        if lower.contains("comment") || lower.contains("document") || lower.contains("explain") {
+            return addDocComments(to: originalLines)
+        } else if lower.contains("async") || lower.contains("await") {
+            return makeAsync(lines: originalLines)
+        } else if lower.contains("guard") || lower.contains("unwrap") {
+            return addGuardStatements(to: originalLines)
+        } else if lower.contains("todo") {
+            return originalLines.map { "// TODO: \($0.trimmingCharacters(in: .whitespaces))" }
+        } else {
+            // Return original with a comment showing the prompt was received
+            var result = originalLines
+            result.insert("// AI edit: \(prompt)", at: 0)
+            return result
+        }
+    }
+
+    private func addDocComments(to lines: [String]) -> [String] {
+        var result: [String] = []
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("func ") {
+                let indent = String(line.prefix(while: { $0 == " " }))
+                let name = trimmed.dropFirst(5).prefix(while: { $0 != "(" })
+                result.append("\(indent)/// \(name) performs the described operation.")
+                result.append(line)
+            } else {
+                result.append(line)
+            }
+        }
+        return result
+    }
+
+    private func makeAsync(lines: [String]) -> [String] {
+        lines.map { line in
+            if line.contains("func ") && !line.contains("async") {
+                return line.replacingOccurrences(of: "func ", with: "func ")
+                    .replacingOccurrences(of: ") {", with: ") async {")
+            }
+            return line
+        }
+    }
+
+    private func addGuardStatements(to lines: [String]) -> [String] {
+        var result: [String] = []
+        for line in lines {
+            result.append(line)
+            if line.contains("let ") && line.contains("= ") && !line.contains("guard") {
+                let indent = String(line.prefix(while: { $0 == " " }))
+                result.append("\(indent)// guard let ... else { return } — add guard here")
+            }
+        }
+        return result
     }
 
     // MARK: - Symbol Extraction

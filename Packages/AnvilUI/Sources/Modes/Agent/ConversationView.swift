@@ -1,14 +1,25 @@
 import SwiftUI
 import AnvilDomain
+import UniformTypeIdentifiers
 
 struct ConversationView: View {
     let session: AgentSession
     @Binding var inputText: String
     @Binding var selectedModelId: String
+    let editSuggestions: [CodeEditSuggestion]
     let onSend: () -> Void
     let onRename: (String) -> Void
     let onDelete: () -> Void
     let onExport: () -> Void
+    let onExportFile: ((SessionExportFormat) -> Void)?
+    let onAcceptHunk: (String, String) -> Void  // suggestionId, hunkId
+    let onRejectHunk: (String, String) -> Void
+    let onAcceptAll: (String) -> Void  // suggestionId
+    let onRejectAll: (String) -> Void
+    let attachments: [ContextAttachment]
+    let onRemoveAttachment: (String) -> Void
+    let onAddAttachment: (ContextAttachment) -> Void
+    var onSetBudget: ((Decimal?, Bool) -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -18,7 +29,9 @@ struct ConversationView: View {
                 selectedModelId: $selectedModelId,
                 onRename: onRename,
                 onDelete: onDelete,
-                onExport: onExport
+                onExport: onExport,
+                onExportFile: onExportFile,
+                onSetBudget: onSetBudget
             )
 
             Divider().overlay(AnvilColor.borderSubtle)
@@ -28,8 +41,24 @@ struct ConversationView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: AnvilSpacing.md) {
                         ForEach(session.messages) { message in
-                            MessageBubble(message: message)
-                                .id(message.id)
+                            MessageBubble(
+                                message: message,
+                                isStreaming: session.status == .running
+                                    && message.role == .assistant
+                                    && message.id == session.messages.last?.id
+                            )
+                            .id(message.id)
+                        }
+
+                        // Inline edit suggestions
+                        ForEach(editSuggestions) { suggestion in
+                            InlineEditView(
+                                suggestion: suggestion,
+                                onAcceptHunk: { hunkId in onAcceptHunk(suggestion.id, hunkId) },
+                                onRejectHunk: { hunkId in onRejectHunk(suggestion.id, hunkId) },
+                                onAcceptAll: { onAcceptAll(suggestion.id) },
+                                onRejectAll: { onRejectAll(suggestion.id) }
+                            )
                         }
 
                         if session.status == .running {
@@ -55,8 +84,15 @@ struct ConversationView: View {
 
             Divider().overlay(AnvilColor.borderSubtle)
 
-            // Input bar with slash commands and @ references
-            InputBar(text: $inputText, isRunning: session.status == .running, onSend: onSend)
+            // Input bar with slash commands, @ references, and context attachments
+            InputBar(
+                text: $inputText,
+                isRunning: session.status == .running,
+                attachments: attachments,
+                onSend: onSend,
+                onRemoveAttachment: onRemoveAttachment,
+                onAddAttachment: onAddAttachment
+            )
         }
         .background(AnvilColor.backgroundPrimary)
     }
@@ -70,60 +106,75 @@ struct SessionHeader: View {
     let onRename: (String) -> Void
     let onDelete: () -> Void
     let onExport: () -> Void
+    let onExportFile: ((SessionExportFormat) -> Void)?
+    var onSetBudget: ((Decimal?, Bool) -> Void)?
 
     @State private var isEditing = false
     @State private var editName = ""
+    @State private var showTokenDetails = false
+    @State private var showBudgetSheet = false
+
+    /// Context window limit for the selected model.
+    private var contextLimit: Int {
+        let model = selectedModelId
+        if model.contains("opus") || model.contains("sonnet") { return 200_000 }
+        if model.contains("haiku") { return 200_000 }
+        if model.contains("gpt-4o") { return 128_000 }
+        return 128_000
+    }
 
     var body: some View {
-        HStack {
-            Circle()
-                .fill(statusColor)
-                .frame(width: 8, height: 8)
+        VStack(spacing: 0) {
+            HStack {
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 8, height: 8)
 
-            if isEditing {
-                TextField("Session name", text: $editName)
-                    .textFieldStyle(.plain)
-                    .font(AnvilFont.sidebarHeader)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .frame(maxWidth: 200)
-                    .onSubmit {
-                        onRename(editName)
-                        isEditing = false
+                if isEditing {
+                    TextField("Session name", text: $editName)
+                        .textFieldStyle(.plain)
+                        .font(AnvilFont.sidebarHeader)
+                        .foregroundStyle(AnvilColor.textPrimary)
+                        .frame(maxWidth: 200)
+                        .onSubmit {
+                            onRename(editName)
+                            isEditing = false
+                        }
+                } else {
+                    Text(session.displayName)
+                        .font(AnvilFont.sidebarHeader)
+                        .foregroundStyle(AnvilColor.textPrimary)
+                        .onTapGesture(count: 2) {
+                            editName = session.displayName
+                            isEditing = true
+                        }
+                }
+
+                AnvilBadge(text: session.status.rawValue, color: statusColor)
+
+                Spacer()
+
+                // Model picker
+                ModelPicker(selectedModelId: $selectedModelId)
+
+                // Token usage compact — click to expand
+                Button {
+                    withAnimation(AnvilAnimation.standard) {
+                        showTokenDetails.toggle()
                     }
-            } else {
-                Text(session.displayName)
-                    .font(AnvilFont.sidebarHeader)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .onTapGesture(count: 2) {
-                        editName = session.displayName
-                        isEditing = true
+                } label: {
+                    HStack(spacing: AnvilSpacing.xxs) {
+                        Image(systemName: "chart.bar.fill")
+                            .font(.system(size: 10))
+                        Text(formatTokenCount(session.tokenUsage.totalTokens))
+                            .font(AnvilFont.statusBar)
+                        Text("$\(NSDecimalNumber(decimal: session.cost).doubleValue, specifier: "%.2f")")
+                            .font(AnvilFont.statusBar)
+                            .foregroundStyle(AnvilColor.textSecondary)
                     }
-            }
-
-            AnvilBadge(text: session.status.rawValue, color: statusColor)
-
-            Spacer()
-
-            // Model picker
-            ModelPicker(selectedModelId: $selectedModelId)
-
-            // Token usage
-            HStack(spacing: AnvilSpacing.xxs) {
-                Image(systemName: "arrow.down.circle")
-                    .font(.system(size: 10))
-                Text("\(session.tokenUsage.inputTokens)")
-                    .font(AnvilFont.statusBar)
-                Image(systemName: "arrow.up.circle")
-                    .font(.system(size: 10))
-                Text("\(session.tokenUsage.outputTokens)")
-                    .font(AnvilFont.statusBar)
-            }
-            .foregroundStyle(AnvilColor.textTertiary)
-
-            // Cost
-            Text("$\(NSDecimalNumber(decimal: session.cost).doubleValue, specifier: "%.2f")")
-                .font(AnvilFont.statusBar)
-                .foregroundStyle(AnvilColor.textSecondary)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                }
+                .buttonStyle(.plain)
 
             // Session actions menu
             Menu {
@@ -133,6 +184,10 @@ struct SessionHeader: View {
                 }
                 Button("Export to Markdown") {
                     onExport()
+                }
+                Divider()
+                Button("Set Budget...") {
+                    showBudgetSheet = true
                 }
                 Divider()
                 Button("Delete Session", role: .destructive) {
@@ -148,7 +203,34 @@ struct SessionHeader: View {
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.sm)
+
+            // Expandable token usage detail bar
+            if showTokenDetails {
+                TokenUsageBar(
+                    usage: session.tokenUsage,
+                    cost: session.cost,
+                    contextLimit: contextLimit
+                )
+                .padding(.horizontal, AnvilSpacing.lg)
+                .padding(.bottom, AnvilSpacing.sm)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
+            // Budget warning banner
+            if let usage = session.budgetUsage, usage >= 0.8 {
+                CostBudgetBanner(usage: usage, budget: session.costBudget ?? 0, cost: session.cost, hardStop: session.hardStopOnBudget)
+            }
+        }
         .background(AnvilColor.backgroundSecondary)
+        .popover(isPresented: $showBudgetSheet, arrowEdge: .bottom) {
+            BudgetSettingPopover(
+                currentBudget: session.costBudget,
+                hardStop: session.hardStopOnBudget
+            ) { budget, hardStop in
+                onSetBudget?(budget, hardStop)
+                showBudgetSheet = false
+            }
+        }
     }
 
     var statusColor: Color {
@@ -160,12 +242,135 @@ struct SessionHeader: View {
         default: AnvilColor.textTertiary
         }
     }
+
+    private func formatTokenCount(_ count: Int) -> String {
+        if count >= 1_000_000 { return String(format: "%.1fM", Double(count) / 1_000_000) }
+        if count >= 1_000 { return String(format: "%.1fK", Double(count) / 1_000) }
+        return "\(count)"
+    }
+}
+
+// MARK: - Cost Budget Banner
+
+struct CostBudgetBanner: View {
+    let usage: Double
+    let budget: Decimal
+    let cost: Decimal
+    let hardStop: Bool
+
+    private var isExceeded: Bool { usage >= 1.0 }
+    private var bannerColor: Color { isExceeded ? AnvilColor.accentRed : AnvilColor.accentAmber }
+
+    var body: some View {
+        HStack(spacing: AnvilSpacing.sm) {
+            Image(systemName: isExceeded ? "exclamationmark.triangle.fill" : "exclamationmark.triangle")
+                .font(.system(size: 12))
+                .foregroundStyle(bannerColor)
+
+            if isExceeded {
+                Text("Budget exceeded")
+                    .font(AnvilFont.statusBar)
+                    .foregroundStyle(bannerColor)
+                if hardStop {
+                    Text("— session paused")
+                        .font(AnvilFont.statusBar)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                }
+            } else {
+                Text("\(Int(usage * 100))% of budget used")
+                    .font(AnvilFont.statusBar)
+                    .foregroundStyle(bannerColor)
+            }
+
+            Spacer()
+
+            Text("$\(NSDecimalNumber(decimal: cost).doubleValue, specifier: "%.2f") / $\(NSDecimalNumber(decimal: budget).doubleValue, specifier: "%.2f")")
+                .font(AnvilFont.statusBar)
+                .foregroundStyle(AnvilColor.textSecondary)
+        }
+        .padding(.horizontal, AnvilSpacing.lg)
+        .padding(.vertical, AnvilSpacing.xs)
+        .background(bannerColor.opacity(0.08))
+    }
+}
+
+// MARK: - Budget Setting Popover
+
+struct BudgetSettingPopover: View {
+    let currentBudget: Decimal?
+    let hardStop: Bool
+    let onSave: (Decimal?, Bool) -> Void
+
+    @State private var budgetText: String = ""
+    @State private var hardStopEnabled: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+            Text("Session Budget")
+                .font(AnvilFont.sidebarHeader)
+                .foregroundStyle(AnvilColor.textPrimary)
+
+            HStack(spacing: AnvilSpacing.xs) {
+                Text("$")
+                    .font(AnvilFont.statusBar)
+                    .foregroundStyle(AnvilColor.textSecondary)
+                TextField("e.g. 5.00", text: $budgetText)
+                    .textFieldStyle(.plain)
+                    .font(AnvilFont.statusBar)
+                    .padding(.horizontal, AnvilSpacing.sm)
+                    .padding(.vertical, AnvilSpacing.xs)
+                    .background(AnvilColor.backgroundPrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(AnvilColor.borderMedium, lineWidth: 1)
+                    )
+            }
+
+            Toggle("Hard stop at budget limit", isOn: $hardStopEnabled)
+                .font(AnvilFont.label)
+                .foregroundStyle(AnvilColor.textSecondary)
+                .toggleStyle(.checkbox)
+
+            Text("Warnings appear at 80%. Hard stop pauses the session at 100%.")
+                .font(AnvilFont.label)
+                .foregroundStyle(AnvilColor.textTertiary)
+
+            HStack {
+                Button("Clear") {
+                    onSave(nil, false)
+                }
+                .buttonStyle(.borderless)
+                .font(AnvilFont.statusBar)
+                .foregroundStyle(AnvilColor.textTertiary)
+
+                Spacer()
+
+                Button("Save") {
+                    let value = Decimal(string: budgetText)
+                    onSave(value, hardStopEnabled)
+                }
+                .buttonStyle(.borderless)
+                .font(AnvilFont.statusBar)
+                .foregroundStyle(AnvilColor.accentBlue)
+            }
+        }
+        .padding(AnvilSpacing.md)
+        .frame(width: 240)
+        .onAppear {
+            if let budget = currentBudget {
+                budgetText = "\(NSDecimalNumber(decimal: budget).doubleValue)"
+            }
+            hardStopEnabled = hardStop
+        }
+    }
 }
 
 // MARK: - Message Bubble
 
 struct MessageBubble: View {
     let message: AgentMessage
+    var isStreaming: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
@@ -186,10 +391,15 @@ struct MessageBubble: View {
                     .foregroundStyle(AnvilColor.textTertiary)
             }
 
-            // Content — use markdown renderer for assistant, plain text for user
+            // Content — use streaming-aware rendering for assistant messages
             if message.role == .assistant && !message.content.isEmpty {
-                AnvilMarkdownRenderer(message.content)
-                    .textSelection(.enabled)
+                if isStreaming {
+                    StreamingMarkdownContent(markdown: message.content)
+                        .textSelection(.enabled)
+                } else {
+                    AnvilMarkdownRenderer(message.content)
+                        .textSelection(.enabled)
+                }
             } else if !message.content.isEmpty {
                 Text(message.content)
                     .font(AnvilFont.body)
@@ -205,6 +415,101 @@ struct MessageBubble: View {
         .padding(AnvilSpacing.md)
         .background(message.role == .user ? AnvilColor.backgroundSecondary : .clear)
         .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+/// Renders markdown with streaming-aware code blocks.
+/// Detects in-progress (unclosed) code fences and renders them with StreamingCodeBlock.
+struct StreamingMarkdownContent: View {
+    let markdown: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+            ForEach(Array(parseBlocks().enumerated()), id: \.offset) { _, block in
+                renderBlock(block)
+            }
+        }
+    }
+
+    private enum StreamBlock {
+        case text(String)
+        case codeBlock(code: String, language: String?, isComplete: Bool)
+    }
+
+    private func parseBlocks() -> [StreamBlock] {
+        let lines = markdown.components(separatedBy: "\n")
+        var blocks: [StreamBlock] = []
+        var textBuffer: [String] = []
+        var inCodeBlock = false
+        var codeLines: [String] = []
+        var codeLanguage: String?
+        var i = 0
+
+        while i < lines.count {
+            let line = lines[i]
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            if !inCodeBlock && trimmed.hasPrefix("```") {
+                // Flush text buffer
+                if !textBuffer.isEmpty {
+                    blocks.append(.text(textBuffer.joined(separator: "\n")))
+                    textBuffer = []
+                }
+                // Start code block
+                let lang = String(trimmed.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+                codeLanguage = lang.isEmpty ? nil : lang
+                codeLines = []
+                inCodeBlock = true
+                i += 1
+                continue
+            }
+
+            if inCodeBlock {
+                if trimmed.hasPrefix("```") {
+                    // Close code block
+                    blocks.append(.codeBlock(code: codeLines.joined(separator: "\n"), language: codeLanguage, isComplete: true))
+                    inCodeBlock = false
+                    codeLines = []
+                    codeLanguage = nil
+                    i += 1
+                    continue
+                }
+                codeLines.append(line)
+                i += 1
+                continue
+            }
+
+            textBuffer.append(line)
+            i += 1
+        }
+
+        // Handle unclosed code block (still streaming)
+        if inCodeBlock {
+            blocks.append(.codeBlock(code: codeLines.joined(separator: "\n"), language: codeLanguage, isComplete: false))
+        }
+
+        // Flush remaining text
+        if !textBuffer.isEmpty {
+            blocks.append(.text(textBuffer.joined(separator: "\n")))
+        }
+
+        return blocks
+    }
+
+    @ViewBuilder
+    private func renderBlock(_ block: StreamBlock) -> some View {
+        switch block {
+        case .text(let text):
+            if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                AnvilMarkdownRenderer(text)
+            }
+        case .codeBlock(let code, let language, let isComplete):
+            StreamingCodeBlock(
+                code: code,
+                language: language,
+                isStreaming: !isComplete
+            )
+        }
     }
 }
 
@@ -306,13 +611,20 @@ struct ToolCallView: View {
 struct InputBar: View {
     @Binding var text: String
     let isRunning: Bool
+    let attachments: [ContextAttachment]
     let onSend: () -> Void
+    let onRemoveAttachment: (String) -> Void
+    let onAddAttachment: (ContextAttachment) -> Void
 
     @State private var showSlashMenu = false
     @State private var showAtPopup = false
+    @State private var isDropTargeted = false
 
     var body: some View {
         VStack(spacing: 0) {
+            // Context attachment bar
+            ContextAttachmentBar(attachments: attachments, onRemove: onRemoveAttachment)
+
             // Slash command popup
             if showSlashMenu {
                 HStack {
@@ -369,6 +681,22 @@ struct InputBar: View {
             .padding(AnvilSpacing.md)
         }
         .background(AnvilColor.backgroundSecondary)
+        .overlay(
+            RoundedRectangle(cornerRadius: 0)
+                .stroke(AnvilColor.accentBlue.opacity(isDropTargeted ? 0.6 : 0), lineWidth: 2)
+        )
+        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
+            for provider in providers {
+                _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                    if let url {
+                        DispatchQueue.main.async {
+                            onAddAttachment(.file(path: url.path))
+                        }
+                    }
+                }
+            }
+            return true
+        }
     }
 
     // MARK: - @ token detection

@@ -20,7 +20,7 @@ public struct Sidebar: View {
                     ReviewSidebar(viewModel: appState.reviewViewModel)
                 case .ship:
                     ShipSidebar(viewModel: appState.shipViewModel)
-                case .editor, .database, .terminal, .docs, .messaging, .notifications:
+                case .editor, .database, .terminal, .docs, .messaging, .notifications, .testing:
                     AuxiliarySidebar(mode: appState.currentMode)
                 }
             }
@@ -87,6 +87,8 @@ struct AuxiliarySidebar: View {
                         messagingItems
                     case .notifications:
                         notificationsItems
+                    case .testing:
+                        testingItems
                     default:
                         EmptyView()
                     }
@@ -105,6 +107,11 @@ struct AuxiliarySidebar: View {
             navItem("Open Files", icon: "doc.text", shortcut: "Cmd+O")
             navItem("File Tree", icon: "list.triangle", shortcut: "Cmd+Shift+E")
             navItem("Symbol Outline", icon: "list.bullet.indent", shortcut: "Cmd+Shift+O")
+        }
+        sidebarSection("SOURCE CONTROL", icon: "arrow.triangle.branch") {
+            navItem("Changes", icon: "pencil.circle", shortcut: "Ctrl+Shift+G")
+            navItem("Branches", icon: "arrow.triangle.branch", shortcut: nil)
+            navItem("Stashes", icon: "tray.and.arrow.down", shortcut: nil)
         }
         sidebarSection("SEARCH", icon: "magnifyingglass") {
             navItem("Find in Files", icon: "doc.text.magnifyingglass", shortcut: "Cmd+Shift+F")
@@ -192,6 +199,22 @@ struct AuxiliarySidebar: View {
             navItem("Deploys", icon: "shippingbox", shortcut: nil)
             navItem("Errors", icon: "exclamationmark.triangle", shortcut: nil)
             navItem("Mentions", icon: "at", shortcut: nil)
+        }
+    }
+
+    // MARK: - Testing
+
+    @ViewBuilder
+    private var testingItems: some View {
+        sidebarSection("TEST SUITES", icon: "testtube.2") {
+            navItem("All Tests", icon: "list.bullet", shortcut: nil)
+            navItem("Failed", icon: "xmark.circle", shortcut: nil)
+            navItem("Recent Runs", icon: "clock.arrow.circlepath", shortcut: nil)
+        }
+        sidebarSection("ACTIONS", icon: "bolt") {
+            navItem("Run All", icon: "play.fill", shortcut: "Cmd+U")
+            navItem("Run Failed", icon: "arrow.counterclockwise", shortcut: nil)
+            navItem("Coverage Report", icon: "chart.bar", shortcut: nil)
         }
     }
 

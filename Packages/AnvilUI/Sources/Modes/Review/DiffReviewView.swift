@@ -1,8 +1,10 @@
 import SwiftUI
 import AnvilDomain
+import AnvilGit
 
 struct DiffReviewView: View {
     @ObservedObject var viewModel: ReviewViewModel
+    @EnvironmentObject var container: DependencyContainer
 
     var body: some View {
         VStack(spacing: 0) {
@@ -21,6 +23,12 @@ struct DiffReviewView: View {
                 navigationBar
             } else {
                 emptyState
+            }
+        }
+        .onChange(of: viewModel.selectedFileID) { _, _ in
+            if viewModel.isBlameVisible {
+                guard let adapter = container.getOrCreateGitAdapter() else { return }
+                viewModel.loadBlameForCurrentFile(using: adapter)
             }
         }
     }
@@ -48,6 +56,26 @@ struct DiffReviewView: View {
             }
             .pickerStyle(.segmented)
             .frame(width: 180)
+
+            // Blame toggle
+            Button {
+                guard let adapter = container.getOrCreateGitAdapter() else { return }
+                viewModel.toggleBlame(using: adapter)
+            } label: {
+                HStack(spacing: 3) {
+                    Image(systemName: "person.text.rectangle")
+                        .font(.system(size: 11))
+                    Text("Blame")
+                        .font(AnvilFont.label)
+                }
+                .foregroundStyle(viewModel.isBlameVisible ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                .padding(.horizontal, AnvilSpacing.sm)
+                .padding(.vertical, 4)
+                .background(viewModel.isBlameVisible ? AnvilColor.accentBlue.opacity(0.1) : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+            }
+            .buttonStyle(.plain)
+            .help("Toggle git blame annotations")
 
             // File-level actions
             AnvilButton("Approve", icon: "checkmark", style: .primary) {
@@ -156,6 +184,14 @@ struct DiffReviewView: View {
 
     private func unifiedLine(_ line: DiffLine) -> some View {
         HStack(spacing: 0) {
+            // Blame gutter
+            if viewModel.isBlameVisible, let ln = line.oldLineNumber ?? line.newLineNumber,
+               let blame = viewModel.blameData[ln] {
+                blameGutter(blame)
+            } else if viewModel.isBlameVisible {
+                Color.clear.frame(width: 160)
+            }
+
             // Old line number
             Text(line.oldLineNumber.map(String.init) ?? "")
                 .font(AnvilFont.code)
@@ -194,6 +230,11 @@ struct DiffReviewView: View {
 
     private func lineCell(lineNumber: Int?, content: String, type: DiffLineType, side: LineSide) -> some View {
         HStack(spacing: 0) {
+            // Blame gutter (old side only)
+            if viewModel.isBlameVisible && side == .old, let ln = lineNumber, let blame = viewModel.blameData[ln] {
+                blameGutter(blame)
+            }
+
             Text(lineNumber.map(String.init) ?? "")
                 .font(AnvilFont.code)
                 .foregroundStyle(AnvilColor.textTertiary)
@@ -326,6 +367,30 @@ struct DiffReviewView: View {
                 .foregroundStyle(AnvilColor.textSecondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - Blame Gutter
+
+    private func blameGutter(_ blame: BlameLine) -> some View {
+        HStack(spacing: AnvilSpacing.xxs) {
+            Text(blame.author.components(separatedBy: " ").first ?? blame.author)
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundStyle(AnvilColor.textTertiary)
+                .lineLimit(1)
+                .frame(width: 80, alignment: .trailing)
+
+            Text(blame.commitHash.prefix(7))
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundStyle(AnvilColor.accentBlue.opacity(0.7))
+                .frame(width: 55, alignment: .leading)
+
+            Text(blame.date, style: .offset)
+                .font(.system(size: 9))
+                .foregroundStyle(AnvilColor.textTertiary.opacity(0.6))
+                .frame(width: 20, alignment: .trailing)
+        }
+        .frame(width: 160)
+        .padding(.trailing, AnvilSpacing.xxs)
     }
 
     // MARK: - Helpers

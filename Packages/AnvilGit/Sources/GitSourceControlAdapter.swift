@@ -121,6 +121,123 @@ public actor GitSourceControlAdapter: SourceControlPort {
         return diffParser.parse(output)
     }
 
+    // MARK: - Remotes
+
+    /// Returns the URL of a named remote (defaults to "origin").
+    public func remoteURL(name: String = "origin") async throws -> String {
+        try await shell.run(["remote", "get-url", name])
+    }
+
+    /// Fetch from a remote (defaults to "origin").
+    public func fetch(remote: String = "origin") async throws {
+        _ = try await shell.run(["fetch", remote])
+    }
+
+    /// Pull from a remote (defaults to "origin"), optionally rebasing.
+    public func pull(remote: String = "origin", rebase: Bool = false) async throws {
+        var args = ["pull"]
+        if rebase { args.append("--rebase") }
+        args.append(remote)
+        _ = try await shell.run(args)
+    }
+
+    /// Push to a remote (defaults to "origin"). Sets upstream if needed.
+    public func push(remote: String = "origin", setUpstream: Bool = false, force: Bool = false) async throws {
+        var args = ["push"]
+        if setUpstream {
+            args += ["-u", remote]
+            let branchName = try await shell.run(["branch", "--show-current"])
+            args.append(branchName)
+        } else {
+            args.append(remote)
+        }
+        if force {
+            args.append("--force-with-lease")
+        }
+        _ = try await shell.run(args)
+    }
+
+    // MARK: - Working Tree Status
+
+    /// Returns all changed files in the working tree (staged, unstaged, and untracked).
+    public func workingTreeStatus() async throws -> [GitFileChange] {
+        let output = try await shell.run(["status", "--porcelain=v1"])
+        guard !output.isEmpty else { return [] }
+
+        return output.components(separatedBy: "\n").compactMap { line -> GitFileChange? in
+            guard line.count >= 4 else { return nil }
+
+            let indexStatus = line[line.startIndex]
+            let workTreeStatus = line[line.index(after: line.startIndex)]
+            let filePath = String(line.dropFirst(3))
+
+            // Determine if staged, unstaged, or both
+            // Index column: staged changes; work-tree column: unstaged changes
+            if indexStatus == "?" {
+                // Untracked file
+                return GitFileChange(filePath: filePath, status: .untracked, staged: false)
+            }
+
+            // If there's a staged change, emit a staged entry
+            var changes: [GitFileChange] = []
+            if indexStatus != " " && indexStatus != "?" {
+                let status = parseStatusChar(indexStatus)
+                changes.append(GitFileChange(filePath: filePath, status: status, staged: true))
+            }
+            // If there's an unstaged change, emit an unstaged entry
+            if workTreeStatus != " " && workTreeStatus != "?" {
+                let status = parseStatusChar(workTreeStatus)
+                changes.append(GitFileChange(filePath: filePath, status: status, staged: false))
+            }
+
+            return changes.first // For compactMap; we handle both below
+        }
+    }
+
+    /// Returns all changed files, properly handling files that are both staged and unstaged.
+    public func workingTreeChanges() async throws -> (staged: [GitFileChange], unstaged: [GitFileChange], untracked: [GitFileChange]) {
+        let output = try await shell.run(["status", "--porcelain=v1"])
+        guard !output.isEmpty else { return ([], [], []) }
+
+        var staged: [GitFileChange] = []
+        var unstaged: [GitFileChange] = []
+        var untracked: [GitFileChange] = []
+
+        for line in output.components(separatedBy: "\n") {
+            guard line.count >= 4 else { continue }
+
+            let indexStatus = line[line.startIndex]
+            let workTreeStatus = line[line.index(after: line.startIndex)]
+            let filePath = String(line.dropFirst(3))
+
+            if indexStatus == "?" {
+                untracked.append(GitFileChange(filePath: filePath, status: .untracked, staged: false))
+                continue
+            }
+
+            if indexStatus != " " {
+                staged.append(GitFileChange(filePath: filePath, status: parseStatusChar(indexStatus), staged: true))
+            }
+            if workTreeStatus != " " {
+                unstaged.append(GitFileChange(filePath: filePath, status: parseStatusChar(workTreeStatus), staged: false))
+            }
+        }
+
+        return (staged, unstaged, untracked)
+    }
+
+    private func parseStatusChar(_ c: Character) -> GitFileChangeStatus {
+        switch c {
+        case "M": .modified
+        case "A": .added
+        case "D": .deleted
+        case "R": .renamed
+        case "C": .copied
+        case "U": .unmerged
+        default: .modified
+        }
+    }
+
     // MARK: - Branch operations
 
     @discardableResult
@@ -219,6 +336,14 @@ public actor GitSourceControlAdapter: SourceControlPort {
         _ = try await shell.run(["stash", "pop"])
     }
 
+    public func stashApply(index: Int) async throws {
+        _ = try await shell.run(["stash", "apply", "stash@{\(index)}"])
+    }
+
+    public func stashDrop(index: Int) async throws {
+        _ = try await shell.run(["stash", "drop", "stash@{\(index)}"])
+    }
+
     public func stashList() async throws -> [Stash] {
         let output = try await shell.run(["stash", "list", "--format=%gd|||%gs|||%aI"])
         guard !output.isEmpty else { return [] }
@@ -239,6 +364,29 @@ public actor GitSourceControlAdapter: SourceControlPort {
     }
 
     // MARK: - Tags
+
+    @discardableResult
+    public func createTag(name: String, message: String? = nil, commit: String? = nil) async throws -> Tag {
+        var args = ["tag"]
+        if let message = message {
+            args += ["-a", name, "-m", message]
+        } else {
+            args.append(name)
+        }
+        if let commit = commit {
+            args.append(commit)
+        }
+        _ = try await shell.run(args)
+
+        // Read back the tag we just created
+        let allTags = try await tags()
+        return allTags.first { $0.name == name }
+            ?? Tag(name: name, targetCommit: commit ?? "HEAD")
+    }
+
+    public func deleteTag(name: String) async throws {
+        _ = try await shell.run(["tag", "-d", name])
+    }
 
     public func tags() async throws -> [Tag] {
         let output = try await shell.run([

@@ -1,6 +1,7 @@
 import SwiftUI
 import AnvilDomain
 import AnvilGit
+import Foundation
 
 // DiffViewMode defined in DesignSystem/Components/AnvilDiffView.swift
 
@@ -32,6 +33,12 @@ public final class ReviewViewModel: ObservableObject {
     @Published var selectedBranchName: String?
     @Published var branchDiffFiles: [FileDiff] = []
     @Published var isLoadingBranchDiff: Bool = false
+
+    // MARK: Blame
+
+    @Published var isBlameVisible: Bool = false
+    @Published var blameData: [Int: BlameLine] = [:]  // lineNumber -> BlameLine
+    @Published var isLoadingBlame: Bool = false
 
     // MARK: Batch actions
 
@@ -172,6 +179,36 @@ public final class ReviewViewModel: ObservableObject {
         reviews.removeAll { $0.id.hasPrefix("branch-diff-") }
         selectedReviewID = nil
         selectedFileID = nil
+    }
+
+    // MARK: - Blame
+
+    func toggleBlame(using adapter: GitSourceControlAdapter) {
+        isBlameVisible.toggle()
+        if isBlameVisible {
+            loadBlameForCurrentFile(using: adapter)
+        } else {
+            blameData = [:]
+        }
+    }
+
+    func loadBlameForCurrentFile(using adapter: GitSourceControlAdapter) {
+        guard isBlameVisible, let file = selectedFile else {
+            blameData = [:]
+            return
+        }
+
+        isLoadingBlame = true
+        Task { @MainActor in
+            defer { isLoadingBlame = false }
+            if let lines = try? await adapter.blame(file: file.filePath, ref: nil) {
+                var map: [Int: BlameLine] = [:]
+                for line in lines {
+                    map[line.lineNumber] = line
+                }
+                blameData = map
+            }
+        }
     }
 
     // MARK: - Sample Data (for previews only)

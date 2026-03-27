@@ -15,6 +15,7 @@ let package = Package(
         .package(path: "Packages/AnvilUI"),
         .package(path: "Packages/AnvilPluginSDK"),
         .package(path: "Packages/AnvilGit"),
+        .package(path: "Packages/AnvilGitHub"),
     ],
     targets: [
         .executableTarget(
@@ -27,6 +28,7 @@ let package = Package(
                 "AnvilUI",
                 "AnvilPluginSDK",
                 "AnvilGit",
+                "AnvilGitHub",
             ],
             path: "App"
         ),

@@ -28,8 +28,8 @@ public struct ContentArea: View {
                 MessagingMode()
             case .notifications:
                 NotificationsMode()
-            default:
-                PlaceholderModeContent(mode: appState.currentMode)
+            case .testing:
+                TestingMode()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -79,6 +79,7 @@ struct AgentModeContent: View {
                 session: session,
                 inputText: $viewModel.inputText,
                 selectedModelId: $viewModel.selectedModelId,
+                editSuggestions: viewModel.suggestionsForCurrentSession(),
                 onSend: {
                     viewModel.sendMessage(container: container, appState: appState)
                 },
@@ -90,6 +91,28 @@ struct AgentModeContent: View {
                 },
                 onExport: {
                     viewModel.exportSessionToClipboard(session.id)
+                },
+                onAcceptHunk: { sugId, hunkId in
+                    viewModel.acceptHunk(suggestionId: sugId, hunkId: hunkId)
+                },
+                onRejectHunk: { sugId, hunkId in
+                    viewModel.rejectHunk(suggestionId: sugId, hunkId: hunkId)
+                },
+                onAcceptAll: { sugId in
+                    viewModel.acceptAllHunks(suggestionId: sugId)
+                },
+                onRejectAll: { sugId in
+                    viewModel.rejectAllHunks(suggestionId: sugId)
+                },
+                attachments: viewModel.contextAttachments,
+                onRemoveAttachment: { id in
+                    viewModel.removeAttachment(id: id)
+                },
+                onAddAttachment: { attachment in
+                    viewModel.addAttachment(attachment)
+                },
+                onSetBudget: { budget, hardStop in
+                    viewModel.setSessionBudget(session.id, budget: budget, hardStop: hardStop)
                 }
             )
         } else {
@@ -100,9 +123,13 @@ struct AgentModeContent: View {
 
 struct ReviewModeContent: View {
     @ObservedObject var viewModel: ReviewViewModel
+    @EnvironmentObject private var appState: AppState
 
     var body: some View {
-        if viewModel.reviews.isEmpty {
+        if appState.gitHubPRViewModel.selectedPR != nil {
+            GitHubPRDetailView(viewModel: appState.gitHubPRViewModel)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if viewModel.reviews.isEmpty {
             AnvilEmptyState(
                 icon: "checkmark.circle",
                 title: "Review inbox is empty",

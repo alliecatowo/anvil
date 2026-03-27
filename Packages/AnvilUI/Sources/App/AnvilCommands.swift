@@ -74,10 +74,29 @@ public struct AnvilCommands: Commands {
 
             Divider()
 
-            Button("Command Palette") {
-                appState.toggleCommandPalette()
+            Button("Command Palette / Inline Edit") {
+                if appState.currentMode == .editor {
+                    appState.triggerInlineEdit = true
+                } else {
+                    appState.toggleCommandPalette()
+                }
             }
             .keyboardShortcut("k", modifiers: .command)
+
+            Button("Go to File...") {
+                appState.openFilePalette()
+            }
+            .keyboardShortcut("p", modifiers: .command)
+
+            Button("Go to Symbol...") {
+                appState.openSymbolPalette()
+            }
+            .keyboardShortcut("o", modifiers: [.command, .shift])
+
+            Button("Go to Line...") {
+                appState.isGoToLineVisible = true
+            }
+            .keyboardShortcut("g", modifiers: .control)
 
             Button("Quick Capture") {
                 appState.toggleQuickCapture()

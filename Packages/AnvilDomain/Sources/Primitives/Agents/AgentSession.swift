@@ -13,6 +13,14 @@ public struct AgentSession: Sendable, Identifiable, Codable {
     public var lastActivityAt: Date
     public var messages: [AgentMessage]
     public var customName: String?
+    public var costBudget: Decimal?
+    public var hardStopOnBudget: Bool
+
+    /// Budget usage ratio (0.0 to 1.0+). Returns nil if no budget is set.
+    public var budgetUsage: Double? {
+        guard let budget = costBudget, budget > 0 else { return nil }
+        return NSDecimalNumber(decimal: cost / budget).doubleValue
+    }
 
     /// Display name for the session — uses custom name, work item ID, or first message preview.
     public var displayName: String {
@@ -25,7 +33,7 @@ public struct AgentSession: Sendable, Identifiable, Codable {
         return "Session"
     }
 
-    public init(id: String = UUID().uuidString, providerId: String, model: String, status: AgentSessionStatus = .idle, workItemId: String? = nil, worktreePath: String? = nil, tokenUsage: TokenUsage = .zero, cost: Decimal = 0, startedAt: Date = .now, lastActivityAt: Date = .now, messages: [AgentMessage] = [], customName: String? = nil) {
+    public init(id: String = UUID().uuidString, providerId: String, model: String, status: AgentSessionStatus = .idle, workItemId: String? = nil, worktreePath: String? = nil, tokenUsage: TokenUsage = .zero, cost: Decimal = 0, startedAt: Date = .now, lastActivityAt: Date = .now, messages: [AgentMessage] = [], customName: String? = nil, costBudget: Decimal? = nil, hardStopOnBudget: Bool = false) {
         self.id = id
         self.providerId = providerId
         self.model = model
@@ -38,6 +46,8 @@ public struct AgentSession: Sendable, Identifiable, Codable {
         self.lastActivityAt = lastActivityAt
         self.messages = messages
         self.customName = customName
+        self.costBudget = costBudget
+        self.hardStopOnBudget = hardStopOnBudget
     }
 }
 

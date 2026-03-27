@@ -2,6 +2,7 @@ import SwiftUI
 import AnvilDomain
 import AnvilApplication
 import AnvilGit
+import AnvilGitHub
 
 public enum AnvilMode: String, CaseIterable, Identifiable, Sendable {
     case intent = "Intent"
@@ -14,6 +15,7 @@ public enum AnvilMode: String, CaseIterable, Identifiable, Sendable {
     case docs = "Docs"
     case messaging = "Messaging"
     case notifications = "Notifications"
+    case testing = "Testing"
 
     public var id: String { rawValue }
 
@@ -29,6 +31,7 @@ public enum AnvilMode: String, CaseIterable, Identifiable, Sendable {
         case .docs: "book"
         case .messaging: "message"
         case .notifications: "bell"
+        case .testing: "testtube.2"
         }
     }
 
@@ -44,6 +47,7 @@ public enum AnvilMode: String, CaseIterable, Identifiable, Sendable {
         case .docs: 8
         case .messaging: 9
         case .notifications: 0
+        case .testing: nil
         }
     }
 
@@ -52,8 +56,26 @@ public enum AnvilMode: String, CaseIterable, Identifiable, Sendable {
     }
 
     public static var auxiliaryModes: [AnvilMode] {
-        [.editor, .database, .terminal, .docs, .messaging, .notifications]
+        [.editor, .database, .terminal, .testing, .docs, .messaging, .notifications]
     }
+}
+
+public enum FileEncoding: String, CaseIterable, Sendable {
+    case utf8 = "UTF-8"
+    case ascii = "ASCII"
+    case utf16 = "UTF-16"
+    case utf16le = "UTF-16 LE"
+    case utf16be = "UTF-16 BE"
+    case latin1 = "ISO 8859-1"
+    case shiftJIS = "Shift JIS"
+    case eucjp = "EUC-JP"
+    case windows1252 = "Windows-1252"
+}
+
+public enum LineEnding: String, CaseIterable, Sendable {
+    case lf = "LF"
+    case crlf = "CRLF"
+    case cr = "CR"
 }
 
 @MainActor
@@ -63,17 +85,38 @@ public class AppState: ObservableObject {
     @Published public var isSidebarCollapsed: Bool = false
     @Published public var isInspectorVisible: Bool = false
     @Published public var isCommandPaletteVisible: Bool = false
+    @Published public var commandPaletteInitialMode: PaletteMode = .commands
+    /// File path that EditorMode should open when switching to editor via command palette.
+    @Published public var pendingFileToOpen: String? = nil
+    /// Symbol line that EditorMode should scroll to after opening pendingFileToOpen.
+    @Published public var pendingSymbolLine: Int? = nil
+    /// Triggers inline edit (⌘K) in editor mode.
+    @Published public var triggerInlineEdit: Bool = false
     @Published public var isQuickCaptureVisible: Bool = false
     @Published public var isProjectNotesVisible: Bool = false
     @Published public var isProjectSwitcherVisible: Bool = false
     @Published public var isProjectInfoVisible: Bool = false
     @Published public var isTerminalPanelVisible: Bool = false
+    @Published public var isSourceControlVisible: Bool = false
     @Published public var currentBranch: String = "main"
     @Published public var uncommittedFileCount: Int = 0
     @Published public var branches: [Branch] = []
     @Published public var agentStatus: String = "Idle"
+    @Published public var agentCurrentTool: String?
+    @Published public var agentActiveSessionId: String?
+    @Published public var agentRunStartedAt: Date?
     @Published public var sessionCost: Decimal = 0
     @Published public var todayCost: Decimal = 0
+
+    // MARK: - Cursor Position
+    @Published public var cursorLine: Int = 1
+    @Published public var cursorColumn: Int = 1
+    @Published public var selectionCount: Int = 0
+    @Published public var isGoToLineVisible: Bool = false
+
+    // MARK: - File Encoding
+    @Published public var fileEncoding: FileEncoding = .utf8
+    @Published public var lineEnding: LineEnding = .lf
 
     // MARK: - Shared ViewModels
 
@@ -81,6 +124,7 @@ public class AppState: ObservableObject {
     @Published public var intentViewModel = IntentViewModel()
     @Published public var reviewViewModel = ReviewViewModel()
     @Published public var shipViewModel = ShipViewModel()
+    @Published var gitHubPRViewModel = GitHubPRViewModel()
 
     public init() {}
 
@@ -149,10 +193,19 @@ public class AppState: ObservableObject {
         }
     }
 
-    public func toggleCommandPalette() {
+    public func toggleCommandPalette(initialMode: PaletteMode = .commands) {
+        commandPaletteInitialMode = initialMode
         withAnimation(AnvilAnimation.commandPaletteAppear) {
             isCommandPaletteVisible.toggle()
         }
+    }
+
+    public func openFilePalette() {
+        toggleCommandPalette(initialMode: .files)
+    }
+
+    public func openSymbolPalette() {
+        toggleCommandPalette(initialMode: .symbols)
     }
 
     public func toggleTerminal() {
@@ -170,6 +223,12 @@ public class AppState: ObservableObject {
     public func toggleProjectNotes() {
         withAnimation(AnvilAnimation.standard) {
             isProjectNotesVisible.toggle()
+        }
+    }
+
+    public func toggleSourceControl() {
+        withAnimation(AnvilAnimation.standard) {
+            isSourceControlVisible.toggle()
         }
     }
 

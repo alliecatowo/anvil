@@ -3,6 +3,7 @@ import SwiftUI
 struct EditorMode: View {
     @StateObject private var viewModel = EditorViewModel()
     @EnvironmentObject private var deps: DependencyContainer
+    @EnvironmentObject private var appState: AppState
 
     var body: some View {
         Group {
@@ -26,8 +27,37 @@ struct EditorMode: View {
             if viewModel.fileTree.isEmpty, let path = deps.currentProjectPath {
                 viewModel.loadFileTree(from: path, using: deps.fileSystemService)
             }
+            // Handle file open request from command palette
+            if let filePath = appState.pendingFileToOpen {
+                openPendingFile(filePath)
+            }
+        }
+        .onChange(of: appState.pendingFileToOpen) { _, newPath in
+            if let filePath = newPath {
+                openPendingFile(filePath)
+            }
+        }
+        .onChange(of: appState.triggerInlineEdit) { _, trigger in
+            if trigger {
+                appState.triggerInlineEdit = false
+                handleCmdK()
+            }
         }
         .toolbar {
+            ToolbarItem(placement: .automatic) {
+                Button {
+                    appState.toggleSourceControl()
+                } label: {
+                    Image(systemName: "arrow.triangle.branch")
+                        .foregroundStyle(
+                            appState.isSourceControlVisible
+                                ? AnvilColor.accentBlue
+                                : AnvilColor.textTertiary
+                        )
+                }
+                .help("Toggle Source Control (Ctrl+Shift+G)")
+            }
+
             ToolbarItem(placement: .automatic) {
                 Button {
                     viewModel.toggleSymbolOutline()
@@ -48,10 +78,16 @@ struct EditorMode: View {
 
     private var editorContent: some View {
         HStack(spacing: 0) {
-            // Left: File tree sidebar
-            EditorSidebar(viewModel: viewModel)
-                .frame(width: AnvilSpacing.sidebarWidth)
-                .background(AnvilColor.backgroundSecondary)
+            // Left: File tree sidebar or Source Control panel
+            if appState.isSourceControlVisible {
+                SourceControlPanel()
+                    .frame(width: AnvilSpacing.sidebarWidth)
+                    .background(AnvilColor.backgroundSecondary)
+            } else {
+                EditorSidebar(viewModel: viewModel)
+                    .frame(width: AnvilSpacing.sidebarWidth)
+                    .background(AnvilColor.backgroundSecondary)
+            }
 
             Divider().overlay(AnvilColor.borderSubtle)
 
@@ -78,6 +114,41 @@ struct EditorMode: View {
                     .background(AnvilColor.backgroundSecondary)
             }
         }
+    }
+
+    // MARK: - Pending File from Command Palette
+
+    private func openPendingFile(_ filePath: String) {
+        // Ensure tree is loaded first
+        if viewModel.fileTree.isEmpty, let path = deps.currentProjectPath {
+            viewModel.loadFileTree(from: path, using: deps.fileSystemService)
+        }
+        viewModel.openFileFromTree(filePath)
+        // Navigate to symbol line if set
+        if let line = appState.pendingSymbolLine {
+            viewModel.cursorLine = line
+            appState.pendingSymbolLine = nil
+        }
+        appState.pendingFileToOpen = nil
+    }
+
+    // MARK: - Inline Edit (⌘K)
+
+    private func handleCmdK() {
+        if viewModel.inlineEditPhase != .hidden {
+            viewModel.cancelInlineEdit()
+            return
+        }
+        guard viewModel.selectedFile != nil else { return }
+
+        let range = viewModel.inlineEditSelectedRange
+        let effectiveRange: ClosedRange<Int>
+        if range.count > 1 {
+            effectiveRange = range
+        } else {
+            effectiveRange = viewModel.cursorLine...viewModel.cursorLine
+        }
+        viewModel.beginInlineEdit(range: effectiveRange)
     }
 
     // MARK: - Open Project
