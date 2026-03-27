@@ -81,6 +81,7 @@ enum CommandAction: Sendable {
     case cycleWhitespace
     case toggleWordWrap
     case toggleIndentGuides
+    case toggleGitGutter
     case clearRecentHistory
 
     @MainActor
@@ -134,6 +135,8 @@ enum CommandAction: Sendable {
             appState.editorViewModel.toggleWordWrap()
         case .toggleIndentGuides:
             appState.editorViewModel.showIndentGuides.toggle()
+        case .toggleGitGutter:
+            appState.editorViewModel.showGitGutter.toggle()
         case .clearRecentHistory:
             break // Handled by the view model directly
         }
@@ -484,6 +487,7 @@ final class CommandPaletteViewModel: ObservableObject {
                 CommandItem(id: "ctx-toggle-whitespace", title: "Toggle Whitespace Visibility", subtitle: "Cycle: None → Boundary → All", icon: "eye", category: .contextual, group: .editor, action: .cycleWhitespace),
                 CommandItem(id: "ctx-toggle-wordwrap", title: "Toggle Word Wrap", icon: "text.word.spacing", shortcut: "\u{2325}Z", category: .contextual, group: .editor, action: .toggleWordWrap),
                 CommandItem(id: "ctx-toggle-indent-guides", title: "Toggle Indent Guides", icon: "line.3.horizontal", category: .contextual, group: .editor, action: .toggleIndentGuides),
+                CommandItem(id: "ctx-toggle-git-gutter", title: "Toggle Git Gutter", icon: "arrow.triangle.branch", category: .contextual, group: .git, action: .toggleGitGutter),
             ]
         case .database:
             return [

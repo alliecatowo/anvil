@@ -1,6 +1,17 @@
 import SwiftUI
 import AppKit
 
+private struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        Path { p in
+            p.move(to: CGPoint(x: rect.midX, y: rect.minY))
+            p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+            p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+            p.closeSubpath()
+        }
+    }
+}
+
 struct EditorView: View {
     @ObservedObject var viewModel: EditorViewModel
 
@@ -131,14 +142,20 @@ struct EditorView: View {
 
     @ViewBuilder
     private func gitChangeIndicator(_ change: GitLineChange) -> some View {
-        let color: Color = switch change {
-        case .added:    AnvilColor.accentGreen
-        case .modified: AnvilColor.accentBlue
-        case .deleted:  AnvilColor.accentRed
+        switch change {
+        case .added:
+            RoundedRectangle(cornerRadius: 1)
+                .fill(AnvilColor.accentGreen)
+                .frame(width: 3)
+        case .modified:
+            RoundedRectangle(cornerRadius: 1)
+                .fill(AnvilColor.accentBlue)
+                .frame(width: 3)
+        case .deleted:
+            Triangle()
+                .fill(AnvilColor.accentRed)
+                .frame(width: 6, height: 6)
         }
-        RoundedRectangle(cornerRadius: 1)
-            .fill(color)
-            .frame(width: 3)
     }
 
     // MARK: - Code Content
