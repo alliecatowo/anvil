@@ -1,6 +1,6 @@
 # Anvil Task List
 
-**Total: 399 | Completed: 76 | In Progress: 1 | Pending: 322**
+**Total: 399 | Completed: 77 | Pending: 322**
 
 ## Completed
 
@@ -28,6 +28,7 @@
 - [x] #23 Implement find and replace in current file
 - [x] #24 Implement find and replace across project files
 - [x] #29 Build AI inline edit (Cmd+K select-and-edit) in editor
+- [x] #33 Implement git decorations in editor gutter
 - [x] #35 Add merge button and CI status display in review mode
 - [x] #36 Implement drag-and-drop on kanban board
 - [x] #37 Add quick-create ticket inline on kanban board
@@ -80,10 +81,6 @@
 - [x] #347 Build event bus — domain event pub/sub with OnPRMerged, OnBuildFailed, OnAgentCompleted handlers
 - [x] #354 Build agent plan view — structured editable plan with step status tracking and user annotations
 - [x] #399 Build git graph visualization — interactive DAG with branch topology, filtering, commit detail
-
-## In Progress
-
-- [ ] #33 Implement git decorations in editor gutter
 
 ## Pending
 
