@@ -112,11 +112,11 @@ struct ModeTab: View {
         Button(action: action) {
             HStack(spacing: 3) {
                 Image(systemName: mode.icon)
-                    .font(.system(size: isCompact ? 11 : 12, weight: isActive ? .semibold : .regular))
+                    .font(.system(size: isCompact ? 13 : 13, weight: isActive ? .semibold : .regular))
 
                 if !isCompact {
                     Text(mode.rawValue)
-                        .font(.system(size: 11, weight: isActive ? .semibold : .regular))
+                        .font(.system(size: 12, weight: isActive ? .semibold : .regular))
                 }
 
                 if badgeCount > 0 {
@@ -130,8 +130,8 @@ struct ModeTab: View {
                 }
             }
             .foregroundStyle(foregroundColor)
-            .padding(.horizontal, isCompact ? 6 : 10)
-            .padding(.vertical, 4)
+            .padding(.horizontal, isCompact ? 8 : 10)
+            .padding(.vertical, 5)
             .background(isActive ? AnvilColor.backgroundTertiary : (isHovered ? AnvilColor.backgroundTertiary.opacity(0.4) : .clear))
             .clipShape(RoundedRectangle(cornerRadius: 5))
         }
