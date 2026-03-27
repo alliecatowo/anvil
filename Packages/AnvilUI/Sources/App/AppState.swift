@@ -137,6 +137,13 @@ public class AppState: ObservableObject {
     @Published var editorViewModel = EditorViewModel()
     @Published var gitHubPRViewModel = GitHubPRViewModel()
 
+    // MARK: - Split Editor
+    lazy var splitEditorState = SplitEditorState(primaryViewModel: editorViewModel)
+    /// Triggers vertical split (⌘\).
+    @Published public var triggerSplitVertical: Bool = false
+    /// Triggers horizontal split (⌘⇧\).
+    @Published public var triggerSplitHorizontal: Bool = false
+
     public init() {}
 
     // MARK: - Git Integration

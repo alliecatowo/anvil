@@ -120,6 +120,8 @@ class EditorViewModel: ObservableObject {
     @Published var whitespaceMode: WhitespaceMode = .none
     @Published var readOnlyFileIds: Set<UUID> = []
     @Published var isWordWrapEnabled: Bool = false
+    @Published var showIndentGuides: Bool = true
+    @Published var tabSize: Int = 4
 
     // MARK: Find & Replace (⌘F)
     @Published var isFindBarVisible: Bool = false
