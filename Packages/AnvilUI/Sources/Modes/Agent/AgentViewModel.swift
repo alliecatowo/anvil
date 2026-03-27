@@ -55,7 +55,7 @@ public class AgentViewModel: ObservableObject {
         if let index = sessions.firstIndex(where: { $0.id == sessionId }) {
             sessions[index].messages.append(userMessage)
         }
-        let prompt = inputText
+        _ = inputText  // prompt text already captured in userMessage
         inputText = ""
 
         // Create assistant message placeholder and mark session as running

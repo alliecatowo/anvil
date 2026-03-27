@@ -47,7 +47,7 @@ public final class OllamaProvider: ACPPort, @unchecked Sendable {
 
     public func availableModels() async throws -> [ACPModel] {
         // Dynamically fetch from Ollama API
-        var request = URLRequest(url: URL(string: "\(baseURL)/api/tags")!)
+        let request = URLRequest(url: URL(string: "\(baseURL)/api/tags")!)
         let (data, _) = try await URLSession.shared.data(for: request)
 
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

@@ -222,7 +222,23 @@ public final class SetupWizardViewModel: ObservableObject {
     }
 
     private func findBinary(_ name: String) async -> String? {
-        await runCommand("/usr/bin/which", arguments: [name])
+        // Check common paths directly first (sandboxed apps can't rely on PATH)
+        let home = NSHomeDirectory()
+        let commonPaths = [
+            "\(home)/.local/bin/\(name)",
+            "/usr/local/bin/\(name)",
+            "/opt/homebrew/bin/\(name)",
+            "/usr/bin/\(name)",
+            "\(home)/.nvm/versions/node/*/bin/\(name)",  // won't glob but that's ok
+            "\(home)/bin/\(name)",
+        ]
+        for path in commonPaths {
+            if FileManager.default.isExecutableFile(atPath: path) {
+                return path
+            }
+        }
+        // Fallback to which
+        return await runCommand("/usr/bin/which", arguments: [name])
     }
 
     private func getVersion(_ name: String, flag: String) async -> String? {
