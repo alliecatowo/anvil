@@ -134,6 +134,9 @@ class EditorViewModel: ObservableObject {
     /// Maps line number → change type for the currently open file.
     @Published var gitLineChanges: [Int: GitLineChange] = [:]
     @Published var showBracketMatching: Bool = true
+    @Published var codeFoldingEnabled: Bool = true
+    /// Line numbers (1-based) that are currently collapsed.
+    @Published var collapsedLines: Set<Int> = []
 
     // MARK: Find & Replace (⌘F)
     @Published var isFindBarVisible: Bool = false
