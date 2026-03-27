@@ -474,6 +474,92 @@ class EditorViewModel: ObservableObject {
         return cols
     }
 
+    // MARK: - Code Folding
+
+    /// A foldable region: the line that starts it and the line that ends it (both 1-based).
+    struct FoldRegion: Equatable {
+        let startLine: Int
+        let endLine: Int
+    }
+
+    /// Detects foldable regions based on indentation increases.
+    func foldRegions(for lines: [String]) -> [FoldRegion] {
+        guard codeFoldingEnabled else { return [] }
+        var regions: [FoldRegion] = []
+        let levels = lines.map { indentLevel(of: $0) }
+        let count = levels.count
+
+        for i in 0..<count {
+            let trimmed = lines[i].trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { continue }
+            let currentLevel = levels[i]
+            // A line is foldable if the next non-blank line has a deeper indent
+            var nextNonBlank = i + 1
+            while nextNonBlank < count && lines[nextNonBlank].trimmingCharacters(in: .whitespaces).isEmpty {
+                nextNonBlank += 1
+            }
+            guard nextNonBlank < count && levels[nextNonBlank] > currentLevel else { continue }
+
+            // Find the end of this fold region: last line before indent returns to currentLevel or less
+            var endIdx = nextNonBlank
+            for j in (nextNonBlank + 1)..<count {
+                let t = lines[j].trimmingCharacters(in: .whitespaces)
+                if t.isEmpty { continue }
+                if levels[j] <= currentLevel { break }
+                endIdx = j
+            }
+            if endIdx > i {
+                regions.append(FoldRegion(startLine: i + 1, endLine: endIdx + 1))
+            }
+        }
+        return regions
+    }
+
+    private func indentLevel(of line: String) -> Int {
+        var spaces = 0
+        for char in line {
+            if char == " " { spaces += 1 }
+            else if char == "\t" { spaces += tabSize }
+            else { break }
+        }
+        return spaces / max(tabSize, 1)
+    }
+
+    /// Toggle fold state for the region starting at the given line.
+    func toggleFold(at startLine: Int) {
+        if collapsedLines.contains(startLine) {
+            collapsedLines.remove(startLine)
+        } else {
+            collapsedLines.insert(startLine)
+        }
+    }
+
+    /// Returns true if a given line number (1-based) is hidden because it's inside a collapsed fold.
+    func isLineHidden(_ lineNumber: Int, regions: [FoldRegion]) -> Bool {
+        for region in regions {
+            if collapsedLines.contains(region.startLine) &&
+               lineNumber > region.startLine && lineNumber <= region.endLine {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// Returns the fold region that starts at a given line, if any.
+    func foldRegionStarting(at lineNumber: Int, regions: [FoldRegion]) -> FoldRegion? {
+        regions.first { $0.startLine == lineNumber }
+    }
+
+    func foldAll(lines: [String]) {
+        for region in foldRegions(for: lines) {
+            collapsedLines.insert(region.startLine)
+        }
+    }
+
+    func unfoldAll() {
+        collapsedLines.removeAll()
+    }
+
     // MARK: - Find & Replace
 
     func toggleFindBar() {

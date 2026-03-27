@@ -83,6 +83,9 @@ enum CommandAction: Sendable {
     case toggleIndentGuides
     case toggleGitGutter
     case toggleBracketMatching
+    case toggleCodeFolding
+    case foldAll
+    case unfoldAll
     case clearRecentHistory
 
     @MainActor
@@ -140,6 +143,15 @@ enum CommandAction: Sendable {
             appState.editorViewModel.showGitGutter.toggle()
         case .toggleBracketMatching:
             appState.editorViewModel.showBracketMatching.toggle()
+        case .toggleCodeFolding:
+            appState.editorViewModel.codeFoldingEnabled.toggle()
+        case .foldAll:
+            if let file = appState.editorViewModel.selectedFile {
+                let lines = file.content.components(separatedBy: "\n")
+                appState.editorViewModel.foldAll(lines: lines)
+            }
+        case .unfoldAll:
+            appState.editorViewModel.unfoldAll()
         case .clearRecentHistory:
             break // Handled by the view model directly
         }
@@ -492,6 +504,9 @@ final class CommandPaletteViewModel: ObservableObject {
                 CommandItem(id: "ctx-toggle-indent-guides", title: "Toggle Indent Guides", icon: "line.3.horizontal", category: .contextual, group: .editor, action: .toggleIndentGuides),
                 CommandItem(id: "ctx-toggle-git-gutter", title: "Toggle Git Gutter", icon: "arrow.triangle.branch", category: .contextual, group: .git, action: .toggleGitGutter),
                 CommandItem(id: "ctx-toggle-bracket-matching", title: "Toggle Bracket Matching", icon: "curlybraces", category: .contextual, group: .editor, action: .toggleBracketMatching),
+                CommandItem(id: "ctx-toggle-code-folding", title: "Toggle Code Folding", icon: "chevron.down.square", category: .contextual, group: .editor, action: .toggleCodeFolding),
+                CommandItem(id: "ctx-fold-all", title: "Fold All Regions", icon: "arrow.down.right.and.arrow.up.left", shortcut: "\u{2318}\u{2325}[", category: .contextual, group: .editor, action: .foldAll),
+                CommandItem(id: "ctx-unfold-all", title: "Unfold All Regions", icon: "arrow.up.left.and.arrow.down.right", shortcut: "\u{2318}\u{2325}]", category: .contextual, group: .editor, action: .unfoldAll),
             ]
         case .database:
             return [

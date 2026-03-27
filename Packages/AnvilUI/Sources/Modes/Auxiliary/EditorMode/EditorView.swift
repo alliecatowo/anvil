@@ -62,6 +62,7 @@ struct EditorView: View {
         let selectedRange: ClosedRange<Int>? = viewModel.inlineEditPhase != .hidden
             ? viewModel.inlineEditSelectedRange
             : nil
+        let foldRegions = viewModel.foldRegions(for: lines)
 
         let scrollAxes: Axis.Set = viewModel.isWordWrapEnabled ? [.vertical] : [.horizontal, .vertical]
 
@@ -69,7 +70,7 @@ struct EditorView: View {
             ScrollView(scrollAxes) {
                 HStack(alignment: .top, spacing: 0) {
                     // Line numbers gutter
-                    lineNumberGutter(lines: lines, selectedRange: selectedRange)
+                    lineNumberGutter(lines: lines, selectedRange: selectedRange, foldRegions: foldRegions)
 
                     // Divider between gutter and code
                     Rectangle()
@@ -77,7 +78,7 @@ struct EditorView: View {
                         .frame(width: 1)
 
                     // Code content
-                    codeContent(lines: lines, selectedRange: selectedRange)
+                    codeContent(lines: lines, selectedRange: selectedRange, foldRegions: foldRegions)
                 }
             }
 
@@ -89,49 +90,85 @@ struct EditorView: View {
 
     // MARK: - Line Number Gutter
 
-    private func lineNumberGutter(lines: [String], selectedRange: ClosedRange<Int>?) -> some View {
+    private func lineNumberGutter(lines: [String], selectedRange: ClosedRange<Int>?, foldRegions: [EditorViewModel.FoldRegion] = []) -> some View {
         let gutterWidth = gutterWidth(for: lines.count)
 
         return VStack(alignment: .trailing, spacing: 0) {
             ForEach(1...max(lines.count, 1), id: \.self) { lineNumber in
-                let isSelected = selectedRange?.contains(lineNumber) ?? false
-                let isCursor = lineNumber == viewModel.cursorLine && selectedRange == nil
+                if !viewModel.isLineHidden(lineNumber, regions: foldRegions) {
+                    let isSelected = selectedRange?.contains(lineNumber) ?? false
+                    let isCursor = lineNumber == viewModel.cursorLine && selectedRange == nil
+                    let foldRegion = viewModel.foldRegionStarting(at: lineNumber, regions: foldRegions)
+                    let isCollapsed = viewModel.collapsedLines.contains(lineNumber)
 
-                HStack(spacing: 0) {
-                    // Selection bar
-                    if isSelected {
-                        Rectangle()
-                            .fill(AnvilColor.accentBlue)
-                            .frame(width: 3)
+                    HStack(spacing: 0) {
+                        // Selection bar
+                        if isSelected {
+                            Rectangle()
+                                .fill(AnvilColor.accentBlue)
+                                .frame(width: 3)
+                        }
+
+                        // Fold indicator
+                        if let _ = foldRegion, viewModel.codeFoldingEnabled {
+                            Button {
+                                withAnimation(AnvilAnimation.standard) {
+                                    viewModel.toggleFold(at: lineNumber)
+                                }
+                            } label: {
+                                Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
+                                    .font(.system(size: 8, weight: .semibold))
+                                    .foregroundStyle(AnvilColor.textTertiary)
+                                    .frame(width: 14, height: 20)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            Spacer(minLength: 0)
+                                .frame(width: viewModel.codeFoldingEnabled ? 14 : 0)
+                        }
+
+                        Text("\(lineNumber)")
+                            .font(AnvilFont.code)
+                            .foregroundStyle(
+                                isSelected ? AnvilColor.accentBlue :
+                                isCursor ? AnvilColor.textSecondary :
+                                AnvilColor.textTertiary
+                            )
+                            .frame(width: gutterWidth, alignment: .trailing)
+                            .padding(.trailing, AnvilSpacing.sm)
+
+                        // Git change indicator
+                        if viewModel.showGitGutter, let change = viewModel.gitLineChanges[lineNumber] {
+                            gitChangeIndicator(change)
+                        } else {
+                            Color.clear.frame(width: 3)
+                        }
                     }
+                    .frame(height: 20)
+                    .background(
+                        isSelected
+                            ? AnvilColor.accentBlue.opacity(0.08)
+                            : isCursor
+                                ? AnvilColor.backgroundTertiary.opacity(0.5)
+                                : Color.clear
+                    )
 
-                    Spacer(minLength: 0)
-
-                    Text("\(lineNumber)")
-                        .font(AnvilFont.code)
-                        .foregroundStyle(
-                            isSelected ? AnvilColor.accentBlue :
-                            isCursor ? AnvilColor.textSecondary :
-                            AnvilColor.textTertiary
-                        )
-                        .frame(width: gutterWidth, alignment: .trailing)
-                        .padding(.trailing, AnvilSpacing.sm)
-
-                    // Git change indicator
-                    if viewModel.showGitGutter, let change = viewModel.gitLineChanges[lineNumber] {
-                        gitChangeIndicator(change)
-                    } else {
-                        Color.clear.frame(width: 3)
+                    // Collapsed fold placeholder
+                    if isCollapsed, let region = foldRegion {
+                        HStack(spacing: AnvilSpacing.xs) {
+                            Text("...")
+                                .font(AnvilFont.code)
+                                .foregroundStyle(AnvilColor.textTertiary)
+                            Text("\(region.endLine - region.startLine) lines")
+                                .font(.system(size: 10))
+                                .foregroundStyle(AnvilColor.textTertiary.opacity(0.6))
+                        }
+                        .frame(height: 16)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .background(AnvilColor.backgroundTertiary.opacity(0.3))
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
                     }
                 }
-                .frame(height: 20)
-                .background(
-                    isSelected
-                        ? AnvilColor.accentBlue.opacity(0.08)
-                        : isCursor
-                            ? AnvilColor.backgroundTertiary.opacity(0.5)
-                            : Color.clear
-                )
             }
         }
         .padding(.leading, AnvilSpacing.sm)
@@ -160,7 +197,7 @@ struct EditorView: View {
 
     // MARK: - Code Content
 
-    private func codeContent(lines: [String], selectedRange: ClosedRange<Int>?) -> some View {
+    private func codeContent(lines: [String], selectedRange: ClosedRange<Int>?, foldRegions: [EditorViewModel.FoldRegion] = []) -> some View {
         let activeIndent = viewModel.showIndentGuides
             ? activeIndentLevel(lines: lines, cursorLine: viewModel.cursorLine)
             : 0
@@ -168,44 +205,60 @@ struct EditorView: View {
         return VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
                 let lineNumber = index + 1
-                let isSelected = selectedRange?.contains(lineNumber) ?? false
-                let isCursor = lineNumber == viewModel.cursorLine && selectedRange == nil
+                if !viewModel.isLineHidden(lineNumber, regions: foldRegions) {
+                    let isSelected = selectedRange?.contains(lineNumber) ?? false
+                    let isCursor = lineNumber == viewModel.cursorLine && selectedRange == nil
+                    let isCollapsed = viewModel.collapsedLines.contains(lineNumber)
 
-                highlightedLine(line)
-                    .frame(height: 20, alignment: .leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, AnvilSpacing.md)
-                    .padding(.trailing, AnvilSpacing.xxl)
-                    .overlay(alignment: .leading) {
-                        if viewModel.showIndentGuides {
-                            indentGuides(
-                                for: line,
-                                activeLevel: activeIndent
-                            )
-                            .padding(.leading, AnvilSpacing.md)
-                        }
-                    }
-                    .overlay(alignment: .leading) {
-                        let bracketCols = viewModel.bracketHighlightColumns(forLine: lineNumber)
-                        if !bracketCols.isEmpty {
-                            bracketHighlights(columns: bracketCols)
+                    highlightedLine(line)
+                        .frame(height: 20, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.leading, AnvilSpacing.md)
+                        .padding(.trailing, AnvilSpacing.xxl)
+                        .overlay(alignment: .leading) {
+                            if viewModel.showIndentGuides {
+                                indentGuides(
+                                    for: line,
+                                    activeLevel: activeIndent
+                                )
                                 .padding(.leading, AnvilSpacing.md)
-                        }
-                    }
-                    .background(
-                        lineBackground(
-                            lineNumber: lineNumber,
-                            isSelected: isSelected,
-                            isCursor: isCursor
-                        )
-                    )
-                    .contentShape(Rectangle())
-                    .gesture(
-                        TapGesture()
-                            .onEnded {
-                                handleLineClick(lineNumber: lineNumber)
                             }
-                    )
+                        }
+                        .overlay(alignment: .leading) {
+                            let bracketCols = viewModel.bracketHighlightColumns(forLine: lineNumber)
+                            if !bracketCols.isEmpty {
+                                bracketHighlights(columns: bracketCols)
+                                    .padding(.leading, AnvilSpacing.md)
+                            }
+                        }
+                        .background(
+                            lineBackground(
+                                lineNumber: lineNumber,
+                                isSelected: isSelected,
+                                isCursor: isCursor
+                            )
+                        )
+                        .contentShape(Rectangle())
+                        .gesture(
+                            TapGesture()
+                                .onEnded {
+                                    handleLineClick(lineNumber: lineNumber)
+                                }
+                        )
+
+                    // Collapsed fold placeholder in code area
+                    if isCollapsed {
+                        HStack(spacing: AnvilSpacing.xs) {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 10))
+                                .foregroundStyle(AnvilColor.textTertiary)
+                        }
+                        .frame(height: 16)
+                        .padding(.horizontal, AnvilSpacing.md)
+                        .background(AnvilColor.backgroundTertiary.opacity(0.3))
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                    }
+                }
             }
         }
     }
