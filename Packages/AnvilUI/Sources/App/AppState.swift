@@ -255,6 +255,12 @@ public class AppState: ObservableObject {
         }
     }
 
+    public func toggleProjectSearch() {
+        withAnimation(AnvilAnimation.standard) {
+            isProjectSearchVisible.toggle()
+        }
+    }
+
     // MARK: - Project
 
     @Published public var currentProject: Project?

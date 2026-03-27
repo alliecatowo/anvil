@@ -24,6 +24,8 @@ struct EditorTabBar: View {
     private func tabItem(for file: EditorFile) -> some View {
         let isSelected = viewModel.selectedFileId == file.id
 
+        let isReadOnly = viewModel.isFileReadOnly(file.id)
+
         return HStack(spacing: AnvilSpacing.xs) {
             Image(systemName: fileIcon(for: file.name))
                 .font(.system(size: 11))
@@ -33,6 +35,12 @@ struct EditorTabBar: View {
                 .font(AnvilFont.label)
                 .foregroundStyle(isSelected ? AnvilColor.textPrimary : AnvilColor.textSecondary)
                 .lineLimit(1)
+
+            if isReadOnly {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 8))
+                    .foregroundStyle(AnvilColor.textTertiary)
+            }
 
             Button {
                 viewModel.closeFile(file.id)

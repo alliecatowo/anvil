@@ -1,5 +1,6 @@
 import SwiftUI
 import AnvilDomain
+import AnvilApplication
 
 struct NotificationsMode: View {
     @StateObject private var viewModel = NotificationsViewModel()
@@ -31,6 +32,17 @@ struct NotificationsMode: View {
         }
         .onDisappear {
             viewModel.stopGitHubPolling()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .anvilMarkNotificationRead)) { notification in
+            if let notifId = notification.userInfo?["notificationId"] as? String {
+                viewModel.markAsRead(notifId)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .anvilNavigateToItem)) { notification in
+            if let itemId = notification.userInfo?["itemId"] as? String {
+                viewModel.selectedTab = .inbox
+                viewModel.selectedItemID = itemId
+            }
         }
     }
 

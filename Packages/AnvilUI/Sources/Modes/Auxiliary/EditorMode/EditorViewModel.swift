@@ -118,6 +118,8 @@ class EditorViewModel: ObservableObject {
     @Published var isSymbolOutlineVisible: Bool = true
     @Published var expandedFolders: Set<UUID> = []
     @Published var whitespaceMode: WhitespaceMode = .none
+    @Published var readOnlyFileIds: Set<UUID> = []
+    @Published var isWordWrapEnabled: Bool = false
 
     // MARK: Find & Replace (⌘F)
     @Published var isFindBarVisible: Bool = false
@@ -234,6 +236,11 @@ class EditorViewModel: ObservableObject {
         selectedFileId = file.id
         cursorLine = 1
         cursorColumn = 1
+
+        // Auto-detect read-only files
+        if shouldAutoMarkReadOnly(path) {
+            readOnlyFileIds.insert(file.id)
+        }
     }
 
     // MARK: - Helpers
@@ -311,6 +318,44 @@ class EditorViewModel: ObservableObject {
 
     func cycleWhitespace() {
         whitespaceMode = whitespaceMode.next
+    }
+
+    func toggleWordWrap() {
+        isWordWrapEnabled.toggle()
+    }
+
+    // MARK: - Read-Only
+
+    func isFileReadOnly(_ fileId: UUID) -> Bool {
+        readOnlyFileIds.contains(fileId)
+    }
+
+    var isSelectedFileReadOnly: Bool {
+        guard let id = selectedFileId else { return false }
+        return isFileReadOnly(id)
+    }
+
+    func toggleReadOnly(for fileId: UUID) {
+        if readOnlyFileIds.contains(fileId) {
+            readOnlyFileIds.remove(fileId)
+        } else {
+            readOnlyFileIds.insert(fileId)
+        }
+    }
+
+    private static let readOnlyPathPatterns = [
+        "/node_modules/", "/.build/", "/Pods/", "/DerivedData/",
+        "/.git/", "/vendor/", "/dist/", "/build/",
+    ]
+
+    private func shouldAutoMarkReadOnly(_ path: String) -> Bool {
+        for pattern in Self.readOnlyPathPatterns {
+            if path.contains(pattern) { return true }
+        }
+        if !FileManager.default.isWritableFile(atPath: path) {
+            return true
+        }
+        return false
     }
 
     func navigateToSymbol(_ symbol: EditorSymbol) {

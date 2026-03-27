@@ -1,6 +1,7 @@
 import SwiftUI
 import AnvilDomain
 import AnvilGitHub
+import AnvilApplication
 
 /// Polls GitHub Notifications API and maps results into the notifications ViewModel.
 @MainActor
@@ -43,6 +44,17 @@ final class GitHubNotificationPoller: ObservableObject {
 
             if !fresh.isEmpty {
                 viewModel.inboxItems.insert(contentsOf: fresh, at: 0)
+
+                // Fire native macOS desktop notifications for unread items
+                let desktopService = DesktopNotificationService.shared
+                for item in fresh where !item.notification.isRead {
+                    desktopService.send(
+                        notification: item.notification,
+                        source: item.source.rawValue,
+                        targetMode: "Notifications",
+                        targetItemId: item.id
+                    )
+                }
             }
         } catch {
             pollError = "GitHub notifications: \(error.localizedDescription)"

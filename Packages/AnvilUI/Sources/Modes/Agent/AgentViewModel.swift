@@ -997,6 +997,151 @@ public class AgentViewModel: ObservableObject {
         return value
     }
 
+    // MARK: - Agent Plan View (#354)
+
+    /// Generate a plan from the agent's first response. Parses numbered steps from the content.
+    public func generatePlan(sessionId: String, fromContent content: String) {
+        guard let index = sessions.firstIndex(where: { $0.id == sessionId }) else { return }
+
+        let steps = parsePlanSteps(from: content)
+        guard !steps.isEmpty else { return }
+
+        let plan = AgentPlan(
+            title: sessions[index].displayName,
+            steps: steps,
+            status: .draft
+        )
+        sessions[index].plan = plan
+        logger.info("Generated plan for session \(sessionId) with \(steps.count) steps")
+    }
+
+    /// Parse numbered steps from agent text. Matches patterns like "1. Do X" or "- Step one".
+    private func parsePlanSteps(from content: String) -> [PlanStep] {
+        var steps: [PlanStep] = []
+        var order = 0
+
+        for line in content.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { continue }
+
+            // Match "1. Title" or "1) Title" patterns
+            var title: String?
+            if let range = trimmed.range(of: #"^\d+[\.\)]\s+"#, options: .regularExpression) {
+                title = String(trimmed[range.upperBound...])
+            }
+            // Match "- Title" bullet patterns (but only if they look like plan steps)
+            else if trimmed.hasPrefix("- ") && trimmed.count > 4 {
+                title = String(trimmed.dropFirst(2))
+            }
+
+            if let stepTitle = title, !stepTitle.isEmpty {
+                steps.append(PlanStep(title: stepTitle, order: order))
+                order += 1
+            }
+        }
+
+        return steps
+    }
+
+    /// Approve a draft plan — mark it as approved so the agent can begin execution.
+    public func approvePlan(sessionId: String) {
+        guard let index = sessions.firstIndex(where: { $0.id == sessionId }),
+              sessions[index].plan != nil else { return }
+        sessions[index].plan?.status = .approved
+        logger.info("Plan approved for session \(sessionId)")
+    }
+
+    /// Cancel a plan.
+    public func cancelPlan(sessionId: String) {
+        guard let index = sessions.firstIndex(where: { $0.id == sessionId }),
+              sessions[index].plan != nil else { return }
+        sessions[index].plan?.status = .cancelled
+    }
+
+    /// Update a step's status.
+    public func updatePlanStepStatus(sessionId: String, stepId: String, status: PlanStepStatus) {
+        guard let sessionIndex = sessions.firstIndex(where: { $0.id == sessionId }),
+              sessions[sessionIndex].plan != nil,
+              let stepIndex = sessions[sessionIndex].plan?.steps.firstIndex(where: { $0.id == stepId }) else { return }
+        sessions[sessionIndex].plan?.steps[stepIndex].status = status
+
+        // If this step is becoming active and plan is approved, mark plan as executing
+        if status == .active, sessions[sessionIndex].plan?.status == .approved {
+            sessions[sessionIndex].plan?.status = .executing
+        }
+
+        // Check if all steps are complete/skipped — if so, mark plan as completed
+        if let plan = sessions[sessionIndex].plan,
+           plan.steps.allSatisfy({ $0.status == .completed || $0.status == .skipped }) {
+            sessions[sessionIndex].plan?.status = .completed
+        }
+    }
+
+    /// Skip a step.
+    public func skipPlanStep(sessionId: String, stepId: String) {
+        updatePlanStepStatus(sessionId: sessionId, stepId: stepId, status: .skipped)
+    }
+
+    /// Add a user annotation to a step.
+    public func annotatePlanStep(sessionId: String, stepId: String, annotation: String) {
+        guard let sessionIndex = sessions.firstIndex(where: { $0.id == sessionId }),
+              sessions[sessionIndex].plan != nil,
+              let stepIndex = sessions[sessionIndex].plan?.steps.firstIndex(where: { $0.id == stepId }) else { return }
+        sessions[sessionIndex].plan?.steps[stepIndex].annotation = annotation.isEmpty ? nil : annotation
+    }
+
+    /// Reorder steps by moving a step to a new position.
+    public func reorderPlanStep(sessionId: String, stepId: String, newOrder: Int) {
+        guard let sessionIndex = sessions.firstIndex(where: { $0.id == sessionId }),
+              sessions[sessionIndex].plan != nil,
+              let stepIndex = sessions[sessionIndex].plan?.steps.firstIndex(where: { $0.id == stepId }) else { return }
+
+        var steps = sessions[sessionIndex].plan!.steps
+        let step = steps.remove(at: stepIndex)
+        let insertAt = min(max(newOrder, 0), steps.count)
+        steps.insert(step, at: insertAt)
+
+        // Re-number order fields
+        for i in steps.indices {
+            steps[i].order = i
+        }
+        sessions[sessionIndex].plan?.steps = steps
+    }
+
+    /// Add a new step to the plan.
+    public func addPlanStep(sessionId: String, title: String, afterStepId: String? = nil) {
+        guard let sessionIndex = sessions.firstIndex(where: { $0.id == sessionId }),
+              sessions[sessionIndex].plan != nil else { return }
+
+        let order: Int
+        if let afterId = afterStepId,
+           let afterIndex = sessions[sessionIndex].plan?.steps.firstIndex(where: { $0.id == afterId }) {
+            order = afterIndex + 1
+        } else {
+            order = sessions[sessionIndex].plan?.steps.count ?? 0
+        }
+
+        let step = PlanStep(title: title, order: order)
+        sessions[sessionIndex].plan?.steps.insert(step, at: order)
+
+        // Re-number
+        for i in sessions[sessionIndex].plan!.steps.indices {
+            sessions[sessionIndex].plan?.steps[i].order = i
+        }
+    }
+
+    /// Remove a step from the plan.
+    public func removePlanStep(sessionId: String, stepId: String) {
+        guard let sessionIndex = sessions.firstIndex(where: { $0.id == sessionId }),
+              sessions[sessionIndex].plan != nil else { return }
+        sessions[sessionIndex].plan?.steps.removeAll { $0.id == stepId }
+
+        // Re-number
+        for i in sessions[sessionIndex].plan!.steps.indices {
+            sessions[sessionIndex].plan?.steps[i].order = i
+        }
+    }
+
     // MARK: - Sample Data (for previews only)
 
     #if DEBUG

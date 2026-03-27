@@ -51,4 +51,51 @@ public struct AnvilApp: App {
                 .environmentObject(container)
         }
     }
+
+    // MARK: - Desktop Notification Navigation
+
+    private func handleDesktopNotificationTap(_ notification: Foundation.Notification) {
+        guard let userInfo = notification.userInfo else { return }
+
+        let targetModeRaw = userInfo["targetMode"] as? String ?? "Notifications"
+        let targetItemId = userInfo["targetItemId"] as? String
+        let action = userInfo["action"] as? String
+
+        // Mark as read if that action was chosen
+        if action == "MARK_READ", let notifId = userInfo["notificationId"] as? String {
+            // Fire-and-forget mark read via NotificationCenter
+            NotificationCenter.default.post(
+                name: .anvilMarkNotificationRead,
+                object: nil,
+                userInfo: ["notificationId": notifId]
+            )
+            return
+        }
+
+        // Navigate to the target mode
+        if let mode = AnvilMode.allCases.first(where: { $0.rawValue == targetModeRaw }) {
+            appState.switchMode(mode)
+        }
+
+        // If there's a specific item to select, post it
+        if let itemId = targetItemId, !itemId.isEmpty {
+            NotificationCenter.default.post(
+                name: .anvilNavigateToItem,
+                object: nil,
+                userInfo: ["itemId": itemId]
+            )
+        }
+
+        // Bring app to front
+        NSApplication.shared.activate(ignoringOtherApps: true)
+    }
+}
+
+// MARK: - Navigation Notification Names
+
+public extension Foundation.Notification.Name {
+    /// Posted to navigate to a specific item after a desktop notification tap.
+    static let anvilNavigateToItem = Foundation.Notification.Name("anvilNavigateToItem")
+    /// Posted to mark a notification as read from a desktop notification action.
+    static let anvilMarkNotificationRead = Foundation.Notification.Name("anvilMarkNotificationRead")
 }

@@ -79,6 +79,7 @@ enum CommandAction: Sendable {
     case refreshPRs
     case refreshDeploys
     case cycleWhitespace
+    case toggleWordWrap
 
     @MainActor
     func perform(on appState: AppState) {
@@ -127,6 +128,8 @@ enum CommandAction: Sendable {
             break // Would trigger deploy refresh in ship mode
         case .cycleWhitespace:
             appState.editorViewModel.cycleWhitespace()
+        case .toggleWordWrap:
+            appState.editorViewModel.toggleWordWrap()
         }
     }
 }

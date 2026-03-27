@@ -31,10 +31,10 @@ public final class DesktopNotificationService: NSObject, Sendable {
 
     /// Minimum urgency level required to show a desktop notification.
     /// Defaults to `.normal` — low-priority items are silent.
-    public var minimumUrgency: NotificationUrgency = .normal
+    public nonisolated(unsafe) var minimumUrgency: NotificationUrgency = .normal
 
     /// Whether desktop notifications are enabled at all.
-    public var isEnabled: Bool = true
+    public nonisolated(unsafe) var isEnabled: Bool = true
 
     private override init() {
         super.init()

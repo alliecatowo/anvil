@@ -90,6 +90,11 @@ public struct AnvilCommands: Commands {
             }
             .keyboardShortcut("f", modifiers: .command)
 
+            Button("Find in Project") {
+                appState.toggleProjectSearch()
+            }
+            .keyboardShortcut("f", modifiers: [.command, .shift])
+
             Button("Go to File...") {
                 appState.openFilePalette()
             }

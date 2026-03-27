@@ -115,6 +115,11 @@ struct EditorMode: View {
                     Divider().overlay(AnvilColor.borderSubtle)
                 }
 
+                // Read-only banner
+                if viewModel.isSelectedFileReadOnly {
+                    ReadOnlyBanner(viewModel: viewModel)
+                }
+
                 EditorView(viewModel: viewModel)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -177,5 +182,37 @@ struct EditorMode: View {
             deps.currentProjectPath = url.path
             viewModel.loadFileTree(from: url.path, using: deps.fileSystemService)
         }
+    }
+}
+
+// MARK: - Read-Only Banner
+
+struct ReadOnlyBanner: View {
+    @ObservedObject var viewModel: EditorViewModel
+
+    var body: some View {
+        HStack(spacing: AnvilSpacing.sm) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(AnvilColor.accentAmber)
+
+            Text("This file is read-only")
+                .font(AnvilFont.label)
+                .foregroundStyle(AnvilColor.textSecondary)
+
+            Spacer()
+
+            Button("Enable Editing") {
+                if let id = viewModel.selectedFileId {
+                    viewModel.toggleReadOnly(for: id)
+                }
+            }
+            .font(AnvilFont.label)
+            .buttonStyle(.plain)
+            .foregroundStyle(AnvilColor.accentBlue)
+        }
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, AnvilSpacing.xs)
+        .background(AnvilColor.accentAmber.opacity(0.08))
     }
 }

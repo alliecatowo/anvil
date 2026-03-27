@@ -30,6 +30,14 @@ public struct MainWindow: View {
                             .overlay(AnvilColor.borderSubtle)
                     }
 
+                    // Project search panel
+                    if appState.isProjectSearchVisible {
+                        SearchPanel()
+
+                        Divider()
+                            .overlay(AnvilColor.borderSubtle)
+                    }
+
                     // Content
                     ContentArea()
 

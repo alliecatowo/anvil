@@ -52,8 +52,10 @@ struct EditorView: View {
             ? viewModel.inlineEditSelectedRange
             : nil
 
+        let scrollAxes: Axis.Set = viewModel.isWordWrapEnabled ? [.vertical] : [.horizontal, .vertical]
+
         return ZStack(alignment: .topLeading) {
-            ScrollView([.horizontal, .vertical]) {
+            ScrollView(scrollAxes) {
                 HStack(alignment: .top, spacing: 0) {
                     // Line numbers gutter
                     lineNumberGutter(lines: lines, selectedRange: selectedRange)
