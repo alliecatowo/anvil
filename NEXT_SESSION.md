@@ -191,10 +191,37 @@ func testCommandPaletteSearchAndExecute() {
 }
 ```
 
-### Coverage Target
-- Every button click → verify state change
-- Every mode switch → verify content changes
-- Every input field → type text → verify it appears
-- Every sidebar item → click → verify main content updates
-- Every menu item → verify it does what it says
-- Full user journeys: ticket → branch → agent → PR → review → merge
+### Coverage Target — EVERY feature, not just agent mode
+
+The examples above are just examples. The test suite must cover EVERY mode, EVERY sidebar, EVERY button, EVERY interaction in the entire app. The test writer agent should:
+
+1. **Enumerate every clickable element in every mode** — walk the entire UI tree
+2. **For each element, write a test that clicks it and verifies the result**
+3. **For each mode**: verify sidebar items are clickable, content updates on selection, empty states show CTAs, demo data populates correctly
+4. **For each form/input**: type text, submit, verify state changed
+5. **Cross-mode flows**: Intent→Agent, Agent→Review, Review→Ship (the full pipeline)
+
+Specific coverage needed (not just agent — ALL of these):
+- All 13+ modes: click tab → verify content renders, sidebar has items, items are clickable
+- Intent: create ticket, drag on kanban, click ticket detail, link tickets, dispatch to agent
+- Agent: new session, send message, get response, slash commands, @ refs, model picker, export, rename, delete, synthesis room, plan view, background session
+- Review: inbox click, diff renders, approve/reject hunks, PR detail, merge button, blame toggle, git graph
+- Ship: environment cards, deploy button, build logs, env vars, rollback
+- Editor: open file, syntax highlighting renders, find/replace, breadcrumbs, split editor, code folding, inline edit, word wrap, whitespace viz, indent guides, git gutter
+- Database: schema tree clickable, run query, results render
+- Terminal: input works, output renders (once PTY is real)
+- Docs: doc tree clickable, editor renders, preview works
+- Messaging: channel list clickable, chat renders, send message
+- Notifications: inbox items clickable, action buttons work, preferences open
+- Observability: error list clickable, detail renders, metrics show
+- Schedule: agenda items clickable, time blocks render
+- Testing: test tree clickable, run button works, results render
+- Extensions: plugin cards clickable, install/uninstall works
+- Command palette: open, search, navigate, execute — for files, symbols, and commands
+- Quick capture: open, type, select type, submit
+- Project notes: open, type, save
+- Settings: every tab, every toggle, provider config
+- Source control: stage/unstage, commit, push/pull, stash, tags, branches, remotes
+- Status bar: branch click opens picker, settings gear opens settings, cursor position clickable
+
+**If a test passes but the feature doesn't work, the test is a bug.**
