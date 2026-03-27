@@ -70,6 +70,13 @@ public class AppState: ObservableObject {
     @Published public var sessionCost: Decimal = 0
     @Published public var todayCost: Decimal = 0
 
+    // MARK: - Shared ViewModels
+
+    @Published public var agentViewModel = AgentViewModel()
+    @Published public var intentViewModel = IntentViewModel()
+    @Published public var reviewViewModel = ReviewViewModel()
+    @Published public var shipViewModel = ShipViewModel()
+
     public init() {}
 
     // MARK: - Git Integration

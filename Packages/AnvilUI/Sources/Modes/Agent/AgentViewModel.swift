@@ -12,28 +12,7 @@ public class AgentViewModel: ObservableObject {
         sessions.first { $0.id == selectedSessionId }
     }
 
-    public init() {
-        // Add sample session for development
-        let sampleMessages = [
-            AgentMessage(role: .user, content: "Fix the authentication bug in the login flow"),
-            AgentMessage(role: .assistant, content: "I'll start by examining the auth module to understand the current login flow.\n\nLet me read the relevant files...", toolCalls: [
-                ToolCall(name: "read_file", arguments: "{\"path\": \"src/auth/handler.ts\"}", status: .completed, result: ToolResult(content: "// Auth handler with 142 lines...", type: .text)),
-            ]),
-            AgentMessage(role: .assistant, content: "I found the issue. The token validation is checking expiry against UTC but the token was issued with local time. Let me fix this."),
-        ]
-
-        let session = AgentSession(
-            providerId: "anthropic",
-            model: "claude-opus-4-6",
-            status: .completed,
-            workItemId: "ANV-42",
-            tokenUsage: TokenUsage(inputTokens: 12500, outputTokens: 3200),
-            cost: 0.42,
-            messages: sampleMessages
-        )
-        sessions = [session]
-        selectedSessionId = session.id
-    }
+    public init() {}
 
     public func startNewSession(prompt: String, model: String) {
         let session = AgentSession(
@@ -199,4 +178,33 @@ public class AgentViewModel: ObservableObject {
         appState.sessionCost = sessions[index].cost
         appState.todayCost += cost
     }
+
+    // MARK: - Sample Data (for previews only)
+
+    #if DEBUG
+    static func withSampleData() -> AgentViewModel {
+        let vm = AgentViewModel()
+
+        let sampleMessages = [
+            AgentMessage(role: .user, content: "Fix the authentication bug in the login flow"),
+            AgentMessage(role: .assistant, content: "I'll start by examining the auth module to understand the current login flow.\n\nLet me read the relevant files...", toolCalls: [
+                ToolCall(name: "read_file", arguments: "{\"path\": \"src/auth/handler.ts\"}", status: .completed, result: ToolResult(content: "// Auth handler with 142 lines...", type: .text)),
+            ]),
+            AgentMessage(role: .assistant, content: "I found the issue. The token validation is checking expiry against UTC but the token was issued with local time. Let me fix this."),
+        ]
+
+        let session = AgentSession(
+            providerId: "anthropic",
+            model: "claude-opus-4-6",
+            status: .completed,
+            workItemId: "ANV-42",
+            tokenUsage: TokenUsage(inputTokens: 12500, outputTokens: 3200),
+            cost: 0.42,
+            messages: sampleMessages
+        )
+        vm.sessions = [session]
+        vm.selectedSessionId = session.id
+        return vm
+    }
+    #endif
 }

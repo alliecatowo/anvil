@@ -12,7 +12,7 @@ enum HunkDecision: String {
 // MARK: - Review View Model
 
 @MainActor
-final class ReviewViewModel: ObservableObject {
+public final class ReviewViewModel: ObservableObject {
 
     // MARK: Inbox
 
@@ -55,9 +55,7 @@ final class ReviewViewModel: ObservableObject {
 
     // MARK: Init
 
-    init() {
-        reviews = Self.makeSampleReviews()
-    }
+    public init() {}
 
     // MARK: Navigation
 
@@ -118,7 +116,15 @@ final class ReviewViewModel: ObservableObject {
         selectedReviewIDs.removeAll()
     }
 
-    // MARK: - Sample Data
+    // MARK: - Sample Data (for previews only)
+
+    #if DEBUG
+    static func withSampleData() -> ReviewViewModel {
+        let vm = ReviewViewModel()
+        vm.reviews = makeSampleReviews()
+        return vm
+    }
+    #endif
 
     static func makeSampleReviews() -> [Review] {
         let authHandlerDiff = FileDiff(

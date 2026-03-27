@@ -8,7 +8,7 @@ struct AgentSidebar: View {
         VStack(spacing: 0) {
             // New session button
             Button {
-                viewModel.isLaunchSheetPresented = true
+                viewModel.startNewSession(prompt: "", model: "claude-sonnet-4-20250514")
             } label: {
                 HStack {
                     Image(systemName: "plus.circle.fill")

@@ -2,24 +2,13 @@ import SwiftUI
 import AnvilDomain
 
 public struct AgentMode: View {
-    @StateObject private var viewModel = AgentViewModel()
-    @EnvironmentObject private var container: DependencyContainer
     @EnvironmentObject private var appState: AppState
+    @EnvironmentObject private var container: DependencyContainer
 
     public init() {}
 
     public var body: some View {
-        if let session = viewModel.selectedSession {
-            ConversationView(
-                session: session,
-                inputText: $viewModel.inputText,
-                onSend: {
-                    viewModel.sendMessage(container: container, appState: appState)
-                }
-            )
-        } else {
-            AgentEmptyState(onNewSession: { viewModel.isLaunchSheetPresented = true })
-        }
+        AgentModeContent(viewModel: appState.agentViewModel)
     }
 }
 

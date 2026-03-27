@@ -24,7 +24,7 @@ enum TicketSortField: String, CaseIterable {
 // MARK: - View Model
 
 @MainActor
-final class IntentViewModel: ObservableObject {
+public final class IntentViewModel: ObservableObject {
 
     // MARK: State
 
@@ -173,7 +173,7 @@ final class IntentViewModel: ObservableObject {
 
     // MARK: Init
 
-    init() {
+    public init() {
         let columns = [
             BoardColumn(name: "Open", status: "open", wipLimit: nil),
             BoardColumn(name: "In Progress", status: "in progress", wipLimit: 3),
@@ -181,15 +181,29 @@ final class IntentViewModel: ObservableObject {
             BoardColumn(name: "Done", status: "done", wipLimit: nil),
         ]
         self.board = Board(name: "Sprint Board", columns: columns)
+        self.currentCycle = Cycle(
+            name: "No Sprint",
+            startDate: .now,
+            endDate: .now,
+            ticketIds: [],
+            velocity: nil
+        )
+    }
+
+    // MARK: - Sample Data (for previews only)
+
+    #if DEBUG
+    static func withSampleData() -> IntentViewModel {
+        let vm = IntentViewModel()
 
         let now = Date.now
         let calendar = Calendar.current
         let sprintStart = calendar.date(byAdding: .day, value: -5, to: now) ?? now
         let sprintEnd = calendar.date(byAdding: .day, value: 9, to: now) ?? now
 
-        let sampleTickets = Self.makeSampleTickets()
-        self.tickets = sampleTickets
-        self.currentCycle = Cycle(
+        let sampleTickets = makeSampleTickets()
+        vm.tickets = sampleTickets
+        vm.currentCycle = Cycle(
             name: "Sprint 14",
             startDate: sprintStart,
             endDate: sprintEnd,
@@ -197,16 +211,16 @@ final class IntentViewModel: ObservableObject {
             velocity: 21
         )
 
-        self.relations = [
+        vm.relations = [
             TicketRelation(type: .blocks, sourceId: sampleTickets[0].id, targetId: sampleTickets[2].id),
             TicketRelation(type: .related, sourceId: sampleTickets[1].id, targetId: sampleTickets[3].id),
         ]
 
-        selectedTicketId = sampleTickets.first?.id
-        editingTitle = sampleTickets.first?.title ?? ""
+        vm.selectedTicketId = sampleTickets.first?.id
+        vm.editingTitle = sampleTickets.first?.title ?? ""
+        return vm
     }
-
-    // MARK: - Sample Data
+    #endif
 
     private static func makeSampleTickets() -> [Ticket] {
         let cal = Calendar.current

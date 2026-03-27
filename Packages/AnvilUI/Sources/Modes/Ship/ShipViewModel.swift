@@ -58,7 +58,7 @@ struct EnvVar: Identifiable {
 // MARK: - Ship View Model
 
 @MainActor
-final class ShipViewModel: ObservableObject {
+public final class ShipViewModel: ObservableObject {
 
     // MARK: Navigation
 
@@ -96,14 +96,7 @@ final class ShipViewModel: ObservableObject {
 
     // MARK: Init
 
-    init() {
-        let (envs, deploys, logs, vars) = Self.makeSampleData()
-        self.environments = envs
-        self.deployments = deploys
-        self.buildLogs = logs
-        self.envVars = vars
-        self.selectedEnvironmentID = envs.first?.id
-    }
+    public init() {}
 
     // MARK: Actions
 
@@ -128,7 +121,20 @@ final class ShipViewModel: ObservableObject {
         envVars[environmentID]?.removeAll { $0.id == id }
     }
 
-    // MARK: - Sample Data
+    // MARK: - Sample Data (for previews only)
+
+    #if DEBUG
+    static func withSampleData() -> ShipViewModel {
+        let vm = ShipViewModel()
+        let (envs, deploys, logs, vars) = makeSampleData()
+        vm.environments = envs
+        vm.deployments = deploys
+        vm.buildLogs = logs
+        vm.envVars = vars
+        vm.selectedEnvironmentID = envs.first?.id
+        return vm
+    }
+    #endif
 
     static func makeSampleData() -> ([EnvironmentCard], [Deployment], [BuildLog], [String: [EnvVar]]) {
 

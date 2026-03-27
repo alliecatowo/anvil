@@ -9,25 +9,25 @@ public struct ContentArea: View {
         ZStack {
             switch appState.currentMode {
             case .intent:
-                IntentModeContent()
+                IntentModeContent(viewModel: appState.intentViewModel)
             case .agent:
-                AgentModeContent()
+                AgentModeContent(viewModel: appState.agentViewModel)
             case .review:
-                ReviewModeContent()
+                ReviewModeContent(viewModel: appState.reviewViewModel)
             case .ship:
-                ShipModeContent()
+                ShipModeContent(viewModel: appState.shipViewModel)
             case .editor:
-                EditorModeContent()
+                EditorMode()
             case .database:
-                DatabaseModeContent()
+                DatabaseMode()
             case .terminal:
-                TerminalModeContent()
+                TerminalMode()
             case .docs:
-                DocsModeContent()
+                DocsMode()
             case .messaging:
-                MessagingModeContent()
+                MessagingMode()
             case .notifications:
-                NotificationsModeContent()
+                NotificationsMode()
             default:
                 PlaceholderModeContent(mode: appState.currentMode)
             }
@@ -37,64 +37,71 @@ public struct ContentArea: View {
     }
 }
 
-// Placeholder views for each mode - will be replaced with real implementations
+// MARK: - Mode Content Wrappers (using shared ViewModels)
+
 struct IntentModeContent: View {
+    @ObservedObject var viewModel: IntentViewModel
+
     var body: some View {
-        IntentMode()
+        if viewModel.selectedTicket != nil {
+            TicketDetailView(viewModel: viewModel)
+        } else if viewModel.viewMode == .board {
+            BoardView(viewModel: viewModel)
+        } else {
+            TicketListView(viewModel: viewModel)
+        }
     }
 }
 
 struct AgentModeContent: View {
+    @ObservedObject var viewModel: AgentViewModel
+    @EnvironmentObject private var container: DependencyContainer
+    @EnvironmentObject private var appState: AppState
+
     var body: some View {
-        AgentMode()
+        if let session = viewModel.selectedSession {
+            ConversationView(
+                session: session,
+                inputText: $viewModel.inputText,
+                onSend: {
+                    viewModel.sendMessage(container: container, appState: appState)
+                }
+            )
+        } else {
+            AgentEmptyState(onNewSession: { viewModel.isLaunchSheetPresented = true })
+        }
     }
 }
 
 struct ReviewModeContent: View {
+    @ObservedObject var viewModel: ReviewViewModel
+
     var body: some View {
-        ReviewMode()
+        if viewModel.selectedReview != nil {
+            DiffReviewView(viewModel: viewModel)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            ReviewInboxView(viewModel: viewModel)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 }
 
 struct ShipModeContent: View {
-    var body: some View {
-        ShipMode()
-    }
-}
+    @ObservedObject var viewModel: ShipViewModel
 
-struct EditorModeContent: View {
     var body: some View {
-        EditorMode()
-    }
-}
-
-struct DatabaseModeContent: View {
-    var body: some View {
-        DatabaseMode()
-    }
-}
-
-struct TerminalModeContent: View {
-    var body: some View {
-        TerminalMode()
-    }
-}
-
-struct DocsModeContent: View {
-    var body: some View {
-        DocsMode()
-    }
-}
-
-struct MessagingModeContent: View {
-    var body: some View {
-        MessagingMode()
-    }
-}
-
-struct NotificationsModeContent: View {
-    var body: some View {
-        NotificationsMode()
+        Group {
+            switch viewModel.selectedTab {
+            case .dashboard:
+                DeployDashboardView(viewModel: viewModel)
+            case .logs:
+                BuildLogView(viewModel: viewModel)
+            case .envVars:
+                EnvVarManagerView(viewModel: viewModel)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
