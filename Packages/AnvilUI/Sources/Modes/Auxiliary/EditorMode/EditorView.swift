@@ -127,6 +127,20 @@ struct EditorView: View {
         .background(AnvilColor.backgroundSecondary.opacity(0.5))
     }
 
+    // MARK: - Git Change Indicator
+
+    @ViewBuilder
+    private func gitChangeIndicator(_ change: GitLineChange) -> some View {
+        let color: Color = switch change {
+        case .added:    AnvilColor.accentGreen
+        case .modified: AnvilColor.accentBlue
+        case .deleted:  AnvilColor.accentRed
+        }
+        RoundedRectangle(cornerRadius: 1)
+            .fill(color)
+            .frame(width: 3)
+    }
+
     // MARK: - Code Content
 
     private func codeContent(lines: [String], selectedRange: ClosedRange<Int>?) -> some View {

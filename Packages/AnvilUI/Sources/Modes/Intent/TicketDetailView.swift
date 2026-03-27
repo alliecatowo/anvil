@@ -401,9 +401,14 @@ struct TicketDetailView: View {
                 .foregroundStyle(AnvilColor.textTertiary)
 
             if let other = otherTicket {
-                Text(other.id)
-                    .font(AnvilFont.code)
-                    .foregroundStyle(AnvilColor.accentBlue)
+                Button {
+                    viewModel.selectTicket(other.id)
+                } label: {
+                    Text(other.id)
+                        .font(AnvilFont.code)
+                        .foregroundStyle(AnvilColor.accentBlue)
+                }
+                .buttonStyle(.plain)
 
                 Text(other.title)
                     .font(AnvilFont.body)
@@ -416,6 +421,16 @@ struct TicketDetailView: View {
             }
 
             Spacer()
+
+            Button {
+                viewModel.removeRelation(id: relation.id)
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(AnvilColor.textTertiary)
+            }
+            .buttonStyle(.plain)
+            .help("Remove link")
         }
         .padding(AnvilSpacing.sm)
         .background(AnvilColor.backgroundSecondary)

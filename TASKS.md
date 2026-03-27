@@ -1,6 +1,6 @@
 # Anvil Task List
 
-**Total: 399 tasks | Completed: 73 | In Progress: 3 | Pending: 323**
+**Total: 399 | Completed: 76 | In Progress: 1 | Pending: 322**
 
 ## Completed
 
@@ -43,6 +43,7 @@
 - [x] #56 Add session export (markdown and JSON formats)
 - [x] #60 Implement background agent sessions
 - [x] #61 Add cost budget per session with warnings
+- [x] #66 Implement ticket linking (blocks, blocked-by, related)
 - [x] #70 Implement git blame integration in diff view
 - [x] #77 Add terminal bottom panel (always available across modes)
 - [x] #83 Build real notification sources (GitHub webhooks, CI events)
@@ -75,14 +76,14 @@
 - [x] #307 Add remote management (add/remove/rename remotes) in source control
 - [x] #308 Build multi-agent synthesis rooms (Task #136)
 - [x] #313 Build agent guardrails — configurable rules that prevent agents from modifying certain files or running certain commands
+- [x] #345 Build worktree engine — automatic git worktree per agent session, invisible to user
+- [x] #347 Build event bus — domain event pub/sub with OnPRMerged, OnBuildFailed, OnAgentCompleted handlers
 - [x] #354 Build agent plan view — structured editable plan with step status tracking and user annotations
 - [x] #399 Build git graph visualization — interactive DAG with branch topology, filtering, commit detail
 
 ## In Progress
 
 - [ ] #33 Implement git decorations in editor gutter
-- [ ] #66 Implement ticket linking (blocks, blocked-by, related)
-- [ ] #345 Build worktree engine — automatic git worktree per agent session, invisible to user
 
 ## Pending
 
@@ -358,7 +359,6 @@
 - [ ] #343 Add detachable panels support
 - [ ] #344 Add full-screen mode
 - [ ] #346 Add usage statistics dashboard
-- [ ] #347 Build event bus — domain event pub/sub with OnPRMerged, OnBuildFailed, OnAgentCompleted handlers
 - [ ] #348 Add billing and subscription info to profile
 - [ ] #349 Add team management page
 - [ ] #350 Build stacked diff view — layered dependent changes with per-layer approve/reject in Review mode
