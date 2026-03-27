@@ -7,9 +7,9 @@ struct AgentSidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             // New session button
-            Button {
-                viewModel.startNewSession(prompt: "", model: "claude-sonnet-4-20250514")
-            } label: {
+            Button(action: {
+                viewModel.startNewSession(prompt: "", model: "claude-sonnet-4-6")
+            }) {
                 HStack {
                     Image(systemName: "plus.circle.fill")
                         .foregroundStyle(AnvilColor.accentPurple)
@@ -20,8 +20,10 @@ struct AgentSidebar: View {
                 .foregroundStyle(AnvilColor.textPrimary)
                 .padding(.horizontal, AnvilSpacing.md)
                 .padding(.vertical, AnvilSpacing.sm)
+                .contentShape(Rectangle())
+                .background(AnvilColor.backgroundTertiary.opacity(0.001)) // Ensure hit testing
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
 
             Divider().overlay(AnvilColor.borderSubtle)
 

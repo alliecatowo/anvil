@@ -35,7 +35,19 @@ struct KeyEventRouter: ViewModifier {
             || keyPress.modifiers.contains(.option)
         if hasModifiers { return .ignored }
 
+        // Skip when command palette, quick capture, or any overlay is active
+        if appState.isCommandPaletteVisible || appState.isQuickCaptureVisible {
+            return .ignored
+        }
+
         let character = keyPress.characters.first ?? Character("\0")
+
+        // Only handle single-char navigation keys, not regular typing
+        // This prevents eating button/textfield input
+        let navigationKeys: Set<Character> = ["j", "k", "g", "n", "p", "a", "r", "c", "d", "x", "y", "/"]
+        guard character == "\u{1B}" /* escape */ || navigationKeys.contains(character) else {
+            return .ignored
+        }
 
         // 1. Escape always dismisses overlays
         if keyPress.key == .escape {
