@@ -53,3 +53,148 @@ func testNewSession() {
 ```
 
 Every test: action → verify result. No exceptions.
+
+## Three Test Layers Required
+
+### 1. Unit Tests (XCTest — fast, no UI)
+Test ViewModels and domain logic in isolation:
+```swift
+func testStartNewSessionCreatesSession() {
+    let vm = AgentViewModel()
+    XCTAssertEqual(vm.sessions.count, 0)
+    vm.startNewSession(prompt: "", model: "claude-sonnet-4-6")
+    XCTAssertEqual(vm.sessions.count, 1)
+    XCTAssertNotNil(vm.selectedSessionId)
+    XCTAssertEqual(vm.selectedSession?.status, .idle)
+}
+```
+
+### 2. Integration Tests (XCTest — test real wiring)
+Test that layers connect properly:
+```swift
+func testAcpProviderStreamsResponse() async {
+    let client = ACPClient()
+    let provider = OllamaProvider() // or mock
+    await client.registerProvider(provider)
+    let p = await client.provider("ollama")
+    XCTAssertNotNil(p)
+}
+```
+
+### 3. E2E UI Tests (XCUITest — full click-through flows)
+Test complete user journeys, every micro-interaction:
+```swift
+func testFullAgentWorkflow() {
+    let app = XCUIApplication()
+    app.launch()
+
+    // 1. Click Agent tab
+    app.buttons["Agent"].click()
+
+    // 2. Click New Session
+    let newSession = app.buttons["New Session"]
+    XCTAssertTrue(newSession.waitForExistence(timeout: 3))
+    newSession.click()
+
+    // 3. Verify conversation view appeared
+    let inputField = app.textFields["Message the agent..."]
+    XCTAssertTrue(inputField.waitForExistence(timeout: 3))
+
+    // 4. Type a message
+    inputField.click()
+    inputField.typeText("Hello, fix the auth bug")
+
+    // 5. Click send
+    app.buttons["Send"].click()
+
+    // 6. Verify message appears in conversation
+    let userMessage = app.staticTexts["Hello, fix the auth bug"]
+    XCTAssertTrue(userMessage.waitForExistence(timeout: 5))
+
+    // 7. Verify agent responds (or shows thinking indicator)
+    let thinkingOrResponse = app.staticTexts["Thinking..."].exists
+        || app.scrollViews.staticTexts.count > 1
+    XCTAssertTrue(thinkingOrResponse)
+}
+
+func testFullTicketToAgentPipeline() {
+    let app = XCUIApplication()
+    app.launch()
+
+    // Load demo data first
+    app.menuItems["Load Demo Project"].click()
+
+    // 1. Go to Intent mode
+    app.buttons["Intent"].click()
+
+    // 2. Click a ticket
+    let ticket = app.staticTexts["ANV-101"]
+    XCTAssertTrue(ticket.waitForExistence(timeout: 3))
+    ticket.click()
+
+    // 3. Verify ticket detail opened
+    let title = app.staticTexts["Fix SSO token refresh"]
+    XCTAssertTrue(title.waitForExistence(timeout: 3))
+
+    // 4. Click "Start Work"
+    let startWork = app.buttons["Start Work"]
+    XCTAssertTrue(startWork.waitForExistence(timeout: 3))
+    startWork.click()
+
+    // 5. Verify switched to Agent mode with pre-filled session
+    let agentTab = app.buttons["Agent"]
+    // Agent tab should now be active
+    let inputField = app.textFields["Message the agent..."]
+    XCTAssertTrue(inputField.waitForExistence(timeout: 5))
+}
+
+func testEveryModeHasClickableContent() {
+    let app = XCUIApplication()
+    app.launch()
+    app.menuItems["Load Demo Project"].click()
+
+    let modes = ["Intent", "Agent", "Review", "Ship"]
+    for mode in modes {
+        app.buttons[mode].click()
+
+        // Each mode should have SOMETHING clickable beyond the tab itself
+        let clickableElements = app.buttons.allElementsBoundByIndex
+            .filter { $0.isHittable && $0.label != mode }
+        XCTAssertGreaterThan(clickableElements.count, 0,
+            "\(mode) mode should have clickable elements")
+    }
+}
+
+func testCommandPaletteSearchAndExecute() {
+    let app = XCUIApplication()
+    app.launch()
+
+    // Open command palette
+    app.typeKey("k", modifierFlags: .command)
+
+    let searchField = app.textFields.firstMatch
+    XCTAssertTrue(searchField.waitForExistence(timeout: 2))
+
+    // Search for "Agent"
+    searchField.typeText("Agent")
+
+    // Verify results appeared
+    let result = app.staticTexts["Switch to Agent"]
+    XCTAssertTrue(result.waitForExistence(timeout: 2))
+
+    // Click result
+    result.click()
+
+    // Verify mode actually switched
+    // (command palette should dismiss and Agent mode should be active)
+    XCTAssertFalse(searchField.exists, "Palette should dismiss after execution")
+}
+```
+
+### Coverage Target
+- Every button click → verify state change
+- Every mode switch → verify content changes
+- Every input field → type text → verify it appears
+- Every sidebar item → click → verify main content updates
+- Every menu item → verify it does what it says
+- Full user journeys: ticket → branch → agent → PR → review → merge
