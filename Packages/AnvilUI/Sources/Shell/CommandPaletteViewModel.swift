@@ -82,6 +82,7 @@ enum CommandAction: Sendable {
     case toggleWordWrap
     case toggleIndentGuides
     case toggleGitGutter
+    case toggleBracketMatching
     case clearRecentHistory
 
     @MainActor
@@ -137,6 +138,8 @@ enum CommandAction: Sendable {
             appState.editorViewModel.showIndentGuides.toggle()
         case .toggleGitGutter:
             appState.editorViewModel.showGitGutter.toggle()
+        case .toggleBracketMatching:
+            appState.editorViewModel.showBracketMatching.toggle()
         case .clearRecentHistory:
             break // Handled by the view model directly
         }
@@ -488,6 +491,7 @@ final class CommandPaletteViewModel: ObservableObject {
                 CommandItem(id: "ctx-toggle-wordwrap", title: "Toggle Word Wrap", icon: "text.word.spacing", shortcut: "\u{2325}Z", category: .contextual, group: .editor, action: .toggleWordWrap),
                 CommandItem(id: "ctx-toggle-indent-guides", title: "Toggle Indent Guides", icon: "line.3.horizontal", category: .contextual, group: .editor, action: .toggleIndentGuides),
                 CommandItem(id: "ctx-toggle-git-gutter", title: "Toggle Git Gutter", icon: "arrow.triangle.branch", category: .contextual, group: .git, action: .toggleGitGutter),
+                CommandItem(id: "ctx-toggle-bracket-matching", title: "Toggle Bracket Matching", icon: "curlybraces", category: .contextual, group: .editor, action: .toggleBracketMatching),
             ]
         case .database:
             return [

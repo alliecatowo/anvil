@@ -185,6 +185,13 @@ struct EditorView: View {
                             .padding(.leading, AnvilSpacing.md)
                         }
                     }
+                    .overlay(alignment: .leading) {
+                        let bracketCols = viewModel.bracketHighlightColumns(forLine: lineNumber)
+                        if !bracketCols.isEmpty {
+                            bracketHighlights(columns: bracketCols)
+                                .padding(.leading, AnvilSpacing.md)
+                        }
+                    }
                     .background(
                         lineBackground(
                             lineNumber: lineNumber,
@@ -261,6 +268,26 @@ struct EditorView: View {
                         .frame(width: 1)
                         .offset(x: CGFloat(level - 1) * tabSize * charWidth + tabSize * charWidth * 0.5)
                 }
+            }
+        }
+        .frame(height: 20)
+        .allowsHitTesting(false)
+    }
+
+    // MARK: - Bracket Matching Highlights
+
+    private func bracketHighlights(columns: Set<Int>) -> some View {
+        let charWidth: CGFloat = 7.7
+        return ZStack(alignment: .leading) {
+            ForEach(Array(columns), id: \.self) { col in
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(AnvilColor.accentAmber.opacity(0.2))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 2)
+                            .strokeBorder(AnvilColor.accentAmber.opacity(0.4), lineWidth: 1)
+                    )
+                    .frame(width: charWidth, height: 18)
+                    .offset(x: CGFloat(col) * charWidth)
             }
         }
         .frame(height: 20)

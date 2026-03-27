@@ -53,6 +53,3 @@ targets:
       - Tests/UITests
     dependencies:
       - target: Anvil
-    settings:
-      base:
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Anvil.app/Contents/MacOS/Anvil"

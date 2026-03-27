@@ -376,6 +376,101 @@ class EditorViewModel: ObservableObject {
         cursorLine = symbol.line
     }
 
+    // MARK: - Bracket Matching
+
+    struct BracketPosition: Equatable {
+        let line: Int    // 1-based
+        let column: Int  // 0-based character offset within line
+    }
+
+    private static let openBrackets: [Character: Character] = ["(": ")", "[": "]", "{": "}"]
+    private static let closeBrackets: [Character: Character] = [")": "(", "]": "[", "}": "{"]
+
+    /// Returns the pair of matching bracket positions for the cursor, or nil if not on a bracket.
+    var matchedBracketPair: (BracketPosition, BracketPosition)? {
+        guard showBracketMatching, let file = selectedFile else { return nil }
+        let lines = file.content.components(separatedBy: "\n")
+        let lineIdx = cursorLine - 1
+        guard lineIdx >= 0 && lineIdx < lines.count else { return nil }
+        let line = lines[lineIdx]
+        let col = cursorColumn - 1
+        guard col >= 0 && col < line.count else { return nil }
+
+        let charIndex = line.index(line.startIndex, offsetBy: col)
+        let char = line[charIndex]
+
+        if let close = Self.openBrackets[char] {
+            // Search forward for matching close bracket
+            if let match = findMatchingForward(lines: lines, fromLine: lineIdx, fromCol: col, open: char, close: close) {
+                return (BracketPosition(line: cursorLine, column: col), match)
+            }
+        } else if let open = Self.closeBrackets[char] {
+            // Search backward for matching open bracket
+            if let match = findMatchingBackward(lines: lines, fromLine: lineIdx, fromCol: col, open: open, close: char) {
+                return (match, BracketPosition(line: cursorLine, column: col))
+            }
+        }
+        return nil
+    }
+
+    private func findMatchingForward(lines: [String], fromLine: Int, fromCol: Int, open: Character, close: Character) -> BracketPosition? {
+        var depth = 1
+        var lineIdx = fromLine
+        var col = fromCol + 1
+
+        while lineIdx < lines.count {
+            let line = lines[lineIdx]
+            while col < line.count {
+                let ch = line[line.index(line.startIndex, offsetBy: col)]
+                if ch == open { depth += 1 }
+                else if ch == close {
+                    depth -= 1
+                    if depth == 0 {
+                        return BracketPosition(line: lineIdx + 1, column: col)
+                    }
+                }
+                col += 1
+            }
+            lineIdx += 1
+            col = 0
+        }
+        return nil
+    }
+
+    private func findMatchingBackward(lines: [String], fromLine: Int, fromCol: Int, open: Character, close: Character) -> BracketPosition? {
+        var depth = 1
+        var lineIdx = fromLine
+        var col = fromCol - 1
+
+        while lineIdx >= 0 {
+            let line = lines[lineIdx]
+            if col < 0 { col = line.count - 1 }
+            while col >= 0 {
+                let ch = line[line.index(line.startIndex, offsetBy: col)]
+                if ch == close { depth += 1 }
+                else if ch == open {
+                    depth -= 1
+                    if depth == 0 {
+                        return BracketPosition(line: lineIdx + 1, column: col)
+                    }
+                }
+                col -= 1
+            }
+            lineIdx -= 1
+            col = -1
+        }
+        return nil
+    }
+
+    /// Returns the set of bracket positions that should be highlighted on a given line.
+    func bracketHighlightColumns(forLine lineNumber: Int) -> Set<Int> {
+        guard let pair = matchedBracketPair else { return [] }
+        var cols: Set<Int> = []
+        if pair.0.line == lineNumber { cols.insert(pair.0.column) }
+        if pair.1.line == lineNumber { cols.insert(pair.1.column) }
+        return cols
+    }
+
     // MARK: - Find & Replace
 
     func toggleFindBar() {
