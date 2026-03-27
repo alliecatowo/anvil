@@ -25,6 +25,7 @@ public class AgentViewModel: ObservableObject {
     @Published public var selectedModelId = "claude-sonnet-4-6"
     @Published public var editSuggestions: [String: [CodeEditSuggestion]] = [:] // sessionId -> suggestions
     @Published public var contextAttachments: [ContextAttachment] = []
+    @Published public var queuedMessages: [String] = []
 
     public var selectedSession: AgentSession? {
         sessions.first { $0.id == selectedSessionId }
@@ -259,6 +260,13 @@ public class AgentViewModel: ObservableObject {
     public func sendMessage(container: DependencyContainer, appState: AppState) {
         guard !inputText.isEmpty, let sessionId = selectedSessionId else { return }
 
+        // If the session is currently running, queue the message for later
+        if let session = sessions.first(where: { $0.id == sessionId }), session.status == .running {
+            queuedMessages.append(inputText)
+            inputText = ""
+            return
+        }
+
         // Update model if changed
         updateSessionModel(sessionId, modelId: selectedModelId)
 
@@ -319,8 +327,8 @@ public class AgentViewModel: ObservableObject {
                 return
             }
 
-            // Build ACP messages from the session history
-            let acpMessages = buildACPMessages(sessionId: sessionId)
+            // Build ACP messages from the session history (with session memory if available)
+            let acpMessages = buildACPMessages(sessionId: sessionId, projectPath: container.currentProjectPath)
 
             let stream = provider.complete(messages: acpMessages, model: model, tools: [], stream: true)
 
@@ -347,6 +355,12 @@ public class AgentViewModel: ObservableObject {
             setSessionStatus(sessionId: sessionId, status: .idle)
             clearAgentActivity(appState: appState, status: "Idle")
 
+            // Auto-name the session after its first completed exchange
+            autoNameSessionIfNeeded(sessionId: sessionId)
+
+            // Drain queued messages — send the next one if any are waiting
+            drainQueuedMessage(container: container, appState: appState)
+
         } catch {
             updateMessageContent(sessionId: sessionId, messageId: assistantMessageId, appendText: "\n\nError: \(error.localizedDescription)")
             setSessionStatus(sessionId: sessionId, status: .failed)
@@ -356,9 +370,17 @@ public class AgentViewModel: ObservableObject {
 
     // MARK: - Helpers
 
-    private func buildACPMessages(sessionId: String) -> [ACPMessage] {
+    private func buildACPMessages(sessionId: String, projectPath: String? = nil) -> [ACPMessage] {
         guard let session = sessions.first(where: { $0.id == sessionId }) else { return [] }
-        return session.messages.compactMap { msg in
+
+        var result: [ACPMessage] = []
+
+        // Prepend session memory as system context if available
+        if let memory = loadSessionMemory(projectPath: projectPath) {
+            result.append(ACPMessage(role: .system, content: "Project memory (from .anvil/memory.md):\n\n\(memory)"))
+        }
+
+        result += session.messages.compactMap { msg in
             switch msg.role {
             case .user:
                 return ACPMessage(role: .user, content: msg.content)
@@ -371,6 +393,8 @@ public class AgentViewModel: ObservableObject {
                 return nil
             }
         }
+
+        return result
     }
 
     private func updateMessageContent(sessionId: String, messageId: String, appendText: String) {
@@ -656,6 +680,69 @@ public class AgentViewModel: ObservableObject {
 
     public var activeSessions: [AgentSession] {
         sessions.filter { $0.status == .running }
+    }
+
+    // MARK: - Queued Messages (#277)
+
+    private func drainQueuedMessage(container: DependencyContainer, appState: AppState) {
+        guard !queuedMessages.isEmpty, let sessionId = selectedSessionId,
+              sessions.first(where: { $0.id == sessionId })?.status == .idle else { return }
+        inputText = queuedMessages.removeFirst()
+        sendMessage(container: container, appState: appState)
+    }
+
+    // MARK: - Session Memory (#299)
+
+    /// Reads `.anvil/memory.md` from the project root, if it exists.
+    public func loadSessionMemory(projectPath: String?) -> String? {
+        guard let projectPath else { return nil }
+        let memoryPath = (projectPath as NSString).appendingPathComponent(".anvil/memory.md")
+        guard FileManager.default.fileExists(atPath: memoryPath),
+              let data = FileManager.default.contents(atPath: memoryPath),
+              let content = String(data: data, encoding: .utf8),
+              !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return content
+    }
+
+    // MARK: - Smart Session Auto-Naming (#306)
+
+    private func autoNameSessionIfNeeded(sessionId: String) {
+        guard let index = sessions.firstIndex(where: { $0.id == sessionId }) else { return }
+        let session = sessions[index]
+
+        // Only auto-name once, and only if there's no custom name yet
+        guard session.customName == nil || session.customName?.isEmpty == true else { return }
+
+        // Need at least one user message and one assistant response
+        guard let firstUser = session.messages.first(where: { $0.role == .user }),
+              session.messages.contains(where: { $0.role == .assistant && !$0.content.isEmpty }) else { return }
+
+        // Generate a short name from the first user message
+        let content = firstUser.content
+            .replacingOccurrences(of: "[Context]", with: "")
+            .replacingOccurrences(of: "[/Context]", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Take first meaningful line, cap at 40 chars
+        let firstLine = content.components(separatedBy: .newlines)
+            .first(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }) ?? content
+        let trimmed = firstLine.trimmingCharacters(in: .whitespaces)
+
+        let name: String
+        if trimmed.count <= 40 {
+            name = trimmed
+        } else {
+            // Try to break at a word boundary
+            let prefix = String(trimmed.prefix(40))
+            if let lastSpace = prefix.lastIndex(of: " ") {
+                name = String(prefix[prefix.startIndex..<lastSpace]) + "..."
+            } else {
+                name = prefix + "..."
+            }
+        }
+
+        sessions[index].customName = name
+        logger.info("Auto-named session \(sessionId): \(name)")
     }
 
     // MARK: - Sample Data (for previews only)

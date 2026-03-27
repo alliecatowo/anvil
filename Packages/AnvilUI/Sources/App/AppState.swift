@@ -16,6 +16,7 @@ public enum AnvilMode: String, CaseIterable, Identifiable, Sendable {
     case messaging = "Messaging"
     case notifications = "Notifications"
     case testing = "Testing"
+    case extensions = "Extensions"
 
     public var id: String { rawValue }
 
@@ -32,6 +33,7 @@ public enum AnvilMode: String, CaseIterable, Identifiable, Sendable {
         case .messaging: "message"
         case .notifications: "bell"
         case .testing: "testtube.2"
+        case .extensions: "puzzlepiece.extension"
         }
     }
 
@@ -48,6 +50,7 @@ public enum AnvilMode: String, CaseIterable, Identifiable, Sendable {
         case .messaging: 9
         case .notifications: 0
         case .testing: nil
+        case .extensions: nil
         }
     }
 
@@ -56,7 +59,7 @@ public enum AnvilMode: String, CaseIterable, Identifiable, Sendable {
     }
 
     public static var auxiliaryModes: [AnvilMode] {
-        [.editor, .database, .terminal, .testing, .docs, .messaging, .notifications]
+        [.editor, .database, .terminal, .testing, .docs, .messaging, .notifications, .extensions]
     }
 }
 
@@ -78,6 +81,14 @@ public enum LineEnding: String, CaseIterable, Sendable {
     case cr = "CR"
 }
 
+// MARK: - Terminal Tab
+
+public struct TerminalTab: Identifiable {
+    public let id = UUID().uuidString
+    public var name: String
+    public var shellPath: String = "/bin/zsh"
+}
+
 @MainActor
 public class AppState: ObservableObject {
     @Published public var currentMode: AnvilMode = .agent
@@ -97,6 +108,9 @@ public class AppState: ObservableObject {
     @Published public var isProjectSwitcherVisible: Bool = false
     @Published public var isProjectInfoVisible: Bool = false
     @Published public var isTerminalPanelVisible: Bool = false
+    @Published public var terminalPanelHeight: CGFloat = 200
+    @Published public var terminalTabs: [TerminalTab] = [TerminalTab(name: "zsh")]
+    @Published public var selectedTerminalTabId: String?
     @Published public var isSourceControlVisible: Bool = false
     @Published public var currentBranch: String = "main"
     @Published public var uncommittedFileCount: Int = 0
@@ -211,6 +225,31 @@ public class AppState: ObservableObject {
     public func toggleTerminal() {
         withAnimation(AnvilAnimation.standard) {
             isTerminalPanelVisible.toggle()
+        }
+        // Ensure at least one tab exists
+        if isTerminalPanelVisible && terminalTabs.isEmpty {
+            addTerminalTab()
+        }
+        if isTerminalPanelVisible && selectedTerminalTabId == nil {
+            selectedTerminalTabId = terminalTabs.first?.id
+        }
+    }
+
+    public func addTerminalTab() {
+        let tab = TerminalTab(name: "zsh")
+        terminalTabs.append(tab)
+        selectedTerminalTabId = tab.id
+    }
+
+    public func closeTerminalTab(_ id: String) {
+        terminalTabs.removeAll { $0.id == id }
+        if selectedTerminalTabId == id {
+            selectedTerminalTabId = terminalTabs.last?.id
+        }
+        if terminalTabs.isEmpty {
+            withAnimation(AnvilAnimation.standard) {
+                isTerminalPanelVisible = false
+            }
         }
     }
 

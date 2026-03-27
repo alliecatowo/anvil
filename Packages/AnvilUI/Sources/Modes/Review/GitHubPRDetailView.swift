@@ -320,6 +320,50 @@ struct GitHubPRDetailView: View {
                         }
                     }
 
+                    // Update branch
+                    HStack(spacing: AnvilSpacing.sm) {
+                        if pr.behindCount > 0 {
+                            Image(systemName: "arrow.down.circle")
+                                .font(.system(size: 12))
+                                .foregroundStyle(AnvilColor.accentAmber)
+                            Text("Branch is \(pr.behindCount) commit\(pr.behindCount == 1 ? "" : "s") behind \(pr.targetBranch)")
+                                .font(AnvilFont.label)
+                                .foregroundStyle(AnvilColor.accentAmber)
+                        } else {
+                            Image(systemName: "arrow.triangle.merge")
+                                .font(.system(size: 12))
+                                .foregroundStyle(AnvilColor.textTertiary)
+                            Text("Update with latest from \(pr.targetBranch)")
+                                .font(AnvilFont.label)
+                                .foregroundStyle(AnvilColor.textSecondary)
+                        }
+
+                        Spacer()
+
+                        if viewModel.isUpdatingBranch {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+
+                        AnvilButton("Update Branch", icon: "arrow.triangle.merge", style: .secondary) {
+                            guard let adapter = container.getOrCreateGitHubAdapter() else { return }
+                            viewModel.updateBranch(using: adapter)
+                        }
+                        .disabled(viewModel.isUpdatingBranch)
+                    }
+
+                    // Update branch error
+                    if let error = viewModel.updateBranchError {
+                        HStack(spacing: AnvilSpacing.xs) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.system(size: 10))
+                            Text(error)
+                                .font(AnvilFont.label)
+                                .lineLimit(2)
+                        }
+                        .foregroundStyle(AnvilColor.accentRed)
+                    }
+
                     // Merge strategy + button
                     if !pr.isDraft {
                         HStack(spacing: AnvilSpacing.md) {

@@ -9,6 +9,8 @@ public protocol SourceControlCloudPort: AnvilProviderDefinition {
     func closePullRequest(repo: String, number: Int) async throws
     func pullRequestComments(repo: String, number: Int) async throws -> [PRComment]
     func addComment(repo: String, prNumber: Int, body: String, file: String?, line: Int?) async throws -> PRComment
+    func replyToComment(repo: String, prNumber: Int, commentId: String, body: String) async throws -> PRComment
+    func resolveReviewThread(repo: String, threadId: String) async throws
     func ciStatus(repo: String, prNumber: Int) async throws -> [CICheck]
     func push(remote: String, branch: String, force: Bool) async throws
     func pull(remote: String, branch: String) async throws

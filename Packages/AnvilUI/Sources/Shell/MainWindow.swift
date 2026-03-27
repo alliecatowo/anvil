@@ -45,11 +45,8 @@ public struct MainWindow: View {
 
                 // Terminal panel (bottom)
                 if appState.isTerminalPanelVisible {
-                    Divider()
-                        .overlay(AnvilColor.borderSubtle)
-
                     TerminalPanel()
-                        .frame(height: 200)
+                        .frame(height: appState.terminalPanelHeight)
                 }
             }
 

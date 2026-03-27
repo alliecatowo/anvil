@@ -19,8 +19,9 @@ public struct PullRequest: Sendable, Identifiable, Codable {
     public let deletions: Int
     public let changedFiles: Int
     public let isDraft: Bool
+    public let behindCount: Int
 
-    public init(id: String, number: Int, title: String, body: String = "", status: PRStatus = .open, sourceBranch: String, targetBranch: String, author: String, reviewers: [String] = [], labels: [String] = [], ciChecks: [CICheck] = [], createdAt: Date = .now, updatedAt: Date = .now, mergedAt: Date? = nil, additions: Int = 0, deletions: Int = 0, changedFiles: Int = 0, isDraft: Bool = false) {
+    public init(id: String, number: Int, title: String, body: String = "", status: PRStatus = .open, sourceBranch: String, targetBranch: String, author: String, reviewers: [String] = [], labels: [String] = [], ciChecks: [CICheck] = [], createdAt: Date = .now, updatedAt: Date = .now, mergedAt: Date? = nil, additions: Int = 0, deletions: Int = 0, changedFiles: Int = 0, isDraft: Bool = false, behindCount: Int = 0) {
         self.id = id
         self.number = number
         self.title = title
@@ -39,6 +40,7 @@ public struct PullRequest: Sendable, Identifiable, Codable {
         self.deletions = deletions
         self.changedFiles = changedFiles
         self.isDraft = isDraft
+        self.behindCount = behindCount
     }
 }
 
@@ -54,8 +56,9 @@ public struct PRComment: Sendable, Identifiable, Codable {
     public let lineNumber: Int?
     public let isResolved: Bool
     public let createdAt: Date
+    public let replyToId: String?
 
-    public init(id: String, author: String, body: String, filePath: String? = nil, lineNumber: Int? = nil, isResolved: Bool = false, createdAt: Date = .now) {
+    public init(id: String, author: String, body: String, filePath: String? = nil, lineNumber: Int? = nil, isResolved: Bool = false, createdAt: Date = .now, replyToId: String? = nil) {
         self.id = id
         self.author = author
         self.body = body
@@ -63,7 +66,26 @@ public struct PRComment: Sendable, Identifiable, Codable {
         self.lineNumber = lineNumber
         self.isResolved = isResolved
         self.createdAt = createdAt
+        self.replyToId = replyToId
     }
+}
+
+/// Groups a root comment with its reply chain.
+public struct PRCommentThread: Sendable, Identifiable {
+    public let id: String
+    public let rootComment: PRComment
+    public var replies: [PRComment]
+    public var isResolved: Bool
+
+    public init(rootComment: PRComment, replies: [PRComment] = []) {
+        self.id = rootComment.id
+        self.rootComment = rootComment
+        self.replies = replies
+        self.isResolved = rootComment.isResolved
+    }
+
+    public var replyCount: Int { replies.count }
+    public var allComments: [PRComment] { [rootComment] + replies }
 }
 
 public struct CICheck: Sendable, Identifiable, Codable {

@@ -20,7 +20,7 @@ public struct Sidebar: View {
                     ReviewSidebar(viewModel: appState.reviewViewModel)
                 case .ship:
                     ShipSidebar(viewModel: appState.shipViewModel)
-                case .editor, .database, .terminal, .docs, .messaging, .notifications, .testing:
+                case .editor, .database, .terminal, .docs, .messaging, .notifications, .testing, .extensions:
                     AuxiliarySidebar(mode: appState.currentMode)
                 }
             }
@@ -89,6 +89,8 @@ struct AuxiliarySidebar: View {
                         notificationsItems
                     case .testing:
                         testingItems
+                    case .extensions:
+                        extensionsItems
                     default:
                         EmptyView()
                     }
@@ -215,6 +217,30 @@ struct AuxiliarySidebar: View {
             navItem("Run All", icon: "play.fill", shortcut: "Cmd+U")
             navItem("Run Failed", icon: "arrow.counterclockwise", shortcut: nil)
             navItem("Coverage Report", icon: "chart.bar", shortcut: nil)
+        }
+    }
+
+    // MARK: - Extensions
+
+    @ViewBuilder
+    private var extensionsItems: some View {
+        sidebarSection("MARKETPLACE", icon: "puzzlepiece.extension") {
+            navItem("Browse All", icon: "square.grid.2x2", shortcut: nil)
+            navItem("Featured", icon: "star", shortcut: nil)
+            navItem("Trending", icon: "flame", shortcut: nil)
+        }
+        sidebarSection("INSTALLED", icon: "checkmark.circle") {
+            navItem("All Installed", icon: "list.bullet", shortcut: nil)
+            navItem("Enabled", icon: "bolt.fill", shortcut: nil)
+            navItem("Disabled", icon: "bolt.slash", shortcut: nil)
+            navItem("Updates Available", icon: "arrow.up.circle", shortcut: nil)
+        }
+        sidebarSection("CATEGORIES", icon: "tag") {
+            navItem("Languages", icon: "chevron.left.forwardslash.chevron.right", shortcut: nil)
+            navItem("AI", icon: "cpu", shortcut: nil)
+            navItem("Themes", icon: "paintpalette", shortcut: nil)
+            navItem("Testing", icon: "testtube.2", shortcut: nil)
+            navItem("Deployment", icon: "shippingbox", shortcut: nil)
         }
     }
 

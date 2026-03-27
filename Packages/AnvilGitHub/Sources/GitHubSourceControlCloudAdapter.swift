@@ -120,6 +120,19 @@ public actor GitHubSourceControlCloudAdapter: SourceControlCloudPort {
         }
     }
 
+    // MARK: - Reply & Resolve
+
+    public func replyToComment(repo: String, prNumber: Int, commentId: String, body: String) async throws -> PRComment {
+        let request = ReplyToCommentRequest(body: body)
+        let comment: GHReviewComment = try await client.post("/repos/\(repo)/pulls/\(prNumber)/comments/\(commentId)/replies", body: request)
+        return mapReviewComment(comment)
+    }
+
+    public func resolveReviewThread(repo: String, threadId: String) async throws {
+        // GitHub GraphQL is needed for thread resolution — not available via REST.
+        // For now this is a no-op stub; the UI can still track resolved state locally.
+    }
+
     // MARK: - CI Status
 
     public func ciStatus(repo: String, prNumber: Int) async throws -> [CICheck] {
@@ -221,7 +234,8 @@ public actor GitHubSourceControlCloudAdapter: SourceControlCloudPort {
             body: c.body,
             filePath: c.path,
             lineNumber: c.line,
-            createdAt: c.createdAt
+            createdAt: c.createdAt,
+            replyToId: c.inReplyToId.map { "review-\($0)" }
         )
     }
 

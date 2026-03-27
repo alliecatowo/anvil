@@ -96,15 +96,70 @@ struct BoardView: View {
                     .opacity(draggingTicketId == ticket.id ? 0.4 : 1.0)
             }
 
-            // Drop zone
-            RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                .strokeBorder(AnvilColor.borderSubtle, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                .frame(height: 48)
-                .overlay(
-                    Text("Drop here")
+            // Inline ticket creation
+            if creatingInColumnId == column.id {
+                VStack(spacing: AnvilSpacing.xs) {
+                    TextField("Ticket title", text: $newTicketTitle)
+                        .textFieldStyle(.plain)
+                        .font(AnvilFont.sidebarItem)
+                        .foregroundStyle(AnvilColor.textPrimary)
+                        .padding(AnvilSpacing.sm)
+                        .background(AnvilColor.backgroundPrimary)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(AnvilColor.accentBlue, lineWidth: 1)
+                        )
+                        .focused($isNewTicketFocused)
+                        .onSubmit {
+                            withAnimation(AnvilAnimation.standard) {
+                                viewModel.createTicket(title: newTicketTitle, status: column.status)
+                            }
+                            newTicketTitle = ""
+                            creatingInColumnId = nil
+                        }
+                        .onKeyPress(.escape) {
+                            newTicketTitle = ""
+                            creatingInColumnId = nil
+                            return .handled
+                        }
+
+                    HStack(spacing: AnvilSpacing.xs) {
+                        Text("Enter to create")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textTertiary)
+                        Spacer()
+                        Button("Cancel") {
+                            newTicketTitle = ""
+                            creatingInColumnId = nil
+                        }
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(AnvilColor.textSecondary)
+                        .buttonStyle(.plain)
+                    }
+                }
+            } else {
+                // Add ticket button
+                Button {
+                    creatingInColumnId = column.id
+                    newTicketTitle = ""
+                    isNewTicketFocused = true
+                } label: {
+                    HStack(spacing: AnvilSpacing.xxs) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 10))
+                        Text("Add ticket")
+                            .font(AnvilFont.label)
+                    }
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .frame(maxWidth: .infinity, minHeight: 32)
+                }
+                .buttonStyle(.plain)
+                .background(
+                    RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
+                        .strokeBorder(AnvilColor.borderSubtle, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
                 )
+            }
         }
         .frame(width: 240)
         .padding(AnvilSpacing.sm)

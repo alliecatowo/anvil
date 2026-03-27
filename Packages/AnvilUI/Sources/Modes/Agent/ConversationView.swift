@@ -7,6 +7,7 @@ struct ConversationView: View {
     @Binding var inputText: String
     @Binding var selectedModelId: String
     let editSuggestions: [CodeEditSuggestion]
+    let queuedCount: Int
     let onSend: () -> Void
     let onRename: (String) -> Void
     let onDelete: () -> Void
@@ -88,6 +89,7 @@ struct ConversationView: View {
             InputBar(
                 text: $inputText,
                 isRunning: session.status == .running,
+                queuedCount: queuedCount,
                 attachments: attachments,
                 onSend: onSend,
                 onRemoveAttachment: onRemoveAttachment,
@@ -620,6 +622,7 @@ struct ToolCallView: View {
 struct InputBar: View {
     @Binding var text: String
     let isRunning: Bool
+    let queuedCount: Int
     let attachments: [ContextAttachment]
     let onSend: () -> Void
     let onRemoveAttachment: (String) -> Void
@@ -666,7 +669,7 @@ struct InputBar: View {
                 // Sparkles button for AI quick actions
                 SparklesButton()
 
-                TextField("Message the agent...", text: $text, axis: .vertical)
+                TextField(isRunning ? "Queue next message..." : "Message the agent...", text: $text, axis: .vertical)
                     .textFieldStyle(.plain)
                     .font(AnvilFont.body)
                     .foregroundStyle(AnvilColor.textPrimary)
@@ -679,13 +682,24 @@ struct InputBar: View {
                         }
                     }
 
+                if queuedCount > 0 {
+                    Text("\(queuedCount) queued")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.accentAmber)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(AnvilColor.accentAmber.opacity(0.15))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
+
                 Button(action: onSend) {
-                    Image(systemName: isRunning ? "pause.circle.fill" : "arrow.up.circle.fill")
+                    Image(systemName: isRunning ? (text.isEmpty ? "pause.circle.fill" : "plus.circle.fill") : "arrow.up.circle.fill")
                         .font(.system(size: 24))
-                        .foregroundStyle(text.isEmpty ? AnvilColor.textTertiary : AnvilColor.accentBlue)
+                        .foregroundStyle(text.isEmpty && !isRunning ? AnvilColor.textTertiary : AnvilColor.accentBlue)
                 }
                 .buttonStyle(.plain)
                 .disabled(text.isEmpty && !isRunning)
+                .help(isRunning && !text.isEmpty ? "Queue message" : "")
             }
             .padding(AnvilSpacing.md)
         }

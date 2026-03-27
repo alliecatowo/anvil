@@ -85,6 +85,11 @@ struct GHReviewComment: Decodable, Sendable {
     let path: String?
     let line: Int?
     let createdAt: Date
+    let inReplyToId: Int?
+}
+
+struct ReplyToCommentRequest: Encodable, Sendable {
+    let body: String
 }
 
 struct GHCheckRun: Decodable, Sendable {

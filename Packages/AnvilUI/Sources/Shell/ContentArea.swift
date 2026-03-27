@@ -30,6 +30,8 @@ public struct ContentArea: View {
                 NotificationsMode()
             case .testing:
                 TestingMode()
+            case .extensions:
+                PluginMarketplaceMode()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -102,6 +104,7 @@ struct AgentModeContent: View {
                     inputText: $viewModel.inputText,
                     selectedModelId: $viewModel.selectedModelId,
                     editSuggestions: viewModel.suggestionsForCurrentSession(),
+                    queuedCount: viewModel.queuedMessages.count,
                     onSend: {
                         viewModel.sendMessage(container: container, appState: appState)
                     },
