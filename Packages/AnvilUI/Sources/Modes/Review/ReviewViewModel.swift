@@ -70,6 +70,15 @@ public final class ReviewViewModel: ObservableObject {
         case old, new
     }
 
+    // MARK: Review management port
+
+    private var reviewPort: (any ReviewManagementPort)?
+
+    /// Configure the review management port for persistence through the application layer.
+    public func configure(reviewPort: any ReviewManagementPort) {
+        self.reviewPort = reviewPort
+    }
+
     // MARK: Batch actions
 
     @Published var selectedReviewIDs: Set<String> = []
@@ -100,6 +109,34 @@ public final class ReviewViewModel: ObservableObject {
     // MARK: Init
 
     public init() {}
+
+    // MARK: - Port-backed operations
+
+    /// Load reviews from the review management port if configured.
+    func loadReviews() {
+        guard let port = reviewPort else { return }
+        Task { @MainActor in
+            if let fetched = try? await port.fetchReviews() {
+                self.reviews = fetched
+            }
+        }
+    }
+
+    /// Persist a review through the port after creating it locally.
+    private func persistReview(_ review: Review) {
+        guard let port = reviewPort else { return }
+        Task {
+            _ = try? await port.createReview(review)
+        }
+    }
+
+    /// Persist an update to a review through the port.
+    private func persistReviewUpdate(_ review: Review) {
+        guard let port = reviewPort else { return }
+        Task {
+            _ = try? await port.updateReview(review)
+        }
+    }
 
     // MARK: Navigation
 
@@ -160,6 +197,7 @@ public final class ReviewViewModel: ObservableObject {
 
         if let idx = reviews.firstIndex(where: { $0.id == review.id }) {
             reviews[idx].status = newStatus
+            persistReviewUpdate(reviews[idx])
         }
     }
 
@@ -215,6 +253,7 @@ public final class ReviewViewModel: ObservableObject {
                     // Mark the review as approved
                     if let idx = reviews.firstIndex(where: { $0.id == selectedReviewID }) {
                         reviews[idx].status = .approved
+                        persistReviewUpdate(reviews[idx])
                     }
                 case .conflicts(let conflicts):
                     mergeError = "\(conflicts.count) file(s) have merge conflicts"
@@ -240,6 +279,7 @@ public final class ReviewViewModel: ObservableObject {
     func approveSelected() {
         for i in reviews.indices where selectedReviewIDs.contains(reviews[i].id) {
             reviews[i].status = .approved
+            persistReviewUpdate(reviews[i])
         }
         selectedReviewIDs.removeAll()
     }
@@ -316,6 +356,7 @@ public final class ReviewViewModel: ObservableObject {
                 // Replace any existing branch-diff review
                 reviews.removeAll { $0.id.hasPrefix("branch-diff-") }
                 reviews.insert(review, at: 0)
+                persistReview(review)
                 selectReview(review.id)
             }
         }

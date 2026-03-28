@@ -324,7 +324,7 @@ struct SearchPanel: View {
     private func openFileAtLine(filePath: String, line: Int) {
         appState.pendingFileToOpen = filePath
         appState.pendingSymbolLine = line
-        appState.switchMode(.editor)
+        appState.switchSpace(.build)
     }
 
     // MARK: - Helpers

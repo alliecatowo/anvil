@@ -551,7 +551,7 @@ public struct SetupWizard: View {
 
             Button(action: {
                 SetupWizardViewModel.markSetupComplete()
-                appState.switchMode(.agent)
+                appState.switchSpace(.build)
                 onComplete()
             }) {
                 Text("Start Building")

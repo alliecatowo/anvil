@@ -211,7 +211,7 @@ struct AgentActivityIndicator: View {
     private func navigateToActiveSession() {
         guard let sessionId = appState.agentActiveSessionId ?? appState.agentViewModel.selectedSessionId else { return }
         appState.agentViewModel.selectedSessionId = sessionId
-        appState.switchMode(.agent)
+        appState.switchSpace(.build)
     }
 
     private func formatToolName(_ name: String) -> String {

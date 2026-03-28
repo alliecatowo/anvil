@@ -337,7 +337,7 @@ struct CodebaseQAView: View {
         }
         appState.toggleCodebaseQA()
         appState.pendingFileToOpen = fullPath
-        appState.switchMode(.editor)
+        appState.switchSpace(.build)
     }
 
     private var suggestedQuestions: [String] {

@@ -7,31 +7,17 @@ public struct ContentArea: View {
 
     public var body: some View {
         ZStack {
-            switch appState.currentMode {
-            case .intent:
+            switch appState.currentSpace {
+            case .plan:
                 IntentModeContent(viewModel: appState.intentViewModel)
-            case .agent:
+            case .build:
                 AgentModeContent(viewModel: appState.agentViewModel)
             case .review:
                 ReviewModeContent(viewModel: appState.reviewViewModel)
-            case .ship:
+            case .operate:
                 ShipModeContent(viewModel: appState.shipViewModel)
-            case .editor:
-                EditorMode()
-            case .database:
-                DatabaseMode()
-            case .terminal:
-                TerminalMode()
-            case .docs:
+            case .library:
                 DocsMode()
-            case .messaging:
-                MessagingMode()
-            case .notifications:
-                NotificationsMode()
-            case .testing:
-                TestingMode()
-            case .extensions:
-                PluginMarketplaceMode()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -265,13 +251,13 @@ struct ShipModeContent: View {
     }
 }
 
-struct PlaceholderModeContent: View {
-    let mode: AnvilMode
+struct PlaceholderSpaceContent: View {
+    let space: AnvilSpace
 
     var body: some View {
         AnvilEmptyState(
-            icon: mode.icon,
-            title: mode.rawValue,
+            icon: space.icon,
+            title: space.rawValue,
             message: "Coming soon."
         )
     }

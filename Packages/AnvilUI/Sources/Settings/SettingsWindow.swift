@@ -82,7 +82,7 @@ public struct SettingsWindow: View {
 
 struct GeneralSettingsView: View {
     @ObservedObject private var settings = AnvilSettings.shared
-    @State private var selectedMode: AnvilMode = .agent
+    @State private var selectedMode: AnvilSpace = .build
 
     var body: some View {
         Form {
@@ -100,9 +100,9 @@ struct GeneralSettingsView: View {
             }
 
             Section("Defaults") {
-                Picker("Default Mode", selection: $selectedMode) {
-                    ForEach(AnvilMode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode)
+                Picker("Default Space", selection: $selectedMode) {
+                    ForEach(AnvilSpace.allCases) { space in
+                        Text(space.rawValue).tag(space)
                     }
                 }
                 .onChange(of: selectedMode) { _, newValue in
@@ -123,7 +123,7 @@ struct GeneralSettingsView: View {
         }
         .formStyle(.grouped)
         .onAppear {
-            selectedMode = AnvilMode(rawValue: settings.defaultMode) ?? .agent
+            selectedMode = AnvilSpace(rawValue: settings.defaultMode) ?? .build
         }
     }
 

@@ -12,7 +12,7 @@ public struct AnvilCommands: Commands {
     public var body: some Commands {
         CommandGroup(replacing: .newItem) {
             Button("New Agent Session") {
-                appState.switchMode(.agent)
+                appState.switchSpace(.build)
                 appState.agentViewModel.startNewSession(prompt: "", model: "claude-sonnet-4-6")
             }
             .keyboardShortcut("a", modifiers: [.command, .shift])
@@ -45,11 +45,11 @@ public struct AnvilCommands: Commands {
             }
         }
 
-        CommandMenu("Mode") {
-            ForEach(AnvilMode.allCases) { mode in
-                if let num = mode.shortcutNumber {
-                    Button(mode.rawValue) {
-                        appState.switchMode(mode)
+        CommandMenu("Space") {
+            ForEach(AnvilSpace.allCases) { space in
+                if let num = space.shortcutNumber {
+                    Button(space.rawValue) {
+                        appState.switchSpace(space)
                     }
                     .keyboardShortcut(KeyEquivalent(Character(String(num))), modifiers: .command)
                 }
@@ -75,7 +75,7 @@ public struct AnvilCommands: Commands {
             Divider()
 
             Button("Command Palette / Inline Edit") {
-                if appState.currentMode == .editor {
+                if appState.currentSpace == .build {
                     appState.triggerInlineEdit = true
                 } else {
                     appState.toggleCommandPalette()
@@ -84,7 +84,7 @@ public struct AnvilCommands: Commands {
             .keyboardShortcut("k", modifiers: .command)
 
             Button("Find in File") {
-                if appState.currentMode == .editor {
+                if appState.currentSpace == .build {
                     appState.triggerFindInFile = true
                 }
             }
@@ -128,7 +128,7 @@ public struct AnvilCommands: Commands {
             Divider()
 
             Button("New Terminal Session") {
-                appState.switchMode(.terminal)
+                appState.switchSpace(.build)
                 _ = appState.terminalViewModel.addTab()
             }
             .keyboardShortcut("t", modifiers: [.command, .shift])

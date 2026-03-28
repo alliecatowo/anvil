@@ -185,17 +185,17 @@ final class NotificationsViewModel: ObservableObject {
         // If the notification has a URL, try to navigate within the app first
         switch item.source {
         case .pr:
-            // Switch to Review mode for PR notifications
-            appState.switchMode(.review)
+            // Switch to Review space for PR notifications
+            appState.switchSpace(.review)
         case .error:
-            // Error notifications could go to an observability mode in the future
+            // Error notifications could go to an observability space in the future
             openURLIfPresent(item.notification.url)
         case .deploy:
-            // Deploy notifications go to Ship mode
-            appState.switchMode(.ship)
+            // Deploy notifications go to Operate space
+            appState.switchSpace(.operate)
         case .message, .mention:
-            // Message/mention notifications go to Messaging mode
-            appState.switchMode(.messaging)
+            // Message/mention notifications open externally for now
+            openURLIfPresent(item.notification.url)
         }
 
         // If we have a URL and it's a GitHub URL, also open externally

@@ -69,7 +69,7 @@ public final class DesktopNotificationService: NSObject, Sendable {
     /// - Parameters:
     ///   - notification: The domain notification model.
     ///   - source: Optional source hint (e.g., "pr", "deploy", "error") for categorization.
-    ///   - targetMode: The AnvilMode rawValue to navigate to on click.
+    ///   - targetMode: The AnvilSpace rawValue to navigate to on click.
     ///   - targetItemId: Optional item ID to select after navigating.
     public func send(
         notification: AnvilDomain.Notification,

@@ -133,6 +133,10 @@ public class DependencyContainer: ObservableObject {
         return client
     }
 
+    // MARK: - Review Management
+
+    public let reviewService: any ReviewManagementPort = InMemoryReviewService()
+
     // MARK: - Database Service
 
     public let databaseService = DatabaseService()
@@ -319,14 +323,17 @@ public class DependencyContainer: ObservableObject {
     // MARK: - Project Management
 
     /// Open a directory as a single-repo project. Creates or finds an existing project.
+    /// Routes through CreateProjectUseCase for name derivation to stay in the DDD use-case layer.
     public func openProject(at path: String) async {
-        let name = URL(fileURLWithPath: path).lastPathComponent
-
         // Check if a project with this repo already exists
         if let existing = await projectManager.project(containingRepo: path) {
             await switchToProject(existing.id)
             return
         }
+
+        let useCase = makeCreateProjectUseCase()
+        let name = (try? await useCase.execute(source: .fromDirectory(path: path)))
+            ?? URL(fileURLWithPath: path).lastPathComponent
 
         let project = Project(name: name, repoPaths: [path])
         await projectManager.addProject(project)

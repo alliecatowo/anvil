@@ -49,7 +49,15 @@ public class AgentViewModel: ObservableObject {
         logger.info("AgentViewModel initialized")
     }
 
-    public func startNewSession(prompt: String, model: String) {
+    /// Start a new agent session, routing through the application-layer use case
+    /// so domain events are published via the EventBus.
+    public func startNewSession(prompt: String, model: String, container: DependencyContainer) {
+        startNewSession(prompt: prompt, model: model, eventBus: container.eventBus)
+    }
+
+    /// Start a new agent session. When no container is available (e.g. tests),
+    /// the session is still created and a domain event is published on the shared bus.
+    public func startNewSession(prompt: String, model: String, eventBus: EventBus? = nil) {
         logger.info("Starting new session with model: \(model)")
         let session = AgentSession(
             providerId: "anthropic",
@@ -60,6 +68,17 @@ public class AgentViewModel: ObservableObject {
         selectedSessionId = session.id
         selectedModelId = model
         logger.info("Session created: \(session.id), total sessions: \(self.sessions.count)")
+
+        // Publish domain event so subscribers (notifications, review queue) are informed
+        let bus = eventBus ?? EventBus.shared
+        Task {
+            await bus.publish(
+                AnyDomainEvent(
+                    sourcePrimitive: "agents",
+                    payload: "Session \(session.id) started"
+                )
+            )
+        }
     }
 
     // MARK: - Session Management
@@ -237,7 +256,7 @@ public class AgentViewModel: ObservableObject {
 
     /// Creates a new agent session pre-loaded with ticket context.
     /// Called from TicketDetailView after branch checkout.
-    public func dispatchFromTicket(ticketId: String, title: String, description: String, model: String? = nil) {
+    public func dispatchFromTicket(ticketId: String, title: String, description: String, model: String? = nil, eventBus: EventBus? = nil) {
         let sessionModel = model ?? selectedModelId
         let session = AgentSession(
             providerId: "anthropic",
@@ -248,6 +267,17 @@ public class AgentViewModel: ObservableObject {
         sessions.insert(session, at: 0)
         selectedSessionId = session.id
         selectedModelId = sessionModel
+
+        // Publish domain event for session creation
+        let bus = eventBus ?? EventBus.shared
+        Task {
+            await bus.publish(
+                AnyDomainEvent(
+                    sourcePrimitive: "agents",
+                    payload: "Session \(session.id) started for ticket \(ticketId)"
+                )
+            )
+        }
 
         // Pre-populate with a system context message and the ticket as the first user message
         let contextPrompt = buildTicketPrompt(ticketId: ticketId, title: title, description: description)

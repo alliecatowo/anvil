@@ -35,7 +35,7 @@ public struct MainWindow: View {
                 }
 
                 // Terminal panel (bottom)
-                if appState.isTerminalPanelVisible && appState.currentMode != .terminal {
+                if appState.isTerminalPanelVisible {
                     TerminalPanel()
                         .frame(height: appState.terminalPanelHeight)
                 }
@@ -51,11 +51,6 @@ public struct MainWindow: View {
                     appState.toggleSidebar()
                 }
                 .help("Toggle Sidebar")
-            }
-
-            ToolbarItem(placement: .principal) {
-                ModeTabBar(compact: true)
-                    .frame(maxWidth: 520)
             }
 
             ToolbarItemGroup(placement: .primaryAction) {

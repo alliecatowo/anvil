@@ -20,6 +20,9 @@ public struct AnvilApp: App {
                     UNUserNotificationCenter.current().delegate = notificationService
                     _ = await notificationService.requestPermission()
 
+                    // Wire review management port into view model
+                    appState.reviewViewModel.configure(reviewPort: container.reviewService)
+
                     if let adapter = container.getOrCreateGitAdapter() {
                         await appState.loadGitStatus(from: adapter)
                     }
@@ -73,8 +76,8 @@ public struct AnvilApp: App {
         }
 
         // Navigate to the target mode
-        if let mode = AnvilMode.allCases.first(where: { $0.rawValue == targetModeRaw }) {
-            appState.switchMode(mode)
+        if let space = AnvilSpace.allCases.first(where: { $0.rawValue == targetModeRaw }) {
+            appState.switchSpace(space)
         }
 
         // If there's a specific item to select, post it

@@ -139,7 +139,7 @@ struct TicketDetailView: View {
             )
 
             // Switch to agent mode so the user sees the conversation
-            appState.switchMode(.agent)
+            appState.switchSpace(.build)
 
             isDispatching = false
         }

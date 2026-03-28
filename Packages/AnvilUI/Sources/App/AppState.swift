@@ -4,70 +4,33 @@ import AnvilApplication
 import AnvilGit
 import AnvilGitHub
 
-public enum AnvilMode: String, CaseIterable, Identifiable, Sendable {
-    case intent = "Intent"
-    case agent = "Agent"
+public enum AnvilSpace: String, CaseIterable, Identifiable, Sendable {
+    case plan = "Plan"
+    case build = "Build"
     case review = "Review"
-    case ship = "Ship"
-    case editor = "Editor"
-    case database = "Database"
-    case terminal = "Terminal"
-    case docs = "Docs"
-    case messaging = "Messaging"
-    case notifications = "Notifications"
-    case testing = "Testing"
-    case extensions = "Extensions"
+    case operate = "Operate"
+    case library = "Library"
 
     public var id: String { rawValue }
 
     public var icon: String {
         switch self {
-        case .intent: "target"
-        case .agent: "cpu"
-        case .review: "checkmark.circle"
-        case .ship: "shippingbox"
-        case .editor: "doc.text"
-        case .database: "cylinder"
-        case .terminal: "terminal"
-        case .docs: "book"
-        case .messaging: "message"
-        case .notifications: "bell"
-        case .testing: "testtube.2"
-        case .extensions: "puzzlepiece.extension"
+        case .plan:    "target"
+        case .build:   "hammer"
+        case .review:  "checkmark.circle"
+        case .operate: "gauge"
+        case .library: "books.vertical"
         }
     }
 
     public var shortcutNumber: Int? {
         switch self {
-        case .intent: 1
-        case .agent: 2
-        case .review: 3
-        case .ship: 4
-        case .editor: 5
-        case .database: 6
-        case .terminal: 7
-        case .docs: 8
-        case .messaging: 9
-        case .notifications: 0
-        case .testing: nil
-        case .extensions: nil
+        case .plan:    1
+        case .build:   2
+        case .review:  3
+        case .operate: 4
+        case .library: 5
         }
-    }
-
-    public static var coreModes: [AnvilMode] {
-        [.intent, .agent, .review, .ship]
-    }
-
-    public static var auxiliaryModes: [AnvilMode] {
-        [.editor, .database, .terminal, .testing, .docs, .messaging, .notifications, .extensions]
-    }
-
-    public static var workspaceModes: [AnvilMode] {
-        [.editor, .terminal, .database, .testing]
-    }
-
-    public static var contextModes: [AnvilMode] {
-        [.docs, .messaging, .notifications, .extensions]
     }
 }
 
@@ -91,8 +54,8 @@ public enum LineEnding: String, CaseIterable, Sendable {
 
 @MainActor
 public class AppState: ObservableObject {
-    @Published public var currentMode: AnvilMode = .agent
-    @Published public var lastCoreMode: AnvilMode = .agent
+    @Published public var currentSpace: AnvilSpace = .build
+    @Published public var lastSpace: AnvilSpace = .build
     @Published public var isSidebarVisible: Bool = true
     @Published public var isSidebarCollapsed: Bool = false
     @Published public var isInspectorVisible: Bool = false
@@ -144,6 +107,7 @@ public class AppState: ObservableObject {
     @Published public var reviewViewModel = ReviewViewModel()
     @Published public var shipViewModel = ShipViewModel()
     @Published var notificationsViewModel = NotificationsViewModel()
+    @Published var libraryDocsViewModel = DocsViewModel()
     @Published var editorViewModel = EditorViewModel()
     @Published var gitHubPRViewModel = GitHubPRViewModel()
 
@@ -198,15 +162,10 @@ public class AppState: ObservableObject {
         }
     }
 
-    public func switchMode(_ mode: AnvilMode) {
+    public func switchSpace(_ space: AnvilSpace) {
         withAnimation(AnvilAnimation.modeSwitch) {
-            if AnvilMode.coreModes.contains(mode) {
-                lastCoreMode = mode
-            }
-            currentMode = mode
-            if mode == .terminal {
-                isTerminalPanelVisible = false
-            }
+            lastSpace = space
+            currentSpace = space
         }
     }
 
@@ -335,6 +294,6 @@ public class AppState: ObservableObject {
         shipViewModel = ShipViewModel()
         shipViewModel.loadSampleData()
 
-        switchMode(.agent)
+        switchSpace(.build)
     }
 }

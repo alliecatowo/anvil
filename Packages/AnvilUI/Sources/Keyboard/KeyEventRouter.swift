@@ -31,7 +31,7 @@ struct KeyEventRouter: ViewModifier {
             .onDisappear {
                 eventMonitor.uninstall()
             }
-            .onChange(of: appState.currentMode) { _, _ in
+            .onChange(of: appState.currentSpace) { _, _ in
                 // Keep the monitor's reference to appState fresh
                 eventMonitor.install(
                     appState: appState,
@@ -221,13 +221,12 @@ final class KeyEventMonitor: ObservableObject {
         return false
     }
 
-    /// Maps the current app mode to a keybinding context.
+    /// Maps the current app space to a keybinding context.
     private func currentContext(appState: AppState) -> KeybindingContext {
-        switch appState.currentMode {
+        switch appState.currentSpace {
         case .review: .review
-        case .agent: .agent
-        case .editor: .editor
-        case .intent, .ship, .database, .docs, .messaging, .notifications, .terminal, .testing, .extensions:
+        case .build: .agent
+        case .plan, .operate, .library:
             .list
         }
     }

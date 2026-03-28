@@ -231,17 +231,20 @@ class DocsViewModel: ObservableObject {
         3. **Unidirectional data flow** - State flows down, actions flow up
         4. **Composability** - Modes are self-contained and independently testable
 
-        ## Mode System
+        ## Space System
 
-        Each mode represents a distinct workspace context:
+        Each space represents a distinct workspace context:
 
         ```
-        Modes/
-        ├── Core/           # Intent, Agent, Review, Ship
-        └── Auxiliary/      # Editor, Database, Terminal, Docs, Messaging
+        Spaces/
+        ├── Plan
+        ├── Build
+        ├── Review
+        ├── Operate
+        └── Library
         ```
 
-        Modes are routed through `ContentArea.swift` based on the active `AnvilMode` enum case.
+        Spaces are routed through `ContentArea.swift` based on the active `AnvilSpace` enum case.
         """
 
         let gettingStartedContent = """
@@ -282,14 +285,14 @@ class DocsViewModel: ObservableObject {
 
         ```swift
         public class AppState: ObservableObject {
-            @Published public var currentMode: AnvilMode
+            @Published public var currentSpace: AnvilSpace
             @Published public var isSidebarVisible: Bool
         }
         ```
 
-        ## AnvilMode
+        ## AnvilSpace
 
-        An enum representing available workspace modes.
+        An enum representing available workspace spaces.
 
         ## Design System
 
@@ -321,9 +324,9 @@ class DocsViewModel: ObservableObject {
 
         ## v0.2.0 (2026-03-10)
 
-        - Core modes: Intent, Agent, Review, Ship
+        - Core spaces: Plan, Build, Review, Operate
         - Command palette
-        - Mode switcher sidebar
+        - Space switcher sidebar
         """
 
         docTree = [

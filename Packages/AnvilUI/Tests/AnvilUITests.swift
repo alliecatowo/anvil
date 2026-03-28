@@ -3,15 +3,15 @@ import XCTest
 
 final class AnvilUITests: XCTestCase {
     @MainActor
-    func testAppStateModeSwitching() {
+    func testAppStateSpaceSwitching() {
         let state = AppState()
-        state.switchMode(.review)
-        XCTAssertEqual(state.currentMode, .review)
+        state.switchSpace(.review)
+        XCTAssertEqual(state.currentSpace, .review)
     }
 
-    func testAllModesHaveIcons() {
-        for mode in AnvilMode.allCases {
-            XCTAssertFalse(mode.icon.isEmpty)
+    func testAllSpacesHaveIcons() {
+        for space in AnvilSpace.allCases {
+            XCTAssertFalse(space.icon.isEmpty)
         }
     }
 }
