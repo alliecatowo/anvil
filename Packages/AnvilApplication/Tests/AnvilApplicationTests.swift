@@ -5,13 +5,17 @@ import AnvilDomain
 final class AnvilApplicationTests: XCTestCase {
     func testEventBusPublishAndSubscribe() async {
         let bus = EventBus.shared
+        // Use a unique primitive to avoid collisions with other tests' EventBus.shared events.
+        let uniquePrimitive = "legacy.test.\(UUID().uuidString)"
         let received = expectation(description: "event received")
+        received.assertForOverFulfill = false
 
-        await bus.subscribe(to: "*") { _ in
+        await bus.subscribe(to: "*") { event in
+            guard event.sourcePrimitive == uniquePrimitive else { return }
             received.fulfill()
         }
 
-        await bus.publish(AnyDomainEvent(sourcePrimitive: "test", payload: "hello"))
+        await bus.publish(AnyDomainEvent(sourcePrimitive: uniquePrimitive, payload: "hello"))
         await fulfillment(of: [received], timeout: 1.0)
     }
 
