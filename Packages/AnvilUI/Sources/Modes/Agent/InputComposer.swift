@@ -30,11 +30,11 @@ struct InputBar: View {
                 HStack {
                     SlashCommandMenu(filter: text) { command in
                         if command.autoSend {
-                            text = command.name
+                            text = command.promptTemplate
                             showSlashMenu = false
                             onSend()
                         } else {
-                            text = command.name + " "
+                            text = command.promptTemplate
                             showSlashMenu = false
                         }
                     }

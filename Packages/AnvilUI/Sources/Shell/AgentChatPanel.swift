@@ -61,6 +61,23 @@ struct AgentChatPanel: View {
             .pickerStyle(.menu)
             .frame(maxWidth: .infinity, alignment: .leading)
 
+            // Running session count badge
+            if appState.agentViewModel.sessions.filter({ $0.status == .running }).count > 0 {
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(AnvilColor.accentGreen)
+                        .frame(width: 6, height: 6)
+                    Text("\(appState.agentViewModel.sessions.filter({ $0.status == .running }).count) active")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.accentGreen)
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(AnvilColor.accentGreen.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .accessibilityLabel("\(appState.agentViewModel.sessions.filter({ $0.status == .running }).count) active sessions")
+            }
+
             // New session button
             Button {
                 appState.agentViewModel.startNewSession(

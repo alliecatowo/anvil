@@ -7,16 +7,75 @@ struct SlashCommand: Identifiable {
     let description: String
     let icon: String
     let autoSend: Bool
+    /// The prompt template inserted into the input when the command is selected.
+    /// For non-auto-send commands, the user can append context after the template.
+    let promptTemplate: String
 
     static let all: [SlashCommand] = [
-        SlashCommand(id: "review", name: "/review", description: "AI review on current branch", icon: "checkmark.circle", autoSend: true),
-        SlashCommand(id: "commit", name: "/commit", description: "Auto-commit with AI message", icon: "arrow.up.circle", autoSend: true),
-        SlashCommand(id: "test", name: "/test", description: "Run tests", icon: "testtube.2", autoSend: true),
-        SlashCommand(id: "explain", name: "/explain", description: "Explain selected code", icon: "text.bubble", autoSend: false),
-        SlashCommand(id: "fix", name: "/fix", description: "Fix the current error", icon: "wrench", autoSend: true),
-        SlashCommand(id: "refactor", name: "/refactor", description: "Refactor selected code", icon: "arrow.2.squarepath", autoSend: false),
-        SlashCommand(id: "docs", name: "/docs", description: "Generate documentation", icon: "doc.text.magnifyingglass", autoSend: false),
-        SlashCommand(id: "search", name: "/search", description: "Search the codebase", icon: "magnifyingglass", autoSend: false),
+        SlashCommand(
+            id: "fix",
+            name: "/fix",
+            description: "Fix the bug",
+            icon: "wrench",
+            autoSend: false,
+            promptTemplate: "Please fix the following issue in the current file:\n\n"
+        ),
+        SlashCommand(
+            id: "explain",
+            name: "/explain",
+            description: "Explain this code",
+            icon: "text.magnifyingglass",
+            autoSend: false,
+            promptTemplate: "Please explain what this code does, step by step:\n\n"
+        ),
+        SlashCommand(
+            id: "test",
+            name: "/test",
+            description: "Generate tests",
+            icon: "checkmark.circle",
+            autoSend: false,
+            promptTemplate: "Please write comprehensive tests for the following code:\n\n"
+        ),
+        SlashCommand(
+            id: "commit",
+            name: "/commit",
+            description: "Write commit message",
+            icon: "arrow.up.circle",
+            autoSend: true,
+            promptTemplate: "Please write a conventional commit message for the current staged changes."
+        ),
+        SlashCommand(
+            id: "pr",
+            name: "/pr",
+            description: "Create PR description",
+            icon: "arrow.triangle.pull",
+            autoSend: false,
+            promptTemplate: "Please write a pull request description for the following changes:\n\n"
+        ),
+        SlashCommand(
+            id: "review",
+            name: "/review",
+            description: "Review this diff",
+            icon: "eyes",
+            autoSend: false,
+            promptTemplate: "Please review the following code changes and provide feedback:\n\n"
+        ),
+        SlashCommand(
+            id: "doc",
+            name: "/doc",
+            description: "Generate documentation",
+            icon: "doc.text",
+            autoSend: false,
+            promptTemplate: "Please generate comprehensive documentation (docstrings/comments) for:\n\n"
+        ),
+        SlashCommand(
+            id: "refactor",
+            name: "/refactor",
+            description: "Refactor this code",
+            icon: "arrow.triangle.2.circlepath",
+            autoSend: false,
+            promptTemplate: "Please refactor the following code to improve readability, performance, and maintainability:\n\n"
+        ),
     ]
 }
 

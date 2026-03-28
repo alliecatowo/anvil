@@ -45,6 +45,9 @@ struct AnvilMain: App {
 
                     // Wire external ticket provider based on available credentials
                     wireTicketProvider(container: container)
+
+                    // Wire Slack messaging adapter if bot token is available
+                    wireMessagingProvider(container: container)
                 }
                 .sheet(isPresented: $showSetupWizard) {
                     SetupWizard {
@@ -99,5 +102,19 @@ struct AnvilMain: App {
 
         // No external ticket provider configured; the in-memory service handles local tickets.
         container.selectedTicketProvider = .none
+    }
+
+    /// Detect a stored Slack bot token and wire the SlackMessagingAdapter.
+    /// Reads from the same Keychain service as ProviderKeychain in AnvilUI.
+    @MainActor
+    private func wireMessagingProvider(container: DependencyContainer) {
+        let keychain = KeychainStore(service: "com.anvil.providers")
+
+        guard let botToken = try? keychain.get("slack.botToken"), !botToken.isEmpty else {
+            return
+        }
+
+        let adapter = SlackMessagingAdapter(botToken: botToken)
+        container.setMessagingAdapter(adapter)
     }
 }
