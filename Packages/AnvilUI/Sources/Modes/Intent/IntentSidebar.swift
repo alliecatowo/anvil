@@ -17,11 +17,14 @@ struct IntentSidebar: View {
                         Text(mode.rawValue).tag(mode)
                     }
                 }
-                .pickerStyle(.segmented)
+                .pickerStyle(.menu)
+                .labelsHidden()
                 .accessibilityLabel("Plan View Mode")
                 .onChange(of: viewModel.viewMode) { _, _ in
                     viewModel.selectTicket(nil)
                 }
+
+                Spacer()
 
                 Button {
                     withAnimation(AnvilAnimation.standard) {

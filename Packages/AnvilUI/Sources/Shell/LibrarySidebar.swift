@@ -5,13 +5,18 @@ struct LibrarySidebar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("Section", selection: $appState.libraryActiveSection) {
-                ForEach(AppState.LibrarySection.allCases, id: \.self) { s in
-                    Text(s.rawValue).tag(s)
+            HStack {
+                Picker("Section", selection: $appState.libraryActiveSection) {
+                    ForEach(AppState.LibrarySection.allCases, id: \.self) { s in
+                        Text(s.rawValue).tag(s)
+                    }
                 }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .accessibilityLabel("Library Sidebar Section")
+
+                Spacer()
             }
-            .pickerStyle(.segmented)
-            .accessibilityLabel("Library Sidebar Section")
             .padding(.horizontal, AnvilSpacing.sm)
             .padding(.vertical, AnvilSpacing.xs)
 

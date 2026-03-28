@@ -6,10 +6,6 @@ struct ShipSidebar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            tabSelector
-
-            Divider()
-
             List {
                 Section {
                     ForEach(viewModel.environments) { env in
@@ -53,17 +49,6 @@ struct ShipSidebar: View {
             SidebarSectionDescriptor(id: "environments", title: "Environments", icon: "server.rack", count: viewModel.environments.count),
             SidebarSectionDescriptor(id: "deployments", title: "Deployments", icon: "arrow.up.circle", count: viewModel.deploymentsForSelected.count)
         ]
-    }
-
-    private var tabSelector: some View {
-        Picker("Ship View", selection: $viewModel.selectedTab) {
-            ForEach(ShipTab.allCases, id: \.rawValue) { tab in
-                Text(tab.rawValue).tag(tab)
-            }
-        }
-        .pickerStyle(.segmented)
-        .padding(.horizontal, AnvilSpacing.sm)
-        .padding(.vertical, AnvilSpacing.xs)
     }
 
     private func environmentRow(_ card: EnvironmentCard) -> some View {

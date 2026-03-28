@@ -8,20 +8,23 @@ struct BuildSidebar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Section picker at top
-            Picker("Section", selection: $appState.buildActiveSection) {
-                ForEach(AppState.BuildSection.allCases, id: \.self) { s in
-                    Text(s.rawValue).tag(s)
+            HStack {
+                Picker("Section", selection: $appState.buildActiveSection) {
+                    ForEach(AppState.BuildSection.allCases, id: \.self) { s in
+                        Text(s.rawValue).tag(s)
+                    }
                 }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .accessibilityLabel("Build Sidebar Section")
+
+                Spacer()
             }
-            .pickerStyle(.segmented)
-            .accessibilityLabel("Build Sidebar Section")
             .padding(.horizontal, AnvilSpacing.sm)
             .padding(.vertical, AnvilSpacing.xs)
 
             Divider()
 
-            // Section content
             switch appState.buildActiveSection {
             case .sessions:
                 AgentSidebar(viewModel: appState.agentViewModel)
