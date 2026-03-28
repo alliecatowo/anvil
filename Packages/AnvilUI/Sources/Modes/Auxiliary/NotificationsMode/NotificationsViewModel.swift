@@ -147,6 +147,7 @@ final class NotificationsViewModel: ObservableObject {
             }
             if !newItems.isEmpty {
                 inboxItems.insert(contentsOf: newItems, at: 0)
+                updateBadgeCount()
             }
         } catch {
             // Keep existing data on failure
@@ -193,10 +194,12 @@ final class NotificationsViewModel: ObservableObject {
             )
             inboxItems[index] = updated
         }
+        updateBadgeCount()
     }
 
     func dismissNotification(_ id: String) {
         inboxItems.removeAll { $0.id == id }
+        updateBadgeCount()
     }
 
     func markAllAsRead() {
@@ -216,6 +219,7 @@ final class NotificationsViewModel: ObservableObject {
                 source: item.source
             )
         }
+        updateBadgeCount()
     }
 
     // MARK: - Notification Actions
@@ -257,6 +261,14 @@ final class NotificationsViewModel: ObservableObject {
     private func openURLIfPresent(_ urlString: String?) {
         guard let urlString, let url = URL(string: urlString) else { return }
         NSWorkspace.shared.open(url)
+    }
+
+    // MARK: - Badge Count
+
+    /// Update the dock tile badge to reflect unread inbox count.
+    func updateBadgeCount() {
+        let count = unreadCount
+        NSApp.dockTile.badgeLabel = count > 0 ? "\(count)" : nil
     }
 
     // MARK: - Sample Data
