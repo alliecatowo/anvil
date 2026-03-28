@@ -36,7 +36,7 @@ struct AgentEmptyState: View {
                 Button(action: onNewSession) {
                     Label("New Session", systemImage: "plus")
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.bordered)
                 .controlSize(.regular)
                 .accessibilityLabel("New Session")
                 .accessibilityAddTraits(.isButton)

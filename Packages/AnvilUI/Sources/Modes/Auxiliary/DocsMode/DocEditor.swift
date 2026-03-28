@@ -92,7 +92,7 @@ struct DocEditor: View {
             Divider()
 
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+                VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
                     ForEach(Array(viewModel.editorContent.components(separatedBy: "\n").enumerated()), id: \.offset) { _, line in
                         renderedLine(line)
                     }
@@ -131,7 +131,6 @@ struct DocEditor: View {
                         .foregroundStyle(.secondary)
                 }
             } else if trimmed.hasPrefix("```") {
-                // Code fence markers are visual-only in preview
                 EmptyView()
             } else if trimmed.isEmpty {
                 Spacer().frame(height: AnvilSpacing.xs)
