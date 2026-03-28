@@ -572,10 +572,12 @@ struct KeybindingSettingsView: View {
             HStack {
                 Spacer()
                 Button("Reset to Defaults") {
-                    // Keybindings are currently static; this is a no-op placeholder
-                    // that will clear any future user overrides from UserDefaults.
-                    UserDefaults.standard.removeObject(forKey: "customKeybindings")
+                    // Custom keybinding editing is not yet implemented.
+                    // When user-configurable bindings are added, this will
+                    // clear overrides from UserDefaults and restore defaults.
                 }
+                .disabled(true)
+                .help("Custom keybinding editing is not yet available")
                 .buttonStyle(.bordered)
                 .padding(12)
             }

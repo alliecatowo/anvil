@@ -28,6 +28,7 @@ public struct ProjectNotes: View {
                         .foregroundStyle(AnvilColor.textTertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Close Project Notes")
             }
             .padding(AnvilSpacing.md)
 

@@ -83,6 +83,7 @@ public struct WelcomePage: View {
                 Image(systemName: "hammer.fill")
                     .font(.system(size: 30, weight: .medium))
                     .foregroundStyle(AnvilColor.accentPurple)
+                    .accessibilityHidden(true)
             }
 
             Spacer().frame(height: AnvilSpacing.sm)
@@ -325,6 +326,7 @@ private struct RecentProjectRow: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)

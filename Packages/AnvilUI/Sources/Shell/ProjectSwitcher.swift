@@ -40,6 +40,7 @@ public struct ProjectSwitcher: View {
                     Image(systemName: "folder.badge.magnifyingglass")
                         .font(.system(size: 15))
                         .foregroundStyle(AnvilColor.textTertiary)
+                        .accessibilityHidden(true)
 
                     TextField("Switch project...", text: $query)
                         .textFieldStyle(.roundedBorder)
@@ -50,7 +51,6 @@ public struct ProjectSwitcher: View {
                 .padding(AnvilSpacing.md)
 
                 Divider()
-                    .overlay(AnvilColor.borderSubtle)
 
                 // Project list
                 ScrollViewReader { proxy in
@@ -82,7 +82,6 @@ public struct ProjectSwitcher: View {
 
                             // "Open New" button at bottom
                             Divider()
-                                .overlay(AnvilColor.borderSubtle)
 
                             Button {
                                 openNewProject()
@@ -211,6 +210,7 @@ struct ProjectRow: View {
                 .font(.system(size: 14))
                 .foregroundStyle(isSelected ? AnvilColor.accentBlue : AnvilColor.textTertiary)
                 .frame(width: 20)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: AnvilSpacing.xs) {

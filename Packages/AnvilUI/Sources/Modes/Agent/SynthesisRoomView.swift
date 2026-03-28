@@ -54,7 +54,7 @@ struct SynthesisRoomView: View {
             }
             .buttonStyle(.plain)
 
-            Divider().frame(height: 20).overlay(AnvilColor.borderSubtle)
+            Divider().frame(height: 20)
 
             Image(systemName: "arrow.triangle.merge")
                 .font(.system(size: 14, weight: .medium))

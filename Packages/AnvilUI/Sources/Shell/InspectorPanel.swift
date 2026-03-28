@@ -23,6 +23,7 @@ public struct InspectorPanel: View {
                         .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Close Inspector")
             }
             .padding(AnvilSpacing.md)
 
