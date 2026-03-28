@@ -62,7 +62,7 @@ public struct SettingsWindow: View {
 
             IntegrationSettingsView()
                 .tabItem {
-                    Label("Integrations", systemImage: "puzzlepiece.extension")
+                    Label("Integrations", systemImage: "powerplug")
                 }
 
             AppearanceSettingsView()
@@ -480,50 +480,6 @@ struct AppearanceSettingsView: View {
     }
 }
 
-// MARK: - Integrations Tab
-
-struct IntegrationSettingsView: View {
-    @State private var githubToken: String = ""
-    @State private var isTokenSaved: Bool = false
-
-    var body: some View {
-        Form {
-            Section("GitHub") {
-                SecureField("Personal Access Token", text: $githubToken)
-                    .textFieldStyle(.roundedBorder)
-                HStack {
-                    Button("Connect") {
-                        saveToken()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(githubToken.isEmpty)
-                    if isTokenSaved {
-                        Label("Connected", systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                    }
-                }
-            }
-            Section("Linear") {
-                Text("Linear integration coming soon")
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .formStyle(.grouped)
-        .onAppear { loadToken() }
-    }
-
-    private func saveToken() {
-        // Store in UserDefaults for now; migrate to KeychainStore when
-        // AnvilUI gains an Application-layer secret-storage port.
-        UserDefaults.standard.set(githubToken, forKey: "github_token")
-        isTokenSaved = true
-    }
-
-    private func loadToken() {
-        githubToken = UserDefaults.standard.string(forKey: "github_token") ?? ""
-        isTokenSaved = !githubToken.isEmpty
-    }
-}
 
 // MARK: - Keybindings Tab
 

@@ -91,6 +91,17 @@ enum CommandAction: Sendable {
     case foldAll
     case unfoldAll
     case clearRecentHistory
+    // Entity-aware context commands
+    case editTicket(ticketId: String)
+    case assignTicketToMe(ticketId: String)
+    case markTicketInProgress(ticketId: String)
+    case startAgentForTicket(ticketId: String, title: String, description: String)
+    case copyTicketId(ticketId: String)
+    case approveReview(reviewId: String)
+    case requestReviewChanges(reviewId: String)
+    case openReviewSource(sourceId: String)
+    case copyReviewURL(sourceId: String)
+    case goToLine
 
     @MainActor
     func perform(on appState: AppState) {
@@ -170,6 +181,39 @@ enum CommandAction: Sendable {
             appState.editorViewModel.unfoldAll()
         case .clearRecentHistory:
             break // Handled by the view model directly
+
+        // Entity-aware context commands
+        case .editTicket(let ticketId):
+            appState.switchSpace(.plan)
+            appState.intentViewModel.selectTicket(ticketId)
+        case .assignTicketToMe(let ticketId):
+            appState.intentViewModel.updateAssignee(ticketId, assignee: NSUserName())
+        case .markTicketInProgress(let ticketId):
+            appState.intentViewModel.moveTicket(ticketId, toStatus: "in progress")
+        case .startAgentForTicket(let ticketId, let title, let description):
+            appState.intentViewModel.moveTicket(ticketId, toStatus: "in progress")
+            appState.agentViewModel.dispatchFromTicket(ticketId: ticketId, title: title, description: description)
+            appState.switchSpace(.build)
+        case .copyTicketId(let ticketId):
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(ticketId, forType: .string)
+        case .approveReview(let reviewId):
+            if let idx = appState.reviewViewModel.reviews.firstIndex(where: { $0.id == reviewId }) {
+                appState.reviewViewModel.reviews[idx].status = .approved
+            }
+        case .requestReviewChanges(let reviewId):
+            if let idx = appState.reviewViewModel.reviews.firstIndex(where: { $0.id == reviewId }) {
+                appState.reviewViewModel.reviews[idx].status = .changesRequested
+            }
+        case .openReviewSource(let sourceId):
+            if let url = URL(string: "https://github.com/pulls/\(sourceId)") {
+                NSWorkspace.shared.open(url)
+            }
+        case .copyReviewURL(let sourceId):
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString("https://github.com/pulls/\(sourceId)", forType: .string)
+        case .goToLine:
+            appState.isGoToLineVisible = true
         }
     }
 }
@@ -233,6 +277,7 @@ struct CommandItem: Identifiable, Sendable {
 
 enum CommandCategory: String, CaseIterable, Sendable {
     case recent = "Recent"
+    case entityContext = "Context"
     case contextual = "Current Mode"
     case actions = "Actions"
     case modes = "Spaces"
@@ -301,6 +346,8 @@ final class CommandPaletteViewModel: ObservableObject {
     @Published private(set) var recentFileCount = 0
 
     private var allItems: [CommandItem] = []
+    /// Entity-aware context commands injected by ContextCommandProvider based on current selection.
+    private var entityCommands: [CommandItem] = []
     private var projectPath: String?
     private var fileSystemService: FileSystemService?
     private var scanTask: Task<Void, Never>?
@@ -325,13 +372,20 @@ final class CommandPaletteViewModel: ObservableObject {
     // MARK: - Configuration
 
     /// Call when the palette is opened to set project context.
-    func configure(projectPath: String?, fileSystemService: FileSystemService?, initialMode: PaletteMode = .commands, currentSpace: AnvilSpace? = nil) {
+    func configure(projectPath: String?, fileSystemService: FileSystemService?, initialMode: PaletteMode = .commands, currentSpace: AnvilSpace? = nil, appState: AppState? = nil) {
         self.projectPath = projectPath
         self.fileSystemService = fileSystemService
         self.currentAppSpace = currentSpace
 
         // Rebuild commands with space context
         registerAllCommands(for: currentSpace)
+
+        // Inject entity-aware context commands from ContextCommandProvider
+        if let appState {
+            entityCommands = ContextCommandProvider.commands(for: appState)
+        } else {
+            entityCommands = []
+        }
 
         // Reset
         query = ""
@@ -547,8 +601,14 @@ final class CommandPaletteViewModel: ObservableObject {
             } else {
                 // Show recent items above the full command list
                 let recents = recentItems
-                if recents.isEmpty {
+
+                // Entity-aware context commands (based on current selection)
+                let entityPrefix = entityCommands
+
+                if recents.isEmpty && entityPrefix.isEmpty {
                     filteredItems = sourceItems
+                } else if recents.isEmpty {
+                    filteredItems = entityPrefix + sourceItems
                 } else {
                     let clearItem = CommandItem(
                         id: "clear-recent-history",
@@ -557,7 +617,7 @@ final class CommandPaletteViewModel: ObservableObject {
                         category: .recent,
                         action: .clearRecentHistory
                     )
-                    filteredItems = recents + [clearItem] + sourceItems
+                    filteredItems = entityPrefix + recents + [clearItem] + sourceItems
                 }
             }
             matchedIndicesMap = [:]
@@ -565,15 +625,22 @@ final class CommandPaletteViewModel: ObservableObject {
             return
         }
 
+        // Search entity commands alongside regular commands
+        let allSearchable = entityCommands + sourceItems
         var scored: [(item: CommandItem, score: Int)] = []
-        for item in sourceItems {
+        for item in allSearchable {
             if let result = FuzzyMatch.match(query: query, target: item.title) {
                 scored.append((item, result.score))
                 newMap[item.id] = result.matchedIndices
             }
         }
 
-        scored.sort { $0.score > $1.score }
+        // Entity context commands get a ranking boost so they float to the top
+        scored.sort { lhs, rhs in
+            let lhsBoost = lhs.item.category == .entityContext ? 50 : 0
+            let rhsBoost = rhs.item.category == .entityContext ? 50 : 0
+            return (lhs.score + lhsBoost) > (rhs.score + rhsBoost)
+        }
         filteredItems = scored.map(\.item)
         matchedIndicesMap = newMap
         selectedIndex = 0
