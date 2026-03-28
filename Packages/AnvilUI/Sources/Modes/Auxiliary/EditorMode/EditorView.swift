@@ -89,6 +89,53 @@ struct EditorView: View {
             InlineEditOverlay(viewModel: viewModel)
         }
         .background(AnvilColor.backgroundPrimary)
+        .onKeyPress(.tab) {
+            if let completion = viewModel.acceptGhostCompletion() {
+                insertGhostText(completion, lines: lines)
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.escape) {
+            if viewModel.ghostCompletion != nil {
+                viewModel.dismissGhostCompletion()
+                return .handled
+            }
+            return .ignored
+        }
+        .onChange(of: viewModel.cursorLine) { _, _ in
+            triggerGhostCompletion(fileContent: file.content)
+        }
+    }
+
+    /// Insert the accepted ghost text at the end of the current cursor line.
+    private func insertGhostText(_ text: String, lines: [String]) {
+        guard let file = viewModel.selectedFile,
+              let fileIndex = viewModel.openFiles.firstIndex(where: { $0.id == file.id }) else { return }
+
+        var mutableLines = lines
+        let lineIdx = viewModel.cursorLine - 1
+        guard lineIdx >= 0, lineIdx < mutableLines.count else { return }
+        mutableLines[lineIdx] += text
+        let newContent = mutableLines.joined(separator: "\n")
+        let updated = EditorFile(
+            name: file.name,
+            path: file.path,
+            content: newContent,
+            language: file.language,
+            relativePath: file.relativePath
+        )
+        viewModel.openFiles[fileIndex] = updated
+        viewModel.selectedFileId = updated.id
+    }
+
+    /// Trigger ghost completion fetch after cursor moves.
+    private func triggerGhostCompletion(fileContent: String) {
+        viewModel.onCursorPositionChanged(
+            fileContent: fileContent,
+            cursorLine: viewModel.cursorLine,
+            cursorChar: viewModel.cursorColumn
+        )
     }
 
     // MARK: - Line Number Gutter
@@ -218,7 +265,19 @@ struct EditorView: View {
                     let isCursor = lineNumber == viewModel.cursorLine && selectedRange == nil
                     let isCollapsed = viewModel.collapsedLines.contains(lineNumber)
 
-                    highlightedLine(line)
+                    HStack(spacing: 0) {
+                        highlightedLine(line)
+
+                        // Ghost text overlay: show inline after cursor line content
+                        if isCursor, let ghost = viewModel.ghostCompletion {
+                            Text(ghost)
+                                .font(AnvilFont.code)
+                                .foregroundStyle(.secondary.opacity(0.5))
+                                .lineLimit(1)
+                                .allowsHitTesting(false)
+                                .accessibilityLabel("Ghost completion: \(ghost)")
+                        }
+                    }
                         .frame(height: 20, alignment: .leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.leading, AnvilSpacing.md)

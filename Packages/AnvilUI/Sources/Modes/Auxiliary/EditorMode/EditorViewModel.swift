@@ -1,6 +1,7 @@
 import SwiftUI
 import AnvilACP
 import AnvilDomain
+import AnvilEditor
 import AnvilGit
 
 // MARK: - Whitespace Mode
@@ -161,6 +162,10 @@ final class EditorViewModel: ObservableObject {
     @Published var findMatches: [FindMatch] = []
     @Published var currentMatchIndex: Int = 0
 
+    // MARK: Ghost Text (AI inline completions)
+    @Published var ghostCompletion: String? = nil
+    private var ghostDebounceTask: Task<Void, Never>? = nil
+
     // MARK: Inline Edit (⌘K)
     @Published var inlineEditPhase: InlineEditPhase = .hidden
     @Published var inlineEditSelectedRange: ClosedRange<Int> = 1...1   // 1-based line range
@@ -169,6 +174,9 @@ final class EditorViewModel: ObservableObject {
     @Published var inlineEditStreamingText: String = ""
 
     private var inlineEditTask: Task<Void, Never>?
+
+    // MARK: LSP Integration
+    public var lspViewModel = LSPViewModel()
 
     /// Set by EditorMode on appear so inline edits can call ACP
     /// and git gutter can load diff data.
@@ -290,6 +298,20 @@ final class EditorViewModel: ObservableObject {
         }
 
         loadGitGutterForSelectedFile()
+
+        // Notify LSP about the newly opened document
+        let fileUri = "file://\(path)"
+        Task {
+            await lspViewModel.didOpen(uri: fileUri, languageId: language, text: content)
+        }
+    }
+
+    /// Notify the LSP server of a content change for the given file path.
+    func notifyLSPContentChange(path: String, text: String) {
+        let fileUri = "file://\(path)"
+        Task {
+            await lspViewModel.didChange(uri: fileUri, text: text)
+        }
     }
 
     // MARK: - Helpers
@@ -867,6 +889,80 @@ final class EditorViewModel: ObservableObject {
         guard currentMatchIndex < findMatches.count else { return false }
         let current = findMatches[currentMatchIndex]
         return current.line == line && current.range == range
+    }
+
+    // MARK: - Ghost Text (AI Inline Completions)
+
+    /// Called when the cursor moves. Debounces 300ms, then fetches a ghost completion.
+    func onCursorPositionChanged(fileContent: String, cursorLine: Int, cursorChar: Int) {
+        ghostDebounceTask?.cancel()
+        ghostCompletion = nil
+        ghostDebounceTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard !Task.isCancelled else { return }
+            await fetchGhostCompletion(context: fileContent, line: cursorLine, char: cursorChar)
+        }
+    }
+
+    /// Fetches a single-line completion from ACP (using Haiku for speed).
+    private func fetchGhostCompletion(context: String, line: Int, char: Int) async {
+        guard let container else { return }
+
+        let lines = context.components(separatedBy: "\n")
+        let lineIndex = line - 1
+        guard lineIndex >= 0, lineIndex < lines.count else { return }
+
+        // Build the context: last ~50 lines up to and including cursor line
+        let startLine = max(0, lineIndex - 49)
+        let contextLines = Array(lines[startLine...lineIndex])
+        let contextText = contextLines.joined(separator: "\n")
+
+        // If the current line is empty or only whitespace, skip
+        let currentLine = lines[lineIndex]
+        let trimmed = currentLine.trimmingCharacters(in: .whitespaces)
+        if trimmed.isEmpty { return }
+
+        let client = await container.getOrCreateACPClient()
+        let language = selectedFile?.language ?? "text"
+
+        let systemPrompt = "Complete the following \(language) code with a single line continuation. Reply with ONLY the completion text that follows the cursor, no explanation."
+
+        let haikuModel = ACPModel(
+            id: "claude-haiku-4-5-20251001",
+            name: "Claude Haiku 4.5",
+            provider: "anthropic",
+            contextWindow: 200_000,
+            inputCostPer1kTokens: 0.0008,
+            outputCostPer1kTokens: 0.004,
+            capabilities: [.codeGeneration]
+        )
+
+        do {
+            let result = try await client.complete(
+                prompt: contextText,
+                systemPrompt: systemPrompt,
+                model: haikuModel
+            )
+            guard !Task.isCancelled else { return }
+            let cleaned = result.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !cleaned.isEmpty {
+                self.ghostCompletion = cleaned
+            }
+        } catch {
+            // Silently fail -- ghost text is best-effort
+        }
+    }
+
+    /// Accept the ghost completion and return the text to insert. Clears the ghost.
+    func acceptGhostCompletion() -> String? {
+        defer { ghostCompletion = nil }
+        return ghostCompletion
+    }
+
+    /// Dismiss the ghost completion without inserting.
+    func dismissGhostCompletion() {
+        ghostDebounceTask?.cancel()
+        ghostCompletion = nil
     }
 
     // MARK: - Inline Edit (⌘K)
