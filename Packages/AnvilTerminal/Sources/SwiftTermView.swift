@@ -64,14 +64,12 @@ public struct SwiftTermView: NSViewRepresentable {
         // Build environment: inherit current process environment if none specified
         let env = environment ?? Terminal.getEnvironmentVariables(termName: "xterm-256color")
 
-        // Launch the shell as a login shell
-        let loginName = "-" + (shell as NSString).lastPathComponent
-
+        // Launch as a login shell with -l flag
         terminalView.startProcess(
             executable: shell,
-            args: [loginName],
+            args: ["-l"],
             environment: env,
-            execName: loginName,
+            execName: (shell as NSString).lastPathComponent,
             currentDirectory: workingDirectory
         )
 

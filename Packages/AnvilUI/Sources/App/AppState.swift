@@ -139,7 +139,6 @@ public class AppState: ObservableObject {
     public enum OperateSection: String, CaseIterable, Sendable {
         case deploy = "Deploy"
         case monitor = "Monitor"
-        case terminal = "Terminal"
     }
 
     // MARK: - Library Section

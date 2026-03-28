@@ -302,8 +302,6 @@ struct OperateContent: View {
             ShipModeContent(viewModel: appState.shipViewModel)
         case .monitor:
             ObservabilityMode()
-        case .terminal:
-            TerminalMode()
         }
     }
 }

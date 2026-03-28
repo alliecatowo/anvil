@@ -26,37 +26,7 @@ struct OperateSidebar: View {
                     .font(AnvilFont.body)
                     .foregroundStyle(AnvilColor.textTertiary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .terminal:
-                terminalSessionsList
             }
-        }
-    }
-
-    // MARK: - Terminal Sessions
-
-    private var terminalSessionsList: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Sessions")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                Spacer()
-                Button {
-                    _ = appState.terminalViewModel.addTab()
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 11))
-                        .foregroundStyle(AnvilColor.textSecondary)
-                }
-                .buttonStyle(.plain)
-                .help("New Terminal Session")
-                .accessibilityLabel("New Terminal Session")
-                .accessibilityAddTraits(.isButton)
-            }
-            .padding(.horizontal, AnvilSpacing.sm)
-            .padding(.vertical, AnvilSpacing.xs)
-
-            TerminalSessionList(viewModel: appState.terminalViewModel)
         }
     }
 }
