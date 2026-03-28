@@ -1,5 +1,6 @@
 import SwiftUI
 import AnvilDomain
+import AnvilApplication
 import AnvilGit
 import Foundation
 
@@ -73,10 +74,17 @@ public final class ReviewViewModel: ObservableObject {
     // MARK: Review management port
 
     private var reviewPort: (any ReviewManagementPort)?
+    private var createReviewUseCase: CreateReviewUseCase?
 
     /// Configure the review management port for persistence through the application layer.
     public func configure(reviewPort: any ReviewManagementPort) {
         self.reviewPort = reviewPort
+    }
+
+    /// Configure the review management port and use case for persistence through the application layer.
+    public func configure(reviewPort: any ReviewManagementPort, createUseCase: CreateReviewUseCase) {
+        self.reviewPort = reviewPort
+        self.createReviewUseCase = createUseCase
     }
 
     // MARK: Batch actions
@@ -341,22 +349,47 @@ public final class ReviewViewModel: ObservableObject {
             if let diffs = try? await adapter.diff(from: baseBranch, to: branchName) {
                 branchDiffFiles = diffs
 
-                // Auto-create a review entry so the existing DiffReviewView can display it
-                let review = Review(
-                    id: "branch-diff-\(branchName)",
-                    title: "\(branchName) vs \(baseBranch)",
-                    sourceType: .agentSession,
-                    sourceId: branchName,
-                    status: .pending,
-                    author: "git",
-                    diff: diffs,
-                    comments: []
-                )
+                let reviewId = "branch-diff-\(branchName)"
+                let reviewTitle = "\(branchName) vs \(baseBranch)"
+
+                // Route through CreateReviewUseCase for domain event publishing and persistence
+                let review: Review
+                if let useCase = createReviewUseCase {
+                    review = (try? await useCase.execute(
+                        id: reviewId,
+                        title: reviewTitle,
+                        sourceType: .agentSession,
+                        sourceId: branchName,
+                        author: "git",
+                        diff: diffs,
+                        comments: []
+                    )) ?? Review(
+                        id: reviewId,
+                        title: reviewTitle,
+                        sourceType: .agentSession,
+                        sourceId: branchName,
+                        status: .pending,
+                        author: "git",
+                        diff: diffs,
+                        comments: []
+                    )
+                } else {
+                    review = Review(
+                        id: reviewId,
+                        title: reviewTitle,
+                        sourceType: .agentSession,
+                        sourceId: branchName,
+                        status: .pending,
+                        author: "git",
+                        diff: diffs,
+                        comments: []
+                    )
+                    persistReview(review)
+                }
 
                 // Replace any existing branch-diff review
                 reviews.removeAll { $0.id.hasPrefix("branch-diff-") }
                 reviews.insert(review, at: 0)
-                persistReview(review)
                 selectReview(review.id)
             }
         }

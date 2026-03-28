@@ -6,19 +6,11 @@ import UniformTypeIdentifiers
 struct BuildSidebar: View {
     @EnvironmentObject var appState: AppState
 
-    enum BuildSection: String, CaseIterable {
-        case sessions = "Sessions"
-        case files = "Files"
-        case data = "Data"
-    }
-
-    @State private var activeSection: BuildSection = .sessions
-
     var body: some View {
         VStack(spacing: 0) {
             // Section picker at top
-            Picker("Section", selection: $activeSection) {
-                ForEach(BuildSection.allCases, id: \.self) { s in
+            Picker("Section", selection: $appState.buildActiveSection) {
+                ForEach(AppState.BuildSection.allCases, id: \.self) { s in
                     Text(s.rawValue).tag(s)
                 }
             }
@@ -30,13 +22,15 @@ struct BuildSidebar: View {
             Divider()
 
             // Section content
-            switch activeSection {
+            switch appState.buildActiveSection {
             case .sessions:
                 AgentSidebar(viewModel: appState.agentViewModel)
             case .files:
                 EditorSidebar(viewModel: appState.editorViewModel)
             case .data:
                 DatabaseSidebarView(viewModel: appState.databaseViewModel)
+            case .tests:
+                TestSuiteList(viewModel: appState.testingViewModel)
             }
         }
     }

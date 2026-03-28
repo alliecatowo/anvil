@@ -11,7 +11,7 @@ public struct ContentArea: View {
             case .plan:
                 IntentModeContent(viewModel: appState.intentViewModel)
             case .build:
-                AgentModeContent(viewModel: appState.agentViewModel)
+                BuildContent()
             case .review:
                 ReviewModeContent(viewModel: appState.reviewViewModel)
             case .operate:
@@ -247,6 +247,39 @@ struct ShipModeContent: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+struct BuildContent: View {
+    @EnvironmentObject var appState: AppState
+
+    var body: some View {
+        switch appState.buildActiveSection {
+        case .sessions, .files, .data:
+            AgentModeContent(viewModel: appState.agentViewModel)
+        case .tests:
+            if appState.testingViewModel.suites.isEmpty {
+                AnvilEmptyState(
+                    icon: "testtube.2",
+                    title: "No test suites",
+                    message: "Run your test suite or load demo data to get started.",
+                    actions: [
+                        EmptyStateAction("Run Tests", icon: "play.fill", style: .primary) {
+                            appState.testingViewModel.projectPath = appState.currentProjectPath
+                            if appState.testingViewModel.projectPath == nil {
+                                appState.testingViewModel.loadDemoData()
+                            }
+                            appState.testingViewModel.runAllTests()
+                        },
+                        EmptyStateAction("Load Demo Data", icon: "tray.and.arrow.down", style: .secondary) {
+                            appState.testingViewModel.loadDemoData()
+                        }
+                    ]
+                )
+            } else {
+                TestDetailView(viewModel: appState.testingViewModel)
+            }
         }
     }
 }

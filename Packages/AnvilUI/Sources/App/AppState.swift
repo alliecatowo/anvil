@@ -109,11 +109,23 @@ public class AppState: ObservableObject {
     @Published var notificationsViewModel = NotificationsViewModel()
     @Published var libraryDocsViewModel = DocsViewModel()
     @Published var editorViewModel = EditorViewModel()
+    @Published var testingViewModel = TestingViewModel()
     @Published var databaseViewModel = DatabaseViewModel()
     @Published var gitHubPRViewModel = GitHubPRViewModel()
     @Published var pluginMarketplaceViewModel = PluginMarketplaceViewModel()
     @Published var messagingViewModel = MessagingViewModel()
     @Published var scheduleViewModel = ScheduleViewModel()
+
+    // MARK: - Build Section
+
+    @Published public var buildActiveSection: BuildSection = .sessions
+
+    public enum BuildSection: String, CaseIterable, Sendable {
+        case sessions = "Sessions"
+        case files = "Files"
+        case data = "Data"
+        case tests = "Tests"
+    }
 
     // MARK: - Operate Section
 
