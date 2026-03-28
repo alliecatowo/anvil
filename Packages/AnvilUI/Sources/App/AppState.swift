@@ -83,6 +83,9 @@ public class AppState: ObservableObject {
     @Published public var isSourceControlVisible: Bool = false
     @Published public var currentBranch: String = "main"
     @Published public var uncommittedFileCount: Int = 0
+    @Published public var stagedChanges: [GitFileChange] = []
+    @Published public var unstagedChanges: [GitFileChange] = []
+    @Published public var untrackedChanges: [GitFileChange] = []
     @Published public var branches: [Branch] = []
     @Published public var agentStatus: String = "Idle"
     @Published public var agentCurrentTool: String?
@@ -173,11 +176,23 @@ public class AppState: ObservableObject {
             currentBranch = branch.name
         }
 
-        // Count uncommitted files (staged + unstaged diffs)
-        let staged = (try? await adapter.stagedDiff()) ?? []
-        let unstaged = (try? await adapter.unstagedDiff()) ?? []
-        let allPaths = Set(staged.map(\.filePath) + unstaged.map(\.filePath))
-        uncommittedFileCount = allPaths.count
+        // Load working tree changes (staged, unstaged, untracked)
+        if let changes = try? await adapter.workingTreeChanges() {
+            stagedChanges = changes.staged
+            unstagedChanges = changes.unstaged
+            untrackedChanges = changes.untracked
+            let allPaths = Set(
+                changes.staged.map(\.filePath)
+                + changes.unstaged.map(\.filePath)
+                + changes.untracked.map(\.filePath)
+            )
+            uncommittedFileCount = allPaths.count
+        } else {
+            stagedChanges = []
+            unstagedChanges = []
+            untrackedChanges = []
+            uncommittedFileCount = 0
+        }
 
         // Load branch list
         if let allBranches = try? await adapter.branches() {

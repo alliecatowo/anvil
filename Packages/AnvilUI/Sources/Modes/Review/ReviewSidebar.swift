@@ -15,10 +15,15 @@ struct ReviewSidebar: View {
         let count: Int
     }
 
+    private var totalChangesCount: Int {
+        appState.stagedChanges.count + appState.unstagedChanges.count + appState.untrackedChanges.count
+    }
+
     // Minimal adapter target for upcoming shared sidebar abstraction.
     private var sidebarSections: [SidebarSectionDescriptor] {
         [
             SidebarSectionDescriptor(id: "branches", title: "Branches", icon: "arrow.triangle.branch", count: appState.branches.count),
+            SidebarSectionDescriptor(id: "changes", title: "Changes", icon: "square.and.pencil", count: totalChangesCount),
             SidebarSectionDescriptor(id: "pullRequests", title: "Pull Requests", icon: "arrow.triangle.pull", count: appState.gitHubPRViewModel.pullRequests.count),
             SidebarSectionDescriptor(id: "pending", title: "Pending", icon: "circle", count: viewModel.pendingReviews.count),
             SidebarSectionDescriptor(id: "completed", title: "Completed", icon: "checkmark.circle", count: viewModel.completedReviews.count)
@@ -35,6 +40,8 @@ struct ReviewSidebar: View {
                 gitHubAuthBar
                 Divider()
                 branchSection
+                Divider()
+                changesSection
                 Divider()
                 pullRequestsSection
                 Divider()
@@ -129,6 +136,111 @@ struct ReviewSidebar: View {
         }
     }
 
+    // MARK: - Changes Section
+
+    private var changesSection: some View {
+        VStack(spacing: 0) {
+            sectionHeader(sidebarSections[1])
+
+            if totalChangesCount == 0 {
+                HStack {
+                    Text("No changes")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                    Spacer()
+                }
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, AnvilSpacing.xs)
+            } else {
+                if !appState.stagedChanges.isEmpty {
+                    changeGroupHeader("Staged", count: appState.stagedChanges.count)
+                    ForEach(appState.stagedChanges) { change in
+                        changeRow(change)
+                    }
+                }
+                if !appState.unstagedChanges.isEmpty {
+                    changeGroupHeader("Modified", count: appState.unstagedChanges.count)
+                    ForEach(appState.unstagedChanges) { change in
+                        changeRow(change)
+                    }
+                }
+                if !appState.untrackedChanges.isEmpty {
+                    changeGroupHeader("Untracked", count: appState.untrackedChanges.count)
+                    ForEach(appState.untrackedChanges) { change in
+                        changeRow(change)
+                    }
+                }
+            }
+        }
+    }
+
+    private func changeGroupHeader(_ title: String, count: Int) -> some View {
+        HStack {
+            Text(title)
+                .font(AnvilFont.label)
+                .foregroundStyle(AnvilColor.textTertiary)
+            Spacer()
+            Text("\(count)")
+                .font(AnvilFont.label)
+                .foregroundStyle(AnvilColor.textTertiary)
+        }
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, 2)
+    }
+
+    private func changeRow(_ change: GitFileChange) -> some View {
+        HStack(spacing: AnvilSpacing.sm) {
+            Text(changeStatusLabel(change.status))
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .foregroundStyle(changeStatusColor(change.status))
+                .frame(width: 14)
+
+            Text(change.fileName)
+                .font(AnvilFont.code)
+                .foregroundStyle(AnvilColor.textPrimary)
+                .lineLimit(1)
+
+            Spacer()
+
+            if !change.directory.isEmpty {
+                Text(change.directory)
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .lineLimit(1)
+                    .truncationMode(.head)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(change.fileName), \(change.status.rawValue)")
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, 2)
+        .frame(height: AnvilSpacing.listItemHeight)
+    }
+
+    private func changeStatusLabel(_ status: GitFileChangeStatus) -> String {
+        switch status {
+        case .modified:  "M"
+        case .added:     "A"
+        case .deleted:   "D"
+        case .renamed:   "R"
+        case .copied:    "C"
+        case .untracked: "?"
+        case .unmerged:  "U"
+        }
+    }
+
+    private func changeStatusColor(_ status: GitFileChangeStatus) -> Color {
+        switch status {
+        case .modified:  AnvilColor.accentAmber
+        case .added:     AnvilColor.accentGreen
+        case .deleted:   AnvilColor.accentRed
+        case .renamed:   AnvilColor.accentBlue
+        case .copied:    AnvilColor.accentPurple
+        case .untracked: AnvilColor.textTertiary
+        case .unmerged:  AnvilColor.accentRed
+        }
+    }
+
     // MARK: - GitHub Auth Bar
 
     @State private var isLoginSheetPresented = false
@@ -190,7 +302,7 @@ struct ReviewSidebar: View {
     private var pullRequestsSection: some View {
         VStack(spacing: 0) {
             let prVM = appState.gitHubPRViewModel
-            sectionHeader(sidebarSections[1])
+            sectionHeader(sidebarSections[2])
 
             if prVM.isLoading {
                 HStack {
@@ -358,7 +470,7 @@ struct ReviewSidebar: View {
                         reviewRow(review)
                     }
                 } header: {
-                    sectionHeader(sidebarSections[2])
+                    sectionHeader(sidebarSections[3])
                 }
             }
 
@@ -368,7 +480,7 @@ struct ReviewSidebar: View {
                         reviewRow(review)
                     }
                 } header: {
-                    sectionHeader(sidebarSections[3])
+                    sectionHeader(sidebarSections[4])
                 }
             }
         }
