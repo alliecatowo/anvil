@@ -54,14 +54,14 @@ final class QuickCaptureTests: XCTestCase {
         let inputField = app.textFields["Quick capture..."]
         XCTAssertTrue(inputField.waitForExistence(timeout: 5))
 
-        // Type selector buttons: Task, Note, Ticket
-        let taskButton = app.buttons["Task"]
+        // Type selector buttons: Note, Ticket, Agent
         let noteButton = app.buttons["Note"]
         let ticketButton = app.buttons["Ticket"]
+        let agentButton = app.buttons["Agent"]
 
-        XCTAssertTrue(taskButton.waitForExistence(timeout: 3) || true, "Task type button should exist")
         XCTAssertTrue(noteButton.waitForExistence(timeout: 3) || true, "Note type button should exist")
         XCTAssertTrue(ticketButton.waitForExistence(timeout: 3) || true, "Ticket type button should exist")
+        XCTAssertTrue(agentButton.waitForExistence(timeout: 3) || true, "Agent type button should exist")
     }
 
     func testQuickCaptureTypeSwitching() throws {

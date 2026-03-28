@@ -98,8 +98,8 @@ final class SlashCommandAndRefTests: XCTestCase {
         inputField.typeText("/")
 
         // Each command should show its description
-        let reviewDesc = app.staticTexts["AI review on current branch"]
-        let commitDesc = app.staticTexts["Auto-commit with AI message"]
+        let reviewDesc = app.staticTexts["Review this diff"]
+        let commitDesc = app.staticTexts["Write commit message"]
 
         _ = reviewDesc.waitForExistence(timeout: 3)
         _ = commitDesc.waitForExistence(timeout: 3)

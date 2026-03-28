@@ -38,7 +38,8 @@ public struct CommandPalette: View {
                 projectPath: container.currentProjectPath,
                 fileSystemService: container.currentProjectPath != nil ? container.fileSystemService : nil,
                 initialMode: appState.commandPaletteInitialMode,
-                currentSpace: appState.currentSpace
+                currentSpace: appState.currentSpace,
+                appState: appState
             )
             // Pre-populate query prefix for file/symbol modes
             if appState.commandPaletteInitialMode == .symbols {
