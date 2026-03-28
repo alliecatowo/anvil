@@ -38,6 +38,9 @@ struct AnvilSidebarRowButton<Trailing: View>: View {
     let action: () -> Void
     @ViewBuilder var trailing: () -> Trailing
 
+    @State private var isHovered = false
+    @GestureState private var isPressed = false
+
     init(
         title: String,
         icon: String,
@@ -91,10 +94,25 @@ struct AnvilSidebarRowButton<Trailing: View>: View {
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
             .frame(minHeight: AnvilSpacing.listItemHeight)
-            .background(isActive ? AnvilColor.accentBlue.opacity(0.1) : Color.clear)
+            .background(
+                isActive
+                    ? AnvilColor.accentBlue.opacity(0.1)
+                    : (isHovered ? Color.primary.opacity(0.06) : Color.clear)
+            )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .scaleEffect(isPressed ? 0.97 : 1.0)
+        .animation(.spring(response: 0.25, dampingFraction: 0.86), value: isPressed)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .updating($isPressed) { _, pressed, _ in pressed = true }
+        )
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.12)) {
+                isHovered = hovering
+            }
+        }
     }
 }
 

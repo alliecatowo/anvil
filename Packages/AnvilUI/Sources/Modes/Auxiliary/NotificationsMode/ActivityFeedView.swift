@@ -52,11 +52,13 @@ struct ActivityFeedView: View {
                     .frame(width: 28, height: 28)
                     .background(event.iconColor.opacity(0.15))
                     .clipShape(Circle())
+                    .accessibilityHidden(true)
 
                 Rectangle()
                     .fill(AnvilColor.borderSubtle)
                     .frame(width: 1)
                     .frame(maxHeight: .infinity)
+                    .accessibilityHidden(true)
             }
             .frame(width: 28)
 
@@ -77,5 +79,7 @@ struct ActivityFeedView: View {
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.top, AnvilSpacing.md)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(event.description), \(timeFormatter.string(from: event.timestamp))")
     }
 }

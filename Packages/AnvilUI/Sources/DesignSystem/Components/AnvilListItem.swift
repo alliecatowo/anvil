@@ -10,6 +10,8 @@ public struct AnvilListItem: View {
     let isSelected: Bool
     let isCompact: Bool
 
+    @State private var isHovered = false
+
     public init(icon: String? = nil, title: String, subtitle: String? = nil, tag: String? = nil, tagColor: Color? = nil, timestamp: String? = nil, isSelected: Bool = false, isCompact: Bool = true) {
         self.icon = icon
         self.title = title
@@ -71,7 +73,16 @@ public struct AnvilListItem: View {
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
         .frame(height: isCompact ? AnvilSpacing.listItemHeight : AnvilSpacing.richListItemHeight)
-        .background(isSelected ? AnvilColor.accentBlue.opacity(0.15) : .clear)
+        .background(
+            isSelected
+                ? AnvilColor.accentBlue.opacity(0.15)
+                : (isHovered ? Color.primary.opacity(0.06) : .clear)
+        )
         .contentShape(Rectangle())
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.12)) {
+                isHovered = hovering
+            }
+        }
     }
 }

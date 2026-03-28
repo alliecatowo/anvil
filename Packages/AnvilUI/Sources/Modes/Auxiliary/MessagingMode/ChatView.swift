@@ -42,6 +42,7 @@ struct ChatView: View {
             Image(systemName: channel.icon)
                 .font(.system(size: 12))
                 .foregroundStyle(AnvilColor.textTertiary)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(channel.name)
@@ -61,15 +62,20 @@ struct ChatView: View {
                 HStack(spacing: AnvilSpacing.xxs) {
                     Image(systemName: "person.2")
                         .font(.system(size: 11))
+                        .accessibilityHidden(true)
                     Text("\(channel.memberCount)")
                         .font(AnvilFont.label)
                 }
                 .foregroundStyle(.secondary)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(channel.memberCount) members")
             }
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.sm)
         .background(.bar)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Channel \(channel.name)\(channel.topic.isEmpty ? "" : ", topic: \(channel.topic)")\(channel.memberCount > 0 ? ", \(channel.memberCount) members" : "")")
     }
 
     // MARK: - Message Row
@@ -85,6 +91,7 @@ struct ChatView: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(AnvilColor.textPrimary)
                 )
+                .accessibilityLabel("\(message.author) avatar")
 
             VStack(alignment: .leading, spacing: AnvilSpacing.xxxs) {
                 HStack(spacing: AnvilSpacing.sm) {
@@ -104,6 +111,8 @@ struct ChatView: View {
 
             Spacer()
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(message.author), \(message.formattedTime): \(message.content)")
     }
 
     // MARK: - Message Input
@@ -116,6 +125,8 @@ struct ChatView: View {
                 .onSubmit {
                     viewModel.sendMessage()
                 }
+                .accessibilityLabel("Message input for \(channel.name)")
+                .accessibilityAddTraits(.isSearchField)
 
             Button("Send", systemImage: "paperplane.fill") {
                 viewModel.sendMessage()
@@ -123,6 +134,8 @@ struct ChatView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
             .disabled(viewModel.inputText.isEmpty)
+            .accessibilityLabel("Send message")
+            .accessibilityAddTraits(.isButton)
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.sm)
@@ -136,6 +149,7 @@ struct ChatView: View {
             Image(systemName: "bubble.left.and.bubble.right")
                 .font(.system(size: 32, weight: .thin))
                 .foregroundStyle(AnvilColor.textTertiary.opacity(0.5))
+                .accessibilityHidden(true)
 
             Text("Select a channel to start chatting")
                 .font(AnvilFont.body)

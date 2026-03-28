@@ -10,16 +10,22 @@ public struct ContentArea: View {
             switch appState.currentSpace {
             case .plan:
                 IntentModeContent(viewModel: appState.intentViewModel)
+                    .transition(.opacity)
             case .build:
                 BuildContent()
+                    .transition(.opacity)
             case .review:
                 ReviewModeContent(viewModel: appState.reviewViewModel)
+                    .transition(.opacity)
             case .operate:
                 OperateContent()
+                    .transition(.opacity)
             case .library:
                 LibraryContent()
+                    .transition(.opacity)
             }
         }
+        .animation(.spring(response: 0.28, dampingFraction: 0.82), value: appState.currentSpace)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -409,6 +415,8 @@ struct ScheduleModeContent: View {
                         )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("\(tab.rawValue) tab")
+                .accessibilityAddTraits(viewModel.selectedTab == tab ? [.isButton, .isSelected] : .isButton)
             }
         }
         .padding(.horizontal, AnvilSpacing.sm)
@@ -439,6 +447,7 @@ struct ModeWelcomeView: View {
             Image(systemName: icon)
                 .font(.system(size: 48, weight: .thin))
                 .foregroundStyle(AnvilColor.textTertiary)
+                .accessibilityHidden(true)
 
             Text(title)
                 .font(AnvilFont.heading)

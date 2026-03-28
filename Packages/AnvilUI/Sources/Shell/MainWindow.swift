@@ -32,6 +32,12 @@ public struct MainWindow: View {
                             InspectorPanel()
                                 .inspectorColumnWidth(min: 200, ideal: 260, max: 400)
                         }
+                        .overlay(alignment: .trailing) {
+                            if appState.isAgentPanelVisible {
+                                AgentChatPanel()
+                                    .transition(.move(edge: .trailing).combined(with: .opacity))
+                            }
+                        }
                 }
 
                 // Terminal panel (bottom)
@@ -51,14 +57,26 @@ public struct MainWindow: View {
                     appState.toggleSidebar()
                 }
                 .help("Toggle Sidebar")
+                .accessibilityLabel("Toggle Sidebar")
+                .accessibilityAddTraits(.isButton)
             }
 
             ToolbarItemGroup(placement: .primaryAction) {
+                Button("Agent", systemImage: "bubble.left.and.text.bubble.right") {
+                    appState.toggleAgentPanel()
+                }
+                .help("Agent Panel (\u{2318}\u{2325}A)")
+                .keyboardShortcut("a", modifiers: [.command, .option])
+                .accessibilityLabel("Toggle Agent Panel")
+                .accessibilityAddTraits(.isButton)
+
                 Button("Command Palette", systemImage: "magnifyingglass") {
                     appState.toggleCommandPalette()
                 }
                 .help("Command Palette (\u{2318}K)")
                 .keyboardShortcut("k", modifiers: .command)
+                .accessibilityLabel("Command Palette")
+                .accessibilityAddTraits(.isButton)
 
                 SettingsLink {
                     Image(systemName: "gearshape")

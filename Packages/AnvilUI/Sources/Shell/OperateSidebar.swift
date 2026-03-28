@@ -12,6 +12,7 @@ struct OperateSidebar: View {
             }
             .pickerStyle(.segmented)
             .accessibilityLabel("Operate Sidebar Section")
+            .accessibilityAddTraits(.isButton)
             .padding(.horizontal, AnvilSpacing.sm)
             .padding(.vertical, AnvilSpacing.xs)
 
@@ -49,6 +50,8 @@ struct OperateSidebar: View {
                 }
                 .buttonStyle(.plain)
                 .help("New Terminal Session")
+                .accessibilityLabel("New Terminal Session")
+                .accessibilityAddTraits(.isButton)
             }
             .padding(.horizontal, AnvilSpacing.sm)
             .padding(.vertical, AnvilSpacing.xs)

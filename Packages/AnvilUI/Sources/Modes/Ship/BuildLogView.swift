@@ -47,6 +47,7 @@ struct BuildLogView: View {
                             Circle()
                                 .fill(viewModel.isStreamingLogs ? AnvilColor.accentGreen : AnvilColor.textTertiary)
                                 .frame(width: 6, height: 6)
+                                .accessibilityHidden(true)
                             Text(viewModel.isStreamingLogs ? "Live" : "Stream")
                                 .font(AnvilFont.label)
                                 .foregroundStyle(viewModel.isStreamingLogs ? AnvilColor.accentGreen : AnvilColor.textSecondary)
@@ -57,6 +58,8 @@ struct BuildLogView: View {
                         .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(viewModel.isStreamingLogs ? "Stop log streaming" : "Start log streaming")
+                    .accessibilityAddTraits(.isButton)
                 }
 
                 if let env = viewModel.selectedEnvironment {
@@ -76,6 +79,7 @@ struct BuildLogView: View {
                     .textFieldStyle(.roundedBorder)
                     .font(AnvilFont.code)
                     .frame(maxWidth: 260)
+                    .accessibilityLabel("Filter logs")
 
                 // Level filters
                 ForEach([BuildLogLevel.info, .warning, .error, .debug], id: \.rawValue) { level in
@@ -91,6 +95,8 @@ struct BuildLogView: View {
                             .foregroundStyle(filterLevel == level ? .primary : levelColor(level))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Filter by \(levelPrefix(level))")
+                    .accessibilityAddTraits(.isButton)
                 }
 
                 Spacer()
@@ -108,6 +114,8 @@ struct BuildLogView: View {
                     .foregroundStyle(autoScroll ? AnvilColor.accentBlue : AnvilColor.textTertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Auto-scroll \(autoScroll ? "on" : "off")")
+                .accessibilityAddTraits(.isButton)
 
                 // Clear
                 Button {
@@ -119,6 +127,8 @@ struct BuildLogView: View {
                         .foregroundStyle(AnvilColor.textTertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Clear Filters")
+                .accessibilityAddTraits(.isButton)
             }
             .padding(.horizontal, AnvilSpacing.lg)
             .padding(.vertical, AnvilSpacing.sm)

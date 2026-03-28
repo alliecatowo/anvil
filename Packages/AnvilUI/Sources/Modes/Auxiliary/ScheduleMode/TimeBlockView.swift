@@ -31,6 +31,7 @@ struct TimeBlockView: View {
             RoundedRectangle(cornerRadius: 4)
                 .fill(entry.kindColor)
                 .frame(width: 4)
+                .accessibilityHidden(true)
 
             // Card content
             VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
@@ -40,6 +41,7 @@ struct TimeBlockView: View {
                         Image(systemName: entry.kindIcon)
                             .font(.system(size: 14))
                             .foregroundStyle(entry.kindColor)
+                            .accessibilityHidden(true)
 
                         Text(entry.title)
                             .font(AnvilFont.subheading)
@@ -57,6 +59,7 @@ struct TimeBlockView: View {
                         Image(systemName: "clock")
                             .font(.system(size: 11))
                             .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
 
                         Text("\(timeFormatter.string(from: entry.start)) – \(timeFormatter.string(from: entry.end))")
                             .font(AnvilFont.code)
@@ -83,10 +86,13 @@ struct TimeBlockView: View {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Image(systemName: "link")
                             .font(.system(size: 10))
+                            .accessibilityHidden(true)
                         Text(ticket)
                             .font(AnvilFont.code)
                     }
                     .foregroundStyle(AnvilColor.accentBlue)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Linked ticket: \(ticket)")
                 }
 
                 // Attendees
@@ -95,6 +101,7 @@ struct TimeBlockView: View {
                         Image(systemName: "person.2")
                             .font(.system(size: 11))
                             .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
 
                         ForEach(entry.attendees, id: \.self) { name in
                             Text(name)
@@ -105,6 +112,8 @@ struct TimeBlockView: View {
                                 .background(.quaternary, in: Capsule())
                         }
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Attendees: \(entry.attendees.joined(separator: ", "))")
                 }
             }
             .padding(AnvilSpacing.cardPadding)
@@ -112,5 +121,7 @@ struct TimeBlockView: View {
         .background {
             GroupBox { Color.clear }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(entry.title), \(entry.kindLabel), \(timeFormatter.string(from: entry.start)) to \(timeFormatter.string(from: entry.end)), \(entry.duration)")
     }
 }

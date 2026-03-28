@@ -29,6 +29,8 @@ struct AgentPlanView: View {
                         .tint(progressColor)
                         .padding(.horizontal, AnvilSpacing.md)
                         .padding(.vertical, AnvilSpacing.sm)
+                        .accessibilityLabel("Plan progress")
+                        .accessibilityValue("\(Int(plan.progress * 100)) percent")
                 }
 
                 // Steps list
@@ -50,10 +52,12 @@ struct AgentPlanView: View {
                                     Image(systemName: "plus.circle")
                                         .foregroundStyle(AnvilColor.textTertiary)
                                         .font(.system(size: 14))
+                                        .accessibilityHidden(true)
 
                                     TextField("New step...", text: $newStepTitle)
                                         .textFieldStyle(.roundedBorder)
                                         .font(AnvilFont.body)
+                                        .accessibilityLabel("New step title")
                                         .onSubmit {
                                             if !newStepTitle.isEmpty {
                                                 onAddStep(newStepTitle, nil)
@@ -71,6 +75,8 @@ struct AgentPlanView: View {
                                     }
                                     .font(AnvilFont.label)
                                     .foregroundStyle(AnvilColor.accentBlue)
+                                    .accessibilityLabel("Add step")
+                                    .accessibilityAddTraits(.isButton)
 
                                     Button("Cancel") {
                                         newStepTitle = ""
@@ -78,6 +84,8 @@ struct AgentPlanView: View {
                                     }
                                     .font(AnvilFont.label)
                                     .foregroundStyle(AnvilColor.textTertiary)
+                                    .accessibilityLabel("Cancel adding step")
+                                    .accessibilityAddTraits(.isButton)
                                 }
                                 .padding(.horizontal, AnvilSpacing.md)
                                 .padding(.vertical, AnvilSpacing.sm)
@@ -96,6 +104,8 @@ struct AgentPlanView: View {
                                     .padding(.vertical, AnvilSpacing.sm)
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel("Add step")
+                                .accessibilityAddTraits(.isButton)
                             }
                         }
                     }
@@ -127,6 +137,7 @@ private struct PlanHeader: View {
             Image(systemName: "list.bullet.clipboard")
                 .font(.system(size: 14))
                 .foregroundStyle(AnvilColor.accentPurple)
+                .accessibilityHidden(true)
 
             Text("Plan")
                 .font(AnvilFont.sidebarHeader)
@@ -157,6 +168,8 @@ private struct PlanHeader: View {
                     .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Approve plan")
+                .accessibilityAddTraits(.isButton)
 
                 Button {
                     onCancel()
@@ -166,6 +179,8 @@ private struct PlanHeader: View {
                         .foregroundStyle(AnvilColor.textTertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Cancel plan")
+                .accessibilityAddTraits(.isButton)
             } else if plan.status == .approved || plan.status == .executing {
                 Button {
                     onCancel()
@@ -179,6 +194,8 @@ private struct PlanHeader: View {
                     .foregroundStyle(AnvilColor.accentRed)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Cancel plan")
+                .accessibilityAddTraits(.isButton)
             }
         }
         .padding(.horizontal, AnvilSpacing.md)
@@ -218,6 +235,7 @@ private struct PlanStepRow: View {
                 // Status icon
                 stepIcon
                     .frame(width: 20, height: 20)
+                    .accessibilityHidden(true)
 
                 // Step content
                 VStack(alignment: .leading, spacing: 2) {
@@ -247,6 +265,8 @@ private struct PlanStepRow: View {
                                 .foregroundStyle(AnvilColor.textTertiary)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Annotate step")
+                        .accessibilityAddTraits(.isButton)
 
                         Button(action: onSkip) {
                             Image(systemName: "forward.fill")
@@ -254,6 +274,8 @@ private struct PlanStepRow: View {
                                 .foregroundStyle(AnvilColor.accentAmber)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Skip step")
+                        .accessibilityAddTraits(.isButton)
 
                         Button(action: onRemove) {
                             Image(systemName: "trash")
@@ -261,6 +283,8 @@ private struct PlanStepRow: View {
                                 .foregroundStyle(AnvilColor.accentRed)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Remove step")
+                        .accessibilityAddTraits(.isButton)
                     }
                 }
             }
@@ -285,6 +309,7 @@ private struct PlanStepRow: View {
                         .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.label)
                         .foregroundStyle(AnvilColor.textPrimary)
+                        .accessibilityLabel("Step annotation")
                         .onSubmit {
                             onAnnotate(annotationText)
                             isAnnotating = false
@@ -296,12 +321,16 @@ private struct PlanStepRow: View {
                     }
                     .font(AnvilFont.label)
                     .foregroundStyle(AnvilColor.accentBlue)
+                    .accessibilityLabel("Save annotation")
+                    .accessibilityAddTraits(.isButton)
 
                     Button("Cancel") {
                         isAnnotating = false
                     }
                     .font(AnvilFont.label)
                     .foregroundStyle(AnvilColor.textTertiary)
+                    .accessibilityLabel("Cancel annotation")
+                    .accessibilityAddTraits(.isButton)
                 }
                 .padding(.leading, 28)
             }
@@ -309,6 +338,8 @@ private struct PlanStepRow: View {
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
         .background(step.status == .active ? AnvilColor.accentPurple.opacity(0.06) : .clear)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(step.title), \(step.status.rawValue)")
         .onHover { hovering in
             isHovering = hovering
         }

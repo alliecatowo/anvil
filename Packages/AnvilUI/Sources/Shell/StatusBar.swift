@@ -23,6 +23,8 @@ public struct StatusBar: View {
             }
             .buttonStyle(.borderless)
             .help("Switch Project (\u{2318}\u{21E7}O)")
+            .accessibilityLabel("Switch Project: \(appState.currentProject?.name ?? "No Project")")
+            .accessibilityAddTraits(.isButton)
 
             Circle()
                 .fill(AnvilColor.textTertiary.opacity(0.3))
@@ -56,6 +58,8 @@ public struct StatusBar: View {
             }
             .buttonStyle(.borderless)
             .help("Switch Branch")
+            .accessibilityLabel("Branch: \(appState.currentBranch)")
+            .accessibilityAddTraits(.isButton)
             .popover(isPresented: $isBranchPickerVisible, arrowEdge: .top) {
                 BranchPicker(isPresented: $isBranchPickerVisible)
             }
@@ -144,6 +148,7 @@ struct AgentActivityIndicator: View {
     @EnvironmentObject var appState: AppState
     @State private var elapsedSeconds: Int = 0
     @State private var timerTask: Task<Void, Never>?
+    @State private var isPulsing = false
 
     private var isRunning: Bool {
         appState.agentStatus == "Running"
@@ -161,6 +166,17 @@ struct AgentActivityIndicator: View {
                     Circle()
                         .fill(statusColor)
                         .frame(width: 6, height: 6)
+                        .overlay(
+                            Circle()
+                                .stroke(statusColor.opacity(0.4), lineWidth: 2)
+                                .scaleEffect(isPulsing ? 1.6 : 1.0)
+                                .opacity(isPulsing ? 0 : 0.6)
+                                .animation(
+                                    .easeOut(duration: 1.2).repeatForever(autoreverses: false),
+                                    value: isPulsing
+                                )
+                        )
+                        .onAppear { isPulsing = true }
                         .accessibilityHidden(true)
                 }
 
@@ -199,6 +215,8 @@ struct AgentActivityIndicator: View {
         }
         .buttonStyle(.borderless)
         .help(isRunning ? "Click to view active session" : "Agent \(appState.agentStatus.lowercased())")
+        .accessibilityLabel(isRunning ? "Agent running, click to view session" : "Agent \(appState.agentStatus.lowercased())")
+        .accessibilityAddTraits(.isButton)
         .onChange(of: appState.agentRunStartedAt) { _, newValue in
             if newValue != nil {
                 startTimer()
@@ -286,6 +304,8 @@ struct CursorPositionIndicator: View {
         }
         .buttonStyle(.borderless)
         .help("Go to Line (Ctrl+G)")
+        .accessibilityLabel("Line \(appState.cursorLine), Column \(appState.cursorColumn)")
+        .accessibilityAddTraits(.isButton)
         .popover(isPresented: $appState.isGoToLineVisible, arrowEdge: .top) {
             GoToLinePopover()
         }
@@ -310,6 +330,7 @@ struct GoToLinePopover: View {
                     .textFieldStyle(.roundedBorder)
                     .font(AnvilFont.statusBar)
                     .focused($isFocused)
+                    .accessibilityLabel("Line number")
                     .onSubmit {
                         goToLine()
                     }
@@ -319,6 +340,8 @@ struct GoToLinePopover: View {
                 }
                 .buttonStyle(.bordered)
                 .font(AnvilFont.statusBar)
+                .accessibilityLabel("Go to line")
+                .accessibilityAddTraits(.isButton)
             }
 
             Text("Current: Ln \(appState.cursorLine)")
@@ -363,6 +386,8 @@ struct EncodingIndicator: View {
         }
         .buttonStyle(.borderless)
         .help("File Encoding")
+        .accessibilityLabel("File Encoding: \(appState.fileEncoding.rawValue)")
+        .accessibilityAddTraits(.isButton)
         .popover(isPresented: $isPickerVisible, arrowEdge: .top) {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Encoding")
@@ -384,10 +409,13 @@ struct EncodingIndicator: View {
                                 Image(systemName: "checkmark")
                                     .font(.system(size: 10, weight: .bold))
                                     .foregroundStyle(.tint)
+                                    .accessibilityHidden(true)
                             }
                         }
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(encoding.rawValue)
+                    .accessibilityAddTraits(encoding == appState.fileEncoding ? [.isButton, .isSelected] : .isButton)
                 }
                 .listStyle(.plain)
             }
@@ -412,6 +440,8 @@ struct LineEndingIndicator: View {
         }
         .buttonStyle(.borderless)
         .help("Line Ending (click to toggle)")
+        .accessibilityLabel("Line Ending: \(appState.lineEnding.rawValue)")
+        .accessibilityAddTraits(.isButton)
     }
 
     private func cycleLineEnding() {

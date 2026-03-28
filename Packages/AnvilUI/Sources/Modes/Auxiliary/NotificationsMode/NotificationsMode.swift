@@ -24,6 +24,7 @@ struct NotificationsMode: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AnvilColor.backgroundPrimary)
+        .accessibilityLabel("Notifications")
         .onAppear {
             if let adapter = container.getOrCreateGitHubAdapter() {
                 viewModel.startGitHubPolling(adapter: adapter)

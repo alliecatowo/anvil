@@ -76,6 +76,7 @@ public class AppState: ObservableObject {
     @Published public var isProjectNotesVisible: Bool = false
     @Published public var isProjectSwitcherVisible: Bool = false
     @Published public var isProjectInfoVisible: Bool = false
+    @Published public var isAgentPanelVisible: Bool = false
     @Published public var isTerminalPanelVisible: Bool = false
     @Published public var terminalPanelHeight: CGFloat = 200
     @Published var terminalViewModel = TerminalViewModel()
@@ -245,6 +246,12 @@ public class AppState: ObservableObject {
 
     public func openSymbolPalette() {
         toggleCommandPalette(initialMode: .symbols)
+    }
+
+    public func toggleAgentPanel() {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
+            isAgentPanelVisible.toggle()
+        }
     }
 
     public func toggleTerminal() {

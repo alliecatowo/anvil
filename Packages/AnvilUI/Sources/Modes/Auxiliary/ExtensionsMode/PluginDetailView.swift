@@ -26,6 +26,8 @@ struct PluginDetailView: View {
                         .foregroundStyle(AnvilColor.accentBlue)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Back to marketplace")
+                    .accessibilityAddTraits(.isButton)
 
                     Spacer()
                 }
@@ -77,6 +79,7 @@ struct PluginDetailView: View {
                 .frame(width: 64, height: 64)
                 .background(AnvilColor.accentPurple.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
                 Text(plugin.name)
@@ -95,19 +98,25 @@ struct PluginDetailView: View {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Image(systemName: "arrow.down.circle")
                             .font(.system(size: 12))
+                            .accessibilityHidden(true)
                         Text(plugin.downloadCountFormatted + " downloads")
                             .font(AnvilFont.label)
                     }
                     .foregroundStyle(AnvilColor.textTertiary)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(plugin.downloadCountFormatted) downloads")
 
                     HStack(spacing: AnvilSpacing.xxs) {
                         Image(systemName: "star.fill")
                             .font(.system(size: 12))
                             .foregroundStyle(AnvilColor.accentAmber)
+                            .accessibilityHidden(true)
                         Text(String(format: "%.1f", plugin.rating))
                             .font(AnvilFont.label)
                             .foregroundStyle(AnvilColor.textTertiary)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Rating \(String(format: "%.1f", plugin.rating)) out of 5")
                 }
             }
 
@@ -119,19 +128,26 @@ struct PluginDetailView: View {
                     AnvilButton("Uninstall", icon: "trash", style: .destructive) {
                         viewModel.uninstallPlugin(pluginId)
                     }
+                    .accessibilityLabel("Uninstall \(plugin.name)")
+                    .accessibilityAddTraits(.isButton)
 
                     HStack(spacing: AnvilSpacing.xs) {
                         Circle()
                             .fill(plugin.isEnabled ? AnvilColor.accentGreen : AnvilColor.textTertiary)
                             .frame(width: 8, height: 8)
+                            .accessibilityHidden(true)
                         Text(plugin.isEnabled ? "Enabled" : "Disabled")
                             .font(AnvilFont.label)
                             .foregroundStyle(AnvilColor.textSecondary)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Plugin status: \(plugin.isEnabled ? "Enabled" : "Disabled")")
                 } else {
                     AnvilButton("Install", icon: "arrow.down.circle", style: .primary) {
                         viewModel.installPlugin(pluginId)
                     }
+                    .accessibilityLabel("Install \(plugin.name)")
+                    .accessibilityAddTraits(.isButton)
                 }
             }
         }
@@ -209,6 +225,8 @@ struct PluginDetailView: View {
             Toggle("", isOn: .constant(isOn))
                 .toggleStyle(.switch)
                 .controlSize(.small)
+                .accessibilityLabel(label)
+                .accessibilityAddTraits(.isToggle)
         }
     }
 }

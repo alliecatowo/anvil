@@ -40,6 +40,8 @@ struct PluginMarketplaceMode: View {
             }
             .pickerStyle(.segmented)
             .frame(maxWidth: 340)
+            .accessibilityLabel("Extensions view mode")
+            .accessibilityAddTraits(.isButton)
 
             Spacer()
         }
@@ -109,6 +111,8 @@ struct MarketplaceBrowser: View {
         VStack(spacing: AnvilSpacing.sm) {
             HStack(spacing: AnvilSpacing.md) {
                 AnvilSearchField(text: $viewModel.searchText, placeholder: "Search extensions...")
+                    .accessibilityLabel("Search extensions")
+                    .accessibilityAddTraits(.isSearchField)
 
                 Spacer()
 
@@ -119,6 +123,8 @@ struct MarketplaceBrowser: View {
                 }
                 .pickerStyle(.menu)
                 .frame(width: 170)
+                .accessibilityLabel("Filter by category")
+                .accessibilityAddTraits(.isButton)
 
                 Picker("Sort", selection: $viewModel.sortOrder) {
                     ForEach(PluginSortOrder.allCases) { order in
@@ -127,6 +133,8 @@ struct MarketplaceBrowser: View {
                 }
                 .pickerStyle(.menu)
                 .frame(width: 120)
+                .accessibilityLabel("Sort order")
+                .accessibilityAddTraits(.isButton)
             }
             .padding(.horizontal, AnvilSpacing.lg)
             .padding(.top, AnvilSpacing.md)

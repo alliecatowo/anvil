@@ -55,7 +55,7 @@ struct CollapsedSidebar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            railButton(
+            RailButton(
                 icon: "sidebar.leading",
                 title: "Expand Navigation",
                 isActive: false,
@@ -66,7 +66,7 @@ struct CollapsedSidebar: View {
 
             VStack(spacing: 4) {
                 ForEach(spaces) { entry in
-                    railButton(
+                    RailButton(
                         icon: entry.icon,
                         title: entry.label,
                         isActive: appState.currentSpace == entry.space,
@@ -78,13 +78,13 @@ struct CollapsedSidebar: View {
             Spacer()
 
             railDivider
-            railButton(
+            RailButton(
                 icon: "magnifyingglass",
                 title: "Find in Project",
                 isActive: appState.isProjectSearchVisible,
                 action: { appState.toggleProjectSearch() }
             )
-            railButton(
+            RailButton(
                 icon: "sidebar.right",
                 title: "Toggle Inspector",
                 isActive: appState.isInspectorVisible,
@@ -100,21 +100,41 @@ struct CollapsedSidebar: View {
             .frame(height: 1)
             .padding(.horizontal, AnvilSpacing.sm)
             .padding(.vertical, AnvilSpacing.xs)
+            .accessibilityHidden(true)
     }
+}
 
-    private func railButton(icon: String, title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+private struct RailButton: View {
+    let icon: String
+    let title: String
+    let isActive: Bool
+    let action: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: isActive ? .semibold : .regular))
                 .foregroundStyle(isActive ? AnvilColor.textPrimary : AnvilColor.textSecondary)
                 .frame(width: 36, height: 32)
-                .background(isActive ? Color.accentColor.opacity(0.14) : .clear)
+                .background(
+                    isActive
+                        ? Color.accentColor.opacity(0.14)
+                        : (isHovered ? Color.primary.opacity(0.08) : .clear)
+                )
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
+        .accessibilityAddTraits(.isButton)
         .help(title)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.12)) {
+                isHovered = hovering
+            }
+        }
     }
 }
 

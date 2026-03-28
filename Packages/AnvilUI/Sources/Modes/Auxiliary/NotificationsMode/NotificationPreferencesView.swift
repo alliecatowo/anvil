@@ -49,6 +49,8 @@ struct NotificationPreferencesView: View {
                 }
             }
             .toggleStyle(.switch)
+            .accessibilityLabel("Show native macOS notifications")
+            .accessibilityAddTraits(.isToggle)
         }
     }
 
@@ -94,6 +96,8 @@ struct NotificationPreferencesView: View {
                 )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Set minimum urgency to \(urgency.rawValue)")
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 
     private func urgencyColor(_ urgency: NotificationUrgency) -> Color {
@@ -155,6 +159,7 @@ struct NotificationPreferencesView: View {
                     .frame(width: 20, height: 20)
                     .background(color.opacity(0.15))
                     .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .accessibilityHidden(true)
 
                 Text(label)
                     .font(AnvilFont.body)
@@ -163,6 +168,8 @@ struct NotificationPreferencesView: View {
         }
         .toggleStyle(.switch)
         .padding(.vertical, AnvilSpacing.xxs)
+        .accessibilityLabel("\(label) notifications")
+        .accessibilityAddTraits(.isToggle)
     }
 
     // MARK: - Custom Rules
@@ -179,6 +186,8 @@ struct NotificationPreferencesView: View {
                 AnvilButton("Add Rule", icon: "plus", style: .ghost) {
                     showingAddRule.toggle()
                 }
+                .accessibilityLabel("Add filter rule")
+                .accessibilityAddTraits(.isButton)
             }
 
             Text("Rules filter notifications by matching text in the title or body")
@@ -209,11 +218,15 @@ struct NotificationPreferencesView: View {
                 .textFieldStyle(.roundedBorder)
                 .font(AnvilFont.body)
                 .foregroundStyle(AnvilColor.textPrimary)
+                .accessibilityLabel("Rule name")
+                .accessibilityAddTraits(.isSearchField)
 
             TextField("Match pattern (text to filter)", text: $newRulePattern)
                 .textFieldStyle(.roundedBorder)
                 .font(AnvilFont.code)
                 .foregroundStyle(AnvilColor.textPrimary)
+                .accessibilityLabel("Match pattern")
+                .accessibilityAddTraits(.isSearchField)
 
             HStack(spacing: AnvilSpacing.sm) {
                 Picker("Action", selection: $newRuleAction) {
@@ -223,6 +236,8 @@ struct NotificationPreferencesView: View {
                 }
                 .pickerStyle(.segmented)
                 .frame(maxWidth: 240)
+                .accessibilityLabel("Rule action")
+                .accessibilityAddTraits(.isButton)
 
                 Spacer()
 
@@ -231,6 +246,8 @@ struct NotificationPreferencesView: View {
                     newRuleName = ""
                     newRulePattern = ""
                 }
+                .accessibilityLabel("Cancel adding rule")
+                .accessibilityAddTraits(.isButton)
 
                 AnvilButton("Save", icon: "checkmark", style: .primary) {
                     guard !newRuleName.isEmpty, !newRulePattern.isEmpty else { return }
@@ -239,6 +256,8 @@ struct NotificationPreferencesView: View {
                     newRulePattern = ""
                     showingAddRule = false
                 }
+                .accessibilityLabel("Save rule")
+                .accessibilityAddTraits(.isButton)
             }
         }
         .padding(AnvilSpacing.md)
@@ -257,6 +276,8 @@ struct NotificationPreferencesView: View {
                     .foregroundStyle(rule.isEnabled ? AnvilColor.accentGreen : AnvilColor.textTertiary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(rule.isEnabled ? "Disable rule \(rule.name)" : "Enable rule \(rule.name)")
+            .accessibilityAddTraits(.isButton)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(rule.name)
@@ -285,10 +306,14 @@ struct NotificationPreferencesView: View {
                     .foregroundStyle(AnvilColor.textTertiary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Delete rule \(rule.name)")
+            .accessibilityAddTraits(.isButton)
         }
         .padding(AnvilSpacing.sm)
         .background(AnvilColor.backgroundSecondary)
         .clipShape(RoundedRectangle(cornerRadius: 6))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Rule: \(rule.name), pattern: \(rule.pattern), action: \(rule.action.rawValue), \(rule.isEnabled ? "enabled" : "disabled")")
     }
 
     private func actionColor(_ action: NotificationAction) -> Color {

@@ -53,12 +53,15 @@ struct SynthesisRoomView: View {
                 .foregroundStyle(AnvilColor.textTertiary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Back to Dashboard")
+            .accessibilityAddTraits(.isButton)
 
             Divider().frame(height: 20)
 
             Image(systemName: "arrow.triangle.merge")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(AnvilColor.accentPurple)
+                .accessibilityHidden(true)
 
             Text(room.title)
                 .font(AnvilFont.heading)
@@ -86,6 +89,8 @@ struct SynthesisRoomView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
+                .accessibilityLabel(room.status == .pending ? "Run Synthesis" : "Re-run Synthesis")
+                .accessibilityAddTraits(.isButton)
             }
         }
         .padding(.horizontal, AnvilSpacing.lg)
@@ -127,6 +132,7 @@ struct SynthesisRoomView: View {
                 Circle()
                     .fill(sessionStatusColor(session.status))
                     .frame(width: 6, height: 6)
+                    .accessibilityHidden(true)
 
                 Text(session.displayName)
                     .font(AnvilFont.sidebarItem)
@@ -145,6 +151,8 @@ struct SynthesisRoomView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Open session")
+                .accessibilityLabel("Open session \(session.displayName)")
+                .accessibilityAddTraits(.isButton)
             }
 
             // Stats
@@ -169,6 +177,7 @@ struct SynthesisRoomView: View {
                         .font(.system(size: 9))
                         .foregroundStyle(message.role == .user ? AnvilColor.accentBlue : AnvilColor.accentPurple)
                         .frame(width: 14)
+                        .accessibilityHidden(true)
 
                     Text(message.content.prefix(200))
                         .font(.system(size: 11))
@@ -192,6 +201,7 @@ struct SynthesisRoomView: View {
                 Image(systemName: "sparkles")
                     .font(.system(size: 12))
                     .foregroundStyle(AnvilColor.accentPurple)
+                    .accessibilityHidden(true)
                 Text("Synthesis Output")
                     .font(AnvilFont.label)
                     .foregroundStyle(AnvilColor.textSecondary)
@@ -211,6 +221,8 @@ struct SynthesisRoomView: View {
                         .foregroundStyle(AnvilColor.textTertiary)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Copy synthesis output")
+                    .accessibilityAddTraits(.isButton)
                 }
             }
             .padding(.horizontal, AnvilSpacing.md)
@@ -253,6 +265,7 @@ struct SynthesisRoomView: View {
                         Image(systemName: "arrow.triangle.merge")
                             .font(.system(size: 36, weight: .thin))
                             .foregroundStyle(AnvilColor.accentPurple.opacity(0.4))
+                            .accessibilityHidden(true)
 
                         Text("Ready to Synthesize")
                             .font(AnvilFont.heading)

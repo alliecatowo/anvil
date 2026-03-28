@@ -13,5 +13,6 @@ struct MessagingMode: View {
         }
         .navigationSplitViewStyle(.balanced)
         .background(.background)
+        .accessibilityLabel("Messaging")
     }
 }

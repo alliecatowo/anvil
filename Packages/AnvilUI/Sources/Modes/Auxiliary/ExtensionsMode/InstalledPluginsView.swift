@@ -20,6 +20,8 @@ struct InstalledPluginsView: View {
                 AnvilButton("Browse Marketplace", icon: "puzzlepiece.extension", style: .secondary) {
                     viewModel.viewMode = .browse
                 }
+                .accessibilityLabel("Browse marketplace")
+                .accessibilityAddTraits(.isButton)
             }
             .padding(AnvilSpacing.lg)
 
@@ -72,6 +74,7 @@ struct InstalledPluginRow: View {
                 .frame(width: 36, height: 36)
                 .background(AnvilColor.accentPurple.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
+                .accessibilityHidden(true)
 
             // Info
             VStack(alignment: .leading, spacing: 2) {
@@ -98,6 +101,8 @@ struct InstalledPluginRow: View {
             ))
             .toggleStyle(.switch)
             .controlSize(.small)
+            .accessibilityLabel("\(plugin.isEnabled ? "Disable" : "Enable") \(plugin.name)")
+            .accessibilityAddTraits(.isToggle)
 
             // Uninstall button
             Button {
@@ -109,6 +114,8 @@ struct InstalledPluginRow: View {
             }
             .buttonStyle(.plain)
             .help("Uninstall")
+            .accessibilityLabel("Uninstall \(plugin.name)")
+            .accessibilityAddTraits(.isButton)
 
             // Settings / detail
             Button {
@@ -120,7 +127,11 @@ struct InstalledPluginRow: View {
             }
             .buttonStyle(.plain)
             .help("Settings")
+            .accessibilityLabel("Settings for \(plugin.name)")
+            .accessibilityAddTraits(.isButton)
         }
         .contentShape(Rectangle())
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(plugin.name) version \(plugin.version) by \(plugin.author), \(plugin.isEnabled ? "enabled" : "disabled")")
     }
 }

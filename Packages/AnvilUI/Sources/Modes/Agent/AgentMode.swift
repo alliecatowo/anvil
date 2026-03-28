@@ -20,6 +20,7 @@ struct AgentEmptyState: View {
             Image(systemName: "cpu")
                 .font(.system(size: 48, weight: .thin))
                 .foregroundStyle(AnvilColor.textTertiary)
+                .accessibilityHidden(true)
 
             Text("Start an AI session")
                 .font(AnvilFont.heading)
@@ -37,12 +38,16 @@ struct AgentEmptyState: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.regular)
+                .accessibilityLabel("New Session")
+                .accessibilityAddTraits(.isButton)
 
                 SettingsLink {
                     Label("Configure Provider", systemImage: "gearshape")
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.regular)
+                .accessibilityLabel("Configure Provider")
+                .accessibilityAddTraits(.isButton)
             }
             .padding(.top, AnvilSpacing.sm)
         }

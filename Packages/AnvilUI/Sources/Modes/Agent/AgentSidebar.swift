@@ -14,6 +14,7 @@ struct AgentSidebar: View {
                 }
                 .pickerStyle(.segmented)
                 .accessibilityLabel("Agent Sidebar View")
+                .accessibilityAddTraits(.isButton)
 
                 Button {
                     viewModel.startNewSession(prompt: "", model: viewModel.selectedModelId)
@@ -24,6 +25,7 @@ struct AgentSidebar: View {
                 .buttonStyle(.bordered)
                 .controlSize(.small)
                 .accessibilityLabel("New Session")
+                .accessibilityAddTraits(.isButton)
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)

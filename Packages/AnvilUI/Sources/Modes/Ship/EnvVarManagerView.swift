@@ -54,6 +54,7 @@ struct EnvVarManagerView: View {
                             Image(systemName: "key")
                                 .font(.system(size: 24, weight: .thin))
                                 .foregroundStyle(.tertiary)
+                                .accessibilityHidden(true)
                             Text("No environment variables")
                                 .font(AnvilFont.body)
                                 .foregroundStyle(.secondary)
@@ -73,6 +74,7 @@ struct EnvVarManagerView: View {
                     Image(systemName: "server.rack")
                         .font(.system(size: 32, weight: .thin))
                         .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
                     Text("Select an environment to manage variables")
                         .font(AnvilFont.body)
                         .foregroundStyle(.secondary)
@@ -104,14 +106,18 @@ struct EnvVarManagerView: View {
         HStack(spacing: AnvilSpacing.md) {
             AnvilTextField("KEY", text: $viewModel.newEnvKey)
                 .frame(width: 200)
+                .accessibilityLabel("Variable key")
 
             AnvilTextField("Value", text: $viewModel.newEnvValue)
+                .accessibilityLabel("Variable value")
 
             Toggle("Secret", isOn: $viewModel.newEnvIsSecret)
                 .font(AnvilFont.label)
                 .foregroundStyle(.secondary)
                 .toggleStyle(.switch)
                 .controlSize(.small)
+                .accessibilityLabel("Mark as secret")
+                .accessibilityAddTraits(.isButton)
 
             AnvilButton("Add", icon: "plus", style: .primary) {
                 viewModel.addEnvVar(to: environmentID)
@@ -140,6 +146,7 @@ struct EnvVarManagerView: View {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 10))
                         .foregroundStyle(AnvilColor.accentAmber)
+                        .accessibilityHidden(true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
@@ -161,6 +168,8 @@ struct EnvVarManagerView: View {
             }
             .buttonStyle(.plain)
             .frame(width: 60, alignment: .center)
+            .accessibilityLabel(envVar.isSecret ? "Show value" : "Hide value")
+            .accessibilityAddTraits(.isButton)
 
             // Actions
             HStack(spacing: AnvilSpacing.xs) {
@@ -173,6 +182,8 @@ struct EnvVarManagerView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Edit variable")
+                .accessibilityLabel("Edit \(envVar.key)")
+                .accessibilityAddTraits(.isButton)
 
                 Button {
                     viewModel.requestDeleteEnvVar(id: envVar.id, from: environmentID)
@@ -183,6 +194,8 @@ struct EnvVarManagerView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Delete variable")
+                .accessibilityLabel("Delete \(envVar.key)")
+                .accessibilityAddTraits(.isButton)
             }
             .frame(width: 80)
         }
@@ -213,6 +226,8 @@ struct EnvVarManagerView: View {
                         .foregroundStyle(AnvilColor.accentGreen)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Save variable")
+                .accessibilityAddTraits(.isButton)
 
                 Button {
                     viewModel.cancelEditing()
@@ -222,6 +237,8 @@ struct EnvVarManagerView: View {
                         .foregroundStyle(AnvilColor.accentRed)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Cancel editing")
+                .accessibilityAddTraits(.isButton)
             }
             .frame(width: 80)
         }
@@ -248,6 +265,8 @@ struct EnvVarManagerView: View {
                         .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Close comparison")
+                .accessibilityAddTraits(.isButton)
             }
             .padding(AnvilSpacing.lg)
 
@@ -266,11 +285,13 @@ struct EnvVarManagerView: View {
                         }
                     }
                     .labelsHidden()
+                    .accessibilityLabel("Source environment")
                 }
 
                 Image(systemName: "arrow.left.arrow.right")
                     .font(.system(size: 14))
                     .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
                     Text("TARGET")
@@ -285,6 +306,7 @@ struct EnvVarManagerView: View {
                         }
                     }
                     .labelsHidden()
+                    .accessibilityLabel("Target environment")
                 }
 
                 Spacer()

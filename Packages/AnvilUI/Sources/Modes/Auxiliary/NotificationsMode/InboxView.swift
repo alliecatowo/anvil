@@ -47,6 +47,8 @@ struct InboxView: View {
                 AnvilButton("Mark All Read", icon: "checkmark", style: .ghost) {
                     viewModel.markAllAsRead()
                 }
+                .accessibilityLabel("Mark all notifications as read")
+                .accessibilityAddTraits(.isButton)
             }
             .padding(.horizontal, AnvilSpacing.lg)
             .padding(.vertical, AnvilSpacing.sm)
@@ -58,6 +60,8 @@ struct InboxView: View {
                 }
                 .pickerStyle(.menu)
                 .frame(width: 180)
+                .accessibilityLabel("Filter notifications by source")
+                .accessibilityAddTraits(.isButton)
 
                 Spacer()
             }
@@ -75,6 +79,7 @@ struct InboxView: View {
             Circle()
                 .fill(item.notification.isRead ? Color.clear : AnvilColor.accentBlue)
                 .frame(width: 8, height: 8)
+                .accessibilityHidden(true)
 
             // Source icon
             Image(systemName: item.source.icon)
@@ -83,6 +88,7 @@ struct InboxView: View {
                 .frame(width: 24, height: 24)
                 .background(item.source.color.opacity(0.15))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
+                .accessibilityHidden(true)
 
             // Priority indicator
             if item.notification.urgency == .critical || item.notification.urgency == .high {
@@ -93,6 +99,7 @@ struct InboxView: View {
                             ? AnvilColor.accentRed
                             : AnvilColor.accentAmber
                     )
+                    .accessibilityLabel(item.notification.urgency == .critical ? "Critical priority" : "High priority")
             }
 
             // Content
@@ -126,6 +133,9 @@ struct InboxView: View {
         .onTapGesture {
             viewModel.selectedItemID = item.id
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(item.notification.isRead ? "" : "Unread, ")\(item.notification.title), \(item.notification.body)")
+        .accessibilityAddTraits(.isButton)
     }
 
     // MARK: - Action Buttons
@@ -181,6 +191,8 @@ struct InboxView: View {
         }
         .buttonStyle(.borderless)
         .help(label)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(.isButton)
     }
 
 }

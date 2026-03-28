@@ -55,6 +55,7 @@ struct AgendaView: View {
         HStack(spacing: AnvilSpacing.xxs) {
             Image(systemName: icon)
                 .font(.system(size: 10))
+                .accessibilityHidden(true)
             Text(label)
                 .font(AnvilFont.label)
         }
@@ -62,6 +63,8 @@ struct AgendaView: View {
         .padding(.horizontal, AnvilSpacing.sm)
         .padding(.vertical, AnvilSpacing.xxs)
         .background(.quaternary, in: Capsule())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(label)
     }
 
     // MARK: - Agenda Row
@@ -82,6 +85,7 @@ struct AgendaView: View {
             RoundedRectangle(cornerRadius: 2)
                 .fill(entry.kindColor)
                 .frame(width: 3)
+                .accessibilityHidden(true)
 
             // Content
             VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
@@ -89,6 +93,7 @@ struct AgendaView: View {
                     Image(systemName: entry.kindIcon)
                         .font(.system(size: 12))
                         .foregroundStyle(entry.kindColor)
+                        .accessibilityHidden(true)
 
                     Text(entry.title)
                         .font(AnvilFont.sidebarItem)
@@ -119,11 +124,14 @@ struct AgendaView: View {
                         Image(systemName: "person.2")
                             .font(.system(size: 10))
                             .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
                         Text(entry.attendees.joined(separator: ", "))
                             .font(AnvilFont.label)
                             .foregroundStyle(.tertiary)
                             .lineLimit(1)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Attendees: \(entry.attendees.joined(separator: ", "))")
                 }
             }
         }
@@ -132,6 +140,9 @@ struct AgendaView: View {
         .onTapGesture {
             viewModel.selectedEntryID = entry.id
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(entry.title), \(timeFormatter.string(from: entry.start)), \(entry.duration), \(entry.kindLabel)")
+        .accessibilityAddTraits(.isButton)
     }
 
     // MARK: - Helpers

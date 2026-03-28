@@ -48,6 +48,8 @@ struct ScheduleMode: View {
                         )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("\(tab.rawValue) tab")
+                .accessibilityAddTraits(viewModel.selectedTab == tab ? [.isButton, .isSelected] : .isButton)
             }
         }
         .padding(.horizontal, AnvilSpacing.sm)

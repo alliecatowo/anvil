@@ -86,6 +86,7 @@ struct ContextChipView: View {
             Image(systemName: attachment.icon)
                 .font(.system(size: 10))
                 .foregroundStyle(attachment.color)
+                .accessibilityHidden(true)
 
             Text(attachment.label)
                 .font(AnvilFont.label)
@@ -98,10 +99,14 @@ struct ContextChipView: View {
                     .foregroundStyle(AnvilColor.textTertiary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Remove \(attachment.label)")
+            .accessibilityAddTraits(.isButton)
         }
         .padding(.horizontal, AnvilSpacing.sm)
         .padding(.vertical, AnvilSpacing.xxxs)
         .background(attachment.color.opacity(0.1), in: RoundedRectangle(cornerRadius: 4))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Context: \(attachment.label)")
     }
 }
 
