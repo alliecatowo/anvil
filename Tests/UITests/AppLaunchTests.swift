@@ -26,21 +26,24 @@ final class AppLaunchTests: XCTestCase {
         XCTAssertGreaterThan(window.frame.height, 600, "Window should be at least 600pt tall")
     }
 
-    // MARK: - Mode Tab Bar
+    // MARK: - Space Rail
 
-    func testModeTabBarIsVisible() throws {
-        // Core modes should be visible as buttons
-        let agentButton = app.buttons["Agent"]
-        XCTAssertTrue(agentButton.waitForExistence(timeout: 5), "Agent mode tab should be visible")
+    func testSpaceRailIsVisible() throws {
+        // Space rail buttons should be visible
+        let planButton = app.buttons["Plan"]
+        XCTAssertTrue(planButton.waitForExistence(timeout: 5), "Plan rail button should be visible")
 
-        let intentButton = app.buttons["Intent"]
-        XCTAssertTrue(intentButton.exists, "Intent mode tab should be visible")
+        let buildButton = app.buttons["Build"]
+        XCTAssertTrue(buildButton.exists, "Build rail button should be visible")
 
         let reviewButton = app.buttons["Review"]
-        XCTAssertTrue(reviewButton.exists, "Review mode tab should be visible")
+        XCTAssertTrue(reviewButton.exists, "Review rail button should be visible")
 
-        let shipButton = app.buttons["Ship"]
-        XCTAssertTrue(shipButton.exists, "Ship mode tab should be visible")
+        let operateButton = app.buttons["Operate"]
+        XCTAssertTrue(operateButton.exists, "Operate rail button should be visible")
+
+        let libraryButton = app.buttons["Library"]
+        XCTAssertTrue(libraryButton.exists, "Library rail button should be visible")
     }
 
     func testSearchButtonIsVisible() throws {

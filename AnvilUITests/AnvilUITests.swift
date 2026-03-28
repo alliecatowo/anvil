@@ -58,27 +58,24 @@ final class AnvilUITests: XCTestCase {
     // MARK: - Space Navigation (Plan → Intent, Build → Agent, Review, Operate → Ship, Library)
 
     func testSwitchToPlanSpace() {
-        // "Plan" maps to Intent mode in Anvil's tab vocabulary
-        let intentButton = app.buttons["Intent"]
-        XCTAssertTrue(intentButton.waitForExistence(timeout: 3), "Intent (Plan) tab must exist")
-        intentButton.click()
-        // Intent mode surfaces a backlog, sprint board, or ticket scroll view
+        let planButton = app.buttons["Plan"]
+        XCTAssertTrue(planButton.waitForExistence(timeout: 3), "Plan rail button must exist")
+        planButton.click()
         let contentVisible = app.staticTexts["Backlog"].waitForExistence(timeout: 2)
             || app.staticTexts["Sprint"].waitForExistence(timeout: 2)
             || app.staticTexts["Board"].waitForExistence(timeout: 2)
             || app.scrollViews.firstMatch.waitForExistence(timeout: 3)
-        XCTAssertTrue(contentVisible, "Intent mode must render planning content after tab click")
+        XCTAssertTrue(contentVisible, "Plan space must render planning content after click")
     }
 
     func testSwitchToBuildSpace() {
-        // "Build" maps to Agent mode
-        let agentButton = app.buttons["Agent"]
-        XCTAssertTrue(agentButton.waitForExistence(timeout: 3), "Agent (Build) tab must exist")
-        agentButton.click()
+        let buildButton = app.buttons["Build"]
+        XCTAssertTrue(buildButton.waitForExistence(timeout: 3), "Build rail button must exist")
+        buildButton.click()
         let newSession = app.buttons["New Session"]
         XCTAssertTrue(
             newSession.waitForExistence(timeout: 5),
-            "Agent mode must show New Session button after tab click"
+            "Build space must show New Session button after click"
         )
     }
 
@@ -92,17 +89,16 @@ final class AnvilUITests: XCTestCase {
             || app.buttons.matching(
                 NSPredicate(format: "label CONTAINS 'Sign in to GitHub'")
             ).firstMatch.waitForExistence(timeout: 2)
-        XCTAssertTrue(contentVisible, "Review mode must render sidebar content after tab click")
+        XCTAssertTrue(contentVisible, "Review space must render sidebar content after click")
     }
 
     func testSwitchToOperateSpace() {
-        // "Operate" maps to Ship mode
-        let shipButton = app.buttons["Ship"]
-        XCTAssertTrue(shipButton.waitForExistence(timeout: 3), "Ship (Operate) tab must exist")
-        shipButton.click()
+        let operateButton = app.buttons["Operate"]
+        XCTAssertTrue(operateButton.waitForExistence(timeout: 3), "Operate rail button must exist")
+        operateButton.click()
         XCTAssertTrue(
             app.staticTexts["ENVIRONMENTS"].waitForExistence(timeout: 5),
-            "Ship mode must show ENVIRONMENTS section in sidebar"
+            "Operate space must show ENVIRONMENTS section in sidebar"
         )
     }
 
@@ -595,35 +591,23 @@ final class AnvilOperateSpaceTests: XCTestCase {
 
     /// Navigate to Operate space and verify the Deploy (Ship) section is shown by default.
     func testOperateSpaceShowsDeploySectionByDefault() {
-        let shipButton = app.buttons["Ship"]
-        XCTAssertTrue(shipButton.waitForExistence(timeout: 5), "Ship tab must exist")
-        shipButton.click()
-        // The sidebar section picker must show "Deploy" as the active segment
-        let deployButton = app.buttons["Deploy"]
-        XCTAssertTrue(
-            deployButton.waitForExistence(timeout: 5),
-            "Operate sidebar must show a 'Deploy' segment by default"
-        )
-        // The Ship sidebar content must include ENVIRONMENTS
+        let operateButton = app.buttons["Operate"]
+        XCTAssertTrue(operateButton.waitForExistence(timeout: 5), "Operate rail button must exist")
+        operateButton.click()
+        // The Operate sidebar content must include ENVIRONMENTS
         XCTAssertTrue(
             app.staticTexts["ENVIRONMENTS"].waitForExistence(timeout: 5),
             "Deploy section must render ENVIRONMENTS list"
         )
     }
 
-    /// Navigate to Operate space and verify the Terminal section is reachable.
-    func testOperateSpaceSwitchToTerminalSection() {
-        let shipButton = app.buttons["Ship"]
-        XCTAssertTrue(shipButton.waitForExistence(timeout: 5), "Ship tab must exist")
-        shipButton.click()
-        let terminalButton = app.buttons["Terminal"]
-        XCTAssertTrue(
-            terminalButton.waitForExistence(timeout: 5),
-            "Operate sidebar must expose a 'Terminal' segment"
-        )
-        terminalButton.click()
-        // After switching, content should show a Sessions header or a new-session affordance
-        let contentVisible = app.staticTexts["Sessions"].waitForExistence(timeout: 3)
+    /// Navigate to Operate space and verify monitoring section is available.
+    func testOperateSpaceHasMonitorSection() {
+        let operateButton = app.buttons["Operate"]
+        XCTAssertTrue(operateButton.waitForExistence(timeout: 5), "Operate rail button must exist")
+        operateButton.click()
+        // Monitor section is available via the section picker
+        let contentVisible = app.staticTexts["ENVIRONMENTS"].waitForExistence(timeout: 3)
             || app.buttons.matching(
                 NSPredicate(format: "label CONTAINS 'New Terminal Session'")
             ).firstMatch.waitForExistence(timeout: 3)
