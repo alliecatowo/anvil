@@ -276,6 +276,14 @@ public final class ReviewViewModel: ObservableObject {
                         reviews[idx].status = .approved
                         persistReviewUpdate(reviews[idx])
                     }
+                    // Publish PRMergedEvent so subscribers (e.g. notification aggregator) react
+                    Task { [eventBus] in
+                        await eventBus?.publish(PRMergedEvent(
+                            pullRequestId: branchName,
+                            repo: "",
+                            branch: currentBranch
+                        ))
+                    }
                 case .conflicts(let conflicts):
                     mergeError = "\(conflicts.count) file(s) have merge conflicts"
                 case .alreadyUpToDate:

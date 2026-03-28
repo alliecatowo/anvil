@@ -190,6 +190,7 @@ struct SessionHeader: View {
                 Circle()
                     .fill(statusColor)
                     .frame(width: 8, height: 8)
+                    .accessibilityHidden(true)
 
                 if isEditing {
                     TextField("Session name", text: $editName)
@@ -240,6 +241,7 @@ struct SessionHeader: View {
 
                 // Model picker
                 ModelPicker(selectedModelId: $selectedModelId, onModelChange: onModelChange)
+                    .accessibilityLabel("AI model selector")
 
                 // Autonomy level picker
                 AutonomyPicker(level: session.autonomyLevel, onChange: onSetAutonomy)
@@ -265,6 +267,7 @@ struct SessionHeader: View {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Image(systemName: "chart.bar.fill")
                             .font(.system(size: 10))
+                            .accessibilityHidden(true)
                         Text(formatTokenCount(session.tokenUsage.totalTokens))
                             .font(AnvilFont.statusBar)
                         Text("$\(NSDecimalNumber(decimal: session.cost).doubleValue, specifier: "%.2f")")
@@ -274,6 +277,7 @@ struct SessionHeader: View {
                     .foregroundStyle(AnvilColor.textTertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Token usage")
 
             // Session actions menu
             Menu {
@@ -481,6 +485,7 @@ struct MessageBubble: View {
                 Image(systemName: message.role == .user ? "person.circle" : "cpu")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(message.role == .user ? AnvilColor.accentBlue : AnvilColor.accentPurple)
+                    .accessibilityHidden(true)
 
                 Text(message.role == .user ? "You" : "Agent")
                     .font(AnvilFont.sidebarHeader)
@@ -788,6 +793,7 @@ struct InputBar: View {
                             showAtPopup = detectAtToken(in: newValue)
                         }
                     }
+                    .accessibilityLabel("Message input")
 
                 if queuedCount > 0 {
                     Text("\(queuedCount) queued")
@@ -803,10 +809,12 @@ struct InputBar: View {
                     Image(systemName: isRunning ? (text.isEmpty ? "pause.circle.fill" : "plus.circle.fill") : "arrow.up.circle.fill")
                         .font(.system(size: 24))
                         .foregroundStyle(text.isEmpty && !isRunning ? AnvilColor.textTertiary : AnvilColor.accentBlue)
+                        .accessibilityHidden(true)
                 }
                 .buttonStyle(.plain)
                 .disabled(text.isEmpty && !isRunning)
                 .help(isRunning && !text.isEmpty ? "Queue message" : "")
+                .accessibilityLabel("Send message")
             }
             .padding(AnvilSpacing.md)
         }
@@ -814,6 +822,7 @@ struct InputBar: View {
             Rectangle()
                 .stroke(AnvilColor.accentBlue.opacity(isDropTargeted ? 0.6 : 0), lineWidth: 2)
         )
+        .accessibilityLabel("Attach file")
         .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
             for provider in providers {
                 _ = provider.loadObject(ofClass: URL.self) { url, _ in

@@ -111,6 +111,7 @@ public class AppState: ObservableObject {
     @Published var editorViewModel = EditorViewModel()
     @Published var testingViewModel = TestingViewModel()
     @Published var databaseViewModel = DatabaseViewModel()
+    @Published var observabilityViewModel = ObservabilityViewModel()
     @Published var gitHubPRViewModel = GitHubPRViewModel()
     @Published var pluginMarketplaceViewModel = PluginMarketplaceViewModel()
     @Published var messagingViewModel = MessagingViewModel()

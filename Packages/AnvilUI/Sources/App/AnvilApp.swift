@@ -34,10 +34,11 @@ public struct AnvilApp: App {
                     )
                     appState.intentViewModel.configure(eventBus: container.eventBus)
 
-                    // Wire deployment use case into ship view model
+                    // Wire deployment use case and event bus into ship view model
                     appState.shipViewModel.configure(
                         deploymentUseCase: container.makeCreateDeploymentUseCase()
                     )
+                    appState.shipViewModel.configure(eventBus: container.eventBus)
 
                     // Wire messaging port into messaging view model
                     appState.messagingViewModel.configure(
@@ -52,6 +53,16 @@ public struct AnvilApp: App {
                     // Wire notification port into notifications view model
                     appState.notificationsViewModel.configure(
                         notificationPort: container.notificationService
+                    )
+
+                    // Wire observability service into observability view model
+                    appState.observabilityViewModel.configure(
+                        service: container.observabilityService
+                    )
+
+                    // Wire database service into database view model
+                    appState.databaseViewModel.configure(
+                        service: container.databaseService
                     )
 
                     if let adapter = container.getOrCreateGitAdapter() {

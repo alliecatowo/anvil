@@ -275,6 +275,9 @@ public final class IntentViewModel: ObservableObject {
               let idx = tickets.firstIndex(where: { $0.id == id }) else { return }
         tickets[idx].title = newTitle
         tickets[idx].updatedAt = .now
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "updated", "field": "title", "ticketId": id]))
+        }
     }
 
     func updateDescription(_ newDescription: String) {
@@ -282,6 +285,9 @@ public final class IntentViewModel: ObservableObject {
               let idx = tickets.firstIndex(where: { $0.id == id }) else { return }
         tickets[idx].description = newDescription
         tickets[idx].updatedAt = .now
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "updated", "field": "description", "ticketId": id]))
+        }
     }
 
     func updateStatus(_ ticketId: String, status: String) {
@@ -294,24 +300,36 @@ public final class IntentViewModel: ObservableObject {
         guard let idx = tickets.firstIndex(where: { $0.id == ticketId }) else { return }
         tickets[idx].priority = priority
         tickets[idx].updatedAt = .now
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "updated", "field": "priority", "ticketId": ticketId]))
+        }
     }
 
     func updateAssignee(_ ticketId: String, assignee: String?) {
         guard let idx = tickets.firstIndex(where: { $0.id == ticketId }) else { return }
         tickets[idx].assignee = assignee
         tickets[idx].updatedAt = .now
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "updated", "field": "assignee", "ticketId": ticketId]))
+        }
     }
 
     func updateDueDate(_ ticketId: String, dueDate: Date?) {
         guard let idx = tickets.firstIndex(where: { $0.id == ticketId }) else { return }
         tickets[idx].dueDate = dueDate
         tickets[idx].updatedAt = .now
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "updated", "field": "dueDate", "ticketId": ticketId]))
+        }
     }
 
     func updateStoryPoints(_ ticketId: String, storyPoints: Int?) {
         guard let idx = tickets.firstIndex(where: { $0.id == ticketId }) else { return }
         tickets[idx].storyPoints = storyPoints
         tickets[idx].updatedAt = .now
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "updated", "field": "storyPoints", "ticketId": ticketId]))
+        }
     }
 
     // MARK: - Subtask Actions
@@ -321,6 +339,9 @@ public final class IntentViewModel: ObservableObject {
         guard !trimmed.isEmpty else { return }
         let subtask = Subtask(ticketId: ticketId, title: trimmed)
         subtasks[ticketId, default: []].append(subtask)
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "subtaskAdded", "ticketId": ticketId]))
+        }
     }
 
     func toggleSubtask(ticketId: String, subtaskId: String) {
@@ -330,6 +351,9 @@ public final class IntentViewModel: ObservableObject {
 
     func deleteSubtask(ticketId: String, subtaskId: String) {
         subtasks[ticketId]?.removeAll { $0.id == subtaskId }
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "subtaskDeleted", "ticketId": ticketId]))
+        }
     }
 
     // MARK: - Comment Actions
@@ -339,6 +363,9 @@ public final class IntentViewModel: ObservableObject {
         guard !trimmed.isEmpty else { return }
         let comment = TicketComment(ticketId: ticketId, author: author, body: trimmed)
         comments[ticketId, default: []].append(comment)
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "commentAdded", "ticketId": ticketId]))
+        }
     }
 
     func deleteComment(ticketId: String, commentId: String) {

@@ -16,6 +16,7 @@ public struct AnvilCommands: Commands {
                 appState.agentViewModel.startNewSession(prompt: "", model: "claude-sonnet-4-6")
             }
             .keyboardShortcut("a", modifiers: [.command, .shift])
+            .help("Start a new AI agent session")
 
             Divider()
 
@@ -23,26 +24,31 @@ public struct AnvilCommands: Commands {
                 newProject()
             }
             .keyboardShortcut("n", modifiers: [.command, .shift, .option])
+            .help("Create a new project from one or more repositories")
 
             Button("Open Project...") {
                 openProject()
             }
             .keyboardShortcut("o", modifiers: .command)
+            .help("Open an existing project directory")
 
             Button("Switch Project...") {
                 appState.toggleProjectSwitcher()
             }
             .keyboardShortcut("o", modifiers: [.command, .shift])
+            .help("Switch to a different project")
 
             Button("Project Info...") {
                 appState.toggleProjectInfo()
             }
+            .help("Show project details and settings")
 
             Divider()
 
             Button("Load Demo Project") {
                 appState.loadDemoData()
             }
+            .help("Load a sample project for demonstration")
         }
 
         CommandMenu("Space") {
@@ -52,6 +58,7 @@ public struct AnvilCommands: Commands {
                         appState.switchSpace(space)
                     }
                     .keyboardShortcut(KeyEquivalent(Character(String(num))), modifiers: .command)
+                    .help("Switch to the \(space.rawValue) space")
                 }
             }
         }
@@ -61,16 +68,19 @@ public struct AnvilCommands: Commands {
                 appState.toggleSidebar()
             }
             .keyboardShortcut("b", modifiers: .command)
+            .help("Show or hide the sidebar")
 
             Button("Toggle Inspector") {
                 appState.toggleInspector()
             }
             .keyboardShortcut("i", modifiers: [.command, .shift])
+            .help("Show or hide the inspector panel")
 
             Button("Toggle Terminal") {
                 appState.toggleTerminal()
             }
             .keyboardShortcut("j", modifiers: .command)
+            .help("Show or hide the terminal panel")
 
             Divider()
 
@@ -82,6 +92,7 @@ public struct AnvilCommands: Commands {
                 }
             }
             .keyboardShortcut("k", modifiers: .command)
+            .help("Open the command palette or trigger inline edit")
 
             Button("Find in File") {
                 if appState.currentSpace == .build {
@@ -89,41 +100,49 @@ public struct AnvilCommands: Commands {
                 }
             }
             .keyboardShortcut("f", modifiers: .command)
+            .help("Search within the current file")
 
             Button("Find in Project") {
                 appState.toggleProjectSearch()
             }
             .keyboardShortcut("f", modifiers: [.command, .shift])
+            .help("Search across all files in the project")
 
             Button("Go to File...") {
                 appState.openFilePalette()
             }
             .keyboardShortcut("p", modifiers: .command)
+            .help("Quickly open a file by name")
 
             Button("Go to Symbol...") {
                 appState.openSymbolPalette()
             }
             .keyboardShortcut("o", modifiers: [.command, .shift])
+            .help("Jump to a symbol definition in the project")
 
             Button("Go to Line...") {
                 appState.isGoToLineVisible = true
             }
             .keyboardShortcut("g", modifiers: .control)
+            .help("Jump to a specific line number")
 
             Button("Quick Capture") {
                 appState.toggleQuickCapture()
             }
             .keyboardShortcut(.space, modifiers: [.command, .shift])
+            .help("Capture a quick note or idea")
 
             Button("Project Notes") {
                 appState.toggleProjectNotes()
             }
             .keyboardShortcut("n", modifiers: [.command, .shift])
+            .help("Open project notes")
 
             Button("Ask Codebase (Q&A)") {
                 appState.toggleCodebaseQA()
             }
             .keyboardShortcut("/", modifiers: .command)
+            .help("Ask questions about your codebase")
 
             Divider()
 
@@ -132,16 +151,19 @@ public struct AnvilCommands: Commands {
                 _ = appState.terminalViewModel.addTab()
             }
             .keyboardShortcut("t", modifiers: [.command, .shift])
+            .help("Open a new terminal tab")
 
             Button("Split Editor Right") {
                 appState.triggerSplitVertical = true
             }
             .keyboardShortcut("\\", modifiers: .command)
+            .help("Split the editor vertically")
 
             Button("Split Editor Down") {
                 appState.triggerSplitHorizontal = true
             }
             .keyboardShortcut("\\", modifiers: [.command, .shift])
+            .help("Split the editor horizontally")
         }
     }
 

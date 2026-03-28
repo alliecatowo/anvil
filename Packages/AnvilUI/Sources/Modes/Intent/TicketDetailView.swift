@@ -156,6 +156,7 @@ struct TicketDetailView: View {
             .textFieldStyle(.roundedBorder)
             .font(AnvilFont.heading)
             .foregroundStyle(AnvilColor.textPrimary)
+            .accessibilityLabel("Ticket title")
 
             // Metadata row (read-only display)
             HStack(spacing: AnvilSpacing.lg) {
@@ -231,6 +232,7 @@ struct TicketDetailView: View {
                     ForEach(viewModel.allStatuses, id: \.self) { Text($0.capitalized).tag($0) }
                 }
                 .labelsHidden()
+                .accessibilityLabel("Ticket status")
             }
             LabeledContent("Priority") {
                 Picker("Priority", selection: Binding(
@@ -242,6 +244,7 @@ struct TicketDetailView: View {
                     }
                 }
                 .labelsHidden()
+                .accessibilityLabel("Ticket priority")
             }
             LabeledContent("Assignee") {
                 Picker("Assignee", selection: Binding(
@@ -252,6 +255,7 @@ struct TicketDetailView: View {
                     ForEach(viewModel.allAssignees, id: \.self) { Text($0).tag($0) }
                 }
                 .labelsHidden()
+                .accessibilityLabel("Ticket assignee")
             }
             LabeledContent("Due Date") {
                 HStack(spacing: 4) {
@@ -260,6 +264,7 @@ struct TicketDetailView: View {
                         set: { viewModel.updateDueDate(ticket.id, dueDate: $0) }
                     ), displayedComponents: .date)
                     .labelsHidden()
+                    .accessibilityLabel("Due date")
                     if ticket.dueDate != nil {
                         Button { viewModel.updateDueDate(ticket.id, dueDate: nil) } label: {
                             Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)

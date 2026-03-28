@@ -13,6 +13,12 @@ public actor ZedACPClient {
     private var sessionId: String?
     private var dispatchTask: Task<Void, Never>?
 
+    // MARK: - Terminal Sessions
+
+    private let terminalSessionFactory: (any TerminalSessionFactory)?
+    private var terminalSessions: [String: any TerminalSessionPort] = [:]
+    private var terminalNextId: Int = 0
+
     // MARK: - Callbacks for bidirectional requests from agent
 
     /// Called when the agent requests permission to execute a tool.
@@ -28,8 +34,9 @@ public actor ZedACPClient {
     /// Called for each streaming session update from the agent.
     public var onStreamUpdate: (@Sendable (ZedACPSessionUpdate) async -> Void)?
 
-    public init() {
+    public init(terminalSessionFactory: (any TerminalSessionFactory)? = nil) {
         self.transport = ZedACPTransport()
+        self.terminalSessionFactory = terminalSessionFactory
     }
 
     // MARK: - Connection
@@ -51,6 +58,11 @@ public actor ZedACPClient {
             continuation.resume(throwing: ZedACPClientError.disconnected)
         }
         pendingRequests.removeAll()
+        // Terminate all active terminal sessions
+        for (_, session) in terminalSessions {
+            session.terminate()
+        }
+        terminalSessions.removeAll()
         await transport.stop()
         sessionId = nil
     }
@@ -179,7 +191,7 @@ public actor ZedACPClient {
             if Task.isCancelled { break }
 
             if message.isRequest {
-                // Inbound REQUEST from agent — handle and respond
+                // Inbound REQUEST from agent -- handle and respond
                 await handleAgentRequest(message)
             } else if message.isResponse {
                 // RESPONSE to one of our pending requests
@@ -192,7 +204,7 @@ public actor ZedACPClient {
             }
         }
 
-        // Stream ended — agent process exited. Fail any pending requests.
+        // Stream ended -- agent process exited. Fail any pending requests.
         for (_, continuation) in pendingRequests {
             continuation.resume(throwing: ZedACPClientError.disconnected)
         }
@@ -214,13 +226,14 @@ public actor ZedACPClient {
         case "fs/write_text_file":
             await handleFileWrite(id: id, params: message.params)
 
-        case "terminal/create", "terminal/output", "terminal/kill":
-            // Terminal requests — not yet implemented, return error
-            let errorResp = ACPJsonRpcMessage.errorResponse(
-                id: id,
-                error: .init(code: -32601, message: "Terminal operations not yet supported")
-            )
-            try? await transport.send(errorResp)
+        case "terminal/create":
+            await handleTerminalCreate(id: id, params: message.params)
+
+        case "terminal/output":
+            await handleTerminalOutput(id: id, params: message.params)
+
+        case "terminal/kill":
+            await handleTerminalKill(id: id, params: message.params)
 
         default:
             let errorResp = ACPJsonRpcMessage.errorResponse(
@@ -348,6 +361,170 @@ public actor ZedACPClient {
             )
             try? await transport.send(errorResp)
         }
+    }
+
+    // MARK: - Handle Terminal Requests
+
+    private func handleTerminalCreate(id: ACPMessageId, params: ACPAnyCodable?) async {
+        guard let factory = terminalSessionFactory else {
+            let errorResp = ACPJsonRpcMessage.errorResponse(
+                id: id,
+                error: .init(code: -32603, message: "Terminal sessions not available: no session factory configured")
+            )
+            try? await transport.send(errorResp)
+            return
+        }
+
+        // Parse optional parameters with sensible defaults
+        var shell: String?
+        var columns: UInt16 = 80
+        var rows: UInt16 = 24
+        var workingDir: String?
+
+        if case .dictionary(let dict)? = params {
+            if case .string(let s)? = dict["shell"] { shell = s }
+            if case .int(let c)? = dict["columns"] { columns = UInt16(clamping: c) }
+            if case .int(let r)? = dict["rows"] { rows = UInt16(clamping: r) }
+            if case .string(let d)? = dict["workingDir"] { workingDir = d }
+        }
+
+        let termSessionId = "term-\(terminalNextId)"
+        terminalNextId += 1
+
+        var session = factory.makeSession()
+
+        // Wire output callback to send notifications back to the agent.
+        // These closures are synchronous (@Sendable (Data) -> Void) so we
+        // bridge into async context with a Task.
+        let capturedTransport = transport
+        let capturedSessionId = termSessionId
+        session.onOutput = { data in
+            let base64 = data.base64EncodedString()
+            Task {
+                let notification = ACPJsonRpcMessage.notification(
+                    method: "terminal/data",
+                    params: .dictionary([
+                        "sessionId": .string(capturedSessionId),
+                        "data": .string(base64),
+                    ])
+                )
+                try? await capturedTransport.send(notification)
+            }
+        }
+
+        session.onExit = { exitCode in
+            Task {
+                let notification = ACPJsonRpcMessage.notification(
+                    method: "terminal/exit",
+                    params: .dictionary([
+                        "sessionId": .string(capturedSessionId),
+                        "exitCode": .int(Int(exitCode)),
+                    ])
+                )
+                try? await capturedTransport.send(notification)
+            }
+        }
+
+        do {
+            try session.spawn(shell: shell, columns: columns, rows: rows, workingDirectory: workingDir)
+        } catch {
+            let errorResp = ACPJsonRpcMessage.errorResponse(
+                id: id,
+                error: .init(code: -32603, message: "Failed to spawn terminal: \(error)")
+            )
+            try? await transport.send(errorResp)
+            return
+        }
+
+        terminalSessions[termSessionId] = session
+
+        let response = ACPJsonRpcMessage.response(
+            id: id,
+            result: .dictionary(["sessionId": .string(termSessionId)])
+        )
+        try? await transport.send(response)
+    }
+
+    private func handleTerminalOutput(id: ACPMessageId, params: ACPAnyCodable?) async {
+        guard case .dictionary(let dict)? = params,
+              case .string(let termSessionId)? = dict["sessionId"] else {
+            let errorResp = ACPJsonRpcMessage.errorResponse(
+                id: id,
+                error: .init(code: -32602, message: "Missing sessionId parameter")
+            )
+            try? await transport.send(errorResp)
+            return
+        }
+
+        guard let session = terminalSessions[termSessionId] else {
+            let errorResp = ACPJsonRpcMessage.errorResponse(
+                id: id,
+                error: .init(code: -32602, message: "Terminal session not found: \(termSessionId)")
+            )
+            try? await transport.send(errorResp)
+            return
+        }
+
+        // Accept base64-encoded data or plain UTF-8 string as fallback
+        let data: Data
+        if case .string(let dataStr)? = dict["data"] {
+            if let decoded = Data(base64Encoded: dataStr) {
+                data = decoded
+            } else if let utf8 = dataStr.data(using: .utf8) {
+                data = utf8
+            } else {
+                let errorResp = ACPJsonRpcMessage.errorResponse(
+                    id: id,
+                    error: .init(code: -32602, message: "Invalid data encoding")
+                )
+                try? await transport.send(errorResp)
+                return
+            }
+        } else {
+            let errorResp = ACPJsonRpcMessage.errorResponse(
+                id: id,
+                error: .init(code: -32602, message: "Missing data parameter")
+            )
+            try? await transport.send(errorResp)
+            return
+        }
+
+        session.write(data)
+
+        let response = ACPJsonRpcMessage.response(
+            id: id,
+            result: .dictionary(["success": .bool(true)])
+        )
+        try? await transport.send(response)
+    }
+
+    private func handleTerminalKill(id: ACPMessageId, params: ACPAnyCodable?) async {
+        guard case .dictionary(let dict)? = params,
+              case .string(let termSessionId)? = dict["sessionId"] else {
+            let errorResp = ACPJsonRpcMessage.errorResponse(
+                id: id,
+                error: .init(code: -32602, message: "Missing sessionId parameter")
+            )
+            try? await transport.send(errorResp)
+            return
+        }
+
+        guard let session = terminalSessions.removeValue(forKey: termSessionId) else {
+            let errorResp = ACPJsonRpcMessage.errorResponse(
+                id: id,
+                error: .init(code: -32602, message: "Terminal session not found: \(termSessionId)")
+            )
+            try? await transport.send(errorResp)
+            return
+        }
+
+        session.terminate()
+
+        let response = ACPJsonRpcMessage.response(
+            id: id,
+            result: .dictionary(["success": .bool(true)])
+        )
+        try? await transport.send(response)
     }
 
     // MARK: - Handle Notifications

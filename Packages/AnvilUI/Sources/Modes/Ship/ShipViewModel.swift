@@ -139,9 +139,14 @@ public final class ShipViewModel: ObservableObject {
     // MARK: Use Cases
 
     private var createDeploymentUseCase: CreateDeploymentUseCase?
+    private var eventBus: EventBus?
 
     public func configure(deploymentUseCase: CreateDeploymentUseCase) {
         self.createDeploymentUseCase = deploymentUseCase
+    }
+
+    public func configure(eventBus: EventBus) {
+        self.eventBus = eventBus
     }
 
     // MARK: Navigation
@@ -273,6 +278,13 @@ public final class ShipViewModel: ObservableObject {
         isDeploying = true
         deployProgress = 0.0
         deployingEnvironmentID = environmentID
+
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(
+                sourcePrimitive: "ship",
+                payload: ["action": "deploymentStarted", "environmentId": environmentID]
+            ))
+        }
 
         // Mark environment as deploying
         if let idx = environments.firstIndex(where: { $0.id == environmentID }) {
@@ -464,11 +476,18 @@ public final class ShipViewModel: ObservableObject {
 
     func addEnvVar(to environmentID: String) {
         guard !newEnvKey.isEmpty else { return }
-        let envVar = EnvVar(key: newEnvKey, value: newEnvValue, isSecret: newEnvIsSecret)
+        let key = newEnvKey
+        let envVar = EnvVar(key: key, value: newEnvValue, isSecret: newEnvIsSecret)
         envVars[environmentID, default: []].append(envVar)
         newEnvKey = ""
         newEnvValue = ""
         newEnvIsSecret = false
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(
+                sourcePrimitive: "ship",
+                payload: ["action": "envVarAdded", "environmentId": environmentID, "key": key]
+            ))
+        }
     }
 
     func startEditingEnvVar(_ envVar: EnvVar) {
@@ -479,13 +498,20 @@ public final class ShipViewModel: ObservableObject {
 
     func saveEditingEnvVar(in environmentID: String) {
         guard let editID = editingEnvVarID else { return }
+        let key = editingKey
         if let idx = envVars[environmentID]?.firstIndex(where: { $0.id == editID }) {
-            envVars[environmentID]?[idx].key = editingKey
+            envVars[environmentID]?[idx].key = key
             if !editingValue.isEmpty {
                 envVars[environmentID]?[idx].value = editingValue
             }
         }
         cancelEditing()
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(
+                sourcePrimitive: "ship",
+                payload: ["action": "envVarUpdated", "environmentId": environmentID, "key": key]
+            ))
+        }
     }
 
     func cancelEditing() {
@@ -506,6 +532,12 @@ public final class ShipViewModel: ObservableObject {
         showingDeleteConfirm = false
         pendingDeleteEnvVarID = nil
         pendingDeleteEnvID = nil
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(
+                sourcePrimitive: "ship",
+                payload: ["action": "envVarDeleted", "environmentId": envID]
+            ))
+        }
     }
 
     func cancelDeleteEnvVar() {
