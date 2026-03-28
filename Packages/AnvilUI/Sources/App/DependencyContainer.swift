@@ -177,6 +177,15 @@ public final class DependencyContainer: ObservableObject {
         ticketService = service
     }
 
+    // MARK: - Agent Session Persistence
+
+    public private(set) var agentSessionPort: (any AgentSessionPort)?
+
+    /// Set the agent session persistence port (e.g. SQLite-backed).
+    public func setAgentSessionPort(_ port: any AgentSessionPort) {
+        agentSessionPort = port
+    }
+
     // MARK: - Deployment Management
 
     public let deploymentService: any DeploymentManagementPort = InMemoryDeploymentService()
@@ -241,13 +250,27 @@ public final class DependencyContainer: ObservableObject {
     /// Set the hosting port adapter and test connection.
     public func setHostingAdapter(_ adapter: any HostingPort) {
         _hostingPort = adapter
-        testIntegration("vercel") { try await adapter.validateConnection() }
+        testIntegration(adapter.providerId) { try await adapter.validateConnection() }
     }
 
     /// Set the observability port adapter and test connection.
     public func setObservabilityAdapter(_ adapter: any ObservabilityPort) {
         _observabilityPort = adapter
         testIntegration("sentry") { try await adapter.validateConnection() }
+    }
+
+    /// Factory closure to create an ObservabilityPort from credentials.
+    /// Injected by the App target so UI code never imports Infrastructure.
+    public var observabilityAdapterFactory: (@Sendable (String, String) -> any ObservabilityPort)?
+
+    /// Connect Sentry using user-provided credentials. Creates the adapter
+    /// via the injected factory, wires it into the observability service,
+    /// and sets it as the active observability port.
+    public func connectSentry(token: String, organization: String) {
+        guard let factory = observabilityAdapterFactory else { return }
+        let adapter = factory(token, organization)
+        observabilityService.setAdapter(adapter)
+        setObservabilityAdapter(adapter)
     }
 
     /// Set the messaging port adapter and test connection.
@@ -259,7 +282,7 @@ public final class DependencyContainer: ObservableObject {
     /// Remove an integration adapter and clear its status.
     public func removeIntegration(_ id: String) {
         switch id {
-        case "vercel": _hostingPort = nil
+        case "vercel", "netlify": _hostingPort = nil
         case "sentry": _observabilityPort = nil
         case "slack": _messagingPort = nil
         default: break

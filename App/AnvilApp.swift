@@ -63,12 +63,26 @@ struct AnvilMain: App {
                         createUseCase: container.makeCreateTicketUseCase()
                     )
 
+                    // Wire persistent agent session storage (SQLite)
+                    let sessionRepo = SQLiteAgentSessionRepository()
+                    try? await sessionRepo.open()
+                    container.setAgentSessionPort(sessionRepo)
+                    appState.agentViewModel.configure(sessionPort: sessionRepo)
+
                     // Wire SQLite database adapter
                     let sqliteAdapter = SQLiteDatabaseAdapter()
                     container.databaseService.setAdapter(sqliteAdapter)
 
+                    // Inject observability adapter factory (keeps Infrastructure out of UI)
+                    container.observabilityAdapterFactory = { token, org in
+                        SentryObservabilityAdapter(authToken: token, organization: org)
+                    }
+
                     // Wire external ticket provider based on available credentials
                     wireTicketProvider(container: container)
+
+                    // Wire hosting provider (Vercel or Netlify) based on credentials
+                    wireHostingProvider(container: container)
 
                     // Wire Slack messaging adapter if bot token is available
                     wireMessagingProvider(container: container)
@@ -130,6 +144,28 @@ struct AnvilMain: App {
 
         // No external ticket provider configured; the in-memory service handles local tickets.
         container.selectedTicketProvider = .none
+    }
+
+    /// Detect stored hosting credentials and wire the matching adapter (Vercel or Netlify).
+    @MainActor
+    private func wireHostingProvider(container: DependencyContainer) {
+        let keychain = KeychainStore(service: "com.anvil.providers")
+
+        // Prefer Vercel when credentials are present
+        if let token = try? keychain.get("vercel.apiToken"), !token.isEmpty {
+            let teamId = try? keychain.get("vercel.teamId")
+            let adapter = VercelHostingAdapter(apiToken: token, teamId: teamId)
+            container.setHostingAdapter(adapter)
+            return
+        }
+
+        // Fall back to Netlify
+        if let token = try? keychain.get("netlify.token"), !token.isEmpty {
+            let siteId = try? keychain.get("netlify.siteId")
+            let adapter = NetlifyHostingAdapter(apiToken: token, siteId: siteId)
+            container.setHostingAdapter(adapter)
+            return
+        }
     }
 
     /// Detect a stored Slack bot token and wire the SlackMessagingAdapter.
