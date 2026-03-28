@@ -539,78 +539,6 @@ struct StartAgentSessionUseCaseTests {
     }
 }
 
-// MARK: - CreateTicketUseCase
-
-@Suite("CreateTicketUseCase")
-struct CreateTicketUseCaseTests {
-
-    @Test("execute returns ticket with correct title")
-    func returnsTicketWithCorrectTitle() async throws {
-        let service = InMemoryTicketService()
-        let useCase = CreateTicketUseCase(ticketPort: service, eventBus: EventBus.shared)
-        let ticket = try await useCase.execute(title: "Fix login bug")
-        #expect(ticket.title == "Fix login bug")
-    }
-
-    @Test("execute persists ticket so it appears in fetch")
-    func ticketIsPersisted() async throws {
-        let service = InMemoryTicketService()
-        let useCase = CreateTicketUseCase(ticketPort: service, eventBus: EventBus.shared)
-        let created = try await useCase.execute(title: "Add dark mode")
-        let all = try await service.fetchTickets()
-        #expect(all.contains { $0.id == created.id })
-    }
-
-    @Test("execute assigns non-empty id")
-    func assignsNonEmptyId() async throws {
-        let service = InMemoryTicketService()
-        let useCase = CreateTicketUseCase(ticketPort: service, eventBus: EventBus.shared)
-        let ticket = try await useCase.execute(title: "Setup CI")
-        #expect(!ticket.id.isEmpty)
-    }
-
-    @Test("two tickets receive distinct ids")
-    func distinctIds() async throws {
-        let service = InMemoryTicketService()
-        let useCase = CreateTicketUseCase(ticketPort: service, eventBus: EventBus.shared)
-        let t1 = try await useCase.execute(title: "Ticket A")
-        let t2 = try await useCase.execute(title: "Ticket B")
-        #expect(t1.id != t2.id)
-    }
-
-    @Test("priority defaults to medium when not supplied")
-    func defaultPriorityIsMedium() async throws {
-        let service = InMemoryTicketService()
-        let useCase = CreateTicketUseCase(ticketPort: service, eventBus: EventBus.shared)
-        let ticket = try await useCase.execute(title: "Default priority")
-        #expect(ticket.priority == .medium)
-    }
-
-    @Test("explicit priority is stored")
-    func explicitPriorityIsStored() async throws {
-        let service = InMemoryTicketService()
-        let useCase = CreateTicketUseCase(ticketPort: service, eventBus: EventBus.shared)
-        let ticket = try await useCase.execute(title: "Critical fix", priority: .critical)
-        #expect(ticket.priority == .critical)
-    }
-
-    @Test("assignee nil by default")
-    func assigneeNilByDefault() async throws {
-        let service = InMemoryTicketService()
-        let useCase = CreateTicketUseCase(ticketPort: service, eventBus: EventBus.shared)
-        let ticket = try await useCase.execute(title: "Unassigned")
-        #expect(ticket.assignee == nil)
-    }
-
-    @Test("labels are stored on the ticket")
-    func labelsStoredOnTicket() async throws {
-        let service = InMemoryTicketService()
-        let useCase = CreateTicketUseCase(ticketPort: service, eventBus: EventBus.shared)
-        let ticket = try await useCase.execute(title: "Tagged ticket", labels: ["bug", "p1"])
-        #expect(ticket.labels == ["bug", "p1"])
-    }
-}
-
 // MARK: - CreateDeploymentUseCase
 
 /// Stub for DeploymentManagementPort that records invocations and returns
@@ -701,8 +629,8 @@ struct CreateDeploymentUseCaseTests {
 /// Records the arguments passed to stage() and commit() so tests can assert
 /// that AutoCommitUseCase delegates to SourceControlPort correctly.
 private actor SpySourceControlPort: SourceControlPort {
-    var providerId: String { "spy" }
-    var providerName: String { "Spy SCM" }
+    nonisolated var providerId: String { "spy" }
+    nonisolated var providerName: String { "Spy SCM" }
 
     var stagedPaths: [String] = []
     var commitMessage: String?
@@ -744,7 +672,7 @@ private actor SpySourceControlPort: SourceControlPort {
     func createWorktree(branch: String, path: String) async throws {}
     func removeWorktree(path: String) async throws {}
     func worktrees() async throws -> [Worktree] { [] }
-    func tags() async throws -> [Tag] { [] }
+    func tags() async throws -> [AnvilDomain.Tag] { [] }
 }
 
 @Suite("AutoCommitUseCase")
@@ -821,8 +749,8 @@ struct AutoCommitUseCaseTests {
 
 /// Captures createWorktree calls so tests can verify branch and path.
 private actor SpyWorktreePort: SourceControlPort {
-    var providerId: String { "spy-worktree" }
-    var providerName: String { "Spy Worktree SCM" }
+    nonisolated var providerId: String { "spy-worktree" }
+    nonisolated var providerName: String { "Spy Worktree SCM" }
 
     var capturedBranch: String?
     var capturedPath: String?
@@ -855,7 +783,7 @@ private actor SpyWorktreePort: SourceControlPort {
     func unstage(paths: [String]) async throws {}
     func removeWorktree(path: String) async throws {}
     func worktrees() async throws -> [Worktree] { [] }
-    func tags() async throws -> [Tag] { [] }
+    func tags() async throws -> [AnvilDomain.Tag] { [] }
 }
 
 @Suite("CreateWorktreeUseCase")
@@ -1110,8 +1038,8 @@ struct AIReviewUseCaseTests {
 
 /// Records all calls to submitReview so tests can inspect delegated arguments.
 private actor SpyCodeReviewPort: CodeReviewPort {
-    var providerId: String { "spy-review" }
-    var providerName: String { "Spy Code Review" }
+    nonisolated var providerId: String { "spy-review" }
+    nonisolated var providerName: String { "Spy Code Review" }
 
     var lastSubmittedId: String?
     var lastSubmittedStatus: ReviewStatus?

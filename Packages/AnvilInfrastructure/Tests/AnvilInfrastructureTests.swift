@@ -4,7 +4,7 @@ import XCTest
 final class AnvilInfrastructureTests: XCTestCase {
     func testFileStorePathResolution() async {
         let store = FileStore(basePath: "/tmp/anvil-test")
-        let exists = store.exists(path: "nonexistent-file")
+        let exists = await store.exists(path: "nonexistent-file")
         XCTAssertFalse(exists)
     }
 }
