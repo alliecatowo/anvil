@@ -282,7 +282,7 @@ private struct PlanStepRow: View {
             if isAnnotating {
                 HStack(spacing: AnvilSpacing.sm) {
                     TextField("Add a note...", text: $annotationText)
-                        .textFieldStyle(.plain)
+                        .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.label)
                         .foregroundStyle(AnvilColor.textPrimary)
                         .onSubmit {

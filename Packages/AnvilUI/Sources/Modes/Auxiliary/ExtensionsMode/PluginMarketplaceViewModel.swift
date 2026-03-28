@@ -65,7 +65,7 @@ struct MarketplacePlugin: Identifiable {
 // MARK: - ViewModel
 
 @MainActor
-class PluginMarketplaceViewModel: ObservableObject {
+final class PluginMarketplaceViewModel: ObservableObject {
     @Published var searchText: String = ""
     @Published var selectedCategory: PluginCategory = .all
     @Published var sortOrder: PluginSortOrder = .popular

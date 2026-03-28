@@ -240,17 +240,9 @@ public struct SetupWizard: View {
             // Inline config for the selected provider
             if viewModel.selectedProvider.needsAPIKey {
                 SecureField("API Key", text: $viewModel.apiKey)
-                    .textFieldStyle(.plain)
+                    .textFieldStyle(.roundedBorder)
                     .font(AnvilFont.body)
                     .foregroundStyle(AnvilColor.textPrimary)
-                    .padding(.horizontal, AnvilSpacing.md)
-                    .padding(.vertical, AnvilSpacing.sm)
-                    .background(AnvilColor.backgroundTertiary)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(AnvilColor.borderMedium, lineWidth: 1)
-                    )
             }
 
             if viewModel.selectedProvider.needsURL {

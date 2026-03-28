@@ -5,7 +5,7 @@ import Combine
 // MARK: - ViewModel
 
 @MainActor
-class TerminalViewModel: ObservableObject {
+final class TerminalViewModel: ObservableObject {
     @Published var sessionManager = TerminalSessionManager()
     @Published var terminalColumns: Int = 80
     @Published var terminalRows: Int = 24

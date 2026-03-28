@@ -42,7 +42,7 @@ public struct ProjectSwitcher: View {
                         .foregroundStyle(AnvilColor.textTertiary)
 
                     TextField("Switch project...", text: $query)
-                        .textFieldStyle(.plain)
+                        .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.commandPaletteInput)
                         .foregroundStyle(AnvilColor.textPrimary)
                         .focused($isSearchFocused)

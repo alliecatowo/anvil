@@ -87,7 +87,7 @@ private enum DatabaseResultContext: Equatable {
 // MARK: - ViewModel
 
 @MainActor
-class DatabaseViewModel: ObservableObject {
+final class DatabaseViewModel: ObservableObject {
     @Published var tables: [DatabaseTable] = []
     @Published var views: [DatabaseObject] = []
     @Published var selectedTableId: String?

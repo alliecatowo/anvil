@@ -25,7 +25,7 @@ public struct AnvilListItem: View {
         HStack(spacing: AnvilSpacing.sm) {
             if isSelected {
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.accentColor)
+                    .fill(AnvilColor.accentBlue)
                     .frame(width: 3)
             }
 
@@ -46,7 +46,7 @@ public struct AnvilListItem: View {
                     Spacer()
 
                     if let tag {
-                        AnvilBadge(text: tag, color: tagColor ?? Color.accentColor)
+                        AnvilBadge(text: tag, color: tagColor ?? AnvilColor.accentBlue)
                     }
                 }
 
@@ -71,7 +71,7 @@ public struct AnvilListItem: View {
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
         .frame(height: isCompact ? AnvilSpacing.listItemHeight : AnvilSpacing.richListItemHeight)
-        .background(isSelected ? Color.accentColor.opacity(0.15) : .clear)
+        .background(isSelected ? AnvilColor.accentBlue.opacity(0.15) : .clear)
         .contentShape(Rectangle())
     }
 }

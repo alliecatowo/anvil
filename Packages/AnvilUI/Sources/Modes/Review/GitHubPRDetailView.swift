@@ -635,12 +635,8 @@ struct GitHubPRDetailView: View {
                 get: { viewModel.replyText[threadId] ?? "" },
                 set: { viewModel.replyText[threadId] = $0 }
             ))
-            .textFieldStyle(.plain)
+            .textFieldStyle(.roundedBorder)
             .font(AnvilFont.body)
-            .padding(.horizontal, AnvilSpacing.sm)
-            .padding(.vertical, AnvilSpacing.xs)
-            .background(AnvilColor.backgroundPrimary)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
 
             if viewModel.isReplying {
                 ProgressView()

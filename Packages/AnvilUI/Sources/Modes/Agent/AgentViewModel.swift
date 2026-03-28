@@ -19,7 +19,7 @@ public enum SessionExportFormat {
 }
 
 @MainActor
-public class AgentViewModel: ObservableObject {
+public final class AgentViewModel: ObservableObject {
     @Published public var sessions: [AgentSession] = []
     @Published public var selectedSessionId: String?
     @Published public var isLaunchSheetPresented = false

@@ -47,7 +47,7 @@ public struct QuickCapture: View {
                         .frame(width: 20)
 
                     TextField("Quick capture...", text: $text)
-                        .textFieldStyle(.plain)
+                        .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.commandPaletteInput)
                         .foregroundStyle(.primary)
                         .focused($isInputFocused)

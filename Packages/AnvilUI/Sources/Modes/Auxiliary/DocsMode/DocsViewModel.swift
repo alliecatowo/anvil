@@ -21,7 +21,7 @@ struct DocNode: Identifiable {
 // MARK: - ViewModel
 
 @MainActor
-class DocsViewModel: ObservableObject {
+final class DocsViewModel: ObservableObject {
     @Published var docTree: [DocNode] = []
     @Published var selectedDocId: String?
     @Published var expandedFolderIds: Set<String> = []

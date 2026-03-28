@@ -1,5 +1,6 @@
 import SwiftUI
 import AnvilDomain
+import AnvilApplication
 
 // MARK: - Ship Tab
 
@@ -134,6 +135,14 @@ struct DeployHistoryEntry: Identifiable {
 
 @MainActor
 public final class ShipViewModel: ObservableObject {
+
+    // MARK: Use Cases
+
+    private var createDeploymentUseCase: CreateDeploymentUseCase?
+
+    public func configure(deploymentUseCase: CreateDeploymentUseCase) {
+        self.createDeploymentUseCase = deploymentUseCase
+    }
 
     // MARK: Navigation
 
@@ -309,16 +318,34 @@ public final class ShipViewModel: ObservableObject {
 
             // Complete deployment
             let newCommit = String(UUID().uuidString.prefix(7))
-            let newDeployment = Deployment(
-                id: deploymentID,
-                projectId: "proj-1",
-                environmentId: environmentID,
-                commitHash: newCommit,
-                status: .ready,
-                url: self.environments.first(where: { $0.id == environmentID })?.currentURL,
-                createdAt: Date(),
-                completedAt: Date()
-            )
+            let branch = self.environments.first(where: { $0.id == environmentID })?.environment.branch ?? "main"
+            let newDeployment: Deployment
+            if let useCase = self.createDeploymentUseCase {
+                newDeployment = (try? await useCase.execute(
+                    environmentId: environmentID,
+                    branch: branch
+                )) ?? Deployment(
+                    id: deploymentID,
+                    projectId: "proj-1",
+                    environmentId: environmentID,
+                    commitHash: newCommit,
+                    status: .ready,
+                    url: self.environments.first(where: { $0.id == environmentID })?.currentURL,
+                    createdAt: Date(),
+                    completedAt: Date()
+                )
+            } else {
+                newDeployment = Deployment(
+                    id: deploymentID,
+                    projectId: "proj-1",
+                    environmentId: environmentID,
+                    commitHash: newCommit,
+                    status: .ready,
+                    url: self.environments.first(where: { $0.id == environmentID })?.currentURL,
+                    createdAt: Date(),
+                    completedAt: Date()
+                )
+            }
             self.deployments.insert(newDeployment, at: 0)
 
             // Update environment card

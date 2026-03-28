@@ -193,7 +193,7 @@ struct SessionHeader: View {
 
                 if isEditing {
                     TextField("Session name", text: $editName)
-                        .textFieldStyle(.plain)
+                        .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.sidebarHeader)
                         .foregroundStyle(AnvilColor.textPrimary)
                         .frame(maxWidth: 200)

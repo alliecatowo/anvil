@@ -206,20 +206,14 @@ struct NotificationPreferencesView: View {
     private var addRuleForm: some View {
         VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
             TextField("Rule name", text: $newRuleName)
-                .textFieldStyle(.plain)
+                .textFieldStyle(.roundedBorder)
                 .font(AnvilFont.body)
                 .foregroundStyle(AnvilColor.textPrimary)
-                .padding(AnvilSpacing.sm)
-                .background(AnvilColor.backgroundSecondary)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
 
             TextField("Match pattern (text to filter)", text: $newRulePattern)
-                .textFieldStyle(.plain)
+                .textFieldStyle(.roundedBorder)
                 .font(AnvilFont.code)
                 .foregroundStyle(AnvilColor.textPrimary)
-                .padding(AnvilSpacing.sm)
-                .background(AnvilColor.backgroundSecondary)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
 
             HStack(spacing: AnvilSpacing.sm) {
                 Picker("Action", selection: $newRuleAction) {

@@ -91,7 +91,7 @@ struct AnvilSidebarRowButton<Trailing: View>: View {
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
             .frame(minHeight: AnvilSpacing.listItemHeight)
-            .background(isActive ? Color.accentColor.opacity(0.1) : Color.clear)
+            .background(isActive ? AnvilColor.accentBlue.opacity(0.1) : Color.clear)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

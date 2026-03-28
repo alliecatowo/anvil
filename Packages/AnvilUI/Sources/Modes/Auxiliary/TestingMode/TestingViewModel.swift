@@ -64,7 +64,7 @@ public enum TestCaseStatus: String, Sendable {
 // MARK: - ViewModel
 
 @MainActor
-public class TestingViewModel: ObservableObject {
+public final class TestingViewModel: ObservableObject {
     @Published public var suites: [TestSuite] = []
     @Published public var selectedTestId: String?
     @Published public var isRunning: Bool = false

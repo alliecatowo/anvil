@@ -131,7 +131,7 @@ struct InlineEditDiff {
 // MARK: - ViewModel
 
 @MainActor
-class EditorViewModel: ObservableObject {
+final class EditorViewModel: ObservableObject {
     @Published var openFiles: [EditorFile] = []
     @Published var selectedFileId: UUID?
     @Published var cursorLine: Int = 12

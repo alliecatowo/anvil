@@ -34,6 +34,11 @@ public struct AnvilApp: App {
                     )
                     appState.intentViewModel.configure(eventBus: container.eventBus)
 
+                    // Wire deployment use case into ship view model
+                    appState.shipViewModel.configure(
+                        deploymentUseCase: container.makeCreateDeploymentUseCase()
+                    )
+
                     if let adapter = container.getOrCreateGitAdapter() {
                         await appState.loadGitStatus(from: adapter)
                     }

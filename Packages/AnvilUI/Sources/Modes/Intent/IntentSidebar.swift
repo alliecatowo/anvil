@@ -75,7 +75,7 @@ struct IntentSidebar: View {
                 .foregroundStyle(Color.accentColor)
 
             TextField("New ticket title...", text: $quickAddText)
-                .textFieldStyle(.plain)
+                .textFieldStyle(.roundedBorder)
                 .font(AnvilFont.sidebarItem)
                 .focused($isQuickAddFocused)
                 .onSubmit {

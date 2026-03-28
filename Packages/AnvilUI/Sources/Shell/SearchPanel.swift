@@ -106,7 +106,7 @@ struct SearchPanel: View {
                         .foregroundStyle(.tertiary)
 
                     TextField("Search", text: $viewModel.searchText)
-                        .textFieldStyle(.plain)
+                        .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.body)
 
                     if !viewModel.searchText.isEmpty {
@@ -120,10 +120,6 @@ struct SearchPanel: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, AnvilSpacing.xs)
-                .padding(.vertical, 4)
-                .background(.background)
-                .cornerRadius(4)
             }
 
             // Toggle buttons row
@@ -148,13 +144,9 @@ struct SearchPanel: View {
                             .foregroundStyle(.tertiary)
 
                         TextField("Replace", text: $viewModel.replaceText)
-                            .textFieldStyle(.plain)
+                            .textFieldStyle(.roundedBorder)
                             .font(AnvilFont.body)
                     }
-                    .padding(.horizontal, AnvilSpacing.xs)
-                    .padding(.vertical, 4)
-                    .background(.background)
-                    .cornerRadius(4)
 
                     Button("Replace All") {
                         viewModel.replaceAll()
@@ -175,13 +167,9 @@ struct SearchPanel: View {
                         .foregroundStyle(.tertiary)
 
                     TextField("Files to include (e.g. *.swift, *.ts)", text: $viewModel.fileFilter)
-                        .textFieldStyle(.plain)
+                        .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.label)
                 }
-                .padding(.horizontal, AnvilSpacing.xs)
-                .padding(.vertical, 3)
-                .background(.background)
-                .cornerRadius(4)
             }
         }
         .padding(.horizontal, AnvilSpacing.md)

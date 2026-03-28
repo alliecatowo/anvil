@@ -153,7 +153,7 @@ struct TicketDetailView: View {
             TextField("Title", text: $viewModel.editingTitle, onCommit: {
                 viewModel.updateTitle(viewModel.editingTitle)
             })
-            .textFieldStyle(.plain)
+            .textFieldStyle(.roundedBorder)
             .font(AnvilFont.heading)
             .foregroundStyle(AnvilColor.textPrimary)
 
@@ -396,7 +396,7 @@ struct TicketDetailView: View {
                     .foregroundStyle(AnvilColor.textTertiary)
 
                 TextField("Add subtask...", text: $viewModel.newSubtaskTitle)
-                    .textFieldStyle(.plain)
+                    .textFieldStyle(.roundedBorder)
                     .font(AnvilFont.body)
                     .foregroundStyle(AnvilColor.textPrimary)
                     .onSubmit {
@@ -498,7 +498,7 @@ struct TicketDetailView: View {
 
                 VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
                     TextField("Add a comment...", text: $viewModel.newCommentText, axis: .vertical)
-                        .textFieldStyle(.plain)
+                        .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.body)
                         .foregroundStyle(AnvilColor.textPrimary)
                         .lineLimit(1...5)
@@ -592,12 +592,9 @@ struct TicketDetailView: View {
             .pickerStyle(.segmented)
 
             TextField("Search tickets...", text: $linkTargetSearch)
-                .textFieldStyle(.plain)
+                .textFieldStyle(.roundedBorder)
                 .font(AnvilFont.body)
                 .foregroundStyle(AnvilColor.textPrimary)
-                .padding(AnvilSpacing.sm)
-                .background(AnvilColor.backgroundSecondary)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
 
             ScrollView {
                 LazyVStack(spacing: 0) {

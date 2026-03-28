@@ -646,7 +646,7 @@ struct SourceControlPanel: View {
                     .font(.system(size: 11))
                     .foregroundStyle(AnvilColor.textTertiary)
                 TextField("Search or create branch...", text: $viewModel.branchSearchText)
-                    .textFieldStyle(.plain)
+                    .textFieldStyle(.roundedBorder)
                     .font(AnvilFont.code)
             }
             .padding(AnvilSpacing.sm)
@@ -856,7 +856,7 @@ struct SourceControlPanel: View {
             // Message input
             VStack(spacing: 0) {
                 TextField(viewModel.isAmend ? "Amend commit message" : "Commit message", text: $viewModel.commitMessage, axis: .vertical)
-                    .textFieldStyle(.plain)
+                    .textFieldStyle(.roundedBorder)
                     .font(AnvilFont.body)
                     .foregroundStyle(AnvilColor.textPrimary)
                     .lineLimit(1...6)

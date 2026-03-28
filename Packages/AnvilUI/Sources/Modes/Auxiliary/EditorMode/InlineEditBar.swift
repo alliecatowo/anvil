@@ -73,7 +73,7 @@ struct InlineEditBar: View {
 
             // Prompt field
             TextField("Edit with AI... (↵ to apply, esc to cancel)", text: $viewModel.inlineEditPrompt)
-                .textFieldStyle(.plain)
+                .textFieldStyle(.roundedBorder)
                 .font(.system(size: 13, weight: .regular))
                 .foregroundStyle(AnvilColor.textPrimary)
                 .focused($isPromptFocused)

@@ -30,7 +30,7 @@ struct FindReplaceBar: View {
                         .foregroundStyle(.tertiary)
 
                     TextField("Find", text: $viewModel.findText)
-                        .textFieldStyle(.plain)
+                        .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.code)
                         .focused($isFindFocused)
                         .onSubmit { viewModel.findNext() }
@@ -139,7 +139,7 @@ struct FindReplaceBar: View {
                             .foregroundStyle(.tertiary)
 
                         TextField("Replace", text: $viewModel.replaceText)
-                            .textFieldStyle(.plain)
+                            .textFieldStyle(.roundedBorder)
                             .font(AnvilFont.code)
                             .onSubmit { viewModel.replaceCurrent() }
                     }

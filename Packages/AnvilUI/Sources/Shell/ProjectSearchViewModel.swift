@@ -23,7 +23,7 @@ struct FileSearchResult: Identifiable {
 // MARK: - ViewModel
 
 @MainActor
-class ProjectSearchViewModel: ObservableObject {
+final class ProjectSearchViewModel: ObservableObject {
     @Published var searchText: String = "" {
         didSet { searchIfNeeded() }
     }

@@ -954,6 +954,674 @@ struct AppStateLibrarySectionTests {
     }
 }
 
+// MARK: - MessagingViewModel
+
+@Suite("MessagingViewModel — Initial State")
+struct MessagingViewModelInitialStateTests {
+
+    @Test("channels are populated on init")
+    @MainActor
+    func channelsPopulatedOnInit() {
+        let vm = MessagingViewModel()
+        #expect(!vm.channels.isEmpty)
+    }
+
+    @Test("directMessages are populated on init")
+    @MainActor
+    func directMessagesPopulatedOnInit() {
+        let vm = MessagingViewModel()
+        #expect(!vm.directMessages.isEmpty)
+    }
+
+    @Test("selectedChannelId is set to first channel on init")
+    @MainActor
+    func selectedChannelIdIsFirstChannelOnInit() {
+        let vm = MessagingViewModel()
+        #expect(vm.selectedChannelId == vm.channels.first?.id)
+    }
+
+    @Test("inputText is empty on init")
+    @MainActor
+    func inputTextIsEmptyOnInit() {
+        let vm = MessagingViewModel()
+        #expect(vm.inputText.isEmpty)
+    }
+
+    @Test("selectedChannel resolves to the channel matching selectedChannelId")
+    @MainActor
+    func selectedChannelResolvesCorrectly() {
+        let vm = MessagingViewModel()
+        let firstId = vm.channels.first!.id
+        vm.selectedChannelId = firstId
+        #expect(vm.selectedChannel?.id == firstId)
+    }
+
+    @Test("selectedChannel is nil when selectedChannelId is nil")
+    @MainActor
+    func selectedChannelIsNilWhenNoSelection() {
+        let vm = MessagingViewModel()
+        vm.selectedChannelId = nil
+        #expect(vm.selectedChannel == nil)
+    }
+}
+
+@Suite("MessagingViewModel — Channel Selection and Messaging")
+struct MessagingViewModelActionTests {
+
+    @Test("selectChannel updates selectedChannelId")
+    @MainActor
+    func selectChannelUpdatesSelectedChannelId() {
+        let vm = MessagingViewModel()
+        let target = vm.channels[1]
+        vm.selectChannel(target.id)
+        #expect(vm.selectedChannelId == target.id)
+    }
+
+    @Test("selectChannel clears unread count on channel")
+    @MainActor
+    func selectChannelClearsUnreadCount() {
+        let vm = MessagingViewModel()
+        // general channel starts with unreadCount == 3
+        let general = vm.channels.first(where: { $0.name == "general" })!
+        #expect(general.unreadCount > 0)
+        vm.selectChannel(general.id)
+        let updated = vm.channels.first(where: { $0.id == general.id })!
+        #expect(updated.unreadCount == 0)
+    }
+
+    @Test("selectChannel clears unread count on direct message")
+    @MainActor
+    func selectChannelClearsDMUnreadCount() {
+        let vm = MessagingViewModel()
+        let sarah = vm.directMessages.first(where: { $0.name == "Sarah Kim" })!
+        #expect(sarah.unreadCount > 0)
+        vm.selectChannel(sarah.id)
+        let updated = vm.directMessages.first(where: { $0.id == sarah.id })!
+        #expect(updated.unreadCount == 0)
+    }
+
+    @Test("messages returns demo messages for selected channel")
+    @MainActor
+    func messagesReturnsDemoMessagesForSelectedChannel() {
+        let vm = MessagingViewModel()
+        // general is selected by default and has demo messages loaded
+        #expect(!vm.messages.isEmpty)
+    }
+
+    @Test("messages returns empty array when no channel is selected")
+    @MainActor
+    func messagesEmptyWhenNoChannelSelected() {
+        let vm = MessagingViewModel()
+        vm.selectedChannelId = nil
+        #expect(vm.messages.isEmpty)
+    }
+
+    @Test("sendMessage appends message to current channel and clears inputText")
+    @MainActor
+    func sendMessageAppendsAndClearsInput() {
+        let vm = MessagingViewModel()
+        let countBefore = vm.messages.count
+        vm.inputText = "Hello from tests"
+        vm.sendMessage()
+        #expect(vm.messages.count == countBefore + 1)
+        #expect(vm.messages.last?.content == "Hello from tests")
+        #expect(vm.inputText.isEmpty)
+    }
+
+    @Test("sendMessage marks new message as current user")
+    @MainActor
+    func sendMessageMarksIsCurrentUser() {
+        let vm = MessagingViewModel()
+        vm.inputText = "Test message"
+        vm.sendMessage()
+        #expect(vm.messages.last?.isCurrentUser == true)
+    }
+
+    @Test("sendMessage ignores blank input")
+    @MainActor
+    func sendMessageIgnoresBlankInput() {
+        let vm = MessagingViewModel()
+        let countBefore = vm.messages.count
+        vm.inputText = "   "
+        vm.sendMessage()
+        #expect(vm.messages.count == countBefore)
+    }
+
+    @Test("sendMessage does nothing when no channel is selected")
+    @MainActor
+    func sendMessageDoesNothingWithoutChannel() {
+        let vm = MessagingViewModel()
+        vm.selectedChannelId = nil
+        vm.inputText = "Orphan message"
+        vm.sendMessage()
+        // messages is always empty when selectedChannelId is nil
+        #expect(vm.messages.isEmpty)
+    }
+
+    @Test("channels contain expected names")
+    @MainActor
+    func channelsContainExpectedNames() {
+        let vm = MessagingViewModel()
+        let names = vm.channels.map(\.name)
+        #expect(names.contains("general"))
+        #expect(names.contains("engineering"))
+        #expect(names.contains("random"))
+    }
+
+    @Test("all direct messages are flagged isDirect true")
+    @MainActor
+    func directMessagesAreFlaggedIsDirect() {
+        let vm = MessagingViewModel()
+        #expect(vm.directMessages.allSatisfy(\.isDirect))
+    }
+
+    @Test("all channels are flagged isDirect false")
+    @MainActor
+    func channelsAreFlaggedIsDirectFalse() {
+        let vm = MessagingViewModel()
+        #expect(vm.channels.allSatisfy { !$0.isDirect })
+    }
+}
+
+// MARK: - ScheduleViewModel
+
+@Suite("ScheduleViewModel — Initial State")
+struct ScheduleViewModelInitialStateTests {
+
+    @Test("entries is empty before loadSampleData")
+    @MainActor
+    func entriesEmptyBeforeLoad() {
+        let vm = ScheduleViewModel()
+        #expect(vm.entries.isEmpty)
+    }
+
+    @Test("selectedEntryID is nil before loadSampleData")
+    @MainActor
+    func selectedEntryIDNilBeforeLoad() {
+        let vm = ScheduleViewModel()
+        #expect(vm.selectedEntryID == nil)
+    }
+
+    @Test("selectedTab defaults to agenda")
+    @MainActor
+    func selectedTabDefaultsToAgenda() {
+        let vm = ScheduleViewModel()
+        #expect(vm.selectedTab == .agenda)
+    }
+
+    @Test("meetingCount is zero before load")
+    @MainActor
+    func meetingCountZeroBeforeLoad() {
+        let vm = ScheduleViewModel()
+        #expect(vm.meetingCount == 0)
+    }
+
+    @Test("focusMinutes is zero before load")
+    @MainActor
+    func focusMinutesZeroBeforeLoad() {
+        let vm = ScheduleViewModel()
+        #expect(vm.focusMinutes == 0)
+    }
+}
+
+@Suite("ScheduleViewModel — Sample Data and Computed Properties")
+struct ScheduleViewModelDataTests {
+
+    @Test("loadSampleData populates entries")
+    @MainActor
+    func loadSampleDataPopulatesEntries() {
+        let vm = ScheduleViewModel()
+        vm.loadSampleData()
+        #expect(!vm.entries.isEmpty)
+    }
+
+    @Test("loadSampleData sets selectedEntryID to first entry")
+    @MainActor
+    func loadSampleDataSetsSelectedEntry() {
+        let vm = ScheduleViewModel()
+        vm.loadSampleData()
+        #expect(vm.selectedEntryID == vm.entries.first?.id)
+    }
+
+    @Test("selectedEntry resolves to correct entry")
+    @MainActor
+    func selectedEntryResolvesCorrectly() {
+        let vm = ScheduleViewModel()
+        vm.loadSampleData()
+        let target = vm.entries[1]
+        vm.selectedEntryID = target.id
+        #expect(vm.selectedEntry?.id == target.id)
+    }
+
+    @Test("selectedEntry is nil when selectedEntryID is nil")
+    @MainActor
+    func selectedEntryNilWhenNoSelection() {
+        let vm = ScheduleViewModel()
+        vm.loadSampleData()
+        vm.selectedEntryID = nil
+        #expect(vm.selectedEntry == nil)
+    }
+
+    @Test("meetingCount counts only meeting-kind entries")
+    @MainActor
+    func meetingCountOnlyCountsMeetings() {
+        let vm = ScheduleViewModel()
+        vm.loadSampleData()
+        let expected = vm.entries.filter { $0.kind == .meeting }.count
+        #expect(vm.meetingCount == expected)
+    }
+
+    @Test("focusMinutes sums duration of focusBlock entries")
+    @MainActor
+    func focusMinutesSumsFocusBlocks() {
+        let vm = ScheduleViewModel()
+        vm.loadSampleData()
+        let expected = vm.entries
+            .filter { $0.kind == .focusBlock }
+            .reduce(0) { $0 + Int($1.end.timeIntervalSince($1.start) / 60) }
+        #expect(vm.focusMinutes == expected)
+        #expect(vm.focusMinutes > 0)
+    }
+
+    @Test("selectedTab can be switched to time blocks")
+    @MainActor
+    func selectedTabSwitchesToTimeBlocks() {
+        let vm = ScheduleViewModel()
+        vm.selectedTab = .blocks
+        #expect(vm.selectedTab == .blocks)
+    }
+
+    @Test("makeSampleData entries have unique IDs")
+    func makeSampleDataEntriesHaveUniqueIDs() {
+        let entries = ScheduleViewModel.makeSampleData()
+        let ids = entries.map(\.id)
+        #expect(Set(ids).count == ids.count)
+    }
+
+    @Test("ScheduleEntry duration formats sub-hour correctly")
+    func scheduleEntryDurationFormatSubHour() {
+        let entry = ScheduleEntry(
+            id: "dur-test",
+            title: "Short block",
+            start: Date(timeIntervalSinceReferenceDate: 0),
+            end: Date(timeIntervalSinceReferenceDate: 45 * 60),
+            kind: .focusBlock,
+            subtitle: nil,
+            linkedTicket: nil,
+            attendees: []
+        )
+        #expect(entry.duration == "45m")
+    }
+
+    @Test("ScheduleEntry duration formats whole hours correctly")
+    func scheduleEntryDurationFormatWholeHour() {
+        let entry = ScheduleEntry(
+            id: "dur-test-2",
+            title: "One hour block",
+            start: Date(timeIntervalSinceReferenceDate: 0),
+            end: Date(timeIntervalSinceReferenceDate: 60 * 60),
+            kind: .meeting,
+            subtitle: nil,
+            linkedTicket: nil,
+            attendees: []
+        )
+        #expect(entry.duration == "1h")
+    }
+
+    @Test("ScheduleEntry duration formats hours and minutes correctly")
+    func scheduleEntryDurationFormatHoursAndMinutes() {
+        let entry = ScheduleEntry(
+            id: "dur-test-3",
+            title: "Hour and a half",
+            start: Date(timeIntervalSinceReferenceDate: 0),
+            end: Date(timeIntervalSinceReferenceDate: 90 * 60),
+            kind: .focusBlock,
+            subtitle: nil,
+            linkedTicket: nil,
+            attendees: []
+        )
+        #expect(entry.duration == "1h 30m")
+    }
+
+    @Test("ScheduleEntryKind kindLabel values are non-empty")
+    func kindLabelNonEmpty() {
+        let entry = ScheduleEntry(
+            id: "label-test",
+            title: "Any",
+            start: Date(),
+            end: Date(),
+            kind: .breakBlock,
+            subtitle: nil,
+            linkedTicket: nil,
+            attendees: []
+        )
+        #expect(!entry.kindLabel.isEmpty)
+    }
+}
+
+// MARK: - NotificationsViewModel
+
+@Suite("NotificationsViewModel — Initial State")
+struct NotificationsViewModelInitialStateTests {
+
+    @Test("inboxItems is empty before loadSampleData")
+    @MainActor
+    func inboxItemsEmptyBeforeLoad() {
+        let vm = NotificationsViewModel()
+        #expect(vm.inboxItems.isEmpty)
+    }
+
+    @Test("activityEvents is empty before loadSampleData")
+    @MainActor
+    func activityEventsEmptyBeforeLoad() {
+        let vm = NotificationsViewModel()
+        #expect(vm.activityEvents.isEmpty)
+    }
+
+    @Test("selectedTab defaults to inbox")
+    @MainActor
+    func selectedTabDefaultsToInbox() {
+        let vm = NotificationsViewModel()
+        #expect(vm.selectedTab == .inbox)
+    }
+
+    @Test("sourceFilter defaults to all")
+    @MainActor
+    func sourceFilterDefaultsToAll() {
+        let vm = NotificationsViewModel()
+        #expect(vm.sourceFilter == .all)
+    }
+
+    @Test("selectedItemID is nil on init")
+    @MainActor
+    func selectedItemIDNilOnInit() {
+        let vm = NotificationsViewModel()
+        #expect(vm.selectedItemID == nil)
+    }
+
+    @Test("unreadCount is zero when inbox is empty")
+    @MainActor
+    func unreadCountZeroWhenEmpty() {
+        let vm = NotificationsViewModel()
+        #expect(vm.unreadCount == 0)
+    }
+}
+
+@Suite("NotificationsViewModel — Actions")
+struct NotificationsViewModelActionTests {
+
+    @Test("loadSampleData populates inboxItems and activityEvents")
+    @MainActor
+    func loadSampleDataPopulatesBothCollections() {
+        let vm = NotificationsViewModel()
+        vm.loadSampleData()
+        #expect(!vm.inboxItems.isEmpty)
+        #expect(!vm.activityEvents.isEmpty)
+    }
+
+    @Test("markAsRead sets isRead to true for given id")
+    @MainActor
+    func markAsReadSetsIsRead() {
+        let vm = NotificationsViewModel()
+        vm.loadSampleData()
+        let unread = vm.inboxItems.first(where: { !$0.notification.isRead })!
+        vm.markAsRead(unread.id)
+        let updated = vm.inboxItems.first(where: { $0.id == unread.id })!
+        #expect(updated.notification.isRead == true)
+    }
+
+    @Test("markAsRead does nothing for unknown id")
+    @MainActor
+    func markAsReadIgnoresUnknownId() {
+        let vm = NotificationsViewModel()
+        vm.loadSampleData()
+        let countBefore = vm.inboxItems.count
+        vm.markAsRead("ghost-id")
+        #expect(vm.inboxItems.count == countBefore)
+    }
+
+    @Test("dismissNotification removes item from inboxItems")
+    @MainActor
+    func dismissNotificationRemovesItem() {
+        let vm = NotificationsViewModel()
+        vm.loadSampleData()
+        let target = vm.inboxItems.first!
+        let countBefore = vm.inboxItems.count
+        vm.dismissNotification(target.id)
+        #expect(vm.inboxItems.count == countBefore - 1)
+        #expect(!vm.inboxItems.contains(where: { $0.id == target.id }))
+    }
+
+    @Test("markAllAsRead sets all items to read")
+    @MainActor
+    func markAllAsReadSetsAllRead() {
+        let vm = NotificationsViewModel()
+        vm.loadSampleData()
+        vm.markAllAsRead()
+        #expect(vm.inboxItems.allSatisfy(\.notification.isRead))
+    }
+
+    @Test("unreadCount decreases after markAsRead")
+    @MainActor
+    func unreadCountDecreasesAfterMarkAsRead() {
+        let vm = NotificationsViewModel()
+        vm.loadSampleData()
+        let countBefore = vm.unreadCount
+        let unread = vm.inboxItems.first(where: { !$0.notification.isRead })!
+        vm.markAsRead(unread.id)
+        #expect(vm.unreadCount == countBefore - 1)
+    }
+
+    @Test("unreadCount is zero after markAllAsRead")
+    @MainActor
+    func unreadCountZeroAfterMarkAllAsRead() {
+        let vm = NotificationsViewModel()
+        vm.loadSampleData()
+        vm.markAllAsRead()
+        #expect(vm.unreadCount == 0)
+    }
+
+    @Test("sourceFilter pr hides non-PR inbox items")
+    @MainActor
+    func sourceFilterPRHidesNonPRItems() {
+        let vm = NotificationsViewModel()
+        vm.loadSampleData()
+        vm.sourceFilter = .prs
+        #expect(vm.filteredInboxItems.allSatisfy { $0.source == .pr })
+    }
+
+    @Test("sourceFilter all shows all items passing preferences")
+    @MainActor
+    func sourceFilterAllShowsAllItems() {
+        let vm = NotificationsViewModel()
+        vm.loadSampleData()
+        vm.sourceFilter = .all
+        // filteredInboxItems should equal inboxItems filtered by preferences — at least non-empty
+        #expect(!vm.filteredInboxItems.isEmpty)
+    }
+
+    @Test("selectedTab can be switched to activity")
+    @MainActor
+    func selectedTabSwitchesToActivity() {
+        let vm = NotificationsViewModel()
+        vm.selectedTab = .activity
+        #expect(vm.selectedTab == .activity)
+    }
+
+    @Test("selectedTab can be switched to preferences")
+    @MainActor
+    func selectedTabSwitchesToPreferences() {
+        let vm = NotificationsViewModel()
+        vm.selectedTab = .preferences
+        #expect(vm.selectedTab == .preferences)
+    }
+}
+
+// MARK: - ProjectSearchViewModel
+
+@Suite("ProjectSearchViewModel — Initial State")
+struct ProjectSearchViewModelInitialStateTests {
+
+    @Test("searchText is empty on init")
+    @MainActor
+    func searchTextEmptyOnInit() {
+        let vm = ProjectSearchViewModel()
+        #expect(vm.searchText.isEmpty)
+    }
+
+    @Test("replaceText is empty on init")
+    @MainActor
+    func replaceTextEmptyOnInit() {
+        let vm = ProjectSearchViewModel()
+        #expect(vm.replaceText.isEmpty)
+    }
+
+    @Test("results is empty on init")
+    @MainActor
+    func resultsEmptyOnInit() {
+        let vm = ProjectSearchViewModel()
+        #expect(vm.results.isEmpty)
+    }
+
+    @Test("matchCase defaults to false")
+    @MainActor
+    func matchCaseDefaultsFalse() {
+        let vm = ProjectSearchViewModel()
+        #expect(vm.matchCase == false)
+    }
+
+    @Test("useRegex defaults to false")
+    @MainActor
+    func useRegexDefaultsFalse() {
+        let vm = ProjectSearchViewModel()
+        #expect(vm.useRegex == false)
+    }
+
+    @Test("wholeWord defaults to false")
+    @MainActor
+    func wholeWordDefaultsFalse() {
+        let vm = ProjectSearchViewModel()
+        #expect(vm.wholeWord == false)
+    }
+
+    @Test("isReplaceExpanded defaults to false")
+    @MainActor
+    func isReplaceExpandedDefaultsFalse() {
+        let vm = ProjectSearchViewModel()
+        #expect(vm.isReplaceExpanded == false)
+    }
+
+    @Test("collapsedFiles is empty on init")
+    @MainActor
+    func collapsedFilesEmptyOnInit() {
+        let vm = ProjectSearchViewModel()
+        #expect(vm.collapsedFiles.isEmpty)
+    }
+
+    @Test("totalMatchCount is zero on init")
+    @MainActor
+    func totalMatchCountZeroOnInit() {
+        let vm = ProjectSearchViewModel()
+        #expect(vm.totalMatchCount == 0)
+    }
+
+    @Test("fileCount is zero on init")
+    @MainActor
+    func fileCountZeroOnInit() {
+        let vm = ProjectSearchViewModel()
+        #expect(vm.fileCount == 0)
+    }
+}
+
+@Suite("ProjectSearchViewModel — Toggle and Clear Behavior")
+struct ProjectSearchViewModelBehaviorTests {
+
+    @Test("toggleFileCollapsed adds path to collapsedFiles")
+    @MainActor
+    func toggleFileCollapsedAddsPath() {
+        let vm = ProjectSearchViewModel()
+        vm.toggleFileCollapsed("src/Foo.swift")
+        #expect(vm.collapsedFiles.contains("src/Foo.swift"))
+    }
+
+    @Test("toggleFileCollapsed removes path when already collapsed")
+    @MainActor
+    func toggleFileCollapsedRemovesWhenPresent() {
+        let vm = ProjectSearchViewModel()
+        vm.toggleFileCollapsed("src/Foo.swift")
+        vm.toggleFileCollapsed("src/Foo.swift")
+        #expect(!vm.collapsedFiles.contains("src/Foo.swift"))
+    }
+
+    @Test("multiple paths can be collapsed simultaneously")
+    @MainActor
+    func multiplePathsCanBeCollapsed() {
+        let vm = ProjectSearchViewModel()
+        vm.toggleFileCollapsed("A.swift")
+        vm.toggleFileCollapsed("B.swift")
+        #expect(vm.collapsedFiles.count == 2)
+    }
+
+    @Test("clear resets searchText, replaceText, results, and collapsedFiles")
+    @MainActor
+    func clearResetsAllState() {
+        let vm = ProjectSearchViewModel()
+        vm.replaceText = "replacement"
+        vm.toggleFileCollapsed("some/path.swift")
+        vm.clear()
+        #expect(vm.searchText.isEmpty)
+        #expect(vm.replaceText.isEmpty)
+        #expect(vm.results.isEmpty)
+        #expect(vm.collapsedFiles.isEmpty)
+    }
+
+    @Test("short searchText (< 2 chars) clears results immediately")
+    @MainActor
+    func shortSearchTextClearsResults() {
+        let vm = ProjectSearchViewModel()
+        // Inject a fake result to verify it gets cleared
+        vm.results = [FileSearchResult(filePath: "a/b.swift", fileName: "b.swift", matches: [])]
+        vm.searchText = "x"  // one character — below threshold
+        #expect(vm.results.isEmpty)
+    }
+
+    @Test("isSearching defaults to false")
+    @MainActor
+    func isSearchingDefaultsFalse() {
+        let vm = ProjectSearchViewModel()
+        #expect(vm.isSearching == false)
+    }
+
+    @Test("projectPath defaults to nil")
+    @MainActor
+    func projectPathDefaultsNil() {
+        let vm = ProjectSearchViewModel()
+        #expect(vm.projectPath == nil)
+    }
+
+    @Test("fileFilter is empty on init")
+    @MainActor
+    func fileFilterEmptyOnInit() {
+        let vm = ProjectSearchViewModel()
+        #expect(vm.fileFilter.isEmpty)
+    }
+
+    @Test("totalMatchCount sums matches across all results")
+    @MainActor
+    func totalMatchCountSumsAllMatches() {
+        let vm = ProjectSearchViewModel()
+        let line = "let x = 1"
+        let range = line.startIndex..<line.index(line.startIndex, offsetBy: 3)
+        let match = SearchMatch(lineNumber: 1, lineContent: line, matchRange: range)
+        vm.results = [
+            FileSearchResult(filePath: "A.swift", fileName: "A.swift", matches: [match, match]),
+            FileSearchResult(filePath: "B.swift", fileName: "B.swift", matches: [match]),
+        ]
+        #expect(vm.totalMatchCount == 3)
+        #expect(vm.fileCount == 2)
+    }
+}
+
 // MARK: - Mock Helpers
 
 /// Minimal mock that satisfies ReviewManagementPort for configure() tests.

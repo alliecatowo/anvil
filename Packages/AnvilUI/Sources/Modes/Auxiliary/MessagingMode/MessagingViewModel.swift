@@ -30,7 +30,7 @@ struct ChatMessage: Identifiable {
 // MARK: - ViewModel
 
 @MainActor
-class MessagingViewModel: ObservableObject {
+final class MessagingViewModel: ObservableObject {
     @Published var channels: [Channel] = []
     @Published var directMessages: [Channel] = []
     @Published var selectedChannelId: UUID?

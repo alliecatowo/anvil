@@ -57,7 +57,7 @@ struct CodebaseQAView: View {
                 // Query input
                 HStack(spacing: AnvilSpacing.sm) {
                     TextField("Ask anything about the codebase...", text: $query)
-                        .textFieldStyle(.plain)
+                        .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.body)
                         .foregroundStyle(.primary)
                         .focused($inputFocused)
