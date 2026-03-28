@@ -395,45 +395,15 @@ struct ScheduleModeContent: View {
     }
 
     private var scheduleTabSelector: some View {
-        HStack(spacing: 0) {
+        Picker("View", selection: $viewModel.selectedTab) {
             ForEach(ScheduleTab.allCases, id: \.rawValue) { tab in
-                Button {
-                    viewModel.selectedTab = tab
-                } label: {
-                    Text(tab.rawValue)
-                        .font(AnvilFont.label)
-                        .foregroundStyle(
-                            viewModel.selectedTab == tab
-                                ? .primary
-                                : .tertiary
-                        )
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, AnvilSpacing.sm)
-                        .background(
-                            viewModel.selectedTab == tab
-                                ? Color.accentColor.opacity(0.15)
-                                : Color.clear
-                        )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("\(tab.rawValue) tab")
-                .accessibilityAddTraits(viewModel.selectedTab == tab ? [.isButton, .isSelected] : .isButton)
+                Text(tab.rawValue).tag(tab)
             }
         }
+        .pickerStyle(.segmented)
+        .accessibilityLabel("Schedule View")
         .padding(.horizontal, AnvilSpacing.sm)
         .padding(.vertical, AnvilSpacing.xs)
-    }
-}
-
-struct PlaceholderSpaceContent: View {
-    let space: AnvilSpace
-
-    var body: some View {
-        AnvilEmptyState(
-            icon: space.icon,
-            title: space.rawValue,
-            message: "Coming soon."
-        )
     }
 }
 
