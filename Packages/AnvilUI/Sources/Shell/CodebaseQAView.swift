@@ -34,6 +34,7 @@ struct CodebaseQAView: View {
                     Image(systemName: "magnifyingglass.circle.fill")
                         .font(.system(size: 15))
                         .foregroundStyle(AnvilColor.accentPurple)
+                        .accessibilityHidden(true)
                     Text("Ask about this codebase")
                         .font(AnvilFont.heading)
                         .foregroundStyle(AnvilColor.textPrimary)
@@ -47,6 +48,7 @@ struct CodebaseQAView: View {
                             .foregroundStyle(AnvilColor.textTertiary)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Close codebase QA")
                 }
                 .padding(.horizontal, AnvilSpacing.lg)
                 .padding(.top, AnvilSpacing.lg)
@@ -75,6 +77,7 @@ struct CodebaseQAView: View {
                         }
                         .buttonStyle(.plain)
                         .disabled(query.isEmpty)
+                        .accessibilityLabel("Submit question")
                     }
                 }
                 .padding(.horizontal, AnvilSpacing.lg)

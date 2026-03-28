@@ -31,6 +31,8 @@ struct SCPBranchBar: View {
                 .clipShape(RoundedRectangle(cornerRadius: 6))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Current branch: \(appState.currentBranch)")
+            .accessibilityAddTraits(.isButton)
             .popover(isPresented: $viewModel.isBranchPickerVisible, arrowEdge: .bottom) {
                 SCPBranchPickerPopover(viewModel: viewModel)
             }
@@ -169,6 +171,8 @@ struct SCPBranchRow: View {
                 }
                 .buttonStyle(.plain)
                 .help("Delete branch")
+                .accessibilityLabel("Delete branch \(branch.name)")
+                .accessibilityAddTraits(.isButton)
             }
         }
         .padding(.horizontal, AnvilSpacing.md)
@@ -180,5 +184,8 @@ struct SCPBranchRow: View {
             guard let adapter = container.getOrCreateGitAdapter() else { return }
             viewModel.switchBranch(branch.name, using: adapter, appState: appState)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Branch \(branch.name)\(branch.isCurrent ? ", current" : "")")
+        .accessibilityAddTraits(branch.isCurrent ? .isStaticText : .isButton)
     }
 }

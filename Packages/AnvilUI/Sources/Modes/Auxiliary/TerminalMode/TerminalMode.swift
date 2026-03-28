@@ -116,6 +116,7 @@ private struct TerminalWorkspace: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .accessibilityLabel("New Terminal Session")
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
@@ -151,6 +152,7 @@ private struct TerminalWorkspace: View {
                         .contentShape(Rectangle())
                         .accessibilityElement(children: .combine)
                         .accessibilityLabel("\(session.title), \(session.isRunning ? "running" : "exited")")
+                        .accessibilityAddTraits(.isButton)
                         .onTapGesture {
                             viewModel.selectTab(session.id)
                         }

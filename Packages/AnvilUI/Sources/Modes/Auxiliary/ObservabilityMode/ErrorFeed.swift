@@ -174,6 +174,7 @@ struct ErrorFeed: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(item.event.title), \(item.severity.rawValue), \(item.event.occurrences) occurrences")
+        .accessibilityAddTraits(.isButton)
         .listRowBackground(viewModel.selectedErrorID == item.id ? Color.accentColor.opacity(0.14) : Color.clear)
         .onTapGesture {
             viewModel.selectedErrorID = item.id

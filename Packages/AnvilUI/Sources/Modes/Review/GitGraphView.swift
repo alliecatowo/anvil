@@ -81,6 +81,7 @@ struct GitGraphView: View {
             .contentShape(Rectangle())
             .accessibilityElement(children: .combine)
             .accessibilityLabel("\(node.commit.message.components(separatedBy: "\n").first ?? node.commit.message), by \(node.commit.author), \(relativeDate(node.commit.date))")
+            .accessibilityAddTraits(.isButton)
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.15)) {
                     selectedNodeIndex = selectedNodeIndex == index ? nil : index

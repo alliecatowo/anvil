@@ -25,6 +25,8 @@ struct TerminalTabBar: View {
                     .foregroundStyle(AnvilColor.textTertiary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("New Terminal Tab")
+            .accessibilityAddTraits(.isButton)
             .padding(.horizontal, AnvilSpacing.sm)
         }
         .frame(height: 32)
@@ -61,6 +63,8 @@ struct TerminalTabBar: View {
                         .foregroundStyle(AnvilColor.textTertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Close \(session.title)")
+                .accessibilityAddTraits(.isButton)
             }
         }
         .padding(.horizontal, AnvilSpacing.md)
@@ -76,5 +80,8 @@ struct TerminalTabBar: View {
         .onTapGesture {
             viewModel.selectTab(session.id)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(session.title)\(isSelected ? ", selected" : ""), \(session.isRunning ? "running" : "exited")")
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }

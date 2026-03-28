@@ -93,6 +93,7 @@ struct ShipSidebar: View {
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel("\(card.environment.name), \(card.status.label), \(card.currentVersion)")
+            .accessibilityAddTraits(.isButton)
             .contentShape(Rectangle())
             .onTapGesture {
                 viewModel.selectedEnvironmentID = card.id

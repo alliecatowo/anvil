@@ -135,7 +135,7 @@ private struct RailButton: View {
                 .updating($isPressed) { _, pressed, _ in pressed = true }
         )
         .accessibilityLabel(title)
-        .accessibilityAddTraits(.isButton)
+        .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
         .help(title)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.12)) {

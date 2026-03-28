@@ -189,6 +189,7 @@ struct DeployDashboardView: View {
         )
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(card.environment.name), \(card.status.label), version \(card.currentVersion)")
+        .accessibilityAddTraits(.isButton)
         .onTapGesture {
             withAnimation(AnvilAnimation.standard) {
                 viewModel.selectedEnvironmentID = card.id

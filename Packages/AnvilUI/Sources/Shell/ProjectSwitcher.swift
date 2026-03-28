@@ -257,6 +257,9 @@ struct ProjectRow: View {
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.sm)
         .background(isSelected ? AnvilColor.selectionBackground : .clear)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(project.name)\(isCurrent ? ", current project" : ""), \(project.repoPaths.count) repos")
+        .accessibilityAddTraits(.isButton)
     }
 
     private func abbreviatePath(_ path: String) -> String {

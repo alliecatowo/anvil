@@ -72,6 +72,9 @@ struct ChannelList: View {
         .onTapGesture {
             viewModel.selectChannel(channel.id)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(hasUnread ? "Unread, " : "")\(channel.name)\(hasUnread ? ", \(channel.unreadCount) unread messages" : "")")
+        .accessibilityAddTraits(.isButton)
         .listRowBackground(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
     }
 }

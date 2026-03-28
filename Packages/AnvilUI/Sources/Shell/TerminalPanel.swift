@@ -89,6 +89,8 @@ struct TerminalPanel: View {
                 }
                 .buttonStyle(.borderless)
                 .help("New Terminal")
+                .accessibilityLabel("New Terminal")
+                .accessibilityAddTraits(.isButton)
 
                 // Close panel
                 Button {
@@ -102,6 +104,8 @@ struct TerminalPanel: View {
                 }
                 .buttonStyle(.borderless)
                 .help("Close Panel (\u{2318}J)")
+                .accessibilityLabel("Close Terminal Panel")
+                .accessibilityAddTraits(.isButton)
             }
             .padding(.trailing, AnvilSpacing.sm)
         }
@@ -140,6 +144,9 @@ struct TerminalPanel: View {
         .onTapGesture {
             terminalVM.selectTab(session.id)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(session.title)\(isSelected ? ", selected" : ""), \(session.isRunning ? "running" : "exited")")
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
         .padding(.horizontal, 2)
         .padding(.vertical, 2)
     }

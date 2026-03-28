@@ -131,5 +131,8 @@ struct DocBrowser: View {
                 viewModel.selectDoc(node.id)
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(node.isFolder ? "Folder: \(node.name)" : "Document: \(node.name)")
+        .accessibilityAddTraits(.isButton)
     }
 }
