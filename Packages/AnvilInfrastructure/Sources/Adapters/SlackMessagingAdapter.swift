@@ -6,6 +6,7 @@ import AnvilDomain
 ///
 /// Configuration:
 ///   - `botToken`: Slack Bot User OAuth token (xoxb-...) (required)
+/// @unchecked Sendable: All stored properties are immutable after init (let bindings + URLSession).
 public final class SlackMessagingAdapter: MessagingPort, @unchecked Sendable {
     public let providerId: String = "slack"
     public let providerName: String = "Slack"

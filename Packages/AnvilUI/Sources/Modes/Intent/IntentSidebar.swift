@@ -18,6 +18,7 @@ struct IntentSidebar: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .accessibilityLabel("Plan View Mode")
                 .onChange(of: viewModel.viewMode) { _, _ in
                     viewModel.selectTicket(nil)
                 }
@@ -32,6 +33,7 @@ struct IntentSidebar: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .accessibilityLabel("New Ticket")
             }
             .padding(.horizontal, AnvilSpacing.sm)
             .padding(.vertical, AnvilSpacing.xs)
@@ -100,6 +102,7 @@ struct IntentSidebar: View {
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Cancel Quick Add")
             }
         }
         .padding(.vertical, 2)
@@ -208,6 +211,7 @@ struct IntentSidebar: View {
             RoundedRectangle(cornerRadius: 2)
                 .fill(IntentViewModel.priorityColor(ticket.priority))
                 .frame(width: 3)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
@@ -242,10 +246,12 @@ struct IntentSidebar: View {
                                     .font(.system(size: 8, weight: .medium))
                                     .foregroundStyle(.secondary)
                             )
+                            .accessibilityHidden(true)
                         Text(assignee)
                             .font(AnvilFont.label)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
+                            .accessibilityLabel("Assigned to \(assignee)")
                     }
 
                     Spacer()
@@ -274,6 +280,9 @@ struct IntentSidebar: View {
         .background(viewModel.selectedTicketId == ticket.id ? Color.accentColor.opacity(0.14) : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture { viewModel.selectTicket(ticket.id) }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(ticket.title), \(ticket.id)")
+        .accessibilityAddTraits(.isButton)
     }
 
     // MARK: - Due Date

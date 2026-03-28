@@ -93,7 +93,7 @@ struct EditorView: View {
     private func lineNumberGutter(lines: [String], selectedRange: ClosedRange<Int>?, foldRegions: [EditorViewModel.FoldRegion] = []) -> some View {
         let gutterWidth = gutterWidth(for: lines.count)
 
-        return VStack(alignment: .trailing, spacing: 0) {
+        return LazyVStack(alignment: .trailing, spacing: 0) {
             ForEach(1...max(lines.count, 1), id: \.self) { lineNumber in
                 if !viewModel.isLineHidden(lineNumber, regions: foldRegions) {
                     let isSelected = selectedRange?.contains(lineNumber) ?? false
@@ -202,7 +202,7 @@ struct EditorView: View {
             ? activeIndentLevel(lines: lines, cursorLine: viewModel.cursorLine)
             : 0
 
-        return VStack(alignment: .leading, spacing: 0) {
+        return LazyVStack(alignment: .leading, spacing: 0) {
             ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
                 let lineNumber = index + 1
                 if !viewModel.isLineHidden(lineNumber, regions: foldRegions) {

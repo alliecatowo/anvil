@@ -87,7 +87,7 @@ struct CodebaseQAView: View {
                     emptyStateView
                 } else {
                     ScrollView {
-                        VStack(alignment: .leading, spacing: AnvilSpacing.lg) {
+                        LazyVStack(alignment: .leading, spacing: AnvilSpacing.lg) {
                             // Previous Q&A entries
                             ForEach(history) { entry in
                                 QAEntryView(entry: entry)

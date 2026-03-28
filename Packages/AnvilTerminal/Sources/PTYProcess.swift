@@ -4,6 +4,8 @@ import Darwin
 // MARK: - PTY Process
 
 /// Manages a real pseudo-terminal process using forkpty().
+/// @unchecked Sendable: Thread safety provided by dedicated read/write DispatchQueues
+/// and immutable-after-spawn file descriptors. State mutations are confined to spawn/terminate.
 public final class PTYProcess: @unchecked Sendable {
 
     public enum State: Sendable {

@@ -1,6 +1,7 @@
 import Foundation
 import AnvilDomain
 
+/// @unchecked Sendable: All stored properties (apiKey, baseURL) are immutable after init.
 public final class OpenAIProvider: ACPPort, @unchecked Sendable {
     public let providerId = "openai"
     public let providerName = "OpenAI"
@@ -17,7 +18,11 @@ public final class OpenAIProvider: ACPPort, @unchecked Sendable {
         AsyncThrowingStream { continuation in
             Task {
                 do {
-                    var request = URLRequest(url: URL(string: "\(baseURL)/v1/chat/completions")!)
+                    guard let url = URL(string: "\(baseURL)/v1/chat/completions") else {
+                        continuation.finish(throwing: ACPError.networkError("Invalid URL: \(baseURL)/v1/chat/completions"))
+                        return
+                    }
+                    var request = URLRequest(url: url)
                     request.httpMethod = "POST"
                     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
                     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")

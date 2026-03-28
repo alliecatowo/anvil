@@ -818,7 +818,7 @@ struct InputBar: View {
             for provider in providers {
                 _ = provider.loadObject(ofClass: URL.self) { url, _ in
                     if let url {
-                        DispatchQueue.main.async {
+                        Task { @MainActor in
                             onAddAttachment(.file(path: url.path))
                         }
                     }

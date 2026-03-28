@@ -13,6 +13,7 @@ struct AgentSidebar: View {
                     Label("Dashboard", systemImage: "square.grid.2x2").tag(SidebarTab.dashboard)
                 }
                 .pickerStyle(.segmented)
+                .accessibilityLabel("Agent Sidebar View")
 
                 Button {
                     viewModel.startNewSession(prompt: "", model: viewModel.selectedModelId)
@@ -22,6 +23,7 @@ struct AgentSidebar: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .accessibilityLabel("New Session")
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
@@ -37,6 +39,7 @@ struct AgentSidebar: View {
                                 Image(systemName: "arrow.triangle.merge")
                                     .font(.system(size: 11))
                                     .foregroundStyle(AnvilColor.accentPurple)
+                                    .accessibilityHidden(true)
 
                                 Text(room.title)
                                     .lineLimit(1)
@@ -46,12 +49,16 @@ struct AgentSidebar: View {
                                 Circle()
                                     .fill(synthesisStatusColor(room.status))
                                     .frame(width: 6, height: 6)
+                                    .accessibilityHidden(true)
                             }
                             .contentShape(Rectangle())
                             .listRowBackground(isActive ? AnvilColor.selectionBackground : Color.clear)
                             .onTapGesture {
                                 viewModel.showSynthesisRoom(room.id)
                             }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("\(room.title), \(room.status.rawValue)")
+                            .accessibilityAddTraits(.isButton)
                             .contextMenu {
                                 Button("Delete", role: .destructive) {
                                     viewModel.deleteSynthesisRoom(room.id)
@@ -79,6 +86,8 @@ struct AgentSidebar: View {
                             viewModel.selectedSessionId = session.id
                             viewModel.showConversation()
                         }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityAddTraits(.isButton)
                         .contextMenu {
                             Button("Rename...") {
                                 viewModel.selectedSessionId = session.id

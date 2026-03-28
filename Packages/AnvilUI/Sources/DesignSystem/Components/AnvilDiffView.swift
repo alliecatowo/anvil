@@ -170,7 +170,7 @@ public struct AnvilDiffView: View {
         HStack(alignment: .top, spacing: 0) {
             // Left (old)
             ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
+                LazyVStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(sides.left.enumerated()), id: \.offset) { _, entry in
                         sideBySideLine(entry, isOld: true)
                     }
@@ -183,7 +183,7 @@ public struct AnvilDiffView: View {
 
             // Right (new)
             ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
+                LazyVStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(sides.right.enumerated()), id: \.offset) { _, entry in
                         sideBySideLine(entry, isOld: false)
                     }

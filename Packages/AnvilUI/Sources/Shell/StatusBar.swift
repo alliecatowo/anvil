@@ -27,6 +27,7 @@ public struct StatusBar: View {
             Circle()
                 .fill(AnvilColor.textTertiary.opacity(0.3))
                 .frame(width: 3, height: 3)
+                .accessibilityHidden(true)
 
             // Branch + source control (clickable for branch picker)
             Button {
@@ -62,6 +63,7 @@ public struct StatusBar: View {
             Circle()
                 .fill(AnvilColor.textTertiary.opacity(0.3))
                 .frame(width: 3, height: 3)
+                .accessibilityHidden(true)
 
             Spacer()
 
@@ -73,6 +75,7 @@ public struct StatusBar: View {
             Circle()
                 .fill(AnvilColor.textTertiary.opacity(0.3))
                 .frame(width: 3, height: 3)
+                .accessibilityHidden(true)
 
             // Cursor position (visible in editor-like modes)
             CursorPositionIndicator()
@@ -80,6 +83,7 @@ public struct StatusBar: View {
             Circle()
                 .fill(AnvilColor.textTertiary.opacity(0.3))
                 .frame(width: 3, height: 3)
+                .accessibilityHidden(true)
 
             // File encoding + line ending
             EncodingIndicator()
@@ -89,6 +93,7 @@ public struct StatusBar: View {
             Circle()
                 .fill(AnvilColor.textTertiary.opacity(0.3))
                 .frame(width: 3, height: 3)
+                .accessibilityHidden(true)
 
             // Right: Cost + time
             HStack(spacing: AnvilSpacing.xs) {
@@ -103,10 +108,13 @@ public struct StatusBar: View {
                     .foregroundStyle(AnvilColor.textTertiary)
             }
             .foregroundStyle(AnvilColor.textSecondary)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Session cost \(formatCost(appState.sessionCost)), today \(formatCost(appState.todayCost))")
 
             Circle()
                 .fill(AnvilColor.textTertiary.opacity(0.3))
                 .frame(width: 3, height: 3)
+                .accessibilityHidden(true)
 
             // Settings gear
             Button {
@@ -117,6 +125,7 @@ public struct StatusBar: View {
                     .foregroundStyle(AnvilColor.textSecondary)
             }
             .buttonStyle(.borderless)
+            .accessibilityLabel("Settings")
             .help("Settings")
         }
         .padding(.horizontal, AnvilSpacing.md)
@@ -152,6 +161,7 @@ struct AgentActivityIndicator: View {
                     Circle()
                         .fill(statusColor)
                         .frame(width: 6, height: 6)
+                        .accessibilityHidden(true)
                 }
 
                 // Status text + tool name

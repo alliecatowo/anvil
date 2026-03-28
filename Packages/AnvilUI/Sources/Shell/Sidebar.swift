@@ -113,6 +113,7 @@ struct CollapsedSidebar: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(title)
         .help(title)
     }
 }

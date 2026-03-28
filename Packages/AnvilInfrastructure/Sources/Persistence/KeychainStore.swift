@@ -48,6 +48,8 @@ public struct KeychainStore: Sendable {
             // Add new item
             var addQuery = updateQuery
             addQuery[kSecValueData as String] = data
+            // Restrict access: only available after first unlock, never migrated to other devices
+            addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
             let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
             guard addStatus == errSecSuccess else {
                 throw KeychainError.unhandled(status: addStatus)

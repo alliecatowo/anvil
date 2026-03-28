@@ -77,11 +77,14 @@ struct BoardView: View {
                 HStack(spacing: AnvilSpacing.xxs) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 9))
+                        .accessibilityHidden(true)
                     Text("Over WIP limit")
                         .font(AnvilFont.label)
                 }
                 .foregroundStyle(AnvilColor.accentRed)
                 .padding(.horizontal, AnvilSpacing.sm)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Warning: Over WIP limit")
             }
 
             // Cards
@@ -176,6 +179,7 @@ struct BoardView: View {
                     Circle()
                         .fill(IntentViewModel.priorityColor(ticket.priority))
                         .frame(width: 6, height: 6)
+                        .accessibilityLabel("\(IntentViewModel.priorityLabel(ticket.priority)) priority")
 
                     Text(ticket.id)
                         .font(AnvilFont.label)
@@ -223,10 +227,12 @@ struct BoardView: View {
                                     .font(.system(size: 8, weight: .medium))
                                     .foregroundStyle(AnvilColor.textSecondary)
                             )
+                            .accessibilityHidden(true)
                         Text(assignee)
                             .font(AnvilFont.label)
                             .foregroundStyle(AnvilColor.textSecondary)
                             .lineLimit(1)
+                            .accessibilityLabel("Assigned to \(assignee)")
                     }
 
                     Spacer()
@@ -241,6 +247,9 @@ struct BoardView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { viewModel.selectTicket(ticket.id) }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(ticket.title), \(IntentViewModel.priorityLabel(ticket.priority)) priority, \(ticket.id)")
+        .accessibilityAddTraits(.isButton)
         .contextMenu {
             Menu("Status") {
                 ForEach(viewModel.allStatuses, id: \.self) { status in
@@ -319,6 +328,7 @@ struct BoardView: View {
             Circle()
                 .fill(IntentViewModel.priorityColor(ticket.priority))
                 .frame(width: 6, height: 6)
+                .accessibilityHidden(true)
             Text(ticket.id)
                 .font(AnvilFont.label)
                 .foregroundStyle(AnvilColor.textTertiary)
@@ -331,5 +341,6 @@ struct BoardView: View {
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
         .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
+        .accessibilityElement(children: .combine)
     }
 }

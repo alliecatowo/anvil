@@ -108,6 +108,8 @@ extension TerminalLine {
 
 // MARK: - Screen Buffer
 
+/// @unchecked Sendable: ScreenBuffer is always accessed from the terminal's dedicated read queue.
+/// A future improvement would be to make this an actor or protect with a lock.
 public final class ScreenBuffer: @unchecked Sendable {
     public var lines: [TerminalLine]
     public var cursorRow: Int

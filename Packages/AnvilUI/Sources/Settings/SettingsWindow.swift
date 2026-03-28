@@ -81,7 +81,7 @@ public struct SettingsWindow: View {
 // MARK: - General Tab
 
 struct GeneralSettingsView: View {
-    @ObservedObject private var settings = AnvilSettings.shared
+    @StateObject private var settings = AnvilSettings.shared
     @State private var selectedMode: AnvilSpace = .build
 
     var body: some View {
@@ -434,7 +434,7 @@ struct ProviderFormSheet: View {
 // MARK: - Appearance Tab
 
 struct AppearanceSettingsView: View {
-    @ObservedObject private var settings = AnvilSettings.shared
+    @StateObject private var settings = AnvilSettings.shared
 
     var body: some View {
         Form {

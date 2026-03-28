@@ -14,6 +14,7 @@ import AnvilDomain
 /// - Binary discovery is shared with ClaudeCLIProvider for backward compatibility
 /// - When `--acp` flag becomes available, this provider will switch to ACPProcessTransport
 ///   for a persistent, bidirectional JSON-RPC connection
+/// @unchecked Sendable: All stored properties (cliPath) are immutable after init.
 public final class ClaudeProcessProvider: ACPPort, @unchecked Sendable {
     public let providerId = "claude-process"
     public let providerName = "Claude (Process)"

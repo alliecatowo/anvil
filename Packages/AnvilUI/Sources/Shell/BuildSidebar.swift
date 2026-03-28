@@ -21,6 +21,7 @@ struct BuildSidebar: View {
                 }
             }
             .pickerStyle(.segmented)
+            .accessibilityLabel("Build Sidebar Section")
             .padding(.horizontal, AnvilSpacing.sm)
             .padding(.vertical, AnvilSpacing.xs)
 

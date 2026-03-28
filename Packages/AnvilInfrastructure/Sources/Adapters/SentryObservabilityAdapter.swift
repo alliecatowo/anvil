@@ -7,6 +7,7 @@ import AnvilDomain
 /// Configuration:
 ///   - `authToken`: Sentry auth token (required)
 ///   - `organization`: Sentry organization slug (required)
+/// @unchecked Sendable: All stored properties are immutable after init (let bindings + URLSession).
 public final class SentryObservabilityAdapter: ObservabilityPort, @unchecked Sendable {
     public let providerId: String = "sentry"
     public let providerName: String = "Sentry"

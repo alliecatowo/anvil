@@ -299,6 +299,7 @@ enum SentryObservabilityAdapterFactory {
 
 /// Lightweight proxy implementing ObservabilityPort using URLSession directly.
 /// This allows the UI to create a Sentry connection without importing Infrastructure.
+/// @unchecked Sendable: All stored properties (token, organization, baseURL, session) are immutable after init.
 private final class SentryObservabilityProxy: ObservabilityPort, @unchecked Sendable {
     let providerId = "sentry"
     let providerName = "Sentry"
@@ -320,7 +321,9 @@ private final class SentryObservabilityProxy: ObservabilityPort, @unchecked Send
     }
 
     func validateConnection() async throws -> Bool {
-        let url = URL(string: "\(baseURL)/organizations/\(organization)/")!
+        guard let url = URL(string: "\(baseURL)/organizations/\(organization)/") else {
+            throw URLError(.badURL)
+        }
         var req = URLRequest(url: url)
         req.httpMethod = "GET"
         let (_, response) = try await session.data(for: req)

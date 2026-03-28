@@ -63,8 +63,11 @@ actor GitHubClient {
         let bodyData = try JSONSerialization.data(withJSONObject: body)
 
         // GraphQL uses a different endpoint
-        var components = URLComponents(string: "https://api.github.com/graphql")!
-        var request = URLRequest(url: components.url!)
+        guard let components = URLComponents(string: "https://api.github.com/graphql"),
+              let graphqlURL = components.url else {
+            throw GitHubError.invalidResponse
+        }
+        var request = URLRequest(url: graphqlURL)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -89,12 +92,17 @@ actor GitHubClient {
     // MARK: - Private
 
     private func request(_ method: String, path: String, query: [String: String] = [:], body: Data? = nil) async throws -> Data {
-        var components = URLComponents(string: "\(baseURL)\(path)")!
+        guard var components = URLComponents(string: "\(baseURL)\(path)") else {
+            throw GitHubError.invalidResponse
+        }
         if !query.isEmpty {
             components.queryItems = query.map { URLQueryItem(name: $0.key, value: $0.value) }
         }
 
-        var request = URLRequest(url: components.url!)
+        guard let requestURL = components.url else {
+            throw GitHubError.invalidResponse
+        }
+        var request = URLRequest(url: requestURL)
         request.httpMethod = method
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")

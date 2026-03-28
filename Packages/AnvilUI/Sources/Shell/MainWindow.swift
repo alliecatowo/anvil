@@ -63,6 +63,7 @@ public struct MainWindow: View {
                 SettingsLink {
                     Image(systemName: "gearshape")
                 }
+                .accessibilityLabel("Settings")
                 .help("Settings")
             }
         }

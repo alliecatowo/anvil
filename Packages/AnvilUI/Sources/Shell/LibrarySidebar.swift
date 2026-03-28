@@ -19,6 +19,7 @@ struct LibrarySidebar: View {
                 }
             }
             .pickerStyle(.segmented)
+            .accessibilityLabel("Library Sidebar Section")
             .padding(.horizontal, AnvilSpacing.sm)
             .padding(.vertical, AnvilSpacing.xs)
 
@@ -55,11 +56,13 @@ struct LibrarySidebar: View {
                             Circle()
                                 .fill(item.notification.isRead ? Color.clear : AnvilColor.accentBlue)
                                 .frame(width: 6, height: 6)
+                                .accessibilityHidden(true)
 
                             Image(systemName: item.source.icon)
                                 .font(.system(size: 11))
                                 .foregroundStyle(item.source.color)
                                 .frame(width: 16)
+                                .accessibilityHidden(true)
 
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(item.notification.title)
@@ -81,6 +84,9 @@ struct LibrarySidebar: View {
                             viewModel.selectedItemID = item.id
                             viewModel.markAsRead(item.id)
                         }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("\(item.notification.isRead ? "" : "Unread, ")\(item.notification.title), \(item.notification.body)")
+                        .accessibilityAddTraits(.isButton)
                         .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 8))
                         .listRowSeparator(.hidden)
                     }

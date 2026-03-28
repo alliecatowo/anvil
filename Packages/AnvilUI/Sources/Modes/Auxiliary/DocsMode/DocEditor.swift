@@ -94,7 +94,7 @@ struct DocEditor: View {
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+                LazyVStack(alignment: .leading, spacing: AnvilSpacing.sm) {
                     ForEach(Array(viewModel.editorContent.components(separatedBy: "\n").enumerated()), id: \.offset) { _, line in
                         renderedLine(line)
                     }

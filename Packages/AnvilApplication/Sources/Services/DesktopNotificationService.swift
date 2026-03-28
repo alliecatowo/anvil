@@ -31,9 +31,13 @@ public final class DesktopNotificationService: NSObject, Sendable {
 
     /// Minimum urgency level required to show a desktop notification.
     /// Defaults to `.normal` — low-priority items are silent.
+    /// nonisolated(unsafe): Written once at startup from main thread, then read-only.
+    /// A future improvement: use @MainActor or an actor-isolated property.
     public nonisolated(unsafe) var minimumUrgency: NotificationUrgency = .normal
 
     /// Whether desktop notifications are enabled at all.
+    /// nonisolated(unsafe): Written once at startup from main thread, then read-only.
+    /// A future improvement: use @MainActor or an actor-isolated property.
     public nonisolated(unsafe) var isEnabled: Bool = true
 
     private override init() {

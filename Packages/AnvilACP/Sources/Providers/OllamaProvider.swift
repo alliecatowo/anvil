@@ -1,6 +1,7 @@
 import Foundation
 import AnvilDomain
 
+/// @unchecked Sendable: All stored properties (baseURL) are immutable after init.
 public final class OllamaProvider: ACPPort, @unchecked Sendable {
     public let providerId = "ollama"
     public let providerName = "Ollama (Local)"
@@ -15,7 +16,11 @@ public final class OllamaProvider: ACPPort, @unchecked Sendable {
         AsyncThrowingStream { continuation in
             Task {
                 do {
-                    var request = URLRequest(url: URL(string: "\(baseURL)/api/chat")!)
+                    guard let url = URL(string: "\(baseURL)/api/chat") else {
+                        continuation.finish(throwing: ACPError.networkError("Invalid URL: \(baseURL)/api/chat"))
+                        return
+                    }
+                    var request = URLRequest(url: url)
                     request.httpMethod = "POST"
                     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
@@ -47,7 +52,10 @@ public final class OllamaProvider: ACPPort, @unchecked Sendable {
 
     public func availableModels() async throws -> [ACPModel] {
         // Dynamically fetch from Ollama API
-        let request = URLRequest(url: URL(string: "\(baseURL)/api/tags")!)
+        guard let tagsURL = URL(string: "\(baseURL)/api/tags") else {
+            throw ACPError.networkError("Invalid URL: \(baseURL)/api/tags")
+        }
+        let request = URLRequest(url: tagsURL)
         let (data, _) = try await URLSession.shared.data(for: request)
 
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

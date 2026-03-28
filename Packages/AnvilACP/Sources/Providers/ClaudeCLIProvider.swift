@@ -1,6 +1,7 @@
 import Foundation
 import AnvilDomain
 
+/// @unchecked Sendable: All stored properties (cliPath) are immutable after init.
 public final class ClaudeCLIProvider: ACPPort, @unchecked Sendable {
     public let providerId = "claude-cli"
     public let providerName = "Claude CLI"

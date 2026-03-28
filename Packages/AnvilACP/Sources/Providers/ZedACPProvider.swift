@@ -5,6 +5,7 @@ import AnvilDomain
 ///
 /// Connects to an ACP-compatible agent process (e.g., `npx @agentclientprotocol/claude-agent-acp`)
 /// and translates between Zed ACP's bidirectional JSON-RPC protocol and Anvil's streaming events.
+/// @unchecked Sendable: Immutable config properties (command, args, env) and actor-isolated ConnectionState.
 public final class ZedACPProvider: ACPPort, @unchecked Sendable {
     public let providerId: String
     public let providerName: String

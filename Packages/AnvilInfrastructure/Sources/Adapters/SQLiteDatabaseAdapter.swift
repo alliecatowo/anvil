@@ -4,6 +4,8 @@ import AnvilDomain
 
 /// Real SQLite adapter implementing DatabasePort using the SQLite3 C API.
 /// Uses an internal actor for thread-safe connection management (Swift 6 concurrency).
+/// @unchecked Sendable: All mutable state is isolated in the ConnectionStore actor.
+/// Only `let` properties are accessed directly.
 public final class SQLiteDatabaseAdapter: DatabasePort, @unchecked Sendable {
     public let providerId: String = "sqlite-local"
     public let providerName: String = "SQLite"
@@ -19,6 +21,8 @@ public final class SQLiteDatabaseAdapter: DatabasePort, @unchecked Sendable {
     )
 
     private struct Connection: Sendable {
+        // nonisolated(unsafe): OpaquePointer is not Sendable, but each Connection is
+        // only accessed through the actor-isolated ConnectionStore, ensuring serial access.
         nonisolated(unsafe) let db: OpaquePointer
         let path: String
     }

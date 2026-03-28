@@ -11,7 +11,7 @@ struct TimeBlockView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: AnvilSpacing.lg) {
+            LazyVStack(alignment: .leading, spacing: AnvilSpacing.lg) {
                 Text("Time Blocks")
                     .font(AnvilFont.heading)
 

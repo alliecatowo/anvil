@@ -1,6 +1,7 @@
 import Foundation
 import AnvilDomain
 
+/// @unchecked Sendable: All stored properties (apiKey, baseURL) are immutable after init.
 public final class AnthropicProvider: ACPPort, @unchecked Sendable {
     public let providerId = "anthropic"
     public let providerName = "Anthropic"
@@ -80,7 +81,10 @@ public final class AnthropicProvider: ACPPort, @unchecked Sendable {
     public func supportsTools(_ tools: [ACPToolDefinition]) -> Bool { true }
 
     private func buildRequest(messages: [ACPMessage], model: ACPModel, tools: [ACPToolDefinition], stream: Bool) throws -> URLRequest {
-        var request = URLRequest(url: URL(string: "\(baseURL)/v1/messages")!)
+        guard let url = URL(string: "\(baseURL)/v1/messages") else {
+            throw ACPError.networkError("Invalid URL: \(baseURL)/v1/messages")
+        }
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(apiKey, forHTTPHeaderField: "x-api-key")

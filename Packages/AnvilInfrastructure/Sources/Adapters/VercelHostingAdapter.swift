@@ -7,6 +7,7 @@ import AnvilDomain
 /// Configuration:
 ///   - `apiToken`: Vercel API token (required)
 ///   - `teamId`: Optional team ID for team-scoped requests
+/// @unchecked Sendable: All stored properties are immutable after init (let bindings + URLSession).
 public final class VercelHostingAdapter: HostingPort, @unchecked Sendable {
     public let providerId: String = "vercel"
     public let providerName: String = "Vercel"
