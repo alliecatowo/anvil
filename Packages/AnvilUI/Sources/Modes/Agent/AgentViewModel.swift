@@ -221,6 +221,7 @@ public class AgentViewModel: ObservableObject {
               let hunkIdx = suggestions[sugIdx].hunks.firstIndex(where: { $0.id == hunkId }) else { return }
         suggestions[sugIdx].hunks[hunkIdx].state = .accepted
         editSuggestions[sessionId] = suggestions
+        persistAcceptedHunks(for: suggestions[sugIdx])
     }
 
     public func rejectHunk(suggestionId: String, hunkId: String) {
@@ -240,6 +241,7 @@ public class AgentViewModel: ObservableObject {
             suggestions[sugIdx].hunks[i].state = .accepted
         }
         editSuggestions[sessionId] = suggestions
+        persistAcceptedHunks(for: suggestions[sugIdx])
     }
 
     public func rejectAllHunks(suggestionId: String) {
@@ -250,6 +252,52 @@ public class AgentViewModel: ObservableObject {
             suggestions[sugIdx].hunks[i].state = .rejected
         }
         editSuggestions[sessionId] = suggestions
+    }
+
+    // MARK: - Hunk Persistence
+
+    /// Optional callback invoked after a file is written to disk, passing the file path.
+    /// Set this from the UI layer so the editor can reload the file.
+    public var onFilePersisted: ((String) -> Void)?
+
+    /// Apply all accepted hunks for a suggestion to the file on disk.
+    /// Hunks are applied in reverse line order so earlier hunks don't shift later line numbers.
+    private func persistAcceptedHunks(for suggestion: CodeEditSuggestion) {
+        let accepted = suggestion.hunks.filter { $0.state == .accepted }
+        guard !accepted.isEmpty else { return }
+
+        let filePath = suggestion.filePath
+        guard let data = FileManager.default.contents(atPath: filePath),
+              let text = String(data: data, encoding: .utf8) else {
+            logger.warning("Cannot read file for hunk persistence: \(filePath)")
+            return
+        }
+
+        var lines = text.components(separatedBy: "\n")
+
+        // Sort hunks by oldStart descending so we apply from bottom to top,
+        // preventing line-number shifts from affecting earlier hunks.
+        let sorted = accepted.sorted { $0.oldStart > $1.oldStart }
+
+        for hunk in sorted {
+            // oldStart is 1-based; convert to 0-based index
+            let startIndex = hunk.oldStart - 1
+            guard startIndex >= 0, startIndex <= lines.count else {
+                logger.warning("Hunk oldStart \(hunk.oldStart) out of range for \(filePath) (\(lines.count) lines)")
+                continue
+            }
+            let removeCount = min(hunk.oldCount, lines.count - startIndex)
+            lines.replaceSubrange(startIndex..<(startIndex + removeCount), with: hunk.addedLines)
+        }
+
+        let updatedContent = lines.joined(separator: "\n")
+        let updatedData = updatedContent.data(using: .utf8) ?? Data()
+        if FileManager.default.createFile(atPath: filePath, contents: updatedData, attributes: nil) {
+            logger.info("Persisted accepted hunks to \(filePath)")
+            onFilePersisted?(filePath)
+        } else {
+            logger.error("Failed to write file after hunk acceptance: \(filePath)")
+        }
     }
 
     // MARK: - Ticket-to-Agent Pipeline

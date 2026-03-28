@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct PluginMarketplaceMode: View {
-    @StateObject private var viewModel = PluginMarketplaceViewModel()
+    @ObservedObject var viewModel: PluginMarketplaceViewModel
 
     var body: some View {
         VStack(spacing: 0) {

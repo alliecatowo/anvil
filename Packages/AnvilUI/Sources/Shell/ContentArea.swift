@@ -17,7 +17,7 @@ public struct ContentArea: View {
             case .operate:
                 ShipModeContent(viewModel: appState.shipViewModel)
             case .library:
-                DocsMode()
+                LibraryContent()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -247,6 +247,47 @@ struct ShipModeContent: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+struct LibraryContent: View {
+    @EnvironmentObject var appState: AppState
+
+    var body: some View {
+        switch appState.libraryActiveSection {
+        case .docs:
+            DocsMode()
+        case .extensions:
+            PluginMarketplaceMode(viewModel: appState.pluginMarketplaceViewModel)
+        case .notifications:
+            NotificationsContentView(viewModel: appState.notificationsViewModel)
+        }
+    }
+}
+
+struct NotificationsContentView: View {
+    @ObservedObject var viewModel: NotificationsViewModel
+
+    var body: some View {
+        if let itemId = viewModel.selectedItemID,
+           let item = viewModel.inboxItems.first(where: { $0.id == itemId }) {
+            VStack(spacing: AnvilSpacing.md) {
+                Text(item.notification.title)
+                    .font(AnvilFont.heading)
+                    .foregroundStyle(AnvilColor.textPrimary)
+                Text(item.notification.body)
+                    .font(AnvilFont.body)
+                    .foregroundStyle(AnvilColor.textSecondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(AnvilSpacing.lg)
+        } else {
+            AnvilEmptyState(
+                icon: "bell",
+                title: "No notification selected",
+                message: "Select a notification from the sidebar."
+            )
         }
     }
 }

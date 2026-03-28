@@ -109,7 +109,19 @@ public class AppState: ObservableObject {
     @Published var notificationsViewModel = NotificationsViewModel()
     @Published var libraryDocsViewModel = DocsViewModel()
     @Published var editorViewModel = EditorViewModel()
+    @Published var databaseViewModel = DatabaseViewModel()
     @Published var gitHubPRViewModel = GitHubPRViewModel()
+    @Published var pluginMarketplaceViewModel = PluginMarketplaceViewModel()
+
+    // MARK: - Library Section
+
+    @Published public var libraryActiveSection: LibrarySection = .docs
+
+    public enum LibrarySection: String, CaseIterable, Sendable {
+        case docs = "Docs"
+        case extensions = "Extensions"
+        case notifications = "Inbox"
+    }
 
     // MARK: - Split Editor
     lazy var splitEditorState = SplitEditorState(primaryViewModel: editorViewModel)
@@ -118,7 +130,12 @@ public class AppState: ObservableObject {
     /// Triggers horizontal split (⌘⇧\).
     @Published public var triggerSplitHorizontal: Bool = false
 
-    public init() {}
+    public init() {
+        // Wire agent hunk persistence to editor reload
+        agentViewModel.onFilePersisted = { [weak self] path in
+            self?.editorViewModel.reloadFile(atPath: path)
+        }
+    }
 
     // MARK: - Git Integration
 

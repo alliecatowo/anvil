@@ -352,6 +352,48 @@ class EditorViewModel: ObservableObject {
         }
     }
 
+    // MARK: - File Persistence
+
+    /// Write content to a file on disk. Returns true on success.
+    @discardableResult
+    func saveFile(atPath path: String, content: String) -> Bool {
+        let data = content.data(using: .utf8) ?? Data()
+        return FileManager.default.createFile(atPath: path, contents: data, attributes: nil)
+    }
+
+    /// Save the currently selected file's content to disk.
+    func saveCurrentFile() {
+        guard let file = selectedFile else { return }
+        saveFile(atPath: file.path, content: file.content)
+    }
+
+    /// Reload an open file from disk, refreshing its in-memory content.
+    /// If the file is not currently open, this is a no-op.
+    func reloadFile(atPath path: String) {
+        guard let index = openFiles.firstIndex(where: { $0.path == path }) else { return }
+        let existing = openFiles[index]
+        let url = URL(fileURLWithPath: path)
+        let content: String
+        if let data = FileManager.default.contents(atPath: path),
+           let text = String(data: data, encoding: .utf8) {
+            content = text
+        } else {
+            return // Cannot read — leave in-memory version alone
+        }
+        let updated = EditorFile(
+            name: existing.name,
+            path: existing.path,
+            content: content,
+            language: existing.language,
+            relativePath: existing.relativePath
+        )
+        let wasSelected = selectedFileId == existing.id
+        openFiles[index] = updated
+        if wasSelected {
+            selectedFileId = updated.id
+        }
+    }
+
     func toggleFolder(_ id: UUID) {
         if expandedFolders.contains(id) {
             expandedFolders.remove(id)

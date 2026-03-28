@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import Combine
 
@@ -83,6 +84,7 @@ public struct SettingsWindow: View {
 struct GeneralSettingsView: View {
     @StateObject private var settings = AnvilSettings.shared
     @State private var selectedMode: AnvilSpace = .build
+    @AppStorage("appearance_mode") private var appearanceMode: String = "system"
 
     var body: some View {
         Form {
@@ -112,18 +114,21 @@ struct GeneralSettingsView: View {
                 Toggle("Auto-save", isOn: $settings.autoSave)
             }
 
-            Section("Theme") {
-                HStack {
-                    Text("Theme")
-                    Spacer()
-                    Text("Dark")
-                        .foregroundStyle(.secondary)
+            Section("Appearance") {
+                Picker("Theme", selection: $appearanceMode) {
+                    Text("System").tag("system")
+                    Text("Light").tag("light")
+                    Text("Dark").tag("dark")
+                }
+                .onChange(of: appearanceMode) { _, newValue in
+                    applyAppearance(newValue)
                 }
             }
         }
         .formStyle(.grouped)
         .onAppear {
             selectedMode = AnvilSpace(rawValue: settings.defaultMode) ?? .build
+            applyAppearance(appearanceMode)
         }
     }
 
@@ -135,6 +140,14 @@ struct GeneralSettingsView: View {
         panel.message = "Choose default project directory"
         if panel.runModal() == .OK, let url = panel.url {
             settings.projectDirectory = url.path
+        }
+    }
+
+    private func applyAppearance(_ mode: String) {
+        switch mode {
+        case "light": NSApp.appearance = NSAppearance(named: .aqua)
+        case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)
+        default: NSApp.appearance = nil
         }
     }
 }
@@ -470,28 +483,45 @@ struct AppearanceSettingsView: View {
 // MARK: - Integrations Tab
 
 struct IntegrationSettingsView: View {
+    @State private var githubToken: String = ""
+    @State private var isTokenSaved: Bool = false
+
     var body: some View {
-        VStack(spacing: AnvilSpacing.lg) {
-            Image(systemName: "puzzlepiece.extension")
-                .font(.system(size: 40))
-                .foregroundStyle(.tertiary)
-
-            Text("Integrations")
-                .font(.headline)
-                .foregroundStyle(.primary)
-
-            Text("Configure third-party integrations such as GitHub, Jira, Linear, and Slack.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 360)
-
-            Text("Coming soon")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .padding(.top, AnvilSpacing.sm)
+        Form {
+            Section("GitHub") {
+                SecureField("Personal Access Token", text: $githubToken)
+                    .textFieldStyle(.roundedBorder)
+                HStack {
+                    Button("Connect") {
+                        saveToken()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(githubToken.isEmpty)
+                    if isTokenSaved {
+                        Label("Connected", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                    }
+                }
+            }
+            Section("Linear") {
+                Text("Linear integration coming soon")
+                    .foregroundStyle(.secondary)
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .formStyle(.grouped)
+        .onAppear { loadToken() }
+    }
+
+    private func saveToken() {
+        // Store in UserDefaults for now; migrate to KeychainStore when
+        // AnvilUI gains an Application-layer secret-storage port.
+        UserDefaults.standard.set(githubToken, forKey: "github_token")
+        isTokenSaved = true
+    }
+
+    private func loadToken() {
+        githubToken = UserDefaults.standard.string(forKey: "github_token") ?? ""
+        isTokenSaved = !githubToken.isEmpty
     }
 }
 
