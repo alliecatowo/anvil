@@ -11,9 +11,16 @@ struct SessionDashboard: View {
     let onCreateSynthesis: ([String]) -> Void
     let onDispatchCritique: (String) -> Void
 
-    private let columns = [
-        GridItem(.adaptive(minimum: 280, maximum: 400), spacing: AnvilSpacing.md)
-    ]
+    @State private var dashboardFilter: DashboardFilter = .all
+
+    private enum DashboardFilter: String, CaseIterable, Identifiable {
+        case all = "All"
+        case active = "Active"
+        case completed = "Completed"
+        case failed = "Failed"
+
+        var id: String { rawValue }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -61,6 +68,14 @@ struct SessionDashboard: View {
 
             Divider().frame(height: 24).overlay(AnvilColor.borderSubtle)
 
+            Picker("Filter", selection: $dashboardFilter) {
+                ForEach(DashboardFilter.allCases) { filter in
+                    Text(filter.rawValue).tag(filter)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 280)
+
             // Selection actions
             if !viewModel.dashboardSelectedSessionIds.isEmpty {
                 HStack(spacing: AnvilSpacing.sm) {
@@ -72,29 +87,19 @@ struct SessionDashboard: View {
                         Button {
                             onCreateSynthesis(Array(viewModel.dashboardSelectedSessionIds))
                         } label: {
-                            HStack(spacing: AnvilSpacing.xxs) {
-                                Image(systemName: "arrow.triangle.merge")
-                                    .font(.system(size: 11))
-                                Text("Synthesize")
-                                    .font(AnvilFont.label)
-                            }
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, AnvilSpacing.sm)
-                            .padding(.vertical, 4)
-                            .background(AnvilColor.accentPurple)
-                            .clipShape(RoundedRectangle(cornerRadius: 5))
+                            Label("Synthesize", systemImage: "arrow.triangle.merge")
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
                     }
 
                     Button {
                         viewModel.dashboardSelectedSessionIds.removeAll()
                     } label: {
-                        Text("Clear")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
+                        Label("Clear", systemImage: "xmark.circle")
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
             }
         }
@@ -106,75 +111,52 @@ struct SessionDashboard: View {
     // MARK: - Content
 
     private var dashboardContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: AnvilSpacing.lg) {
-                // Synthesis rooms section
-                if !viewModel.synthesisRooms.isEmpty {
-                    synthesisRoomsSection
-                }
-
-                // Sessions grid
-                LazyVGrid(columns: columns, spacing: AnvilSpacing.md) {
-                    ForEach(viewModel.sessions) { session in
-                        SessionCard(
-                            session: session,
-                            isSelected: viewModel.dashboardSelectedSessionIds.contains(session.id),
-                            linkedSessions: viewModel.linkedSessions(for: session.id),
-                            onToggleSelect: {
-                                if viewModel.dashboardSelectedSessionIds.contains(session.id) {
-                                    viewModel.dashboardSelectedSessionIds.remove(session.id)
-                                } else {
-                                    viewModel.dashboardSelectedSessionIds.insert(session.id)
-                                }
+        List {
+            // Synthesis rooms section
+            if !viewModel.synthesisRooms.isEmpty {
+                Section("Synthesis Rooms") {
+                    ForEach(viewModel.synthesisRooms) { room in
+                        SynthesisRoomCard(
+                            room: room,
+                            sessionNames: room.inputSessionIds.compactMap { id in
+                                viewModel.sessions.first(where: { $0.id == id })?.displayName
                             },
                             onOpen: {
-                                viewModel.selectedSessionId = session.id
-                                viewModel.showConversation()
+                                viewModel.showSynthesisRoom(room.id)
                             },
-                            onCritique: {
-                                onDispatchCritique(session.id)
+                            onDelete: {
+                                viewModel.deleteSynthesisRoom(room.id)
                             }
                         )
                     }
                 }
             }
-            .padding(AnvilSpacing.lg)
-        }
-    }
 
-    // MARK: - Synthesis Rooms Section
-
-    private var synthesisRoomsSection: some View {
-        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-            HStack {
-                Image(systemName: "arrow.triangle.merge")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(AnvilColor.accentPurple)
-                Text("Synthesis Rooms")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                Spacer()
-            }
-
-            LazyVGrid(columns: columns, spacing: AnvilSpacing.md) {
-                ForEach(viewModel.synthesisRooms) { room in
-                    SynthesisRoomCard(
-                        room: room,
-                        sessionNames: room.inputSessionIds.compactMap { id in
-                            viewModel.sessions.first(where: { $0.id == id })?.displayName
+            Section("Sessions") {
+                ForEach(filteredSessions) { session in
+                    SessionCard(
+                        session: session,
+                        isSelected: viewModel.dashboardSelectedSessionIds.contains(session.id),
+                        linkedSessions: viewModel.linkedSessions(for: session.id),
+                        onToggleSelect: {
+                            if viewModel.dashboardSelectedSessionIds.contains(session.id) {
+                                viewModel.dashboardSelectedSessionIds.remove(session.id)
+                            } else {
+                                viewModel.dashboardSelectedSessionIds.insert(session.id)
+                            }
                         },
                         onOpen: {
-                            viewModel.showSynthesisRoom(room.id)
+                            viewModel.selectedSessionId = session.id
+                            viewModel.showConversation()
                         },
-                        onDelete: {
-                            viewModel.deleteSynthesisRoom(room.id)
+                        onCritique: {
+                            onDispatchCritique(session.id)
                         }
                     )
                 }
             }
-
-            Divider().overlay(AnvilColor.borderSubtle).padding(.top, AnvilSpacing.sm)
         }
+        .listStyle(.inset)
     }
 
     // MARK: - Helpers
@@ -194,6 +176,19 @@ struct SessionDashboard: View {
         if count >= 1_000_000 { return String(format: "%.1fM", Double(count) / 1_000_000) }
         if count >= 1_000 { return String(format: "%.1fK", Double(count) / 1_000) }
         return "\(count)"
+    }
+
+    private var filteredSessions: [AgentSession] {
+        switch dashboardFilter {
+        case .all:
+            return viewModel.sessions
+        case .active:
+            return viewModel.sessions.filter { $0.status == .running || $0.status == .paused }
+        case .completed:
+            return viewModel.sessions.filter { $0.status == .completed }
+        case .failed:
+            return viewModel.sessions.filter { $0.status == .failed }
+        }
     }
 }
 

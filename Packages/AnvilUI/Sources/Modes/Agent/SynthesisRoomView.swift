@@ -82,19 +82,10 @@ struct SynthesisRoomView: View {
             // Run synthesis button
             if room.status == .pending || room.status == .completed || room.status == .failed {
                 Button(action: onRunSynthesis) {
-                    HStack(spacing: AnvilSpacing.xxs) {
-                        Image(systemName: room.status == .pending ? "play.fill" : "arrow.clockwise")
-                            .font(.system(size: 11))
-                        Text(room.status == .pending ? "Run Synthesis" : "Re-run")
-                            .font(.system(size: 12, weight: .medium))
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, AnvilSpacing.md)
-                    .padding(.vertical, 6)
-                    .background(AnvilColor.accentPurple)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    Label(room.status == .pending ? "Run Synthesis" : "Re-run", systemImage: room.status == .pending ? "play.fill" : "arrow.clockwise")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
             }
         }
         .padding(.horizontal, AnvilSpacing.lg)
@@ -117,28 +108,15 @@ struct SynthesisRoomView: View {
     // MARK: - Input Sessions Panel
 
     private var inputSessionsPanel: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Input Sessions")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                Spacer()
-            }
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.sm)
-            .background(AnvilColor.backgroundSecondary.opacity(0.3))
-
-            Divider().overlay(AnvilColor.borderSubtle)
-
-            ScrollView {
-                VStack(spacing: AnvilSpacing.md) {
-                    ForEach(inputSessions) { session in
-                        sessionSummaryCard(session)
-                    }
+        List {
+            Section("Input Sessions") {
+                ForEach(inputSessions) { session in
+                    sessionSummaryCard(session)
+                        .listRowInsets(EdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 8))
                 }
-                .padding(AnvilSpacing.md)
             }
         }
+        .listStyle(.inset)
         .frame(minWidth: 300)
     }
 
@@ -200,12 +178,10 @@ struct SynthesisRoomView: View {
             }
         }
         .padding(AnvilSpacing.cardPadding)
-        .background(AnvilColor.backgroundTertiary)
-        .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
-        .overlay(
+        .background {
             RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-        )
+                .fill(AnvilColor.backgroundTertiary)
+        }
     }
 
     // MARK: - Synthesis Output Panel

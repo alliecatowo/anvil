@@ -72,23 +72,10 @@ struct BuildLogView: View {
             // Filter bar
             HStack(spacing: AnvilSpacing.md) {
                 // Search
-                HStack(spacing: AnvilSpacing.xs) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 11))
-                        .foregroundStyle(AnvilColor.textTertiary)
-                    TextField("Filter logs...", text: $searchText)
-                        .textFieldStyle(.plain)
-                        .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.textPrimary)
-                }
-                .padding(.horizontal, AnvilSpacing.sm)
-                .padding(.vertical, AnvilSpacing.xs)
-                .background(Color(hex: 0x0A0A0A))
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-                )
+                TextField("Filter logs...", text: $searchText)
+                    .textFieldStyle(.roundedBorder)
+                    .font(AnvilFont.code)
+                    .frame(maxWidth: 260)
 
                 // Level filters
                 ForEach([BuildLogLevel.info, .warning, .error, .debug], id: \.rawValue) { level in
@@ -101,11 +88,7 @@ struct BuildLogView: View {
                     } label: {
                         Text(levelPrefix(level))
                             .font(AnvilFont.code)
-                            .foregroundStyle(filterLevel == level ? .white : levelColor(level))
-                            .padding(.horizontal, AnvilSpacing.sm)
-                            .padding(.vertical, AnvilSpacing.xxxs)
-                            .background(filterLevel == level ? levelColor(level).opacity(0.6) : levelColor(level).opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .foregroundStyle(filterLevel == level ? .primary : levelColor(level))
                     }
                     .buttonStyle(.plain)
                 }
@@ -139,34 +122,28 @@ struct BuildLogView: View {
             }
             .padding(.horizontal, AnvilSpacing.lg)
             .padding(.vertical, AnvilSpacing.sm)
-            .background(AnvilColor.backgroundSecondary)
+            .background(.bar)
 
             Divider().overlay(AnvilColor.borderSubtle)
 
             // Log viewer
             ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
+                List {
+                    if filteredLogs.isEmpty {
+                        ContentUnavailableView(
+                            searchText.isEmpty ? "No Logs Yet" : "No Matching Logs",
+                            systemImage: "doc.text.magnifyingglass"
+                        )
+                    } else {
                         ForEach(Array(filteredLogs.enumerated()), id: \.element.id) { index, log in
                             logLine(log, lineNumber: index + 1)
                                 .id(log.id)
-                        }
-
-                        if filteredLogs.isEmpty {
-                            VStack(spacing: AnvilSpacing.sm) {
-                                Image(systemName: "doc.text.magnifyingglass")
-                                    .font(.system(size: 24, weight: .thin))
-                                    .foregroundStyle(AnvilColor.textTertiary)
-                                Text(searchText.isEmpty ? "No logs yet" : "No matching logs")
-                                    .font(AnvilFont.body)
-                                    .foregroundStyle(AnvilColor.textSecondary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, AnvilSpacing.xxxl)
+                                .listRowInsets(EdgeInsets(top: 2, leading: 12, bottom: 2, trailing: 12))
+                                .listRowBackground(log.level == .error ? AnvilColor.accentRed.opacity(0.05) : Color.clear)
                         }
                     }
-                    .padding(AnvilSpacing.md)
                 }
+                .listStyle(.inset(alternatesRowBackgrounds: true))
                 .onChange(of: viewModel.buildLogs.count) { _, _ in
                     if autoScroll, let lastLog = filteredLogs.last {
                         withAnimation(AnvilAnimation.standard) {
@@ -175,7 +152,6 @@ struct BuildLogView: View {
                     }
                 }
             }
-            .background(Color(hex: 0x0A0A0A))
         }
         .background(AnvilColor.backgroundPrimary)
         .onDisappear {
@@ -214,7 +190,6 @@ struct BuildLogView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.vertical, AnvilSpacing.xxxs)
-        .background(log.level == .error ? AnvilColor.accentRed.opacity(0.05) : Color.clear)
     }
 
     // MARK: - Helpers

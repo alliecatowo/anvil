@@ -220,19 +220,10 @@ struct SessionHeader: View {
                     Button {
                         createPR()
                     } label: {
-                        HStack(spacing: AnvilSpacing.xs) {
-                            Image(systemName: "arrow.triangle.pull")
-                                .font(.system(size: 11))
-                            Text("Create PR")
-                                .font(AnvilFont.label)
-                        }
-                        .foregroundStyle(AnvilColor.accentPurple)
-                        .padding(.horizontal, AnvilSpacing.sm)
-                        .padding(.vertical, AnvilSpacing.xxs)
-                        .background(AnvilColor.accentPurple.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 5))
+                        Label("Create PR", systemImage: "arrow.triangle.pull")
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
                 }
 
                 // Send to background button — shown when session is running
@@ -240,19 +231,10 @@ struct SessionHeader: View {
                     Button {
                         sendBg()
                     } label: {
-                        HStack(spacing: AnvilSpacing.xs) {
-                            Image(systemName: "arrow.down.to.line")
-                                .font(.system(size: 11))
-                            Text("Background")
-                                .font(AnvilFont.label)
-                        }
-                        .foregroundStyle(AnvilColor.accentTeal)
-                        .padding(.horizontal, AnvilSpacing.sm)
-                        .padding(.vertical, AnvilSpacing.xxs)
-                        .background(AnvilColor.accentTeal.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 5))
+                        Label("Background", systemImage: "arrow.down.to.line")
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                     .help("Send this session to the background")
                 }
 

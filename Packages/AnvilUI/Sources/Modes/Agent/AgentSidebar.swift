@@ -3,62 +3,72 @@ import AnvilDomain
 
 struct AgentSidebar: View {
     @ObservedObject var viewModel: AgentViewModel
+    @State private var activeSidebarTab: SidebarTab = .sessions
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top actions
             HStack(spacing: AnvilSpacing.sm) {
-                Button(action: {
+                Button {
                     viewModel.startNewSession(prompt: "", model: viewModel.selectedModelId)
                     viewModel.showConversation()
-                }) {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
-                            .foregroundStyle(AnvilColor.accentPurple)
-                        Text("New Session")
-                            .font(AnvilFont.sidebarItem)
-                        Spacer()
-                    }
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .contentShape(Rectangle())
+                } label: {
+                    Label("New Session", systemImage: "plus")
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
 
-                Button(action: {
-                    viewModel.showDashboard()
-                }) {
-                    Image(systemName: "square.grid.2x2")
-                        .font(.system(size: 13))
-                        .foregroundStyle(
-                            viewModel.viewMode == .dashboard
-                                ? AnvilColor.accentBlue
-                                : AnvilColor.textTertiary
-                        )
+                Picker("View", selection: $activeSidebarTab) {
+                    Label("Sessions", systemImage: "message").tag(SidebarTab.sessions)
+                    Label("Dashboard", systemImage: "square.grid.2x2").tag(SidebarTab.dashboard)
                 }
-                .buttonStyle(.borderless)
-                .help("Session Dashboard")
+                .pickerStyle(.segmented)
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
 
             Divider().overlay(AnvilColor.borderSubtle)
 
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    // Synthesis rooms section
-                    if !viewModel.synthesisRooms.isEmpty {
-                        synthesisRoomsSection
+            List {
+                if !viewModel.synthesisRooms.isEmpty {
+                    Section("Synthesis Rooms") {
+                        ForEach(viewModel.synthesisRooms) { room in
+                            let isActive = isSynthesisRoomActive(room.id)
+                            HStack(spacing: AnvilSpacing.sm) {
+                                Image(systemName: "arrow.triangle.merge")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(AnvilColor.accentPurple)
+
+                                Text(room.title)
+                                    .lineLimit(1)
+
+                                Spacer()
+
+                                Circle()
+                                    .fill(synthesisStatusColor(room.status))
+                                    .frame(width: 6, height: 6)
+                            }
+                            .contentShape(Rectangle())
+                            .listRowBackground(isActive ? AnvilColor.selectionBackground : Color.clear)
+                            .onTapGesture {
+                                viewModel.showSynthesisRoom(room.id)
+                            }
+                            .contextMenu {
+                                Button("Delete", role: .destructive) {
+                                    viewModel.deleteSynthesisRoom(room.id)
+                                }
+                            }
+                        }
                     }
+                }
 
-                    // Sessions section
-                    sectionHeader("Sessions", count: viewModel.sessions.count)
-
+                Section("Sessions") {
                     ForEach(viewModel.sessions) { session in
                         AgentSessionRow(
                             session: session,
                             isSelected: session.id == viewModel.selectedSessionId && viewModel.viewMode == .conversation,
                             linkedCount: viewModel.linkedSessions(for: session.id).count
                         )
+                        .contentShape(Rectangle())
                         .onTapGesture {
                             viewModel.selectedSessionId = session.id
                             viewModel.showConversation()
@@ -82,71 +92,45 @@ struct AgentSidebar: View {
                     }
                 }
             }
+            .listStyle(.sidebar)
         }
-    }
-
-    // MARK: - Synthesis Rooms Section
-
-    private var synthesisRoomsSection: some View {
-        VStack(spacing: 0) {
-            sectionHeader("Synthesis Rooms", count: viewModel.synthesisRooms.count)
-
-            ForEach(viewModel.synthesisRooms) { room in
-                let isActive: Bool = {
-                    if case .synthesisRoom(let id) = viewModel.viewMode {
-                        return id == room.id
-                    }
-                    return false
-                }()
-
-                HStack(spacing: AnvilSpacing.sm) {
-                    Image(systemName: "arrow.triangle.merge")
-                        .font(.system(size: 11))
-                        .foregroundStyle(AnvilColor.accentPurple)
-
-                    Text(room.title)
-                        .font(AnvilFont.sidebarItem)
-                        .foregroundStyle(AnvilColor.textPrimary)
-                        .lineLimit(1)
-
-                    Spacer()
-
-                    Circle()
-                        .fill(synthesisStatusColor(room.status))
-                        .frame(width: 6, height: 6)
+        .onAppear {
+            syncSidebarTabFromViewMode()
+        }
+        .onChange(of: activeSidebarTab) { _, newValue in
+            switch newValue {
+            case .sessions:
+                if case .dashboard = viewModel.viewMode {
+                    viewModel.showConversation()
                 }
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xs)
-                .background(isActive ? AnvilColor.selectionBackground : Color.clear)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    viewModel.showSynthesisRoom(room.id)
-                }
-                .contextMenu {
-                    Button("Delete", role: .destructive) {
-                        viewModel.deleteSynthesisRoom(room.id)
-                    }
-                }
+            case .dashboard:
+                viewModel.showDashboard()
             }
-
-            Divider().overlay(AnvilColor.borderSubtle).padding(.vertical, AnvilSpacing.xxs)
+        }
+        .onChange(of: viewModel.viewMode) { _, _ in
+            syncSidebarTabFromViewMode()
         }
     }
 
-    // MARK: - Helpers
+    private enum SidebarTab: Hashable {
+        case sessions
+        case dashboard
+    }
 
-    private func sectionHeader(_ title: String, count: Int) -> some View {
-        HStack {
-            Text(title.uppercased())
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(AnvilColor.textTertiary)
-            Spacer()
-            Text("\(count)")
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundStyle(AnvilColor.textTertiary)
+    private func isSynthesisRoomActive(_ roomId: String) -> Bool {
+        if case .synthesisRoom(let id) = viewModel.viewMode {
+            return id == roomId
         }
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.xs)
+        return false
+    }
+
+    private func syncSidebarTabFromViewMode() {
+        switch viewModel.viewMode {
+        case .dashboard:
+            activeSidebarTab = .dashboard
+        default:
+            activeSidebarTab = .sessions
+        }
     }
 
     private func synthesisStatusColor(_ status: SynthesisStatus) -> Color {

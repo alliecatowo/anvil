@@ -32,26 +32,17 @@ struct AgentEmptyState: View {
                 .frame(maxWidth: 360)
 
             HStack(spacing: AnvilSpacing.sm) {
-                AnvilButton("New Session", icon: "plus", style: .primary, action: onNewSession)
+                Button(action: onNewSession) {
+                    Label("New Session", systemImage: "plus")
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.regular)
 
                 SettingsLink {
-                    HStack(spacing: AnvilSpacing.xs) {
-                        Image(systemName: "gearshape")
-                            .font(.system(size: 12, weight: .medium))
-                        Text("Configure Provider")
-                            .font(AnvilFont.body)
-                    }
-                    .padding(.horizontal, AnvilSpacing.md)
-                    .padding(.vertical, AnvilSpacing.xs)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .background(AnvilColor.backgroundTertiary)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(AnvilColor.borderMedium, lineWidth: 1)
-                    )
+                    Label("Configure Provider", systemImage: "gearshape")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
             }
             .padding(.top, AnvilSpacing.sm)
         }

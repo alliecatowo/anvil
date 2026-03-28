@@ -351,119 +351,55 @@ struct DeployDashboardView: View {
                 .font(AnvilFont.subheading)
                 .foregroundStyle(AnvilColor.textPrimary)
 
-            VStack(spacing: 0) {
-                // Header row
-                HStack {
-                    Text("VERSION")
-                        .frame(width: 120, alignment: .leading)
-                    Text("COMMIT")
-                        .frame(width: 80, alignment: .leading)
-                    Text("STATUS")
-                        .frame(width: 90, alignment: .leading)
-                    Text("TRIGGERED BY")
-                        .frame(width: 140, alignment: .leading)
-                    Text("BRANCH")
-                        .frame(width: 120, alignment: .leading)
-                    Text("DURATION")
-                        .frame(width: 80, alignment: .leading)
-                    Text("TIME")
-                        .frame(width: 140, alignment: .leading)
-                    Text("")
-                        .frame(width: 80, alignment: .trailing)
+            Table(viewModel.deployHistoryForSelected) {
+                TableColumn("Version") { entry in
+                    Text(entry.version)
+                        .font(AnvilFont.code)
+                        .foregroundStyle(AnvilColor.accentPurple)
                 }
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.sm)
-                .background(AnvilColor.backgroundSecondary)
-
-                ForEach(viewModel.deployHistoryForSelected) { entry in
-                    deployHistoryRow(entry)
-                    Divider().overlay(AnvilColor.borderSubtle)
+                TableColumn("Commit") { entry in
+                    Text(entry.deployment.commitHash ?? "--")
+                        .font(AnvilFont.code)
                 }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                    .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-            )
-        }
-    }
-
-    private func deployHistoryRow(_ entry: DeployHistoryEntry) -> some View {
-        HStack {
-            Text(entry.version)
-                .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.accentPurple)
-                .frame(width: 120, alignment: .leading)
-
-            Text(entry.deployment.commitHash ?? "--")
-                .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.textPrimary)
-                .frame(width: 80, alignment: .leading)
-
-            HStack(spacing: AnvilSpacing.xxs) {
-                Circle()
-                    .fill(statusColor(entry.deployment.status))
-                    .frame(width: 6, height: 6)
-                Text(entry.deployment.status.rawValue.capitalized)
-                    .font(AnvilFont.label)
-                    .foregroundStyle(statusColor(entry.deployment.status))
-            }
-            .frame(width: 90, alignment: .leading)
-
-            Text(entry.triggeredBy)
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textSecondary)
-                .lineLimit(1)
-                .frame(width: 140, alignment: .leading)
-
-            Text(entry.branch)
-                .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.textSecondary)
-                .lineLimit(1)
-                .frame(width: 120, alignment: .leading)
-
-            Text(entry.duration > 0 ? entry.durationString : "--")
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .frame(width: 80, alignment: .leading)
-
-            Text(dateTimeFormatter.string(from: entry.deployment.createdAt))
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .frame(width: 140, alignment: .leading)
-
-            // Rollback button -- only for completed deploys that are not the current one
-            if entry.deployment.status == .ready,
-               entry.id != viewModel.deployHistoryForSelected.first?.id {
-                Button {
-                    if let envID = viewModel.selectedEnvironmentID {
-                        viewModel.requestRollback(deploymentID: entry.id, environmentID: envID)
+                TableColumn("Status") { entry in
+                    Label(entry.deployment.status.rawValue.capitalized, systemImage: "circle.fill")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(statusColor(entry.deployment.status))
+                }
+                TableColumn("Triggered By") { entry in
+                    Text(entry.triggeredBy)
+                        .font(AnvilFont.label)
+                }
+                TableColumn("Branch") { entry in
+                    Text(entry.branch)
+                        .font(AnvilFont.code)
+                        .lineLimit(1)
+                }
+                TableColumn("Duration") { entry in
+                    Text(entry.duration > 0 ? entry.durationString : "--")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(.secondary)
+                }
+                TableColumn("Time") { entry in
+                    Text(dateTimeFormatter.string(from: entry.deployment.createdAt))
+                        .font(AnvilFont.label)
+                        .foregroundStyle(.secondary)
+                }
+                TableColumn("Action") { entry in
+                    if entry.deployment.status == .ready,
+                       entry.id != viewModel.deployHistoryForSelected.first?.id {
+                        Button("Rollback") {
+                            if let envID = viewModel.selectedEnvironmentID {
+                                viewModel.requestRollback(deploymentID: entry.id, environmentID: envID)
+                            }
+                        }
+                        .buttonStyle(.borderless)
+                        .foregroundStyle(.orange)
                     }
-                } label: {
-                    HStack(spacing: AnvilSpacing.xxs) {
-                        Image(systemName: "arrow.uturn.backward")
-                            .font(.system(size: 10))
-                        Text("Rollback")
-                            .font(AnvilFont.label)
-                    }
-                    .foregroundStyle(AnvilColor.accentAmber)
-                    .padding(.horizontal, AnvilSpacing.sm)
-                    .padding(.vertical, AnvilSpacing.xxxs)
-                    .background(AnvilColor.accentAmber.opacity(0.1))
-                    .clipShape(Capsule())
                 }
-                .buttonStyle(.plain)
-                .frame(width: 80, alignment: .trailing)
-            } else {
-                Spacer()
-                    .frame(width: 80)
             }
+            .frame(minHeight: 220)
         }
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.sm)
-        .background(AnvilColor.backgroundTertiary)
     }
 
     // MARK: - Recent Deployments (all environments)
@@ -474,66 +410,28 @@ struct DeployDashboardView: View {
                 .font(AnvilFont.subheading)
                 .foregroundStyle(AnvilColor.textPrimary)
 
-            VStack(spacing: 0) {
-                HStack {
-                    Text("COMMIT")
-                        .frame(width: 100, alignment: .leading)
-                    Text("STATUS")
-                        .frame(width: 100, alignment: .leading)
-                    Text("ENVIRONMENT")
-                        .frame(width: 120, alignment: .leading)
-                    Text("TIME")
-                        .frame(maxWidth: .infinity, alignment: .leading)
+            Table(Array(viewModel.deployments.prefix(10))) {
+                TableColumn("Commit") { deployment in
+                    Text(deployment.commitHash ?? "--")
+                        .font(AnvilFont.code)
                 }
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.sm)
-                .background(AnvilColor.backgroundSecondary)
-
-                ForEach(viewModel.deployments.prefix(10)) { deployment in
-                    allEnvDeploymentRow(deployment)
-                    Divider().overlay(AnvilColor.borderSubtle)
+                TableColumn("Status") { deployment in
+                    Label(deployment.status.rawValue.capitalized, systemImage: "circle.fill")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(statusColor(deployment.status))
+                }
+                TableColumn("Environment") { deployment in
+                    Text(environmentName(for: deployment.environmentId))
+                        .font(AnvilFont.label)
+                }
+                TableColumn("Time") { deployment in
+                    Text(dateTimeFormatter.string(from: deployment.createdAt))
+                        .font(AnvilFont.label)
+                        .foregroundStyle(.secondary)
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                    .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-            )
+            .frame(minHeight: 220)
         }
-    }
-
-    private func allEnvDeploymentRow(_ deployment: Deployment) -> some View {
-        HStack {
-            Text(deployment.commitHash ?? "--")
-                .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.textPrimary)
-                .frame(width: 100, alignment: .leading)
-
-            HStack(spacing: AnvilSpacing.xxs) {
-                Circle()
-                    .fill(statusColor(deployment.status))
-                    .frame(width: 6, height: 6)
-                Text(deployment.status.rawValue.capitalized)
-                    .font(AnvilFont.label)
-                    .foregroundStyle(statusColor(deployment.status))
-            }
-            .frame(width: 100, alignment: .leading)
-
-            Text(environmentName(for: deployment.environmentId))
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textSecondary)
-                .frame(width: 120, alignment: .leading)
-
-            Text(dateTimeFormatter.string(from: deployment.createdAt))
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.sm)
-        .background(AnvilColor.backgroundTertiary)
     }
 
     // MARK: - Helpers

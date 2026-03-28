@@ -8,7 +8,7 @@ struct TicketListView: View {
         VStack(spacing: 0) {
             toolbar
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             if viewModel.filteredTickets.isEmpty {
                 emptyState
@@ -25,8 +25,7 @@ struct TicketListView: View {
         HStack(spacing: AnvilSpacing.md) {
             HStack(spacing: AnvilSpacing.xxs) {
                 Text("Group:")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.secondary)
 
                 Picker("", selection: $viewModel.grouping) {
                     ForEach(TicketGrouping.allCases, id: \.self) { g in
@@ -39,8 +38,7 @@ struct TicketListView: View {
 
             HStack(spacing: AnvilSpacing.xxs) {
                 Text("Sort:")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.secondary)
 
                 Picker("", selection: $viewModel.sortField) {
                     ForEach(TicketSortField.allCases, id: \.self) { s in
@@ -56,12 +54,11 @@ struct TicketListView: View {
             filterIndicator
 
             Text("\(viewModel.filteredTickets.count) tickets")
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.secondary)
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.sm)
-        .background(AnvilColor.backgroundToolbar)
+        .background(.bar)
     }
 
     @ViewBuilder
@@ -73,34 +70,35 @@ struct TicketListView: View {
                 HStack(spacing: AnvilSpacing.xxs) {
                     Image(systemName: "line.3.horizontal.decrease.circle.fill")
                         .font(.system(size: 12))
-                    Text("Clear filters")
-                        .font(AnvilFont.label)
+                    Text("Clear Filters")
                 }
-                .foregroundStyle(AnvilColor.accentAmber)
+                .foregroundStyle(.orange)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
         }
     }
 
     // MARK: - Ticket Table
 
     private var ticketTable: some View {
-        ScrollView {
-            LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
-                ForEach(viewModel.groupedTickets, id: \.0) { group, tickets in
-                    Section {
-                        ForEach(tickets) { ticket in
-                            VStack(spacing: 0) {
-                                ticketRow(ticket)
-                                Divider().overlay(AnvilColor.borderSubtle)
-                            }
-                        }
-                    } header: {
-                        groupHeader(group, count: tickets.count)
+        List {
+            ForEach(viewModel.groupedTickets, id: \.0) { group, tickets in
+                Section {
+                    ForEach(tickets) { ticket in
+                        ticketRow(ticket)
+                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                            .listRowBackground(
+                                viewModel.selectedTicketId == ticket.id
+                                    ? Color.accentColor.opacity(0.14)
+                                    : Color.clear
+                            )
                     }
+                } header: {
+                    groupHeader(group, count: tickets.count)
                 }
             }
         }
+        .listStyle(.inset(alternatesRowBackgrounds: true))
     }
 
     // MARK: - Group Header
@@ -108,23 +106,19 @@ struct TicketListView: View {
     private func groupHeader(_ title: String, count: Int) -> some View {
         HStack {
             Text(title.uppercased())
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textSecondary)
+                .foregroundStyle(.secondary)
                 .tracking(0.3)
 
             Text("\(count)")
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .padding(.horizontal, 5)
-                .padding(.vertical, 1)
-                .background(AnvilColor.backgroundElevated)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(.regularMaterial)
                 .clipShape(Capsule())
 
             Spacer()
         }
-        .padding(.horizontal, AnvilSpacing.lg)
-        .padding(.vertical, AnvilSpacing.xs)
-        .background(.regularMaterial)
+        .textCase(nil)
     }
 
     // MARK: - Ticket Row
@@ -142,12 +136,11 @@ struct TicketListView: View {
 
             Text(ticket.id)
                 .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.secondary)
                 .frame(width: 70, alignment: .leading)
 
             Text(ticket.title)
                 .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textPrimary)
                 .lineLimit(1)
 
             Spacer()
@@ -156,18 +149,6 @@ struct TicketListView: View {
             storyPointsBadge(ticket.storyPoints)
             assigneeCell(ticket.assignee)
             dueDateCell(ticket.dueDate)
-        }
-        .padding(.horizontal, AnvilSpacing.lg)
-        .padding(.vertical, AnvilSpacing.sm)
-        .background(
-            viewModel.selectedTicketId == ticket.id
-                ? AnvilColor.selectionBackground
-                : Color.clear
-        )
-        .overlay(alignment: .leading) {
-            Rectangle()
-                .fill(viewModel.selectedTicketId == ticket.id ? AnvilColor.selectionBorder : Color.clear)
-                .frame(width: 3)
         }
         .contentShape(Rectangle())
         .onTapGesture { viewModel.selectTicket(ticket.id) }
@@ -256,11 +237,11 @@ struct TicketListView: View {
             if let sp = points {
                 Text("\(sp)")
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.secondary)
                     .frame(width: 20, alignment: .center)
                     .padding(.horizontal, 4)
                     .padding(.vertical, 1)
-                    .background(AnvilColor.backgroundElevated)
+                    .background(.regularMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 3))
             }
         }
@@ -277,17 +258,17 @@ struct TicketListView: View {
                         .overlay(
                             Text(String(name.prefix(1)).uppercased())
                                 .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(AnvilColor.textSecondary)
+                                .foregroundStyle(.secondary)
                         )
                     Text(name)
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textSecondary)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             } else {
                 Text("--")
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.secondary)
             }
         }
         .frame(width: 90, alignment: .leading)
@@ -309,11 +290,11 @@ struct TicketListView: View {
             Spacer()
             Image(systemName: "ticket")
                 .font(.system(size: 36, weight: .thin))
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.secondary)
 
             Text("No tickets match your filters")
                 .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textSecondary)
+                .foregroundStyle(.secondary)
 
             AnvilButton("Clear Filters", icon: "xmark", style: .ghost) {
                 viewModel.clearFilters()

@@ -6,123 +6,90 @@ struct ReviewInboxView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
             HStack {
                 Text("Review Inbox")
                     .font(AnvilFont.heading)
-                    .foregroundStyle(AnvilColor.textPrimary)
 
                 Spacer()
 
                 Text("\(viewModel.pendingReviews.count) pending")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.secondary)
             }
             .padding(.horizontal, AnvilSpacing.lg)
             .padding(.vertical, AnvilSpacing.md)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
-            // Batch action bar
             if !viewModel.selectedReviewIDs.isEmpty {
                 batchActionBar
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
             }
 
-            // List
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    if !viewModel.pendingReviews.isEmpty {
-                        sectionHeader("Needs Review")
+            List {
+                if !viewModel.pendingReviews.isEmpty {
+                    Section("Needs Review") {
                         ForEach(viewModel.pendingReviews) { review in
                             reviewRow(review)
-                            Divider().overlay(AnvilColor.borderSubtle)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                         }
                     }
+                }
 
-                    if !viewModel.completedReviews.isEmpty {
-                        sectionHeader("Completed")
+                if !viewModel.completedReviews.isEmpty {
+                    Section("Completed") {
                         ForEach(viewModel.completedReviews) { review in
                             reviewRow(review)
-                            Divider().overlay(AnvilColor.borderSubtle)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                         }
                     }
                 }
             }
-
-            // Keyboard hint bar
-            HStack(spacing: AnvilSpacing.lg) {
-                keyHint("j", "next")
-                keyHint("k", "prev")
-                keyHint("enter", "open")
-                keyHint("x", "select")
-                Spacer()
-            }
-            .padding(.horizontal, AnvilSpacing.lg)
-            .padding(.vertical, AnvilSpacing.xs)
-            .background(AnvilColor.backgroundSecondary)
+            .listStyle(.inset(alternatesRowBackgrounds: true))
         }
     }
 
     // MARK: - Subviews
-
-    private func sectionHeader(_ title: String) -> some View {
-        HStack {
-            Text(title.uppercased())
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .tracking(0.3)
-            Spacer()
-        }
-        .padding(.horizontal, AnvilSpacing.lg)
-        .padding(.vertical, AnvilSpacing.sm)
-        .background(AnvilColor.backgroundSecondary)
-    }
 
     private func reviewRow(_ review: Review) -> some View {
         Button {
             viewModel.selectReview(review.id)
         } label: {
             HStack(spacing: AnvilSpacing.md) {
-                // Selection checkbox
-                Image(systemName: viewModel.selectedReviewIDs.contains(review.id) ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 14))
-                    .foregroundStyle(
-                        viewModel.selectedReviewIDs.contains(review.id)
-                            ? AnvilColor.accentBlue
-                            : AnvilColor.textTertiary
-                    )
-                    .onTapGesture { viewModel.toggleSelection(review.id) }
+                Toggle("", isOn: Binding(
+                    get: { viewModel.selectedReviewIDs.contains(review.id) },
+                    set: { _ in viewModel.toggleSelection(review.id) }
+                ))
+                .toggleStyle(.checkbox)
+                .labelsHidden()
+                .frame(width: 18)
 
-                // Status indicator
                 statusIcon(for: review.status)
 
-                // Content
                 VStack(alignment: .leading, spacing: AnvilSpacing.xxxs) {
                     HStack {
                         Text(review.title)
                             .font(AnvilFont.body)
-                            .foregroundStyle(AnvilColor.textPrimary)
                             .lineLimit(1)
 
                         Spacer()
 
-                        AnvilBadge(
-                            text: review.sourceId,
-                            color: review.sourceType == .pullRequest
-                                ? AnvilColor.accentBlue
-                                : AnvilColor.accentPurple
-                        )
+                        Text(review.sourceId)
+                            .font(AnvilFont.label)
+                            .foregroundStyle(review.sourceType == .pullRequest ? .blue : .purple)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(.regularMaterial)
+                            .clipShape(Capsule())
                     }
 
                     HStack(spacing: AnvilSpacing.sm) {
                         Text(review.author)
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textSecondary)
+                            .foregroundStyle(.secondary)
 
                         Text("\(review.diff.count) file\(review.diff.count == 1 ? "" : "s")")
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.secondary)
 
                         if !review.comments.isEmpty {
                             HStack(spacing: AnvilSpacing.xxxs) {
@@ -131,18 +98,13 @@ struct ReviewInboxView: View {
                                 Text("\(review.comments.count)")
                                     .font(AnvilFont.label)
                             }
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.secondary)
                         }
                     }
                 }
             }
-            .padding(.horizontal, AnvilSpacing.lg)
-            .padding(.vertical, AnvilSpacing.sm)
-            .background(
-                viewModel.selectedReviewID == review.id
-                    ? AnvilColor.selectionBackground
-                    : Color.clear
-            )
+            .padding(.vertical, 4)
+            .background(viewModel.selectedReviewID == review.id ? Color.accentColor.opacity(0.14) : Color.clear)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -152,7 +114,7 @@ struct ReviewInboxView: View {
         HStack(spacing: AnvilSpacing.md) {
             Text("\(viewModel.selectedReviewIDs.count) selected")
                 .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textSecondary)
+                .foregroundStyle(.secondary)
 
             Spacer()
 
@@ -166,7 +128,7 @@ struct ReviewInboxView: View {
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.sm)
-        .background(AnvilColor.backgroundTertiary)
+        .background(.bar)
     }
 
     private func statusIcon(for status: ReviewStatus) -> some View {
@@ -181,22 +143,4 @@ struct ReviewInboxView: View {
             .foregroundStyle(color)
     }
 
-    private func keyHint(_ key: String, _ label: String) -> some View {
-        HStack(spacing: AnvilSpacing.xxxs) {
-            Text(key)
-                .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.textPrimary)
-                .padding(.horizontal, 4)
-                .padding(.vertical, 1)
-                .background(AnvilColor.backgroundElevated)
-                .clipShape(RoundedRectangle(cornerRadius: 3))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 3)
-                        .stroke(AnvilColor.borderMedium, lineWidth: 1)
-                )
-            Text(label)
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-        }
-    }
 }

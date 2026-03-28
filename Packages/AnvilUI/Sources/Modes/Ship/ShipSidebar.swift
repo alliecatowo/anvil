@@ -47,32 +47,12 @@ struct ShipSidebar: View {
     // MARK: - Tab Selector
 
     private var tabSelector: some View {
-        HStack(spacing: 0) {
+        Picker("Ship View", selection: $viewModel.selectedTab) {
             ForEach(ShipTab.allCases, id: \.rawValue) { tab in
-                Button {
-                    withAnimation(AnvilAnimation.standard) {
-                        viewModel.selectedTab = tab
-                    }
-                } label: {
-                    Text(tab.rawValue)
-                        .font(AnvilFont.label)
-                        .foregroundStyle(
-                            viewModel.selectedTab == tab
-                                ? AnvilColor.textPrimary
-                                : AnvilColor.textTertiary
-                        )
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, AnvilSpacing.sm)
-                        .background(
-                            viewModel.selectedTab == tab
-                                ? AnvilColor.backgroundTertiary
-                                : Color.clear
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                }
-                .buttonStyle(.plain)
+                Text(tab.rawValue).tag(tab)
             }
         }
+        .pickerStyle(.segmented)
         .padding(.horizontal, AnvilSpacing.sm)
         .padding(.vertical, AnvilSpacing.xs)
     }
@@ -80,108 +60,69 @@ struct ShipSidebar: View {
     // MARK: - Environment Row
 
     private func environmentRow(_ card: EnvironmentCard) -> some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
             HStack(spacing: AnvilSpacing.sm) {
-                if viewModel.selectedEnvironmentID == card.id {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(AnvilColor.accentBlue)
-                        .frame(width: 3)
-                }
-
-                // Status icon
                 Image(systemName: environmentIcon(card.status))
-                    .font(.system(size: 14))
                     .foregroundStyle(card.status.color)
-                    .frame(width: 20)
+                    .frame(width: 16)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Text(card.environment.name)
-                            .font(AnvilFont.sidebarItem)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                            .lineLimit(1)
-
-                        Spacer()
-
-                        AnvilBadge(text: card.status.label, color: card.status.color)
-                    }
-
-                    HStack(spacing: AnvilSpacing.xs) {
-                        // Version
-                        Text(card.currentVersion)
-                            .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.accentPurple)
-
-                        Text("|")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
-
-                        // Branch
-                        Text(card.environment.branch ?? "--")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textSecondary)
-                            .lineLimit(1)
-
-                        Spacer()
-
-                        // Health dot
-                        Image(systemName: card.overallHealth.icon)
-                            .font(.system(size: 9))
-                            .foregroundStyle(card.overallHealth.color)
-                    }
+                    Text(card.environment.name)
+                        .font(AnvilFont.sidebarItem)
+                        .lineLimit(1)
+                    Text("\(card.currentVersion) • \(card.environment.branch ?? "--")")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
+
+                Spacer()
+
+                Label(card.overallHealth.label, systemImage: card.overallHealth.icon)
+                    .font(AnvilFont.label)
+                    .foregroundStyle(card.overallHealth.color)
             }
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.sm)
-            .frame(minHeight: AnvilSpacing.richListItemHeight)
-            .background(viewModel.selectedEnvironmentID == card.id ? AnvilColor.selectionBackground : .clear)
             .contentShape(Rectangle())
             .onTapGesture {
-                withAnimation(AnvilAnimation.standard) {
-                    viewModel.selectedEnvironmentID = card.id
-                }
+                viewModel.selectedEnvironmentID = card.id
             }
 
-            // Deploy button row (shown when selected)
             if viewModel.selectedEnvironmentID == card.id {
                 HStack(spacing: AnvilSpacing.sm) {
-                    Button {
+                    Button("Deploy") {
                         viewModel.deploy(environmentID: card.id)
-                    } label: {
-                        HStack(spacing: AnvilSpacing.xxs) {
-                            Image(systemName: "arrow.up.circle")
-                                .font(.system(size: 10))
-                            Text("Deploy")
-                                .font(AnvilFont.label)
-                        }
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, AnvilSpacing.xxs)
-                        .background(AnvilColor.accentBlue)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
                     .disabled(viewModel.isDeploying)
+
+                    Button("Logs") {
+                        viewModel.selectedTab = .logs
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+
+                    Spacer()
 
                     if let lastDeploy = card.lastDeployTime {
                         Text(relativeTime(lastDeploy))
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                .padding(.horizontal, AnvilSpacing.lg)
-                .padding(.bottom, AnvilSpacing.sm)
-                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, AnvilSpacing.sm)
+        .background(viewModel.selectedEnvironmentID == card.id ? AnvilColor.selectionBackground : .clear)
     }
 
     // MARK: - Deployment Row
 
     private func deploymentRow(_ deployment: Deployment) -> some View {
         HStack(spacing: AnvilSpacing.sm) {
-            Image(systemName: deploymentIcon(deployment.status))
-                .font(.system(size: 12))
+            Label("", systemImage: deploymentIcon(deployment.status))
+                .labelStyle(.iconOnly)
                 .foregroundStyle(deploymentColor(deployment.status))
                 .frame(width: 16)
 
@@ -189,7 +130,6 @@ struct ShipSidebar: View {
                 HStack(spacing: AnvilSpacing.xxs) {
                     Text(deployment.commitHash ?? "unknown")
                         .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.textPrimary)
                         .lineLimit(1)
 
                     // Find version from history
@@ -197,12 +137,13 @@ struct ShipSidebar: View {
                        let entry = viewModel.deployHistory[envID]?.first(where: { $0.id == deployment.id }) {
                         Text(entry.version)
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.accentPurple)
+                            .foregroundStyle(.secondary)
                     }
                 }
 
-                Text(deployment.status.rawValue.capitalized)
+                Label(deployment.status.rawValue.capitalized, systemImage: deploymentIcon(deployment.status))
                     .font(AnvilFont.label)
+                    .labelStyle(.titleOnly)
                     .foregroundStyle(deploymentColor(deployment.status))
             }
 
@@ -210,7 +151,7 @@ struct ShipSidebar: View {
 
             Text(relativeTime(deployment.createdAt))
                 .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.secondary)
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
