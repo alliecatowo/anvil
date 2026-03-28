@@ -20,11 +20,19 @@ public struct AnvilApp: App {
                     UNUserNotificationCenter.current().delegate = notificationService
                     _ = await notificationService.requestPermission()
 
-                    // Wire review management port and use case into view model
+                    // Wire review management port, use case, and event bus into view model
                     appState.reviewViewModel.configure(
                         reviewPort: container.reviewService,
-                        createUseCase: container.makeCreateReviewUseCase()
+                        createUseCase: container.makeCreateReviewUseCase(),
+                        eventBus: container.eventBus
                     )
+
+                    // Wire ticket management port, use case, and event bus into view model
+                    appState.intentViewModel.configure(
+                        ticketPort: container.ticketService,
+                        createUseCase: container.makeCreateTicketUseCase()
+                    )
+                    appState.intentViewModel.configure(eventBus: container.eventBus)
 
                     if let adapter = container.getOrCreateGitAdapter() {
                         await appState.loadGitStatus(from: adapter)

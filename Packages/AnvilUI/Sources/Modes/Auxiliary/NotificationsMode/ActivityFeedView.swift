@@ -27,7 +27,7 @@ struct ActivityFeedView: View {
             .padding(.horizontal, AnvilSpacing.lg)
             .padding(.vertical, AnvilSpacing.sm)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Event stream
             ScrollView {

@@ -22,10 +22,9 @@ struct DocEditor: View {
     private var editorPane: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("EDIT")
+                Text("Edit")
                     .font(AnvilFont.label)
                     .foregroundStyle(.tertiary)
-                    .tracking(0.3)
 
                 if viewModel.isModified {
                     Circle()
@@ -75,10 +74,9 @@ struct DocEditor: View {
     private var previewPane: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("PREVIEW")
+                Text("Preview")
                     .font(AnvilFont.label)
                     .foregroundStyle(.tertiary)
-                    .tracking(0.3)
                 Spacer()
 
                 if let doc = viewModel.selectedDoc {

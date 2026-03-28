@@ -164,7 +164,7 @@ private struct TerminalWorkspace: View {
     private func terminalWorkspaceCard(session: TerminalSession?, showsHeaderActions: Bool) -> some View {
         VStack(spacing: 0) {
             workspaceHeader(session: session, showsHeaderActions: showsHeaderActions)
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
             TerminalView(viewModel: viewModel, sessionOverrideId: session?.id)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(AnvilSpacing.md)

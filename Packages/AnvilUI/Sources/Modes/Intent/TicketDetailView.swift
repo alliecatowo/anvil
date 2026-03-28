@@ -21,7 +21,7 @@ struct TicketDetailView: View {
                     // Back bar
                     backBar(ticket)
 
-                    Divider().overlay(AnvilColor.borderSubtle)
+                    Divider()
 
                     // Content
                     VStack(alignment: .leading, spacing: AnvilSpacing.xxl) {
@@ -622,7 +622,7 @@ struct TicketDetailView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        Divider().overlay(AnvilColor.borderSubtle)
+                        Divider()
                     }
                 }
             }

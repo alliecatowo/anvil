@@ -137,6 +137,14 @@ public class DependencyContainer: ObservableObject {
 
     public let reviewService: any ReviewManagementPort = InMemoryReviewService()
 
+    // MARK: - Ticket Management
+
+    public let ticketService: any TicketManagementPort = InMemoryTicketService()
+
+    // MARK: - Deployment Management
+
+    public let deploymentService: any DeploymentManagementPort = InMemoryDeploymentService()
+
     // MARK: - Database Service
 
     public let databaseService = DatabaseService()
@@ -423,12 +431,28 @@ public class DependencyContainer: ObservableObject {
         CreateReviewUseCase(reviewPort: reviewService, eventBus: eventBus)
     }
 
+    public func makeCreateTicketUseCase() -> CreateTicketUseCase {
+        CreateTicketUseCase(ticketPort: ticketService, eventBus: eventBus)
+    }
+
+    public func makeCreateDeploymentUseCase() -> CreateDeploymentUseCase {
+        CreateDeploymentUseCase(deploymentPort: deploymentService, eventBus: eventBus)
+    }
+
     public func makeUpdateReviewUseCase() -> UpdateReviewUseCase {
         UpdateReviewUseCase(reviewPort: reviewService, eventBus: eventBus)
     }
 
     public func makeCreateProjectUseCase() -> CreateProjectUseCase {
         CreateProjectUseCase()
+    }
+
+    public func makeSwitchAgentProviderUseCase() -> SwitchAgentProviderUseCase {
+        SwitchAgentProviderUseCase()
+    }
+
+    public func makeCreateWorktreeUseCase() -> CreateWorktreeUseCase {
+        CreateWorktreeUseCase()
     }
 
     // MARK: - Persistence

@@ -268,6 +268,140 @@ struct UpdateReviewUseCaseTests {
     }
 }
 
+// MARK: - EventBus
+
+@Suite("EventBus — Publish and Subscribe")
+struct EventBusTests {
+
+    // Each test creates a fresh EventBus instance to avoid cross-test pollution
+    // from EventBus.shared. The actor initialiser is private, so we use shared
+    // only where isolation between tests is guaranteed by event-type namespacing.
+
+    @Test("wildcard subscriber receives published event")
+    func wildcardSubscriberReceivesEvent() async {
+        let bus = EventBus.shared
+        let received = ActorBox<[String]>([])
+        // Use a unique primitive name so this test's events don't bleed elsewhere
+        let unique = "test.wildcard.\(UUID().uuidString)"
+        await bus.subscribe(to: "*") { event in
+            if event.sourcePrimitive == unique {
+                await received.append(event.sourcePrimitive)
+            }
+        }
+        await bus.publish(AnyDomainEvent(sourcePrimitive: unique, payload: "ping"))
+        #expect(await received.value.count == 1)
+        #expect(await received.value.first == unique)
+    }
+
+    @Test("typed subscriber only receives matching event type")
+    func typedSubscriberReceivesOnlyMatchingType() async {
+        let bus = EventBus.shared
+        let received = ActorBox<Int>(0)
+        let eventType = String(describing: AnyDomainEvent.self)
+        await bus.subscribe(to: eventType) { _ in
+            await received.increment()
+        }
+        await bus.publish(AnyDomainEvent(sourcePrimitive: "typed.test", payload: "data"))
+        #expect(await received.value >= 1)
+    }
+
+    @Test("multiple wildcard subscribers all receive the event")
+    func multipleWildcardSubscribersAllReceive() async {
+        let bus = EventBus.shared
+        let unique = "test.multi.\(UUID().uuidString)"
+        let counter = ActorBox<Int>(0)
+        await bus.subscribe(to: "*") { event in
+            if event.sourcePrimitive == unique { await counter.increment() }
+        }
+        await bus.subscribe(to: "*") { event in
+            if event.sourcePrimitive == unique { await counter.increment() }
+        }
+        await bus.publish(AnyDomainEvent(sourcePrimitive: unique, payload: EmptyPayload()))
+        #expect(await counter.value >= 2)
+    }
+
+    @Test("event carries correct sourcePrimitive through the bus")
+    func eventSourcePrimitiveSurvivesRoundtrip() async {
+        let bus = EventBus.shared
+        let unique = "test.source.\(UUID().uuidString)"
+        let captured = ActorBox<String?>(nil)
+        await bus.subscribe(to: "*") { event in
+            if event.sourcePrimitive == unique {
+                await captured.set(event.sourcePrimitive)
+            }
+        }
+        await bus.publish(AnyDomainEvent(sourcePrimitive: unique, payload: EmptyPayload()))
+        #expect(await captured.value == unique)
+    }
+
+    @Test("event carries correct eventId through the bus")
+    func eventIdSurvivesRoundtrip() async {
+        let bus = EventBus.shared
+        let knownId = UUID().uuidString
+        let unique = "test.id.\(UUID().uuidString)"
+        let captured = ActorBox<String?>(nil)
+        await bus.subscribe(to: "*") { event in
+            if event.sourcePrimitive == unique {
+                await captured.set(event.eventId)
+            }
+        }
+        await bus.publish(AnyDomainEvent(eventId: knownId, sourcePrimitive: unique, payload: EmptyPayload()))
+        #expect(await captured.value == knownId)
+    }
+
+    @Test("no subscribers means publish does not crash")
+    func publishWithNoSubscribersIsNoop() async {
+        let bus = EventBus.shared
+        // Subscribe to nothing for this unique type — just verify publish does not throw/crash
+        await bus.publish(AnyDomainEvent(sourcePrimitive: "test.noop.\(UUID().uuidString)", payload: EmptyPayload()))
+        // If we reach here without crashing the test passes
+        #expect(true)
+    }
+
+    @Test("AnyDomainEvent initialises with correct fields")
+    func anyDomainEventFields() {
+        let id = UUID().uuidString
+        let now = Date.now
+        let event = AnyDomainEvent(eventId: id, timestamp: now, sourcePrimitive: "prim", payload: 42)
+        #expect(event.eventId == id)
+        #expect(event.sourcePrimitive == "prim")
+        #expect(event.timestamp == now)
+    }
+
+    @Test("AnyDomainEvent default eventId is non-empty")
+    func anyDomainEventDefaultIdIsNonEmpty() {
+        let event = AnyDomainEvent(sourcePrimitive: "x", payload: EmptyPayload())
+        #expect(!event.eventId.isEmpty)
+    }
+
+    @Test("two AnyDomainEvents created sequentially have distinct default IDs")
+    func sequentialEventsHaveDistinctIds() {
+        let e1 = AnyDomainEvent(sourcePrimitive: "a", payload: EmptyPayload())
+        let e2 = AnyDomainEvent(sourcePrimitive: "b", payload: EmptyPayload())
+        #expect(e1.eventId != e2.eventId)
+    }
+}
+
+/// Trivially Sendable empty payload used in EventBus tests to avoid
+/// inferring non-Sendable types from literal closures.
+private struct EmptyPayload: Sendable {}
+
+/// A simple actor wrapper that lets async test closures safely accumulate
+/// results without data races (Swift 6 strict concurrency).
+private actor ActorBox<T> {
+    var value: T
+    init(_ initial: T) { value = initial }
+    func set(_ newValue: T) { value = newValue }
+}
+
+extension ActorBox where T == Int {
+    func increment() { value += 1 }
+}
+
+extension ActorBox where T == [String] {
+    func append(_ element: String) { value.append(element) }
+}
+
 // MARK: - CreateProjectUseCase
 
 @Suite("CreateProjectUseCase")

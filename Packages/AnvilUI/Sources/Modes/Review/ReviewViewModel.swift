@@ -75,6 +75,7 @@ public final class ReviewViewModel: ObservableObject {
 
     private var reviewPort: (any ReviewManagementPort)?
     private var createReviewUseCase: CreateReviewUseCase?
+    private var eventBus: EventBus?
 
     /// Configure the review management port for persistence through the application layer.
     public func configure(reviewPort: any ReviewManagementPort) {
@@ -85,6 +86,18 @@ public final class ReviewViewModel: ObservableObject {
     public func configure(reviewPort: any ReviewManagementPort, createUseCase: CreateReviewUseCase) {
         self.reviewPort = reviewPort
         self.createReviewUseCase = createUseCase
+    }
+
+    /// Configure the event bus for domain event publishing.
+    public func configure(eventBus: EventBus) {
+        self.eventBus = eventBus
+    }
+
+    /// Configure all dependencies at once.
+    public func configure(reviewPort: any ReviewManagementPort, createUseCase: CreateReviewUseCase, eventBus: EventBus) {
+        self.reviewPort = reviewPort
+        self.createReviewUseCase = createUseCase
+        self.eventBus = eventBus
     }
 
     // MARK: Batch actions
@@ -285,11 +298,20 @@ public final class ReviewViewModel: ObservableObject {
     }
 
     func approveSelected() {
-        for i in reviews.indices where selectedReviewIDs.contains(reviews[i].id) {
+        let approvedIds = selectedReviewIDs
+        for i in reviews.indices where approvedIds.contains(reviews[i].id) {
             reviews[i].status = .approved
             persistReviewUpdate(reviews[i])
         }
         selectedReviewIDs.removeAll()
+        Task { [eventBus] in
+            for reviewId in approvedIds {
+                await eventBus?.publish(AnyDomainEvent(
+                    sourcePrimitive: "review",
+                    payload: ["action": "approved", "reviewId": reviewId]
+                ))
+            }
+        }
     }
 
     // MARK: Inline Comments
@@ -317,8 +339,17 @@ public final class ReviewViewModel: ObservableObject {
             createdAt: .now
         )
         inlineComments[key, default: []].append(comment)
+        let fileId = target.fileId
+        let lineNumber = target.lineNumber
+        let reviewId = selectedReviewID
         activeCommentLine = nil
         inlineCommentText = ""
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(
+                sourcePrimitive: "review",
+                payload: ["action": "inlineCommentAdded", "reviewId": reviewId ?? "", "fileId": fileId, "lineNumber": "\(lineNumber)"]
+            ))
+        }
     }
 
     func inlineCommentsForLine(fileId: String, lineNumber: Int) -> [InlineComment] {

@@ -8,7 +8,7 @@ struct ShipSidebar: View {
         VStack(spacing: 0) {
             tabSelector
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             List {
                 Section {
@@ -34,7 +34,7 @@ struct ShipSidebar: View {
             Spacer()
 
             if viewModel.isDeploying, let envID = viewModel.deployingEnvironmentID {
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
                 sidebarDeployProgress(envID: envID)
             }
         }
@@ -198,10 +198,9 @@ struct ShipSidebar: View {
                 .font(.system(size: 10))
                 .foregroundStyle(AnvilColor.textTertiary)
 
-            Text(descriptor.title.uppercased())
+            Text(descriptor.title)
                 .font(AnvilFont.label)
                 .foregroundStyle(AnvilColor.textSecondary)
-                .tracking(0.3)
 
             Spacer()
 

@@ -25,7 +25,7 @@ struct SynthesisRoomView: View {
         if let room {
             VStack(spacing: 0) {
                 roomHeader(room)
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
                 roomContent(room)
             }
             .background(AnvilColor.backgroundPrimary)
@@ -217,7 +217,7 @@ struct SynthesisRoomView: View {
             .padding(.vertical, AnvilSpacing.sm)
             .background(AnvilColor.backgroundSecondary.opacity(0.3))
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             ScrollView {
                 if let output = room.output, !output.isEmpty {

@@ -90,7 +90,7 @@ struct GitGraphView: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
-            Divider().overlay(AnvilColor.borderSubtle.opacity(0.4))
+            Divider()
         }
     }
 
@@ -264,7 +264,7 @@ struct GitGraphView: View {
                     .font(AnvilFont.body)
                     .foregroundStyle(AnvilColor.textPrimary)
 
-                Divider().overlay(AnvilColor.borderSubtle.opacity(0.5))
+                Divider()
 
                 Grid(alignment: .leading, horizontalSpacing: AnvilSpacing.lg, verticalSpacing: AnvilSpacing.xxs) {
                     detailRow("Hash", value: node.commit.id)

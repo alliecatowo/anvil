@@ -254,7 +254,7 @@ struct InlineEditBar: View {
             .padding(.horizontal, AnvilSpacing.md)
             .frame(height: barHeight)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Diff body
             diffContent(diff: diff)

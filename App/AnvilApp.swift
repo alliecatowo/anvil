@@ -33,6 +33,12 @@ struct AnvilMain: App {
                         await appState.loadGitStatus(from: adapter)
                     }
 
+                    // Wire ticket management port and use case into view model
+                    appState.intentViewModel.configure(
+                        ticketPort: container.ticketService,
+                        createUseCase: container.makeCreateTicketUseCase()
+                    )
+
                     // Wire SQLite database adapter
                     let sqliteAdapter = SQLiteDatabaseAdapter()
                     container.databaseService.setAdapter(sqliteAdapter)

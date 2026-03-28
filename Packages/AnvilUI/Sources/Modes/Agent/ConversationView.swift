@@ -56,7 +56,7 @@ struct ConversationView: View {
                 onSendToBackground: onSendToBackground
             )
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Messages
             ScrollViewReader { proxy in
@@ -137,7 +137,7 @@ struct ConversationView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Input bar with slash commands, @ references, and context attachments
             InputBar(

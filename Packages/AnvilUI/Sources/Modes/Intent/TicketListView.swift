@@ -98,16 +98,15 @@ struct TicketListView: View {
                 }
             }
         }
-        .listStyle(.inset(alternatesRowBackgrounds: true))
+        .listStyle(.inset)
     }
 
     // MARK: - Group Header
 
     private func groupHeader(_ title: String, count: Int) -> some View {
         HStack {
-            Text(title.uppercased())
+            Text(title)
                 .foregroundStyle(.secondary)
-                .tracking(0.3)
 
             Text("\(count)")
                 .foregroundStyle(.secondary)

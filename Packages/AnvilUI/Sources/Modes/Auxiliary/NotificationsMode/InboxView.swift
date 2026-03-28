@@ -5,8 +5,6 @@ import AnvilDomain
 struct InboxView: View {
     @ObservedObject var viewModel: NotificationsViewModel
     @EnvironmentObject var appState: AppState
-    @State private var hoveredItemID: String?
-
     private let timeFormatter: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
         f.unitsStyle = .abbreviated
@@ -113,8 +111,8 @@ struct InboxView: View {
 
             Spacer()
 
-            // Action buttons (visible on hover) or timestamp
-            if hoveredItemID == item.id {
+            // Action buttons when selected, timestamp otherwise
+            if viewModel.selectedItemID == item.id {
                 actionButtons(for: item)
             } else {
                 Text(timeFormatter.localizedString(for: item.notification.createdAt, relativeTo: .now))
@@ -124,11 +122,7 @@ struct InboxView: View {
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.md)
-        .background(viewModel.selectedItemID == item.id ? Color.accentColor.opacity(0.14) : .clear)
         .contentShape(Rectangle())
-        .onHover { isHovered in
-            hoveredItemID = isHovered ? item.id : nil
-        }
         .onTapGesture {
             viewModel.selectedItemID = item.id
         }

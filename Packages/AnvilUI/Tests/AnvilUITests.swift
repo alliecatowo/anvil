@@ -776,6 +776,184 @@ struct AnvilSpaceEnumTests {
     }
 }
 
+// MARK: - AppState — Section Switching
+
+@Suite("AppState — Build Section Switching")
+struct AppStateBuildSectionTests {
+
+    @Test("buildActiveSection defaults to sessions")
+    @MainActor
+    func buildActiveSectionDefaultsToSessions() {
+        let state = AppState()
+        #expect(state.buildActiveSection == .sessions)
+    }
+
+    @Test("buildActiveSection can be set to tests")
+    @MainActor
+    func buildSectionSwitchesToTests() {
+        let state = AppState()
+        state.buildActiveSection = .tests
+        #expect(state.buildActiveSection == .tests)
+    }
+
+    @Test("buildActiveSection can be set to files")
+    @MainActor
+    func buildSectionSwitchesToFiles() {
+        let state = AppState()
+        state.buildActiveSection = .files
+        #expect(state.buildActiveSection == .files)
+    }
+
+    @Test("buildActiveSection can be set to data")
+    @MainActor
+    func buildSectionSwitchesToData() {
+        let state = AppState()
+        state.buildActiveSection = .data
+        #expect(state.buildActiveSection == .data)
+    }
+
+    @Test("buildActiveSection roundtrips through all values")
+    @MainActor
+    func buildSectionCyclesThroughAllValues() {
+        let state = AppState()
+        for section in AppState.BuildSection.allCases {
+            state.buildActiveSection = section
+            #expect(state.buildActiveSection == section)
+        }
+    }
+
+    @Test("all BuildSection cases have non-empty rawValues")
+    func allBuildSectionsHaveRawValues() {
+        for section in AppState.BuildSection.allCases {
+            #expect(!section.rawValue.isEmpty, "Expected non-empty rawValue for BuildSection.\(section)")
+        }
+    }
+
+    @Test("BuildSection has exactly four cases")
+    func buildSectionHasFourCases() {
+        #expect(AppState.BuildSection.allCases.count == 4)
+    }
+}
+
+@Suite("AppState — Operate Section Switching")
+struct AppStateOperateSectionTests {
+
+    @Test("operateActiveSection defaults to deploy")
+    @MainActor
+    func operateActiveSectionDefaultsToDeploy() {
+        let state = AppState()
+        #expect(state.operateActiveSection == .deploy)
+    }
+
+    @Test("operateActiveSection can be set to terminal")
+    @MainActor
+    func operateSectionSwitchesToTerminal() {
+        let state = AppState()
+        state.operateActiveSection = .terminal
+        #expect(state.operateActiveSection == .terminal)
+    }
+
+    @Test("operateActiveSection can be set to monitor")
+    @MainActor
+    func operateSectionSwitchesToMonitor() {
+        let state = AppState()
+        state.operateActiveSection = .monitor
+        #expect(state.operateActiveSection == .monitor)
+    }
+
+    @Test("operateActiveSection roundtrips through all values")
+    @MainActor
+    func operateSectionCyclesThroughAllValues() {
+        let state = AppState()
+        for section in AppState.OperateSection.allCases {
+            state.operateActiveSection = section
+            #expect(state.operateActiveSection == section)
+        }
+    }
+
+    @Test("all OperateSection cases have non-empty rawValues")
+    func allOperateSectionsHaveRawValues() {
+        for section in AppState.OperateSection.allCases {
+            #expect(!section.rawValue.isEmpty, "Expected non-empty rawValue for OperateSection.\(section)")
+        }
+    }
+
+    @Test("OperateSection has exactly three cases")
+    func operateSectionHasThreeCases() {
+        #expect(AppState.OperateSection.allCases.count == 3)
+    }
+}
+
+@Suite("AppState — Library Section Switching")
+struct AppStateLibrarySectionTests {
+
+    @Test("libraryActiveSection defaults to docs")
+    @MainActor
+    func libraryActiveSectionDefaultsToDocs() {
+        let state = AppState()
+        #expect(state.libraryActiveSection == .docs)
+    }
+
+    @Test("libraryActiveSection can be set to extensions")
+    @MainActor
+    func librarySectionSwitchesToExtensions() {
+        let state = AppState()
+        state.libraryActiveSection = .extensions
+        #expect(state.libraryActiveSection == .extensions)
+    }
+
+    @Test("libraryActiveSection can be set to schedule")
+    @MainActor
+    func librarySectionSwitchesToSchedule() {
+        let state = AppState()
+        state.libraryActiveSection = .schedule
+        #expect(state.libraryActiveSection == .schedule)
+    }
+
+    @Test("libraryActiveSection can be set to notifications inbox")
+    @MainActor
+    func librarySectionSwitchesToNotifications() {
+        let state = AppState()
+        state.libraryActiveSection = .notifications
+        #expect(state.libraryActiveSection == .notifications)
+    }
+
+    @Test("libraryActiveSection can be set to messages")
+    @MainActor
+    func librarySectionSwitchesToMessages() {
+        let state = AppState()
+        state.libraryActiveSection = .messages
+        #expect(state.libraryActiveSection == .messages)
+    }
+
+    @Test("libraryActiveSection roundtrips through all values")
+    @MainActor
+    func librarySectionCyclesThroughAllValues() {
+        let state = AppState()
+        for section in AppState.LibrarySection.allCases {
+            state.libraryActiveSection = section
+            #expect(state.libraryActiveSection == section)
+        }
+    }
+
+    @Test("all LibrarySection cases have non-empty rawValues")
+    func allLibrarySectionsHaveRawValues() {
+        for section in AppState.LibrarySection.allCases {
+            #expect(!section.rawValue.isEmpty, "Expected non-empty rawValue for LibrarySection.\(section)")
+        }
+    }
+
+    @Test("LibrarySection has exactly five cases")
+    func librarySectionHasFiveCases() {
+        #expect(AppState.LibrarySection.allCases.count == 5)
+    }
+
+    @Test("notifications case has rawValue Inbox")
+    func notificationsRawValueIsInbox() {
+        #expect(AppState.LibrarySection.notifications.rawValue == "Inbox")
+    }
+}
+
 // MARK: - Mock Helpers
 
 /// Minimal mock that satisfies ReviewManagementPort for configure() tests.

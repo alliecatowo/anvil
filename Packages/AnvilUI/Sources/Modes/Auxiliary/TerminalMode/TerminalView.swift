@@ -77,7 +77,7 @@ struct TerminalContentView: View {
                 .padding(.vertical, AnvilSpacing.sm)
                 .background(.thinMaterial)
 
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
 
                 ScrollViewReader { proxy in
                     ScrollView {

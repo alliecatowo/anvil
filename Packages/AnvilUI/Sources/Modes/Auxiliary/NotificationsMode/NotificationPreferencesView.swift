@@ -34,10 +34,9 @@ struct NotificationPreferencesView: View {
 
     private var desktopSection: some View {
         VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-            Text("DESKTOP NOTIFICATIONS")
+            Text("Desktop Notifications")
                 .font(AnvilFont.label)
                 .foregroundStyle(AnvilColor.textTertiary)
-                .tracking(0.3)
 
             Toggle(isOn: $preferences.desktopNotificationsEnabled) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -57,10 +56,9 @@ struct NotificationPreferencesView: View {
 
     private var urgencySection: some View {
         VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-            Text("MINIMUM URGENCY")
+            Text("Minimum Urgency")
                 .font(AnvilFont.label)
                 .foregroundStyle(AnvilColor.textTertiary)
-                .tracking(0.3)
 
             Text("Only show notifications at or above this urgency level")
                 .font(AnvilFont.label)
@@ -111,10 +109,9 @@ struct NotificationPreferencesView: View {
 
     private var sourcesSection: some View {
         VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-            Text("NOTIFICATION SOURCES")
+            Text("Notification Sources")
                 .font(AnvilFont.label)
                 .foregroundStyle(AnvilColor.textTertiary)
-                .tracking(0.3)
 
             sourceToggle(
                 "Pull Requests",
@@ -173,10 +170,9 @@ struct NotificationPreferencesView: View {
     private var rulesSection: some View {
         VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
             HStack {
-                Text("FILTER RULES")
+                Text("Filter Rules")
                     .font(AnvilFont.label)
                     .foregroundStyle(AnvilColor.textTertiary)
-                    .tracking(0.3)
 
                 Spacer()
 

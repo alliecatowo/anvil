@@ -124,7 +124,7 @@ struct BuildLogView: View {
             .padding(.vertical, AnvilSpacing.sm)
             .background(.bar)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Log viewer
             ScrollViewReader { proxy in
@@ -143,7 +143,7 @@ struct BuildLogView: View {
                         }
                     }
                 }
-                .listStyle(.inset(alternatesRowBackgrounds: true))
+                .listStyle(.inset)
                 .onChange(of: viewModel.buildLogs.count) { _, _ in
                     if autoScroll, let lastLog = filteredLogs.last {
                         withAnimation(AnvilAnimation.standard) {

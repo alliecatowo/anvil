@@ -32,25 +32,25 @@ struct PluginDetailView: View {
                 .padding(.horizontal, AnvilSpacing.lg)
                 .padding(.vertical, AnvilSpacing.sm)
 
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: AnvilSpacing.xl) {
                         // Plugin header
                         pluginHeader(plugin)
 
-                        Divider().overlay(AnvilColor.borderSubtle)
+                        Divider()
 
                         // Description
                         descriptionSection(plugin)
 
-                        Divider().overlay(AnvilColor.borderSubtle)
+                        Divider()
 
                         // Details
                         detailsSection(plugin)
 
                         if plugin.isInstalled {
-                            Divider().overlay(AnvilColor.borderSubtle)
+                            Divider()
                             settingsSection(plugin)
                         }
                     }

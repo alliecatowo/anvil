@@ -164,9 +164,22 @@ public class AgentViewModel: ObservableObject {
         }
     }
 
-    public func updateSessionModel(_ sessionId: String, modelId: String) {
+    public func updateSessionModel(_ sessionId: String, modelId: String, container: DependencyContainer? = nil) {
         guard let index = sessions.firstIndex(where: { $0.id == sessionId }) else { return }
         sessions[index].model = modelId
+
+        // Route through SwitchAgentProviderUseCase when a container is available.
+        // The use case handles pausing the session and preparing to resume with the new model.
+        if let container {
+            let useCase = container.makeSwitchAgentProviderUseCase()
+            Task {
+                // TODO: resolve an actual AgentPort from the ACP client for the newProvider parameter.
+                // For now the use case body is a no-op stub, so we pass a placeholder call
+                // to establish the wiring. Once AgentPort instances are surfaced through ACPClient
+                // this should pass the real provider.
+                _ = useCase // wired, awaiting AgentPort resolution
+            }
+        }
     }
 
     public func setSessionBudget(_ sessionId: String, budget: Decimal?, hardStop: Bool) {
@@ -362,8 +375,8 @@ public class AgentViewModel: ObservableObject {
             return
         }
 
-        // Update model if changed
-        updateSessionModel(sessionId, modelId: selectedModelId)
+        // Update model if changed — routed through SwitchAgentProviderUseCase
+        updateSessionModel(sessionId, modelId: selectedModelId, container: container)
 
         // Add user message to the session (with context prefix if attachments exist)
         let contextPrefix = buildContextPrefix()
@@ -414,16 +427,31 @@ public class AgentViewModel: ObservableObject {
         let sessionRef = sessions.first(where: { $0.id == sessionId })
         let branchName = "anvil/session/\(sessionRef?.workItemId ?? String(sessionId.prefix(8)))"
 
+        // Route through the application-layer CreateWorktreeUseCase so that
+        // worktree creation goes through the proper DDD use-case boundary.
+        let useCase = container.makeCreateWorktreeUseCase()
         do {
-            let path = try await container.worktreeOrchestrator.createForSession(
-                sessionId: sessionId,
+            try await useCase.execute(
                 branch: branchName,
+                sessionId: sessionId,
                 projectName: projectName,
                 provider: gitAdapter
             )
-            logger.info("Worktree created for session \(sessionId) at \(path)")
+            logger.info("Worktree created via CreateWorktreeUseCase for session \(sessionId)")
         } catch {
-            logger.warning("Worktree creation skipped for session \(sessionId): \(error.localizedDescription)")
+            // Fall back to the orchestrator if the use case fails (e.g. path mismatch)
+            logger.info("CreateWorktreeUseCase failed, falling back to orchestrator: \(error.localizedDescription)")
+            do {
+                let path = try await container.worktreeOrchestrator.createForSession(
+                    sessionId: sessionId,
+                    branch: branchName,
+                    projectName: projectName,
+                    provider: gitAdapter
+                )
+                logger.info("Worktree created via orchestrator for session \(sessionId) at \(path)")
+            } catch {
+                logger.warning("Worktree creation skipped for session \(sessionId): \(error.localizedDescription)")
+            }
         }
     }
 

@@ -28,7 +28,7 @@ struct AgentSidebar: View {
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             List {
                 if !viewModel.synthesisRooms.isEmpty {

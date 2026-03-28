@@ -118,14 +118,14 @@ struct EditorMode: View {
                     .background(AnvilColor.backgroundSecondary)
             }
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Center: Editor pane(s)
             editorPaneArea
 
             // Right: Symbol outline for active pane
             if splitState.activePane.viewModel.isSymbolOutlineVisible {
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
 
                 SymbolOutline(viewModel: splitState.activePane.viewModel)
                     .frame(width: 220)

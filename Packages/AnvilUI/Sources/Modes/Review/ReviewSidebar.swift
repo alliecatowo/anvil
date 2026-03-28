@@ -33,11 +33,11 @@ struct ReviewSidebar: View {
                 prSelectedBar
             } else {
                 gitHubAuthBar
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
                 branchSection
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
                 pullRequestsSection
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
                 groupedReviewList
             }
         }
@@ -293,7 +293,7 @@ struct ReviewSidebar: View {
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
         }
     }
 
@@ -409,7 +409,7 @@ struct ReviewSidebar: View {
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
                 Text(review.title)
@@ -425,7 +425,7 @@ struct ReviewSidebar: View {
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             List {
                 Section {
@@ -492,10 +492,9 @@ struct ReviewSidebar: View {
                 .font(.system(size: 10))
                 .foregroundStyle(AnvilColor.textTertiary)
 
-            Text(descriptor.title.uppercased())
+            Text(descriptor.title)
                 .font(AnvilFont.label)
                 .foregroundStyle(AnvilColor.textSecondary)
-                .tracking(0.3)
 
             Spacer()
 

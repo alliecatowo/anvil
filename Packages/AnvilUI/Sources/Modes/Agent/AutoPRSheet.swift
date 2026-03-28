@@ -137,7 +137,7 @@ struct AutoPRSheet: View {
                 fieldLabel("Description")
                 TextEditor(text: $prBody)
                     .font(AnvilFont.body)
-                    .frame(minHeight: 200)
+                    .frame(minHeight: 120)
 
                 // Branch config
                 HStack(spacing: AnvilSpacing.lg) {

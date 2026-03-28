@@ -1,5 +1,6 @@
 import SwiftUI
 import AnvilDomain
+import AnvilApplication
 
 // MARK: - View Modes
 
@@ -26,6 +27,15 @@ enum TicketSortField: String, CaseIterable {
 
 @MainActor
 public final class IntentViewModel: ObservableObject {
+
+    // MARK: EventBus
+
+    private var eventBus: EventBus?
+
+    /// Configure the event bus for domain event publishing.
+    public func configure(eventBus: EventBus) {
+        self.eventBus = eventBus
+    }
 
     // MARK: State
 
@@ -153,32 +163,85 @@ public final class IntentViewModel: ObservableObject {
         relations.removeAll { $0.id == id }
     }
 
+    // MARK: - Use Case Integration
+
+    private var ticketPort: (any TicketManagementPort)?
+    private var createTicketUseCase: CreateTicketUseCase?
+
+    /// Configure the ticket management port and use case for persistence through the application layer.
+    public func configure(ticketPort: any TicketManagementPort, createUseCase: CreateTicketUseCase) {
+        self.ticketPort = ticketPort
+        self.createTicketUseCase = createUseCase
+    }
+
     // MARK: - Ticket CRUD
 
     /// Move a ticket to a new status (used by kanban drag-and-drop).
     func moveTicket(_ ticketId: String, toStatus newStatus: String) {
         guard let idx = tickets.firstIndex(where: { $0.id == ticketId }) else { return }
+        let oldStatus = tickets[idx].status
         tickets[idx].status = newStatus
         tickets[idx].updatedAt = .now
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(
+                sourcePrimitive: "tickets",
+                payload: ["action": "statusChanged", "ticketId": ticketId, "oldStatus": oldStatus, "newStatus": newStatus]
+            ))
+        }
     }
 
     /// Quick-create a ticket with just a title and status.
     func createTicket(title: String, status: String = "backlog") {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        let ticket = Ticket(title: trimmed, status: status)
-        tickets.append(ticket)
+
+        if let useCase = createTicketUseCase {
+            Task { @MainActor in
+                if let created = try? await useCase.execute(title: trimmed, status: status) {
+                    tickets.append(created)
+                }
+            }
+        } else {
+            let ticket = Ticket(title: trimmed, status: status)
+            tickets.append(ticket)
+            Task { [eventBus] in
+                await eventBus?.publish(AnyDomainEvent(
+                    sourcePrimitive: "tickets",
+                    payload: ["action": "created", "ticketId": ticket.id, "title": trimmed]
+                ))
+            }
+        }
     }
 
     /// Full-create a ticket with all fields.
     func createTicketFull(title: String, description: String = "", status: String = "backlog", priority: TicketPriority = .medium, assignee: String? = nil, dueDate: Date? = nil, storyPoints: Int? = nil) {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        let ticket = Ticket(title: trimmed, description: description, status: status, priority: priority, assignee: assignee, dueDate: dueDate, storyPoints: storyPoints)
-        tickets.append(ticket)
-        selectedTicketId = ticket.id
-        editingTitle = ticket.title
-        editingDescription = ticket.description
+
+        if let useCase = createTicketUseCase {
+            Task { @MainActor in
+                if let created = try? await useCase.execute(
+                    title: trimmed,
+                    description: description,
+                    status: status,
+                    priority: priority,
+                    assignee: assignee,
+                    dueDate: dueDate,
+                    storyPoints: storyPoints
+                ) {
+                    tickets.append(created)
+                    selectedTicketId = created.id
+                    editingTitle = created.title
+                    editingDescription = created.description
+                }
+            }
+        } else {
+            let ticket = Ticket(title: trimmed, description: description, status: status, priority: priority, assignee: assignee, dueDate: dueDate, storyPoints: storyPoints)
+            tickets.append(ticket)
+            selectedTicketId = ticket.id
+            editingTitle = ticket.title
+            editingDescription = ticket.description
+        }
     }
 
     func deleteTicket(_ ticketId: String) {
@@ -188,6 +251,12 @@ public final class IntentViewModel: ObservableObject {
         relations.removeAll { $0.sourceId == ticketId || $0.targetId == ticketId }
         if selectedTicketId == ticketId {
             selectedTicketId = nil
+        }
+        Task { [eventBus] in
+            await eventBus?.publish(AnyDomainEvent(
+                sourcePrimitive: "tickets",
+                payload: ["action": "deleted", "ticketId": ticketId]
+            ))
         }
     }
 

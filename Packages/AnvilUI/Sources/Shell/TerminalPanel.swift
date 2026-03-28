@@ -20,7 +20,7 @@ struct TerminalPanel: View {
             // Tab bar + controls
             panelHeader
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Terminal content
             terminalContent

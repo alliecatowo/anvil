@@ -13,10 +13,9 @@ struct AnvilSidebarSectionHeader: View {
                     .foregroundStyle(AnvilColor.textTertiary)
             }
 
-            Text(title.uppercased())
+            Text(title)
                 .font(AnvilFont.label)
                 .foregroundStyle(AnvilColor.textSecondary)
-                .tracking(0.3)
 
             Spacer()
 
