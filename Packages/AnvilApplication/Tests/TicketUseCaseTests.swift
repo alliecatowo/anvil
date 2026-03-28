@@ -150,8 +150,8 @@ struct InMemoryTicketServiceTests {
 
 // MARK: - CreateTicketUseCase
 
-@Suite("CreateTicketUseCase")
-struct CreateTicketUseCaseTests {
+@Suite("CreateTicketUseCase — Extended")
+struct CreateTicketUseCaseExtendedTests {
 
     @Test func createsTicketWithCorrectTitle() async throws {
         let service = InMemoryTicketService()

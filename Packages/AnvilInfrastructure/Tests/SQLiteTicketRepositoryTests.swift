@@ -1,6 +1,7 @@
 import XCTest
 @testable import AnvilInfrastructure
 import AnvilDomain
+import AnvilApplication
 import Foundation
 
 final class SQLiteTicketRepositoryTests: XCTestCase {
@@ -8,17 +9,17 @@ final class SQLiteTicketRepositoryTests: XCTestCase {
     var repo: SQLiteTicketRepository!
     var dbPath: String!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("anvil-tests-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         dbPath = dir.appendingPathComponent("tickets-test.sqlite").path
         repo = SQLiteTicketRepository(dbPath: dbPath)
-        try repo.open()
+        try await repo.open()
     }
 
-    override func tearDownWithError() throws {
-        repo.close()
+    override func tearDown() async throws {
+        await repo.close()
         if let path = dbPath {
             try? FileManager.default.removeItem(atPath: path)
         }
