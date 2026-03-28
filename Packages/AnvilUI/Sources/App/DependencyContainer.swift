@@ -170,7 +170,12 @@ public final class DependencyContainer: ObservableObject {
 
     // MARK: - Ticket Management (Internal)
 
-    public let ticketService: any TicketManagementPort = InMemoryTicketService()
+    public private(set) var ticketService: any TicketManagementPort = InMemoryTicketService()
+
+    /// Replace the ticket service (e.g. with a persistent SQLite-backed implementation).
+    public func setTicketService(_ service: any TicketManagementPort) {
+        ticketService = service
+    }
 
     // MARK: - Deployment Management
 

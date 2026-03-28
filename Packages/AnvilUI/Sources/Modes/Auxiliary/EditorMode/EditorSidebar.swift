@@ -70,7 +70,7 @@ struct EditorSidebar: View {
         let isSelected = node.filePath != nil
             && viewModel.selectedFile?.path == node.filePath
 
-        return HStack(spacing: AnvilSpacing.xxs) {
+        return HoverableRow(isSelected: isSelected) { HStack(spacing: AnvilSpacing.xxs) {
             // Disclosure indicator for folders
             if node.isFolder {
                 Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
@@ -98,6 +98,7 @@ struct EditorSidebar: View {
             Spacer()
         }
         .frame(height: 24)
+        }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(node.isFolder ? "Folder: \(node.name)" : "\(node.name), \(fileTypeDescription(for: node.name))")
