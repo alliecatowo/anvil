@@ -24,7 +24,7 @@ struct DocEditor: View {
             HStack {
                 Text("EDIT")
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
                     .tracking(0.3)
 
                 if viewModel.isModified {
@@ -54,20 +54,20 @@ struct DocEditor: View {
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
-            .background(AnvilColor.backgroundSecondary)
+            .background(.bar)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             TextEditor(text: $viewModel.editorContent)
                 .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.textPrimary)
+                .foregroundStyle(.primary)
                 .scrollContentBackground(.hidden)
                 .padding(AnvilSpacing.sm)
                 .onChange(of: viewModel.editorContent) { _, _ in
                     viewModel.markModified()
                 }
         }
-        .background(AnvilColor.backgroundPrimary)
+        .background(.background)
     }
 
     // MARK: - Preview Pane
@@ -77,21 +77,21 @@ struct DocEditor: View {
             HStack {
                 Text("PREVIEW")
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
                     .tracking(0.3)
                 Spacer()
 
                 if let doc = viewModel.selectedDoc {
                     Text(doc.name)
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
-            .background(AnvilColor.backgroundSecondary)
+            .background(.bar)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
@@ -103,7 +103,7 @@ struct DocEditor: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .background(AnvilColor.backgroundPrimary)
+        .background(.background)
     }
 
     // MARK: - Simple Markdown Rendering
@@ -115,22 +115,22 @@ struct DocEditor: View {
             if trimmed.hasPrefix("# ") {
                 Text(trimmed.dropFirst(2))
                     .font(AnvilFont.heading)
-                    .foregroundStyle(AnvilColor.textPrimary)
+                    .foregroundStyle(.primary)
             } else if trimmed.hasPrefix("## ") {
                 Text(trimmed.dropFirst(3))
                     .font(AnvilFont.subheading)
-                    .foregroundStyle(AnvilColor.textPrimary)
+                    .foregroundStyle(.primary)
             } else if trimmed.hasPrefix("### ") {
                 Text(trimmed.dropFirst(4))
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(AnvilColor.textPrimary)
+                    .foregroundStyle(.primary)
             } else if trimmed.hasPrefix("- ") {
                 HStack(alignment: .top, spacing: AnvilSpacing.xs) {
                     Text("\u{2022}")
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                     Text(trimmed.dropFirst(2))
                         .font(AnvilFont.body)
-                        .foregroundStyle(AnvilColor.textSecondary)
+                        .foregroundStyle(.secondary)
                 }
             } else if trimmed.hasPrefix("```") {
                 // Code fence markers are visual-only in preview
@@ -140,7 +140,7 @@ struct DocEditor: View {
             } else {
                 Text(trimmed)
                     .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textSecondary)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -151,13 +151,13 @@ struct DocEditor: View {
         VStack(spacing: AnvilSpacing.md) {
             Image(systemName: "doc.richtext")
                 .font(.system(size: 32, weight: .thin))
-                .foregroundStyle(AnvilColor.textTertiary.opacity(0.5))
+                .foregroundStyle(.tertiary.opacity(0.5))
 
             Text("Select a document to edit")
                 .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(AnvilColor.backgroundPrimary)
+        .background(.background)
     }
 }

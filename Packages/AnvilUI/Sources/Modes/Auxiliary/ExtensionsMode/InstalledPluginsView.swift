@@ -10,10 +10,9 @@ struct InstalledPluginsView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Installed Extensions")
                         .font(AnvilFont.heading)
-                        .foregroundStyle(AnvilColor.textPrimary)
                     Text("\(viewModel.installedCount) extension\(viewModel.installedCount == 1 ? "" : "s") installed")
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
 
                 Spacer()
@@ -24,7 +23,7 @@ struct InstalledPluginsView: View {
             }
             .padding(AnvilSpacing.lg)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             if viewModel.installedPlugins.isEmpty {
                 AnvilEmptyState(
@@ -38,22 +37,21 @@ struct InstalledPluginsView: View {
                     ]
                 )
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(viewModel.installedPlugins) { plugin in
-                            InstalledPluginRow(
-                                plugin: plugin,
-                                onToggle: { viewModel.togglePlugin(plugin.id) },
-                                onUninstall: { viewModel.uninstallPlugin(plugin.id) },
-                                onSelect: { viewModel.selectPlugin(plugin.id) }
-                            )
-                        }
+                List {
+                    ForEach(viewModel.installedPlugins) { plugin in
+                        InstalledPluginRow(
+                            plugin: plugin,
+                            onToggle: { viewModel.togglePlugin(plugin.id) },
+                            onUninstall: { viewModel.uninstallPlugin(plugin.id) },
+                            onSelect: { viewModel.selectPlugin(plugin.id) }
+                        )
+                        .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
                     }
-                    .padding(.vertical, AnvilSpacing.sm)
                 }
+                .listStyle(.inset)
             }
         }
-        .background(AnvilColor.backgroundPrimary)
+        .background(.background)
     }
 }
 
@@ -64,8 +62,6 @@ struct InstalledPluginRow: View {
     let onToggle: () -> Void
     let onUninstall: () -> Void
     let onSelect: () -> Void
-
-    @State private var isHovered = false
 
     var body: some View {
         HStack(spacing: AnvilSpacing.md) {
@@ -82,16 +78,15 @@ struct InstalledPluginRow: View {
                 HStack(spacing: AnvilSpacing.xs) {
                     Text(plugin.name)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(AnvilColor.textPrimary)
 
                     Text("v\(plugin.version)")
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
 
                 Text(plugin.author)
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
             }
 
             Spacer()
@@ -110,7 +105,7 @@ struct InstalledPluginRow: View {
             } label: {
                 Image(systemName: "trash")
                     .font(.system(size: 12))
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
             }
             .buttonStyle(.plain)
             .help("Uninstall")
@@ -121,15 +116,11 @@ struct InstalledPluginRow: View {
             } label: {
                 Image(systemName: "gearshape")
                     .font(.system(size: 12))
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
             }
             .buttonStyle(.plain)
             .help("Settings")
         }
-        .padding(.horizontal, AnvilSpacing.lg)
-        .padding(.vertical, AnvilSpacing.sm)
-        .background(isHovered ? AnvilColor.backgroundTertiary.opacity(0.5) : .clear)
         .contentShape(Rectangle())
-        .onHover { isHovered = $0 }
     }
 }

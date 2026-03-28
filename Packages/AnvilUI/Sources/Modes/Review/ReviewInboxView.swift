@@ -11,14 +11,10 @@ struct ReviewInboxView: View {
                     .font(AnvilFont.heading)
 
                 Spacer()
-
-                Text("\(viewModel.pendingReviews.count) pending")
-                    .foregroundStyle(.secondary)
             }
             .padding(.horizontal, AnvilSpacing.lg)
             .padding(.vertical, AnvilSpacing.md)
-
-            Divider()
+            .background(.bar)
 
             if !viewModel.selectedReviewIDs.isEmpty {
                 batchActionBar
@@ -44,7 +40,7 @@ struct ReviewInboxView: View {
                     }
                 }
             }
-            .listStyle(.inset(alternatesRowBackgrounds: true))
+            .listStyle(.inset)
         }
     }
 

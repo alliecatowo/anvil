@@ -8,7 +8,6 @@ struct MetricsDashboard: View {
             VStack(alignment: .leading, spacing: AnvilSpacing.xl) {
                 Text("Metrics")
                     .font(AnvilFont.heading)
-                    .foregroundStyle(AnvilColor.textPrimary)
 
                 LazyVGrid(
                     columns: [
@@ -25,7 +24,6 @@ struct MetricsDashboard: View {
             }
             .padding(AnvilSpacing.xl)
         }
-        .background(AnvilColor.backgroundPrimary)
     }
 
     // MARK: - Metric Card
@@ -34,9 +32,9 @@ struct MetricsDashboard: View {
         AnvilCard {
             VStack(alignment: .leading, spacing: AnvilSpacing.md) {
                 // Title
-                Text(card.title.uppercased())
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                Text(card.title)
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
 
                 // Value
                 Text(card.value)
@@ -51,7 +49,7 @@ struct MetricsDashboard: View {
 
                     Text(card.subtitle)
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
             }
         }

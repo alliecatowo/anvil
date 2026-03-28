@@ -10,7 +10,7 @@ public struct WelcomePage: View {
     @EnvironmentObject var container: DependencyContainer
 
     @State private var recentProjects: [Project] = []
-    @State private var hoveredProjectId: String?
+    // hoveredProjectId removed: let native button handle hover
     @State private var isLoadingProject = false
     @State private var appeared = false
 
@@ -18,19 +18,6 @@ public struct WelcomePage: View {
 
     public var body: some View {
         ZStack {
-            // Background
-            AnvilColor.backgroundPrimary
-                .ignoresSafeArea()
-
-            // Subtle radial gradient behind center content
-            RadialGradient(
-                colors: [AnvilColor.accentPurple.opacity(0.04), .clear],
-                center: .center,
-                startRadius: 0,
-                endRadius: 500
-            )
-            .ignoresSafeArea()
-
             ScrollView {
                 VStack(spacing: 0) {
                     Spacer().frame(height: 72)
@@ -102,11 +89,11 @@ public struct WelcomePage: View {
 
             Text("Anvil")
                 .font(.system(size: 32, weight: .semibold, design: .default))
-                .foregroundStyle(AnvilColor.textPrimary)
+                .foregroundStyle(.primary)
 
             Text("Agent-native development environment")
                 .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textSecondary)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -151,10 +138,7 @@ public struct WelcomePage: View {
         VStack(alignment: .leading, spacing: AnvilSpacing.md) {
             HStack {
                 Text("Recent")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .tracking(0.8)
-                    .textCase(.uppercase)
+                    .font(.headline)
 
                 Spacer()
             }
@@ -164,13 +148,9 @@ public struct WelcomePage: View {
                 ForEach(recentProjects.prefix(8)) { project in
                     RecentProjectRow(
                         project: project,
-                        isHovered: hoveredProjectId == project.id,
                         isLoading: isLoadingProject
                     ) {
                         openRecentProject(project)
-                    }
-                    .onHover { hovered in
-                        hoveredProjectId = hovered ? project.id : nil
                     }
                 }
             }
@@ -184,10 +164,7 @@ public struct WelcomePage: View {
         VStack(spacing: AnvilSpacing.md) {
             HStack {
                 Text("Getting started")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .tracking(0.8)
-                    .textCase(.uppercase)
+                    .font(.headline)
                 Spacer()
             }
             .padding(.horizontal, AnvilSpacing.xl)
@@ -264,59 +241,41 @@ private struct WelcomeActionCard: View {
     var isPrimary: Bool = false
     let action: () -> Void
 
-    @State private var isHovered = false
-
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
-                HStack(alignment: .top) {
-                    Image(systemName: icon)
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(isPrimary ? AnvilColor.accentBlue : AnvilColor.textSecondary)
-                        .frame(width: 24, height: 24)
+            GroupBox {
+                VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
+                    HStack(alignment: .top) {
+                        Image(systemName: icon)
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundStyle(isPrimary ? Color.accentColor : Color.secondary)
+                            .frame(width: 24, height: 24)
+
+                        Spacer()
+
+                        if let shortcut {
+                            Text(shortcut)
+                                .font(AnvilFont.label)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
 
                     Spacer()
 
-                    if let shortcut {
-                        Text(shortcut)
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.primary)
+
+                        Text(subtitle)
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundStyle(.secondary)
                     }
                 }
-
-                Spacer()
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(AnvilColor.textPrimary)
-
-                    Text(subtitle)
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundStyle(AnvilColor.textSecondary)
-                }
+                .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
             }
-            .padding(AnvilSpacing.md)
-            .frame(maxWidth: .infinity, minHeight: 88)
-            .background(
-                isHovered
-                    ? AnvilColor.backgroundElevated
-                    : (isPrimary ? AnvilColor.accentBlue.opacity(0.06) : AnvilColor.backgroundTertiary)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                    .stroke(
-                        isPrimary
-                            ? (isHovered ? AnvilColor.accentBlue.opacity(0.5) : AnvilColor.accentBlue.opacity(0.25))
-                            : (isHovered ? AnvilColor.borderMedium : AnvilColor.borderSubtle),
-                        lineWidth: 1
-                    )
-            )
         }
         .buttonStyle(.plain)
-        .onHover { isHovered = $0 }
-        .animation(.easeOut(duration: 0.12), value: isHovered)
     }
 }
 
@@ -324,7 +283,6 @@ private struct WelcomeActionCard: View {
 
 private struct RecentProjectRow: View {
     let project: Project
-    let isHovered: Bool
     let isLoading: Bool
     let action: () -> Void
 
@@ -346,13 +304,13 @@ private struct RecentProjectRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(project.name)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(AnvilColor.textPrimary)
+                        .foregroundStyle(.primary)
                         .lineLimit(1)
 
                     if let path = project.primaryRepoPath {
                         Text(abbreviatedPath(path))
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
                             .lineLimit(1)
                     }
                 }
@@ -362,21 +320,17 @@ private struct RecentProjectRow: View {
                 // Last opened
                 Text(relativeDate(project.lastOpenedAt))
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
 
-                // Arrow on hover
-                Image(systemName: "arrow.right")
+                Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .opacity(isHovered ? 1 : 0)
+                    .foregroundStyle(.tertiary)
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
-            .background(isHovered ? AnvilColor.backgroundTertiary : .clear)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .animation(.easeOut(duration: 0.1), value: isHovered)
         .disabled(isLoading)
     }
 
@@ -425,30 +379,25 @@ private struct WelcomeTipCard: View {
     let tip: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-            HStack(spacing: AnvilSpacing.xs) {
-                Image(systemName: icon)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(iconColor)
+        GroupBox {
+            VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+                HStack(spacing: AnvilSpacing.xs) {
+                    Image(systemName: icon)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(iconColor)
 
-                Text(title)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(AnvilColor.textPrimary)
+                    Text(title)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.primary)
+                }
+
+                Text(tip)
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-
-            Text(tip)
-                .font(.system(size: 11, weight: .regular))
-                .foregroundStyle(AnvilColor.textSecondary)
-                .lineSpacing(3)
-                .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        .padding(AnvilSpacing.md)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
-        .background(AnvilColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-        )
     }
 }

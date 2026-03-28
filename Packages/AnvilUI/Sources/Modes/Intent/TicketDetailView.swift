@@ -44,19 +44,6 @@ struct TicketDetailView: View {
 
     private func backBar(_ ticket: Ticket) -> some View {
         HStack(spacing: AnvilSpacing.sm) {
-            Button {
-                viewModel.selectTicket(nil)
-            } label: {
-                HStack(spacing: AnvilSpacing.xxs) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("Back")
-                        .font(AnvilFont.label)
-                }
-                .foregroundStyle(AnvilColor.textSecondary)
-            }
-            .buttonStyle(.plain)
-
             Spacer()
 
             if let created = branchCreated {
@@ -235,101 +222,54 @@ struct TicketDetailView: View {
     // MARK: - Metadata Editors
 
     private func metadataEditors(_ ticket: Ticket) -> some View {
-        VStack(alignment: .leading, spacing: AnvilSpacing.md) {
-            Text("PROPERTIES")
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .tracking(0.3)
-
-            HStack(spacing: AnvilSpacing.xl) {
-                // Status picker
-                VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
-                    Text("Status")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-
-                    Picker("", selection: Binding(
-                        get: { ticket.status },
-                        set: { viewModel.updateStatus(ticket.id, status: $0) }
-                    )) {
-                        ForEach(viewModel.allStatuses, id: \.self) { status in
-                            Text(status.capitalized).tag(status)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .frame(width: 130)
+        Form {
+            LabeledContent("Status") {
+                Picker("Status", selection: Binding(
+                    get: { ticket.status },
+                    set: { viewModel.updateStatus(ticket.id, status: $0) }
+                )) {
+                    ForEach(viewModel.allStatuses, id: \.self) { Text($0.capitalized).tag($0) }
                 }
-
-                // Priority picker
-                VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
-                    Text("Priority")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-
-                    Picker("", selection: Binding(
-                        get: { ticket.priority },
-                        set: { viewModel.updatePriority(ticket.id, priority: $0) }
-                    )) {
-                        ForEach([TicketPriority.critical, .high, .medium, .low, .none], id: \.rawValue) { p in
-                            Text(IntentViewModel.priorityLabel(p)).tag(p)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .frame(width: 140)
-                }
-
-                // Assignee picker
-                VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
-                    Text("Assignee")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-
-                    Picker("", selection: Binding(
-                        get: { ticket.assignee ?? "" },
-                        set: { viewModel.updateAssignee(ticket.id, assignee: $0.isEmpty ? nil : $0) }
-                    )) {
-                        Text("Unassigned").tag("")
-                        ForEach(viewModel.allAssignees, id: \.self) { name in
-                            Text(name).tag(name)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .frame(width: 130)
-                }
-
-                // Due date picker
-                VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
-                    Text("Due Date")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-
-                    HStack(spacing: AnvilSpacing.xs) {
-                        DatePicker("", selection: Binding(
-                            get: { ticket.dueDate ?? Date.now },
-                            set: { viewModel.updateDueDate(ticket.id, dueDate: $0) }
-                        ), displayedComponents: .date)
-                        .labelsHidden()
-
-                        if ticket.dueDate != nil {
-                            Button {
-                                viewModel.updateDueDate(ticket.id, dueDate: nil)
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(AnvilColor.textTertiary)
-                            }
-                            .buttonStyle(.plain)
-                            .help("Clear due date")
-                        }
+                .labelsHidden()
+            }
+            LabeledContent("Priority") {
+                Picker("Priority", selection: Binding(
+                    get: { ticket.priority },
+                    set: { viewModel.updatePriority(ticket.id, priority: $0) }
+                )) {
+                    ForEach([TicketPriority.critical, .high, .medium, .low, .none], id: \.rawValue) {
+                        Text(IntentViewModel.priorityLabel($0)).tag($0)
                     }
                 }
-
-                Spacer()
+                .labelsHidden()
+            }
+            LabeledContent("Assignee") {
+                Picker("Assignee", selection: Binding(
+                    get: { ticket.assignee ?? "" },
+                    set: { viewModel.updateAssignee(ticket.id, assignee: $0.isEmpty ? nil : $0) }
+                )) {
+                    Text("Unassigned").tag("")
+                    ForEach(viewModel.allAssignees, id: \.self) { Text($0).tag($0) }
+                }
+                .labelsHidden()
+            }
+            LabeledContent("Due Date") {
+                HStack(spacing: 4) {
+                    DatePicker("", selection: Binding(
+                        get: { ticket.dueDate ?? Date.now },
+                        set: { viewModel.updateDueDate(ticket.id, dueDate: $0) }
+                    ), displayedComponents: .date)
+                    .labelsHidden()
+                    if ticket.dueDate != nil {
+                        Button { viewModel.updateDueDate(ticket.id, dueDate: nil) } label: {
+                            Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
         }
-        .padding(AnvilSpacing.md)
-        .background(AnvilColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
+        .formStyle(.grouped)
     }
 
     // MARK: - Description
@@ -337,10 +277,9 @@ struct TicketDetailView: View {
     private func descriptionSection(_ ticket: Ticket) -> some View {
         VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
             HStack {
-                Text("DESCRIPTION")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .tracking(0.3)
+                Text("Description")
+                    .font(.headline)
+                    .foregroundStyle(.primary)
 
                 Spacer()
 
@@ -396,10 +335,9 @@ struct TicketDetailView: View {
 
         return VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
             HStack {
-                Text("SUBTASKS")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .tracking(0.3)
+                Text("Subtasks")
+                    .font(.headline)
+                    .foregroundStyle(.primary)
 
                 if progress.total > 0 {
                     Text("\(progress.completed)/\(progress.total)")
@@ -476,10 +414,9 @@ struct TicketDetailView: View {
         Group {
             if !ticket.labels.isEmpty {
                 VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-                    Text("LABELS")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                        .tracking(0.3)
+                    Text("Labels")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
 
                     FlowLayout(spacing: AnvilSpacing.xs) {
                         ForEach(ticket.labels, id: \.self) { label in
@@ -497,10 +434,9 @@ struct TicketDetailView: View {
         let relations = viewModel.relationsFor(ticket.id)
         return VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
             HStack {
-                Text("RELATED")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .tracking(0.3)
+                Text("Related")
+                    .font(.headline)
+                    .foregroundStyle(.primary)
 
                 Spacer()
 
@@ -532,10 +468,9 @@ struct TicketDetailView: View {
 
         return VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
             HStack {
-                Text("COMMENTS")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .tracking(0.3)
+                Text("Comments")
+                    .font(.headline)
+                    .foregroundStyle(.primary)
 
                 Text("\(ticketComments.count)")
                     .font(AnvilFont.label)
@@ -630,8 +565,6 @@ struct TicketDetailView: View {
                     .lineSpacing(3)
             }
             .padding(AnvilSpacing.sm)
-            .background(AnvilColor.backgroundSecondary)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
         }
     }
 
@@ -651,22 +584,12 @@ struct TicketDetailView: View {
                 .font(AnvilFont.subheading)
                 .foregroundStyle(AnvilColor.textPrimary)
 
-            HStack(spacing: AnvilSpacing.xs) {
+            Picker("Relation Type", selection: $linkRelationType) {
                 ForEach([TicketRelationType.blocks, .blockedBy, .parent, .child, .related, .duplicate], id: \.rawValue) { type in
-                    Button {
-                        linkRelationType = type
-                    } label: {
-                        Text(relationLabel(type, isSource: true))
-                            .font(AnvilFont.label)
-                            .foregroundStyle(linkRelationType == type ? AnvilColor.textPrimary : AnvilColor.textTertiary)
-                            .padding(.horizontal, AnvilSpacing.sm)
-                            .padding(.vertical, AnvilSpacing.xxs)
-                            .background(linkRelationType == type ? relationColor(type).opacity(0.2) : AnvilColor.backgroundSecondary)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                    }
-                    .buttonStyle(.plain)
+                    Text(relationLabel(type, isSource: true)).tag(type)
                 }
             }
+            .pickerStyle(.segmented)
 
             TextField("Search tickets...", text: $linkTargetSearch)
                 .textFieldStyle(.plain)
@@ -758,8 +681,6 @@ struct TicketDetailView: View {
             .help("Remove link")
         }
         .padding(AnvilSpacing.sm)
-        .background(AnvilColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
     // MARK: - Helpers

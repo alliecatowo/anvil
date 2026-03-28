@@ -4,40 +4,29 @@ struct DocBrowser: View {
     @ObservedObject var viewModel: DocsViewModel
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
+        List {
+            ForEach(flattenedTree) { entry in
+                docTreeRow(entry: entry)
+                    .listRowInsets(EdgeInsets(top: 3, leading: 10, bottom: 3, trailing: 8))
+                    .listRowSeparator(.hidden)
+            }
+        }
+        .listStyle(.sidebar)
+        .safeAreaInset(edge: .top) {
             HStack {
-                Text("DOCUMENTS")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                    .tracking(0.3)
-
+                Text("Documents")
+                    .font(AnvilFont.subheading)
                 Spacer()
-
-                Button {
+                Button("New", systemImage: "plus") {
                     viewModel.showNewDocSheet = true
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 10))
-                        .foregroundStyle(AnvilColor.textTertiary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
                 .help("New Document")
             }
             .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.sm)
-
-            Divider().overlay(AnvilColor.borderSubtle)
-
-            // Doc tree
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(flattenedTree) { entry in
-                        docTreeRow(entry: entry)
-                    }
-                }
-                .padding(.vertical, AnvilSpacing.xxs)
-            }
+            .padding(.vertical, AnvilSpacing.xs)
+            .background(.bar)
         }
         .sheet(isPresented: $viewModel.showNewDocSheet) {
             newDocumentSheet
@@ -53,12 +42,8 @@ struct DocBrowser: View {
                 .foregroundStyle(AnvilColor.textPrimary)
 
             TextField("Document name", text: $viewModel.newDocName)
-                .textFieldStyle(.plain)
+                .textFieldStyle(.roundedBorder)
                 .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textPrimary)
-                .padding(AnvilSpacing.sm)
-                .background(AnvilColor.backgroundSecondary)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
                 .onSubmit {
                     viewModel.createNewDocument()
                 }
@@ -131,14 +116,13 @@ struct DocBrowser: View {
 
             Text(node.name)
                 .font(AnvilFont.code)
-                .foregroundStyle(isSelected ? AnvilColor.textPrimary : AnvilColor.textSecondary)
+                .foregroundStyle(isSelected ? .primary : .secondary)
                 .lineLimit(1)
 
             Spacer()
         }
-        .padding(.horizontal, AnvilSpacing.sm)
         .frame(height: 24)
-        .background(isSelected ? AnvilColor.selectionBackground : Color.clear)
+        .background(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture {
             if node.isFolder {

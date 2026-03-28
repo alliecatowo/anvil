@@ -297,9 +297,22 @@ struct AuxiliarySidebar: View {
     @ViewBuilder
     private var notificationsItems: some View {
         sidebarSection("TRIAGE", icon: "bell") {
-            infoItem("Inbox", icon: "tray", detail: "Unread and pending work")
-            infoItem("Activity Feed", icon: "list.bullet", detail: "Cross-tool activity stream")
-            infoItem("Source Filters", icon: "line.3.horizontal.decrease.circle", detail: "PRs, deploys, errors, mentions")
+            navItem(
+                appState.notificationsViewModel.unreadCount > 0
+                    ? "Inbox (\(appState.notificationsViewModel.unreadCount))"
+                    : "Inbox",
+                icon: "tray",
+                shortcut: nil,
+                isActive: appState.notificationsViewModel.selectedTab == .inbox
+            ) {
+                appState.notificationsViewModel.selectedTab = .inbox
+            }
+            navItem("Activity Feed", icon: "list.bullet", shortcut: nil, isActive: appState.notificationsViewModel.selectedTab == .activity) {
+                appState.notificationsViewModel.selectedTab = .activity
+            }
+            navItem("Preferences", icon: "gearshape", shortcut: nil, isActive: appState.notificationsViewModel.selectedTab == .preferences) {
+                appState.notificationsViewModel.selectedTab = .preferences
+            }
         }
         sidebarSection("WORKSPACE ACTIONS", icon: "bolt") {
             navItem("Project Info", icon: "info.circle", shortcut: nil, isActive: appState.isProjectInfoVisible) {
@@ -377,14 +390,7 @@ struct AuxiliarySidebar: View {
                         .font(.system(size: 8, weight: .semibold))
                         .foregroundStyle(AnvilColor.textTertiary)
                         .frame(width: 10)
-                    Image(systemName: icon)
-                        .font(.system(size: 10))
-                        .foregroundStyle(AnvilColor.textTertiary)
-                    Text(title)
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textSecondary)
-                        .tracking(0.3)
-                    Spacer()
+                    AnvilSidebarSectionHeader(title: title, icon: icon)
                 }
                 .padding(.horizontal, AnvilSpacing.md)
                 .padding(.vertical, AnvilSpacing.xs)
@@ -400,58 +406,17 @@ struct AuxiliarySidebar: View {
     }
 
     private func navItem(_ title: String, icon: String, shortcut: String?, isActive: Bool = false, action: @escaping () -> Void = {}) -> some View {
-        Button(action: action) {
-            HStack(spacing: AnvilSpacing.sm) {
-                Image(systemName: icon)
-                    .font(.system(size: 12))
-                    .foregroundStyle(isActive ? AnvilColor.accentBlue : AnvilColor.textTertiary)
-                    .frame(width: 16)
-
-                Text(title)
-                    .font(AnvilFont.sidebarItem)
-                    .foregroundStyle(isActive ? AnvilColor.textPrimary : AnvilColor.textSecondary)
-                    .lineLimit(1)
-
-                Spacer()
-
-                if let shortcut {
-                    Text(shortcut)
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                }
-            }
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.xs)
-            .frame(height: AnvilSpacing.listItemHeight)
-            .background(isActive ? Color.accentColor.opacity(0.1) : .clear)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
+        AnvilSidebarRowButton(
+            title: title,
+            icon: icon,
+            isActive: isActive,
+            shortcut: shortcut,
+            action: action
+        )
     }
 
     private func infoItem(_ title: String, icon: String, detail: String) -> some View {
-        HStack(spacing: AnvilSpacing.sm) {
-            Image(systemName: icon)
-                .font(.system(size: 12))
-                .foregroundStyle(AnvilColor.textTertiary.opacity(0.7))
-                .frame(width: 16, alignment: .top)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(AnvilFont.sidebarItem)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                    .lineLimit(1)
-                Text(detail)
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .lineLimit(2)
-            }
-
-            Spacer()
-        }
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.xs)
-        .frame(minHeight: AnvilSpacing.listItemHeight, alignment: .top)
+        AnvilSidebarInfoRow(title: title, icon: icon, detail: detail)
     }
 }
 
@@ -461,33 +426,15 @@ private struct TerminalSessionList: View {
 
     var body: some View {
         ForEach(viewModel.sessions) { session in
-            Button {
-                onSelect(session.id)
-            } label: {
-                HStack(spacing: AnvilSpacing.sm) {
-                    Image(systemName: session.isRunning ? "terminal" : "terminal.fill")
-                        .font(.system(size: 12))
-                        .foregroundStyle(isSelected(session) ? AnvilColor.accentBlue : AnvilColor.textTertiary)
-                        .frame(width: 16)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(session.title)
-                            .font(AnvilFont.sidebarItem)
-                            .foregroundStyle(isSelected(session) ? AnvilColor.textPrimary : AnvilColor.textSecondary)
-                            .lineLimit(1)
-                        Text(session.isRunning ? "running" : "exited")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
-                    }
-                    Spacer()
+            AnvilSidebarRowButton(
+                title: session.title,
+                icon: session.isRunning ? "terminal" : "terminal.fill",
+                subtitle: session.isRunning ? "running" : "exited",
+                isActive: isSelected(session),
+                action: {
+                    onSelect(session.id)
                 }
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xs)
-                .frame(height: AnvilSpacing.listItemHeight)
-                .background(isSelected(session) ? Color.accentColor.opacity(0.1) : .clear)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+            )
         }
     }
 

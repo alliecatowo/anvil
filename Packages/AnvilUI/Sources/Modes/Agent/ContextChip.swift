@@ -101,12 +101,7 @@ struct ContextChipView: View {
         }
         .padding(.horizontal, AnvilSpacing.sm)
         .padding(.vertical, AnvilSpacing.xxxs)
-        .background(attachment.color.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 4))
-        .overlay(
-            RoundedRectangle(cornerRadius: 4)
-                .stroke(attachment.color.opacity(0.3), lineWidth: 1)
-        )
+        .background(attachment.color.opacity(0.1), in: RoundedRectangle(cornerRadius: 4))
     }
 }
 

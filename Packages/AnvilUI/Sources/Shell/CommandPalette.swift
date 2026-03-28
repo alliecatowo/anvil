@@ -21,9 +21,9 @@ public struct CommandPalette: View {
             // Palette panel
             VStack(spacing: 0) {
                 searchField
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
                 modeHints
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
                 resultsArea
             }
             .frame(width: AnvilSpacing.commandPaletteWidth)
@@ -98,7 +98,7 @@ public struct CommandPalette: View {
             TextField(placeholder, text: $viewModel.query)
                 .textFieldStyle(.plain)
                 .font(AnvilFont.commandPaletteInput)
-                .foregroundStyle(AnvilColor.textPrimary)
+                .foregroundStyle(.primary)
                 .focused($isSearchFocused)
 
             if viewModel.isLoadingFiles {
@@ -169,7 +169,7 @@ public struct CommandPalette: View {
 
             Text("↑↓ navigate · ↵ open · esc close")
                 .font(.system(size: 10, weight: .regular))
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.tertiary)
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
@@ -242,7 +242,7 @@ public struct CommandPalette: View {
                     ProgressView()
                     Text("Scanning files...")
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
                 Spacer()
             }
@@ -312,7 +312,7 @@ public struct CommandPalette: View {
             if !viewModel.fileResults.isEmpty && viewModel.query.isEmpty {
                 Text("\(viewModel.fileResults.count) files in project")
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
                     .padding(.horizontal, AnvilSpacing.md)
                     .padding(.vertical, AnvilSpacing.xs)
             }
@@ -330,7 +330,7 @@ public struct CommandPalette: View {
                     ProgressView()
                     Text("Indexing symbols...")
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
                 Spacer()
             }
@@ -378,7 +378,7 @@ public struct CommandPalette: View {
             Spacer()
             Text(message)
                 .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.tertiary)
             Spacer()
         }
         .padding(.vertical, AnvilSpacing.xl)
@@ -398,18 +398,14 @@ private struct ModeHintChip: View {
             HStack(spacing: 3) {
                 Text(shortcut)
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .foregroundStyle(isActive ? AnvilColor.accentBlue : AnvilColor.textTertiary)
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
-                    .background(isActive ? AnvilColor.accentBlue.opacity(0.15) : AnvilColor.backgroundTertiary)
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
 
                 Text(label)
                     .font(.system(size: 10, weight: isActive ? .semibold : .regular))
-                    .foregroundStyle(isActive ? AnvilColor.textPrimary : AnvilColor.textSecondary)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.bordered)
+        .tint(isActive ? .accentColor : nil)
+        .controlSize(.mini)
     }
 }
 
@@ -426,10 +422,9 @@ struct CommandSection<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(title.uppercased())
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .tracking(0.3)
+            Text(title)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
                 .padding(.horizontal, AnvilSpacing.md)
                 .padding(.vertical, AnvilSpacing.xs)
 

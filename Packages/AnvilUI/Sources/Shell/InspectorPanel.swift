@@ -11,7 +11,7 @@ public struct InspectorPanel: View {
             HStack {
                 Text("Inspector")
                     .font(AnvilFont.sidebarHeader)
-                    .foregroundStyle(AnvilColor.textPrimary)
+                    .foregroundStyle(.primary)
 
                 Spacer()
 
@@ -20,14 +20,13 @@ public struct InspectorPanel: View {
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
             }
             .padding(AnvilSpacing.md)
 
             Divider()
-                .overlay(AnvilColor.borderSubtle)
 
             // Content
             ScrollView {
@@ -35,13 +34,13 @@ public struct InspectorPanel: View {
                     InspectorSection(title: "Details") {
                         Text("Select an item to inspect")
                             .font(AnvilFont.body)
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
                     }
                 }
                 .padding(AnvilSpacing.md)
             }
         }
-        .background(AnvilColor.backgroundSecondary)
+        .background(.background)
     }
 }
 
@@ -56,10 +55,9 @@ struct InspectorSection<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-            Text(title.uppercased())
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textSecondary)
-                .tracking(0.3)
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(.secondary)
 
             content
         }

@@ -10,7 +10,7 @@ struct DiffReviewView: View {
         VStack(spacing: 0) {
             if let file = viewModel.selectedFile {
                 fileHeader(file)
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
 
                 switch viewModel.diffViewMode {
                 case .sideBySide:
@@ -19,7 +19,7 @@ struct DiffReviewView: View {
                     unifiedView(file)
                 }
 
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
                 navigationBar
             } else {
                 emptyState
@@ -58,23 +58,18 @@ struct DiffReviewView: View {
             .frame(width: 180)
 
             // Blame toggle
-            Button {
-                guard let adapter = container.getOrCreateGitAdapter() else { return }
-                viewModel.toggleBlame(using: adapter)
-            } label: {
-                HStack(spacing: 3) {
-                    Image(systemName: "person.text.rectangle")
-                        .font(.system(size: 11))
-                    Text("Blame")
-                        .font(AnvilFont.label)
+            Toggle(isOn: Binding(
+                get: { viewModel.isBlameVisible },
+                set: { _ in
+                    guard let adapter = container.getOrCreateGitAdapter() else { return }
+                    viewModel.toggleBlame(using: adapter)
                 }
-                .foregroundStyle(viewModel.isBlameVisible ? AnvilColor.accentBlue : AnvilColor.textTertiary)
-                .padding(.horizontal, AnvilSpacing.sm)
-                .padding(.vertical, 4)
-                .background(viewModel.isBlameVisible ? AnvilColor.accentBlue.opacity(0.1) : Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+            )) {
+                Label("Blame", systemImage: "person.text.rectangle")
+                    .font(AnvilFont.label)
             }
-            .buttonStyle(.plain)
+            .toggleStyle(.button)
+            .buttonStyle(.borderless)
             .help("Toggle git blame annotations")
 
             // File-level actions
@@ -92,7 +87,7 @@ struct DiffReviewView: View {
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.sm)
-        .background(AnvilColor.backgroundSecondary)
+        .background(.bar)
     }
 
     // MARK: - Side-by-Side
@@ -328,24 +323,12 @@ struct DiffReviewView: View {
                 Button("Cancel") {
                     viewModel.cancelInlineComment()
                 }
-                .buttonStyle(.plain)
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textSecondary)
+                .buttonStyle(.borderless)
 
                 Button("Comment") {
                     viewModel.submitInlineComment()
                 }
-                .buttonStyle(.plain)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.white)
-                .padding(.horizontal, AnvilSpacing.sm)
-                .padding(.vertical, 4)
-                .background(
-                    viewModel.inlineCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        ? AnvilColor.textTertiary
-                        : AnvilColor.accentBlue
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .buttonStyle(.borderedProminent)
                 .disabled(viewModel.inlineCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
@@ -418,18 +401,9 @@ struct DiffReviewView: View {
             } label: {
                 Image(systemName: "checkmark")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(
-                        decision == .approved ? AnvilColor.accentGreen : AnvilColor.textTertiary
-                    )
-                    .frame(width: 24, height: 24)
-                    .background(
-                        decision == .approved
-                            ? AnvilColor.accentGreen.opacity(0.15)
-                            : AnvilColor.backgroundTertiary
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.bordered)
+            .tint(decision == .approved ? AnvilColor.accentGreen : nil)
             .help("Approve hunk")
 
             Button {
@@ -437,18 +411,9 @@ struct DiffReviewView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(
-                        decision == .rejected ? AnvilColor.accentRed : AnvilColor.textTertiary
-                    )
-                    .frame(width: 24, height: 24)
-                    .background(
-                        decision == .rejected
-                            ? AnvilColor.accentRed.opacity(0.15)
-                            : AnvilColor.backgroundTertiary
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.bordered)
+            .tint(decision == .rejected ? AnvilColor.accentRed : nil)
             .help("Reject hunk")
         }
         .id(hunk.id)
@@ -519,7 +484,7 @@ struct DiffReviewView: View {
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.xs)
-        .background(AnvilColor.backgroundSecondary)
+        .background(.bar)
     }
 
     // MARK: - Merge Button

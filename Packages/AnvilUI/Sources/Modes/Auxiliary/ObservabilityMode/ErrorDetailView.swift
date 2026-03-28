@@ -30,7 +30,6 @@ struct ErrorDetailView: View {
             }
             .padding(AnvilSpacing.xl)
         }
-        .background(AnvilColor.backgroundPrimary)
     }
 
     // MARK: - Header
@@ -42,16 +41,15 @@ struct ErrorDetailView: View {
                     .font(.system(size: 16))
                     .foregroundStyle(error.severity.color)
 
-                AnvilBadge(text: error.severity.rawValue.uppercased(), color: error.severity.color)
+                AnvilBadge(text: error.severity.rawValue.capitalized, color: error.severity.color)
             }
 
             Text(error.event.title)
                 .font(AnvilFont.heading)
-                .foregroundStyle(AnvilColor.textPrimary)
 
             Text(error.event.message)
                 .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textSecondary)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -68,12 +66,11 @@ struct ErrorDetailView: View {
     private func statItem(label: String, value: String) -> some View {
         AnvilCard {
             VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
-                Text(label.uppercased())
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                Text(label)
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
                 Text(value)
                     .font(AnvilFont.subheading)
-                    .foregroundStyle(AnvilColor.textPrimary)
             }
             .frame(minWidth: 100, alignment: .leading)
         }
@@ -85,7 +82,6 @@ struct ErrorDetailView: View {
         VStack(alignment: .leading, spacing: AnvilSpacing.md) {
             Text("Breadcrumbs")
                 .font(AnvilFont.subheading)
-                .foregroundStyle(AnvilColor.textPrimary)
 
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(error.breadcrumbs.enumerated()), id: \.offset) { index, crumb in
@@ -95,12 +91,12 @@ struct ErrorDetailView: View {
                             Circle()
                                 .fill(index == error.breadcrumbs.count - 1
                                     ? error.severity.color
-                                    : AnvilColor.textTertiary)
+                                    : Color.secondary)
                                 .frame(width: 8, height: 8)
 
                             if index < error.breadcrumbs.count - 1 {
                                 Rectangle()
-                                    .fill(AnvilColor.borderSubtle)
+                                    .fill(.quaternary)
                                     .frame(width: 1)
                                     .frame(maxHeight: .infinity)
                             }
@@ -110,8 +106,8 @@ struct ErrorDetailView: View {
                         Text(crumb)
                             .font(AnvilFont.code)
                             .foregroundStyle(index == error.breadcrumbs.count - 1
-                                ? AnvilColor.textPrimary
-                                : AnvilColor.textSecondary)
+                                ? .primary
+                                : .secondary)
                             .padding(.vertical, AnvilSpacing.xs)
                     }
                 }
@@ -125,21 +121,15 @@ struct ErrorDetailView: View {
         VStack(alignment: .leading, spacing: AnvilSpacing.md) {
             Text("Stack Trace")
                 .font(AnvilFont.subheading)
-                .foregroundStyle(AnvilColor.textPrimary)
 
-            ScrollView(.horizontal, showsIndicators: true) {
-                Text(trace)
-                    .font(AnvilFont.code)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                    .textSelection(.enabled)
-                    .padding(AnvilSpacing.md)
+            GroupBox {
+                ScrollView(.horizontal, showsIndicators: true) {
+                    Text(trace)
+                        .font(AnvilFont.code)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
             }
-            .background(AnvilColor.backgroundSecondary)
-            .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                    .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-            )
         }
     }
 
@@ -149,22 +139,19 @@ struct ErrorDetailView: View {
         VStack(alignment: .leading, spacing: AnvilSpacing.md) {
             Text("Tags")
                 .font(AnvilFont.subheading)
-                .foregroundStyle(AnvilColor.textPrimary)
 
             HStack(spacing: AnvilSpacing.sm) {
                 ForEach(error.event.tags.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
                     HStack(spacing: AnvilSpacing.xxs) {
                         Text(key)
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
                         Text(value)
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textPrimary)
                     }
                     .padding(.horizontal, AnvilSpacing.sm)
                     .padding(.vertical, AnvilSpacing.xxs)
-                    .background(AnvilColor.backgroundTertiary)
-                    .clipShape(Capsule())
+                    .background(.quaternary, in: Capsule())
                 }
             }
         }

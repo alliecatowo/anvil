@@ -4,18 +4,14 @@ struct MessagingMode: View {
     @StateObject private var viewModel = MessagingViewModel()
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Left: Channel list
+        NavigationSplitView {
             ChannelList(viewModel: viewModel)
-                .frame(width: AnvilSpacing.sidebarWidth)
-                .background(AnvilColor.backgroundSecondary)
-
-            Divider().overlay(AnvilColor.borderSubtle)
-
-            // Right: Chat view
+                .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 340)
+        } detail: {
             ChatView(viewModel: viewModel)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(AnvilColor.backgroundPrimary)
+        .navigationSplitViewStyle(.balanced)
+        .background(.background)
     }
 }

@@ -14,7 +14,6 @@ struct TimeBlockView: View {
             VStack(alignment: .leading, spacing: AnvilSpacing.lg) {
                 Text("Time Blocks")
                     .font(AnvilFont.heading)
-                    .foregroundStyle(AnvilColor.textPrimary)
 
                 ForEach(viewModel.entries) { entry in
                     timeBlockCard(entry)
@@ -22,7 +21,6 @@ struct TimeBlockView: View {
             }
             .padding(AnvilSpacing.xl)
         }
-        .background(AnvilColor.backgroundPrimary)
     }
 
     // MARK: - Time Block Card
@@ -45,7 +43,6 @@ struct TimeBlockView: View {
 
                         Text(entry.title)
                             .font(AnvilFont.subheading)
-                            .foregroundStyle(AnvilColor.textPrimary)
                             .lineLimit(1)
                     }
 
@@ -59,27 +56,26 @@ struct TimeBlockView: View {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Image(systemName: "clock")
                             .font(.system(size: 11))
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
 
                         Text("\(timeFormatter.string(from: entry.start)) – \(timeFormatter.string(from: entry.end))")
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textSecondary)
+                            .foregroundStyle(.secondary)
                     }
 
                     Text(entry.duration)
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                         .padding(.horizontal, AnvilSpacing.xs)
                         .padding(.vertical, 1)
-                        .background(AnvilColor.backgroundElevated)
-                        .clipShape(Capsule())
+                        .background(.quaternary, in: Capsule())
                 }
 
                 // Subtitle
                 if let subtitle = entry.subtitle {
                     Text(subtitle)
                         .font(AnvilFont.body)
-                        .foregroundStyle(AnvilColor.textSecondary)
+                        .foregroundStyle(.secondary)
                 }
 
                 // Linked ticket
@@ -98,27 +94,23 @@ struct TimeBlockView: View {
                     HStack(spacing: AnvilSpacing.xs) {
                         Image(systemName: "person.2")
                             .font(.system(size: 11))
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
 
                         ForEach(entry.attendees, id: \.self) { name in
                             Text(name)
                                 .font(AnvilFont.label)
-                                .foregroundStyle(AnvilColor.textSecondary)
+                                .foregroundStyle(.secondary)
                                 .padding(.horizontal, AnvilSpacing.xs)
                                 .padding(.vertical, 1)
-                                .background(AnvilColor.backgroundElevated)
-                                .clipShape(Capsule())
+                                .background(.quaternary, in: Capsule())
                         }
                     }
                 }
             }
             .padding(AnvilSpacing.cardPadding)
         }
-        .background(AnvilColor.backgroundTertiary)
-        .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                .stroke(entry.kindColor.opacity(0.3), lineWidth: 1)
-        )
+        .background {
+            GroupBox { Color.clear }
+        }
     }
 }

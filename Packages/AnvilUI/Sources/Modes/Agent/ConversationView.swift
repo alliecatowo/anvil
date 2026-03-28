@@ -423,16 +423,8 @@ struct BudgetSettingPopover: View {
                     .font(AnvilFont.statusBar)
                     .foregroundStyle(AnvilColor.textSecondary)
                 TextField("e.g. 5.00", text: $budgetText)
-                    .textFieldStyle(.plain)
+                    .textFieldStyle(.roundedBorder)
                     .font(AnvilFont.statusBar)
-                    .padding(.horizontal, AnvilSpacing.sm)
-                    .padding(.vertical, AnvilSpacing.xs)
-                    .background(AnvilColor.backgroundPrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(AnvilColor.borderMedium, lineWidth: 1)
-                    )
             }
 
             Toggle("Hard stop at budget limit", isOn: $hardStopEnabled)
@@ -527,8 +519,7 @@ struct MessageBubble: View {
             }
         }
         .padding(AnvilSpacing.md)
-        .background(message.role == .user ? AnvilColor.backgroundSecondary : .clear)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .background(message.role == .user ? AnvilColor.accentBlue.opacity(0.04) : .clear)
     }
 }
 
@@ -636,61 +627,54 @@ struct ToolCallView: View {
     @State private var isExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
-            Button {
-                withAnimation(AnvilAnimation.standard) {
-                    isExpanded.toggle()
-                }
-            } label: {
-                HStack {
-                    Image(systemName: toolCallIcon)
-                        .font(.system(size: 11))
-                    Text(toolCall.name)
-                        .font(AnvilFont.code)
-
-                    statusIndicator
-
-                    Spacer()
-
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 9, weight: .bold))
-                }
-                .foregroundStyle(AnvilColor.textSecondary)
-                .padding(.horizontal, AnvilSpacing.sm)
-                .padding(.vertical, AnvilSpacing.xs)
-            }
-            .buttonStyle(.plain)
-
-            if isExpanded, let result = toolCall.result {
-                Text(result.content)
-                    .font(AnvilFont.code)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                    .padding(AnvilSpacing.sm)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(AnvilColor.backgroundPrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                    .lineLimit(20)
-            }
-
-            // Approve/Reject for pending tool calls
-            if toolCall.status == .pending {
-                HStack(spacing: AnvilSpacing.sm) {
-                    AnvilButton("Approve", icon: "checkmark", style: .primary) {
-                        onApprove?(false)
+        GroupBox {
+            VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
+                Button {
+                    withAnimation(AnvilAnimation.standard) {
+                        isExpanded.toggle()
                     }
-                    AnvilButton("Reject", icon: "xmark", style: .destructive) {
-                        onReject?(false)
+                } label: {
+                    HStack {
+                        Image(systemName: toolCallIcon)
+                            .font(.system(size: 11))
+                        Text(toolCall.name)
+                            .font(AnvilFont.code)
+
+                        statusIndicator
+
+                        Spacer()
+
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 9, weight: .bold))
+                    }
+                    .foregroundStyle(AnvilColor.textSecondary)
+                }
+                .buttonStyle(.plain)
+
+                if isExpanded, let result = toolCall.result {
+                    Text(result.content)
+                        .font(AnvilFont.code)
+                        .foregroundStyle(AnvilColor.textSecondary)
+                        .padding(AnvilSpacing.sm)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(AnvilColor.backgroundPrimary)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .lineLimit(20)
+                }
+
+                // Approve/Reject for pending tool calls
+                if toolCall.status == .pending {
+                    HStack(spacing: AnvilSpacing.sm) {
+                        AnvilButton("Approve", icon: "checkmark", style: .primary) {
+                            onApprove?(false)
+                        }
+                        AnvilButton("Reject", icon: "xmark", style: .destructive) {
+                            onReject?(false)
+                        }
                     }
                 }
             }
         }
-        .padding(AnvilSpacing.sm)
-        .background(AnvilColor.backgroundTertiary)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
-        .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-        )
     }
 
     var toolCallIcon: String {
@@ -794,9 +778,8 @@ struct InputBar: View {
                 SparklesButton()
 
                 TextField(isRunning ? "Queue next message..." : "Message the agent...", text: $text, axis: .vertical)
-                    .textFieldStyle(.plain)
+                    .textFieldStyle(.roundedBorder)
                     .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textPrimary)
                     .lineLimit(1...5)
                     .onSubmit(onSend)
                     .onChange(of: text) { _, newValue in
@@ -827,9 +810,8 @@ struct InputBar: View {
             }
             .padding(AnvilSpacing.md)
         }
-        .background(AnvilColor.backgroundSecondary)
         .overlay(
-            RoundedRectangle(cornerRadius: 0)
+            Rectangle()
                 .stroke(AnvilColor.accentBlue.opacity(isDropTargeted ? 0.6 : 0), lineWidth: 2)
         )
         .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
@@ -1033,82 +1015,61 @@ struct ToolApprovalBanner: View {
     let onReject: (Bool) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-            HStack {
-                Image(systemName: guardrailViolation != nil ? "shield.slash" : "wrench.and.screwdriver")
-                    .foregroundStyle(guardrailViolation != nil ? AnvilColor.accentRed : AnvilColor.accentAmber)
-                Text("Tool call requires approval")
-                    .font(AnvilFont.sidebarHeader)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                Spacer()
-            }
+        GroupBox {
+            VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+                HStack {
+                    Image(systemName: guardrailViolation != nil ? "shield.slash" : "wrench.and.screwdriver")
+                        .foregroundStyle(guardrailViolation != nil ? AnvilColor.accentRed : AnvilColor.accentAmber)
+                    Text("Tool call requires approval")
+                        .font(AnvilFont.sidebarHeader)
+                        .foregroundStyle(AnvilColor.textPrimary)
+                    Spacer()
+                }
 
-            HStack(spacing: AnvilSpacing.sm) {
-                Text(toolName)
-                    .font(AnvilFont.code)
-                    .foregroundStyle(AnvilColor.accentPurple)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(AnvilColor.accentPurple.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                HStack(spacing: AnvilSpacing.sm) {
+                    Text(toolName)
+                        .font(AnvilFont.code)
+                        .foregroundStyle(AnvilColor.accentPurple)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(AnvilColor.accentPurple.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
 
-                Text(arguments.prefix(120))
-                    .font(AnvilFont.code)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                    .lineLimit(2)
-            }
+                    Text(arguments.prefix(120))
+                        .font(AnvilFont.code)
+                        .foregroundStyle(AnvilColor.textSecondary)
+                        .lineLimit(2)
+                }
 
-            if let violation = guardrailViolation {
-                HStack(spacing: AnvilSpacing.xs) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(AnvilColor.accentRed)
-                        .font(.system(size: 11))
-                    Text(violation)
-                        .font(AnvilFont.label)
+                if let violation = guardrailViolation {
+                    HStack(spacing: AnvilSpacing.xs) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(AnvilColor.accentRed)
+                            .font(.system(size: 11))
+                        Text(violation)
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.accentRed)
+                    }
+                }
+
+                HStack(spacing: AnvilSpacing.sm) {
+                    Button("Approve") { onApprove(false) }
+                        .buttonStyle(.bordered)
+                        .tint(.green)
+
+                    Button("Always Allow") { onApprove(true) }
+                        .buttonStyle(.borderless)
+                        .foregroundStyle(AnvilColor.accentGreen)
+
+                    Button("Reject") { onReject(false) }
+                        .buttonStyle(.bordered)
+                        .tint(.red)
+
+                    Button("Always Deny") { onReject(true) }
+                        .buttonStyle(.borderless)
                         .foregroundStyle(AnvilColor.accentRed)
                 }
             }
-
-            HStack(spacing: AnvilSpacing.sm) {
-                Button("Approve") { onApprove(false) }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(AnvilColor.accentGreen.opacity(0.15))
-                    .foregroundStyle(AnvilColor.accentGreen)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-
-                Button("Always Allow") { onApprove(true) }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(AnvilColor.accentGreen.opacity(0.08))
-                    .foregroundStyle(AnvilColor.accentGreen)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-
-                Button("Reject") { onReject(false) }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(AnvilColor.accentRed.opacity(0.15))
-                    .foregroundStyle(AnvilColor.accentRed)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-
-                Button("Always Deny") { onReject(true) }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(AnvilColor.accentRed.opacity(0.08))
-                    .foregroundStyle(AnvilColor.accentRed)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-            }
         }
-        .padding(AnvilSpacing.md)
-        .background(AnvilColor.backgroundSecondary)
-        .overlay(
-            RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                .stroke(guardrailViolation != nil ? AnvilColor.accentRed.opacity(0.3) : AnvilColor.accentAmber.opacity(0.3), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
     }
 }

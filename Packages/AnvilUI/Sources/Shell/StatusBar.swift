@@ -293,20 +293,12 @@ struct GoToLinePopover: View {
         VStack(spacing: AnvilSpacing.sm) {
             Text("Go to Line")
                 .font(AnvilFont.sidebarHeader)
-                .foregroundStyle(AnvilColor.textPrimary)
+                .foregroundStyle(.primary)
 
             HStack(spacing: AnvilSpacing.xs) {
                 TextField("Line number", text: $lineText)
-                    .textFieldStyle(.plain)
+                    .textFieldStyle(.roundedBorder)
                     .font(AnvilFont.statusBar)
-                    .padding(.horizontal, AnvilSpacing.sm)
-                    .padding(.vertical, AnvilSpacing.xs)
-                    .background(AnvilColor.backgroundPrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(AnvilColor.borderMedium, lineWidth: 1)
-                    )
                     .focused($isFocused)
                     .onSubmit {
                         goToLine()
@@ -315,14 +307,13 @@ struct GoToLinePopover: View {
                 Button("Go") {
                     goToLine()
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.bordered)
                 .font(AnvilFont.statusBar)
-                .foregroundStyle(AnvilColor.accentBlue)
             }
 
             Text("Current: Ln \(appState.cursorLine)")
                 .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.tertiary)
         }
         .padding(AnvilSpacing.md)
         .frame(width: 200)
@@ -366,36 +357,29 @@ struct EncodingIndicator: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Encoding")
                     .font(AnvilFont.sidebarHeader)
-                    .foregroundStyle(AnvilColor.textPrimary)
+                    .foregroundStyle(.primary)
                     .padding(.horizontal, AnvilSpacing.md)
                     .padding(.vertical, AnvilSpacing.sm)
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(FileEncoding.allCases, id: \.self) { encoding in
-                            Button {
-                                appState.fileEncoding = encoding
-                                isPickerVisible = false
-                            } label: {
-                                HStack {
-                                    Text(encoding.rawValue)
-                                        .font(AnvilFont.sidebarItem)
-                                        .foregroundStyle(AnvilColor.textPrimary)
-                                    Spacer()
-                                    if encoding == appState.fileEncoding {
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundStyle(AnvilColor.accentBlue)
-                                    }
-                                }
-                                .padding(.horizontal, AnvilSpacing.md)
-                                .padding(.vertical, AnvilSpacing.xs)
-                                .contentShape(Rectangle())
+                List(FileEncoding.allCases, id: \.self) { encoding in
+                    Button {
+                        appState.fileEncoding = encoding
+                        isPickerVisible = false
+                    } label: {
+                        HStack {
+                            Text(encoding.rawValue)
+                                .font(AnvilFont.sidebarItem)
+                            Spacer()
+                            if encoding == appState.fileEncoding {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(.tint)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
+                    .buttonStyle(.plain)
                 }
+                .listStyle(.plain)
             }
             .frame(width: 180)
             .frame(maxHeight: 250)

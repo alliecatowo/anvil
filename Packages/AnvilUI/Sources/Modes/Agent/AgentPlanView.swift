@@ -16,98 +16,93 @@ struct AgentPlanView: View {
     @State private var newStepTitle = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Plan header
-            PlanHeader(plan: plan, onApprove: onApprove, onCancel: onCancel)
+        GroupBox {
+            VStack(alignment: .leading, spacing: 0) {
+                // Plan header
+                PlanHeader(plan: plan, onApprove: onApprove, onCancel: onCancel)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
 
-            // Progress bar
-            if !plan.steps.isEmpty {
-                ProgressView(value: plan.progress)
-                    .tint(progressColor)
-                    .padding(.horizontal, AnvilSpacing.md)
-                    .padding(.vertical, AnvilSpacing.sm)
-            }
+                // Progress bar
+                if !plan.steps.isEmpty {
+                    ProgressView(value: plan.progress)
+                        .tint(progressColor)
+                        .padding(.horizontal, AnvilSpacing.md)
+                        .padding(.vertical, AnvilSpacing.sm)
+                }
 
-            // Steps list
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: AnvilSpacing.xs) {
-                    ForEach(plan.steps.sorted(by: { $0.order < $1.order })) { step in
-                        PlanStepRow(
-                            step: step,
-                            onSkip: { onSkipStep(step.id) },
-                            onAnnotate: { text in onAnnotateStep(step.id, text) },
-                            onRemove: { onRemoveStep(step.id) }
-                        )
-                    }
+                // Steps list
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: AnvilSpacing.xs) {
+                        ForEach(plan.steps.sorted(by: { $0.order < $1.order })) { step in
+                            PlanStepRow(
+                                step: step,
+                                onSkip: { onSkipStep(step.id) },
+                                onAnnotate: { text in onAnnotateStep(step.id, text) },
+                                onRemove: { onRemoveStep(step.id) }
+                            )
+                        }
 
-                    // Add step button
-                    if plan.status == .draft || plan.status == .approved {
-                        if isAddingStep {
-                            HStack(spacing: AnvilSpacing.sm) {
-                                Image(systemName: "plus.circle")
-                                    .foregroundStyle(AnvilColor.textTertiary)
-                                    .font(.system(size: 14))
+                        // Add step button
+                        if plan.status == .draft || plan.status == .approved {
+                            if isAddingStep {
+                                HStack(spacing: AnvilSpacing.sm) {
+                                    Image(systemName: "plus.circle")
+                                        .foregroundStyle(AnvilColor.textTertiary)
+                                        .font(.system(size: 14))
 
-                                TextField("New step...", text: $newStepTitle)
-                                    .textFieldStyle(.plain)
-                                    .font(AnvilFont.body)
-                                    .foregroundStyle(AnvilColor.textPrimary)
-                                    .onSubmit {
+                                    TextField("New step...", text: $newStepTitle)
+                                        .textFieldStyle(.roundedBorder)
+                                        .font(AnvilFont.body)
+                                        .onSubmit {
+                                            if !newStepTitle.isEmpty {
+                                                onAddStep(newStepTitle, nil)
+                                                newStepTitle = ""
+                                                isAddingStep = false
+                                            }
+                                        }
+
+                                    Button("Add") {
                                         if !newStepTitle.isEmpty {
                                             onAddStep(newStepTitle, nil)
                                             newStepTitle = ""
                                             isAddingStep = false
                                         }
                                     }
+                                    .font(AnvilFont.label)
+                                    .foregroundStyle(AnvilColor.accentBlue)
 
-                                Button("Add") {
-                                    if !newStepTitle.isEmpty {
-                                        onAddStep(newStepTitle, nil)
+                                    Button("Cancel") {
                                         newStepTitle = ""
                                         isAddingStep = false
                                     }
+                                    .font(AnvilFont.label)
+                                    .foregroundStyle(AnvilColor.textTertiary)
                                 }
-                                .font(AnvilFont.label)
-                                .foregroundStyle(AnvilColor.accentBlue)
-
-                                Button("Cancel") {
-                                    newStepTitle = ""
-                                    isAddingStep = false
-                                }
-                                .font(AnvilFont.label)
-                                .foregroundStyle(AnvilColor.textTertiary)
-                            }
-                            .padding(.horizontal, AnvilSpacing.md)
-                            .padding(.vertical, AnvilSpacing.sm)
-                        } else {
-                            Button {
-                                isAddingStep = true
-                            } label: {
-                                HStack(spacing: AnvilSpacing.sm) {
-                                    Image(systemName: "plus.circle.dashed")
-                                        .font(.system(size: 14))
-                                    Text("Add step")
-                                        .font(AnvilFont.label)
-                                }
-                                .foregroundStyle(AnvilColor.textTertiary)
                                 .padding(.horizontal, AnvilSpacing.md)
                                 .padding(.vertical, AnvilSpacing.sm)
+                            } else {
+                                Button {
+                                    isAddingStep = true
+                                } label: {
+                                    HStack(spacing: AnvilSpacing.sm) {
+                                        Image(systemName: "plus.circle.dashed")
+                                            .font(.system(size: 14))
+                                        Text("Add step")
+                                            .font(AnvilFont.label)
+                                    }
+                                    .foregroundStyle(AnvilColor.textTertiary)
+                                    .padding(.horizontal, AnvilSpacing.md)
+                                    .padding(.vertical, AnvilSpacing.sm)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
+                    .padding(.vertical, AnvilSpacing.sm)
                 }
-                .padding(.vertical, AnvilSpacing.sm)
             }
         }
-        .background(AnvilColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-        )
     }
 
     private var progressColor: Color {

@@ -14,7 +14,6 @@ struct ObservabilityMode: View {
                 connectView
             }
         }
-        .background(AnvilColor.backgroundPrimary)
         .onAppear {
             viewModel.configure(service: container.observabilityService)
             // Auto-connect if Sentry adapter already wired via Settings
@@ -32,13 +31,12 @@ struct ObservabilityMode: View {
             // Left panel: error feed
             VStack(spacing: 0) {
                 tabSelector
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
                 errorFeedOrMetrics
             }
             .frame(width: 480)
-            .background(AnvilColor.backgroundSecondary)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Right panel: detail or metrics dashboard
             Group {
@@ -65,15 +63,14 @@ struct ObservabilityMode: View {
 
             Image(systemName: "waveform.path.ecg")
                 .font(.system(size: 44, weight: .thin))
-                .foregroundStyle(AnvilColor.textTertiary.opacity(0.5))
+                .foregroundStyle(.tertiary)
 
             Text("Connect to Sentry")
                 .font(AnvilFont.heading)
-                .foregroundStyle(AnvilColor.textPrimary)
 
             Text("Monitor errors, performance, and alerts from your Sentry project")
                 .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textSecondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 400)
 
@@ -82,27 +79,19 @@ struct ObservabilityMode: View {
                     VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
                         Text("Organization")
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
                         TextField("my-org", text: $viewModel.sentryOrg)
-                            .textFieldStyle(.plain)
+                            .textFieldStyle(.roundedBorder)
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                            .padding(AnvilSpacing.sm)
-                            .background(AnvilColor.backgroundTertiary)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
 
                     VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
                         Text("Project")
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
                         TextField("my-project", text: $viewModel.sentryProject)
-                            .textFieldStyle(.plain)
+                            .textFieldStyle(.roundedBorder)
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                            .padding(AnvilSpacing.sm)
-                            .background(AnvilColor.backgroundTertiary)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
                 }
                 .frame(maxWidth: 500)
@@ -110,14 +99,10 @@ struct ObservabilityMode: View {
                 VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
                     Text("Auth Token")
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                     SecureField("sntrys_...", text: $viewModel.sentryToken)
-                        .textFieldStyle(.plain)
+                        .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.textPrimary)
-                        .padding(AnvilSpacing.sm)
-                        .background(AnvilColor.backgroundTertiary)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 .frame(maxWidth: 500)
             }
@@ -126,15 +111,13 @@ struct ObservabilityMode: View {
                 Button("Connect") {
                     Task { await connectSentry() }
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(AnvilColor.accentGreen)
+                .buttonStyle(.borderedProminent)
                 .disabled(viewModel.sentryOrg.isEmpty || viewModel.sentryProject.isEmpty || viewModel.sentryToken.isEmpty || viewModel.isLoading)
 
                 Button("Use Demo Data") {
                     viewModel.loadDemoData()
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(AnvilColor.accentBlue)
+                .buttonStyle(.bordered)
             }
 
             if viewModel.isLoading {
@@ -189,8 +172,8 @@ struct ObservabilityMode: View {
                             .font(AnvilFont.label)
                             .foregroundStyle(
                                 viewModel.selectedTab == tab
-                                    ? AnvilColor.textPrimary
-                                    : AnvilColor.textTertiary
+                                    ? .primary
+                                    : .tertiary
                             )
 
                         if tab == .errors && viewModel.criticalCount > 0 {
@@ -204,7 +187,7 @@ struct ObservabilityMode: View {
                     .padding(.vertical, AnvilSpacing.sm)
                     .background(
                         viewModel.selectedTab == tab
-                            ? AnvilColor.backgroundTertiary
+                            ? Color.accentColor.opacity(0.15)
                             : Color.clear
                     )
                 }
@@ -220,7 +203,7 @@ struct ObservabilityMode: View {
                 } label: {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 10))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
                 .help("Refresh")
@@ -231,7 +214,7 @@ struct ObservabilityMode: View {
                 } label: {
                     Image(systemName: "eject")
                         .font(.system(size: 10))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
                 .help("Disconnect")
@@ -239,13 +222,13 @@ struct ObservabilityMode: View {
             .padding(.trailing, AnvilSpacing.sm)
 
             if viewModel.usingDemoData {
-                Text("DEMO")
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                Text("Demo")
+                    .font(.caption2)
+                    .fontWeight(.bold)
                     .foregroundStyle(AnvilColor.accentAmber)
                     .padding(.horizontal, AnvilSpacing.xs)
                     .padding(.vertical, 2)
-                    .background(AnvilColor.accentAmber.opacity(0.15))
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                    .background(AnvilColor.accentAmber.opacity(0.15), in: RoundedRectangle(cornerRadius: 3))
                     .padding(.trailing, AnvilSpacing.sm)
             }
         }
@@ -266,45 +249,34 @@ struct ObservabilityMode: View {
     }
 
     private var metricsQuickList: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(viewModel.metrics) { metric in
-                    HStack(spacing: AnvilSpacing.sm) {
-                        Image(systemName: metric.trend.icon)
-                            .font(.system(size: 12))
-                            .foregroundStyle(metric.trend.color)
-                            .frame(width: 20)
+        List {
+            ForEach(viewModel.metrics) { metric in
+                HStack(spacing: AnvilSpacing.sm) {
+                    Image(systemName: metric.trend.icon)
+                        .font(.system(size: 12))
+                        .foregroundStyle(metric.trend.color)
+                        .frame(width: 20)
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(metric.title)
-                                .font(AnvilFont.sidebarItem)
-                                .foregroundStyle(AnvilColor.textPrimary)
-                            Text(metric.value)
-                                .font(AnvilFont.code)
-                                .foregroundStyle(AnvilColor.textSecondary)
-                        }
-
-                        Spacer()
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(metric.title)
+                            .font(AnvilFont.sidebarItem)
+                        Text(metric.value)
+                            .font(AnvilFont.code)
+                            .foregroundStyle(.secondary)
                     }
-                    .padding(.horizontal, AnvilSpacing.md)
-                    .padding(.vertical, AnvilSpacing.sm)
-                    .frame(height: AnvilSpacing.richListItemHeight)
 
-                    Divider().overlay(AnvilColor.borderSubtle)
+                    Spacer()
                 }
             }
         }
+        .listStyle(.inset)
     }
 
     private var noSelectionPlaceholder: some View {
-        VStack(spacing: AnvilSpacing.lg) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 48, weight: .thin))
-                .foregroundStyle(AnvilColor.textTertiary)
-
+        ContentUnavailableView {
+            Label("No Selection", systemImage: "exclamationmark.triangle")
+        } description: {
             Text("Select an error to view details")
-                .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textSecondary)
         }
     }
 }

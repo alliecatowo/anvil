@@ -6,6 +6,6 @@ struct ShipMode: View {
 
     var body: some View {
         ShipModeContent(viewModel: appState.shipViewModel)
-            .background(AnvilColor.backgroundPrimary)
+            .background(.background)
     }
 }

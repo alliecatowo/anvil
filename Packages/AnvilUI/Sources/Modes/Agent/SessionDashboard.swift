@@ -3,7 +3,7 @@ import AnvilDomain
 
 // MARK: - Session Dashboard
 
-/// Grid view showing all agent sessions with status, cost, tokens.
+/// List view showing all agent sessions with status, cost, tokens.
 /// Allows multi-select to create synthesis rooms or dispatch critique agents.
 struct SessionDashboard: View {
     @ObservedObject var viewModel: AgentViewModel
@@ -25,98 +25,83 @@ struct SessionDashboard: View {
     var body: some View {
         VStack(spacing: 0) {
             dashboardHeader
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
+            filterBar
             dashboardContent
         }
-        .background(AnvilColor.backgroundPrimary)
     }
 
     // MARK: - Header
 
     private var dashboardHeader: some View {
-        HStack(spacing: AnvilSpacing.md) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Session Dashboard")
-                    .font(AnvilFont.heading)
-                    .foregroundStyle(AnvilColor.textPrimary)
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Session Dashboard")
+                .font(AnvilFont.heading)
+                .foregroundStyle(AnvilColor.textPrimary)
 
-                Text("\(viewModel.sessions.count) sessions \(viewModel.activeSessions.isEmpty ? "" : "(\(viewModel.activeSessions.count) active)")")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+            HStack(spacing: AnvilSpacing.md) {
+                Text("\(viewModel.sessions.count) sessions")
+                Text("$\(String(format: "%.2f", NSDecimalNumber(decimal: viewModel.totalCost).doubleValue)) cost")
+                Text("\(formatTokenCount(viewModel.totalTokens)) tokens")
+                Text("\(viewModel.synthesisRooms.count) rooms")
             }
+            .font(AnvilFont.label)
+            .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, AnvilSpacing.lg)
+        .padding(.vertical, AnvilSpacing.md)
+    }
 
-            Spacer()
+    // MARK: - Filter
 
-            // Aggregate stats
-            HStack(spacing: AnvilSpacing.lg) {
-                statBadge(
-                    label: "Total Cost",
-                    value: "$\(String(format: "%.2f", NSDecimalNumber(decimal: viewModel.totalCost).doubleValue))",
-                    color: AnvilColor.accentAmber
-                )
-                statBadge(
-                    label: "Total Tokens",
-                    value: formatTokenCount(viewModel.totalTokens),
-                    color: AnvilColor.accentBlue
-                )
-                statBadge(
-                    label: "Rooms",
-                    value: "\(viewModel.synthesisRooms.count)",
-                    color: AnvilColor.accentPurple
-                )
-            }
-
-            Divider().frame(height: 24).overlay(AnvilColor.borderSubtle)
-
+    private var filterBar: some View {
+        HStack(spacing: AnvilSpacing.sm) {
             Picker("Filter", selection: $dashboardFilter) {
                 ForEach(DashboardFilter.allCases) { filter in
                     Text(filter.rawValue).tag(filter)
                 }
             }
             .pickerStyle(.segmented)
-            .frame(width: 280)
 
-            // Selection actions
             if !viewModel.dashboardSelectedSessionIds.isEmpty {
-                HStack(spacing: AnvilSpacing.sm) {
-                    Text("\(viewModel.dashboardSelectedSessionIds.count) selected")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.accentBlue)
+                Spacer()
 
-                    if viewModel.dashboardSelectedSessionIds.count >= 2 {
-                        Button {
-                            onCreateSynthesis(Array(viewModel.dashboardSelectedSessionIds))
-                        } label: {
-                            Label("Synthesize", systemImage: "arrow.triangle.merge")
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
-                    }
+                Text("\(viewModel.dashboardSelectedSessionIds.count) selected")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(.secondary)
 
-                    Button {
-                        viewModel.dashboardSelectedSessionIds.removeAll()
-                    } label: {
-                        Label("Clear", systemImage: "xmark.circle")
+                if viewModel.dashboardSelectedSessionIds.count >= 2 {
+                    Button("Synthesize") {
+                        onCreateSynthesis(Array(viewModel.dashboardSelectedSessionIds))
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                 }
+
+                Button("Clear") {
+                    viewModel.dashboardSelectedSessionIds.removeAll()
+                }
+                .buttonStyle(.borderless)
+                .controlSize(.small)
             }
         }
         .padding(.horizontal, AnvilSpacing.lg)
-        .padding(.vertical, AnvilSpacing.md)
-        .background(AnvilColor.backgroundSecondary.opacity(0.5))
+        .padding(.vertical, AnvilSpacing.sm)
     }
 
     // MARK: - Content
 
     private var dashboardContent: some View {
-        List {
+        List(selection: Binding<Set<String>>(
+            get: { viewModel.dashboardSelectedSessionIds },
+            set: { viewModel.dashboardSelectedSessionIds = $0 }
+        )) {
             // Synthesis rooms section
             if !viewModel.synthesisRooms.isEmpty {
                 Section("Synthesis Rooms") {
                     ForEach(viewModel.synthesisRooms) { room in
-                        SynthesisRoomCard(
+                        SynthesisRoomRow(
                             room: room,
                             sessionNames: room.inputSessionIds.compactMap { id in
                                 viewModel.sessions.first(where: { $0.id == id })?.displayName
@@ -134,17 +119,9 @@ struct SessionDashboard: View {
 
             Section("Sessions") {
                 ForEach(filteredSessions) { session in
-                    SessionCard(
+                    SessionRow(
                         session: session,
-                        isSelected: viewModel.dashboardSelectedSessionIds.contains(session.id),
-                        linkedSessions: viewModel.linkedSessions(for: session.id),
-                        onToggleSelect: {
-                            if viewModel.dashboardSelectedSessionIds.contains(session.id) {
-                                viewModel.dashboardSelectedSessionIds.remove(session.id)
-                            } else {
-                                viewModel.dashboardSelectedSessionIds.insert(session.id)
-                            }
-                        },
+                        linkedCount: viewModel.linkedSessions(for: session.id).count,
                         onOpen: {
                             viewModel.selectedSessionId = session.id
                             viewModel.showConversation()
@@ -153,24 +130,14 @@ struct SessionDashboard: View {
                             onDispatchCritique(session.id)
                         }
                     )
+                    .tag(session.id)
                 }
             }
         }
-        .listStyle(.inset)
+        .listStyle(.sidebar)
     }
 
     // MARK: - Helpers
-
-    private func statBadge(label: String, value: String, color: Color) -> some View {
-        VStack(alignment: .center, spacing: 1) {
-            Text(value)
-                .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                .foregroundStyle(color)
-            Text(label)
-                .font(.system(size: 10))
-                .foregroundStyle(AnvilColor.textTertiary)
-        }
-    }
 
     private func formatTokenCount(_ count: Int) -> String {
         if count >= 1_000_000 { return String(format: "%.1fM", Double(count) / 1_000_000) }
@@ -192,144 +159,50 @@ struct SessionDashboard: View {
     }
 }
 
-// MARK: - Session Card
+// MARK: - Session Row
 
-struct SessionCard: View {
+struct SessionRow: View {
     let session: AgentSession
-    let isSelected: Bool
-    let linkedSessions: [(session: AgentSession, label: String)]
-    let onToggleSelect: () -> Void
+    let linkedCount: Int
     let onOpen: () -> Void
     let onCritique: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-            // Header
-            HStack {
-                // Selection checkbox
-                Button(action: onToggleSelect) {
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 14))
-                        .foregroundStyle(isSelected ? AnvilColor.accentBlue : AnvilColor.textTertiary)
-                }
-                .buttonStyle(.plain)
+        HStack(spacing: AnvilSpacing.sm) {
+            Circle()
+                .fill(statusColor)
+                .frame(width: 8, height: 8)
 
-                // Status dot
-                Circle()
-                    .fill(statusColor)
-                    .frame(width: 8, height: 8)
-
+            VStack(alignment: .leading, spacing: 2) {
                 Text(session.displayName)
                     .font(AnvilFont.sidebarItem)
                     .foregroundStyle(AnvilColor.textPrimary)
                     .lineLimit(1)
 
-                Spacer()
-
-                Text(session.status.rawValue)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(statusColor)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(statusColor.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-            }
-
-            // Model + time
-            HStack {
-                Text(session.model)
-                    .font(.system(size: 11))
-                    .foregroundStyle(AnvilColor.textTertiary)
-                Spacer()
-                Text(session.startedAt, style: .relative)
-                    .font(.system(size: 10))
-                    .foregroundStyle(AnvilColor.textTertiary)
-            }
-
-            // Stats row
-            HStack(spacing: AnvilSpacing.md) {
-                HStack(spacing: 3) {
-                    Image(systemName: "dollarsign.circle")
-                        .font(.system(size: 10))
-                    Text("$\(String(format: "%.3f", NSDecimalNumber(decimal: session.cost).doubleValue))")
-                        .font(.system(size: 11, design: .monospaced))
-                }
-                .foregroundStyle(AnvilColor.accentAmber)
-
-                HStack(spacing: 3) {
-                    Image(systemName: "arrow.up.arrow.down")
-                        .font(.system(size: 10))
-                    Text("\(session.tokenUsage.inputTokens)in / \(session.tokenUsage.outputTokens)out")
-                        .font(.system(size: 11, design: .monospaced))
-                }
-                .foregroundStyle(AnvilColor.textTertiary)
-
-                Spacer()
-            }
-
-            // Linked sessions
-            if !linkedSessions.isEmpty {
-                HStack(spacing: AnvilSpacing.xs) {
-                    Image(systemName: "link")
-                        .font(.system(size: 10))
-                        .foregroundStyle(AnvilColor.accentPurple)
-                    ForEach(linkedSessions.prefix(3), id: \.session.id) { linked in
-                        Text(linked.label)
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(AnvilColor.accentPurple.opacity(0.8))
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(AnvilColor.accentPurple.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 3))
+                HStack(spacing: AnvilSpacing.sm) {
+                    Text(session.model)
+                    Text(session.status.rawValue)
+                    if linkedCount > 0 {
+                        Text("\(linkedCount) linked")
                     }
                 }
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
             }
 
-            // Actions
-            HStack(spacing: AnvilSpacing.sm) {
-                Button(action: onOpen) {
-                    HStack(spacing: AnvilSpacing.xxs) {
-                        Image(systemName: "message")
-                            .font(.system(size: 10))
-                        Text("Open")
-                            .font(.system(size: 11))
-                    }
-                    .foregroundStyle(AnvilColor.accentBlue)
-                    .padding(.horizontal, AnvilSpacing.xs)
-                    .padding(.vertical, 3)
-                    .background(AnvilColor.accentBlue.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                }
-                .buttonStyle(.plain)
+            Spacer()
 
-                Button(action: onCritique) {
-                    HStack(spacing: AnvilSpacing.xxs) {
-                        Image(systemName: "eye.trianglebadge.exclamationmark")
-                            .font(.system(size: 10))
-                        Text("Review")
-                            .font(.system(size: 11))
-                    }
-                    .foregroundStyle(AnvilColor.accentAmber)
-                    .padding(.horizontal, AnvilSpacing.xs)
-                    .padding(.vertical, 3)
-                    .background(AnvilColor.accentAmber.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                }
-                .buttonStyle(.plain)
-
-                Spacer()
-            }
+            Text(session.startedAt, style: .relative)
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
         }
-        .padding(AnvilSpacing.cardPadding)
-        .background(AnvilColor.backgroundTertiary)
-        .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                .stroke(
-                    isSelected ? AnvilColor.accentBlue : AnvilColor.borderSubtle,
-                    lineWidth: isSelected ? 2 : 1
-                )
-        )
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onOpen)
+        .contextMenu {
+            Button("Open Session", action: onOpen)
+            Button("Review with Critique Agent", action: onCritique)
+        }
     }
 
     private var statusColor: Color {
@@ -343,97 +216,44 @@ struct SessionCard: View {
     }
 }
 
-// MARK: - Synthesis Room Card
+// MARK: - Synthesis Room Row
 
-struct SynthesisRoomCard: View {
+struct SynthesisRoomRow: View {
     let room: SynthesisRoom
     let sessionNames: [String]
     let onOpen: () -> Void
     let onDelete: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-            HStack {
-                Image(systemName: "arrow.triangle.merge")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(AnvilColor.accentPurple)
+        HStack(spacing: AnvilSpacing.sm) {
+            Image(systemName: "arrow.triangle.merge")
+                .font(.system(size: 11))
+                .foregroundStyle(AnvilColor.accentPurple)
 
+            VStack(alignment: .leading, spacing: 2) {
                 Text(room.title)
                     .font(AnvilFont.sidebarItem)
                     .foregroundStyle(AnvilColor.textPrimary)
                     .lineLimit(1)
 
-                Spacer()
-
-                Text(room.status.rawValue)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(synthesisStatusColor)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(synthesisStatusColor.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-            }
-
-            // Input sessions
-            HStack(spacing: AnvilSpacing.xs) {
-                ForEach(sessionNames.indices, id: \.self) { i in
-                    if i > 0 {
-                        Image(systemName: "plus")
-                            .font(.system(size: 8))
-                            .foregroundStyle(AnvilColor.textTertiary)
-                    }
-                    Text(sessionNames[i])
-                        .font(.system(size: 10))
-                        .foregroundStyle(AnvilColor.textSecondary)
-                        .lineLimit(1)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(AnvilColor.backgroundSecondary)
-                        .clipShape(RoundedRectangle(cornerRadius: 3))
-                }
-            }
-
-            // Preview of output
-            if let output = room.output, !output.isEmpty {
-                Text(output.prefix(120) + (output.count > 120 ? "..." : ""))
+                Text(sessionNames.joined(separator: ", "))
                     .font(.system(size: 11))
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .lineLimit(2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
 
-            HStack {
-                Button(action: onOpen) {
-                    HStack(spacing: AnvilSpacing.xxs) {
-                        Image(systemName: "arrow.right.circle")
-                            .font(.system(size: 10))
-                        Text("Open")
-                            .font(.system(size: 11))
-                    }
-                    .foregroundStyle(AnvilColor.accentPurple)
-                    .padding(.horizontal, AnvilSpacing.xs)
-                    .padding(.vertical, 3)
-                    .background(AnvilColor.accentPurple.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                }
-                .buttonStyle(.plain)
+            Spacer()
 
-                Spacer()
-
-                Button(action: onDelete) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 10))
-                        .foregroundStyle(AnvilColor.textTertiary)
-                }
-                .buttonStyle(.plain)
-            }
+            Circle()
+                .fill(synthesisStatusColor)
+                .frame(width: 6, height: 6)
         }
-        .padding(AnvilSpacing.cardPadding)
-        .background(AnvilColor.accentPurple.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                .stroke(AnvilColor.accentPurple.opacity(0.25), lineWidth: 1)
-        )
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onOpen)
+        .contextMenu {
+            Button("Open Room", action: onOpen)
+            Button("Delete", role: .destructive, action: onDelete)
+        }
     }
 
     private var synthesisStatusColor: Color {

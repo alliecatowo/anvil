@@ -14,111 +14,106 @@ struct TokenUsageBar: View {
     private var isOverLimit: Bool { usageRatio > 0.95 }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
-            // Header row
-            HStack {
-                HStack(spacing: AnvilSpacing.xxs) {
-                    Image(systemName: "chart.bar.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(AnvilColor.textTertiary)
-                    Text("Token Usage")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textSecondary)
-                }
-
-                Spacer()
-
-                // Total and cost
-                HStack(spacing: AnvilSpacing.sm) {
-                    Text(formatTokenCount(totalTokens))
-                        .font(AnvilFont.statusBar)
-                        .foregroundStyle(usageColor)
-
-                    Text("/")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-
-                    Text(formatTokenCount(contextLimit))
-                        .font(AnvilFont.statusBar)
-                        .foregroundStyle(AnvilColor.textTertiary)
-
-                    Text("$\(NSDecimalNumber(decimal: cost).doubleValue, specifier: "%.3f")")
-                        .font(AnvilFont.statusBar)
-                        .foregroundStyle(AnvilColor.textSecondary)
-                }
-            }
-
-            // Progress bar
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    // Background track
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(AnvilColor.backgroundPrimary)
-
-                    // Stacked segments
-                    HStack(spacing: 0) {
-                        let inputWidth = segmentWidth(geo.size.width, tokens: usage.inputTokens)
-                        let outputWidth = segmentWidth(geo.size.width, tokens: usage.outputTokens)
-                        let cacheWidth = segmentWidth(geo.size.width, tokens: usage.cacheReadTokens + usage.cacheWriteTokens)
-
-                        if usage.inputTokens > 0 {
-                            Rectangle()
-                                .fill(AnvilColor.accentBlue)
-                                .frame(width: inputWidth)
-                        }
-                        if usage.outputTokens > 0 {
-                            Rectangle()
-                                .fill(AnvilColor.accentPurple)
-                                .frame(width: outputWidth)
-                        }
-                        if usage.cacheReadTokens + usage.cacheWriteTokens > 0 {
-                            Rectangle()
-                                .fill(AnvilColor.accentTeal)
-                                .frame(width: cacheWidth)
-                        }
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
-                }
-            }
-            .frame(height: 6)
-
-            // Legend
-            HStack(spacing: AnvilSpacing.md) {
-                legendItem(color: AnvilColor.accentBlue, label: "Input", count: usage.inputTokens)
-                legendItem(color: AnvilColor.accentPurple, label: "Output", count: usage.outputTokens)
-                if usage.cacheReadTokens + usage.cacheWriteTokens > 0 {
-                    legendItem(color: AnvilColor.accentTeal, label: "Cache", count: usage.cacheReadTokens + usage.cacheWriteTokens)
-                }
-
-                Spacer()
-
-                // Warning when near limit
-                if isOverLimit {
+        GroupBox {
+            VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
+                // Header row
+                HStack {
                     HStack(spacing: AnvilSpacing.xxs) {
-                        Image(systemName: "exclamationmark.triangle.fill")
+                        Image(systemName: "chart.bar.fill")
                             .font(.system(size: 10))
-                        Text("Context limit reached")
+                            .foregroundStyle(AnvilColor.textTertiary)
+                        Text("Token Usage")
                             .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textSecondary)
                     }
-                    .foregroundStyle(AnvilColor.accentRed)
-                } else if isNearLimit {
-                    HStack(spacing: AnvilSpacing.xxs) {
-                        Image(systemName: "exclamationmark.circle")
-                            .font(.system(size: 10))
-                        Text("Approaching limit (\(Int(usageRatio * 100))%)")
+
+                    Spacer()
+
+                    // Total and cost
+                    HStack(spacing: AnvilSpacing.sm) {
+                        Text(formatTokenCount(totalTokens))
+                            .font(AnvilFont.statusBar)
+                            .foregroundStyle(usageColor)
+
+                        Text("/")
                             .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textTertiary)
+
+                        Text(formatTokenCount(contextLimit))
+                            .font(AnvilFont.statusBar)
+                            .foregroundStyle(AnvilColor.textTertiary)
+
+                        Text("$\(NSDecimalNumber(decimal: cost).doubleValue, specifier: "%.3f")")
+                            .font(AnvilFont.statusBar)
+                            .foregroundStyle(AnvilColor.textSecondary)
                     }
-                    .foregroundStyle(AnvilColor.accentAmber)
+                }
+
+                // Progress bar
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        // Background track
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(AnvilColor.backgroundPrimary)
+
+                        // Stacked segments
+                        HStack(spacing: 0) {
+                            let inputWidth = segmentWidth(geo.size.width, tokens: usage.inputTokens)
+                            let outputWidth = segmentWidth(geo.size.width, tokens: usage.outputTokens)
+                            let cacheWidth = segmentWidth(geo.size.width, tokens: usage.cacheReadTokens + usage.cacheWriteTokens)
+
+                            if usage.inputTokens > 0 {
+                                Rectangle()
+                                    .fill(AnvilColor.accentBlue)
+                                    .frame(width: inputWidth)
+                            }
+                            if usage.outputTokens > 0 {
+                                Rectangle()
+                                    .fill(AnvilColor.accentPurple)
+                                    .frame(width: outputWidth)
+                            }
+                            if usage.cacheReadTokens + usage.cacheWriteTokens > 0 {
+                                Rectangle()
+                                    .fill(AnvilColor.accentTeal)
+                                    .frame(width: cacheWidth)
+                            }
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                    }
+                }
+                .frame(height: 6)
+
+                // Legend
+                HStack(spacing: AnvilSpacing.md) {
+                    legendItem(color: AnvilColor.accentBlue, label: "Input", count: usage.inputTokens)
+                    legendItem(color: AnvilColor.accentPurple, label: "Output", count: usage.outputTokens)
+                    if usage.cacheReadTokens + usage.cacheWriteTokens > 0 {
+                        legendItem(color: AnvilColor.accentTeal, label: "Cache", count: usage.cacheReadTokens + usage.cacheWriteTokens)
+                    }
+
+                    Spacer()
+
+                    // Warning when near limit
+                    if isOverLimit {
+                        HStack(spacing: AnvilSpacing.xxs) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 10))
+                            Text("Context limit reached")
+                                .font(AnvilFont.label)
+                        }
+                        .foregroundStyle(AnvilColor.accentRed)
+                    } else if isNearLimit {
+                        HStack(spacing: AnvilSpacing.xxs) {
+                            Image(systemName: "exclamationmark.circle")
+                                .font(.system(size: 10))
+                            Text("Approaching limit (\(Int(usageRatio * 100))%)")
+                                .font(AnvilFont.label)
+                        }
+                        .foregroundStyle(AnvilColor.accentAmber)
+                    }
                 }
             }
         }
-        .padding(AnvilSpacing.sm)
-        .background(AnvilColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
-        .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(isOverLimit ? AnvilColor.accentRed.opacity(0.5) : AnvilColor.borderSubtle, lineWidth: 1)
-        )
     }
 
     // MARK: - Helpers

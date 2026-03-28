@@ -16,30 +16,27 @@ struct BranchPicker: View {
             // Search
             AnvilSearchField(text: $searchText, placeholder: "Filter branches...")
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Branch list
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    // Current branch header
-                    sectionHeader("CURRENT")
-
+            List {
+                Section("Current") {
                     branchRow(name: appState.currentBranch, isCurrent: true)
+                }
 
-                    // Other local branches
-                    let otherBranches = filteredBranches.filter { !$0.isCurrent }
-                    if !otherBranches.isEmpty {
-                        sectionHeader("LOCAL BRANCHES")
-
+                let otherBranches = filteredBranches.filter { !$0.isCurrent }
+                if !otherBranches.isEmpty {
+                    Section("Local branches") {
                         ForEach(otherBranches) { branch in
                             branchRow(name: branch.name, isCurrent: false)
                         }
                     }
                 }
             }
+            .listStyle(.plain)
             .frame(maxHeight: 300)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Create new branch
             if isCreatingBranch {
@@ -49,9 +46,8 @@ struct BranchPicker: View {
                         .foregroundStyle(AnvilColor.accentGreen)
 
                     TextField("new-branch-name", text: $newBranchName)
-                        .textFieldStyle(.plain)
+                        .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.textPrimary)
                         .onSubmit {
                             createBranch()
                         }
@@ -98,13 +94,6 @@ struct BranchPicker: View {
             }
         }
         .frame(width: 280)
-        .background(AnvilColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(AnvilColor.borderMedium, lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.3), radius: 12, y: 4)
     }
 
     // MARK: - Computed
@@ -140,19 +129,6 @@ struct BranchPicker: View {
     }
 
     // MARK: - Subviews
-
-    private func sectionHeader(_ title: String) -> some View {
-        HStack {
-            Text(title)
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .tracking(0.3)
-            Spacer()
-        }
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.xs)
-        .background(AnvilColor.backgroundSecondary)
-    }
 
     private func branchRow(name: String, isCurrent: Bool) -> some View {
         Button {

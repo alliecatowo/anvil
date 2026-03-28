@@ -12,7 +12,7 @@ struct GitHubPRDetailView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // Back bar
                     backBar(pr)
-                    Divider().overlay(AnvilColor.borderSubtle)
+                    Divider()
 
                     VStack(alignment: .leading, spacing: AnvilSpacing.xxl) {
                         headerSection(pr)
@@ -23,7 +23,6 @@ struct GitHubPRDetailView: View {
                     .padding(AnvilSpacing.xxl)
                 }
             }
-            .background(AnvilColor.backgroundPrimary)
         }
     }
 
@@ -144,10 +143,9 @@ struct GitHubPRDetailView: View {
             // Body
             if !pr.body.isEmpty {
                 VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-                    Text("DESCRIPTION")
+                    Text("Description")
                         .font(AnvilFont.label)
                         .foregroundStyle(AnvilColor.textTertiary)
-                        .tracking(0.3)
 
                     Text(pr.body)
                         .font(AnvilFont.body)
@@ -164,10 +162,9 @@ struct GitHubPRDetailView: View {
     private var ciSection: some View {
         VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
             HStack {
-                Text("CI CHECKS")
+                Text("CI Checks")
                     .font(AnvilFont.label)
                     .foregroundStyle(AnvilColor.textTertiary)
-                    .tracking(0.3)
 
                 Spacer()
 
@@ -239,18 +236,15 @@ struct GitHubPRDetailView: View {
             }
         }
         .padding(AnvilSpacing.sm)
-        .background(AnvilColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
     // MARK: - Merge Section
 
     private func mergeSection(_ pr: PullRequest) -> some View {
         VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-            Text("MERGE")
+            Text("Merge")
                 .font(AnvilFont.label)
                 .foregroundStyle(AnvilColor.textTertiary)
-                .tracking(0.3)
 
             if pr.status == .merged {
                 HStack(spacing: AnvilSpacing.sm) {
@@ -263,8 +257,6 @@ struct GitHubPRDetailView: View {
                 }
                 .padding(AnvilSpacing.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(AnvilColor.accentPurple.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
             } else if pr.status == .closed {
                 HStack(spacing: AnvilSpacing.sm) {
                     Image(systemName: "xmark.circle.fill")
@@ -276,8 +268,6 @@ struct GitHubPRDetailView: View {
                 }
                 .padding(AnvilSpacing.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(AnvilColor.accentRed.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
             } else {
                 // Open PR — show merge controls
                 VStack(spacing: AnvilSpacing.md) {
@@ -403,8 +393,6 @@ struct GitHubPRDetailView: View {
                     }
                 }
                 .padding(AnvilSpacing.md)
-                .background(AnvilColor.backgroundSecondary)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
             }
         }
     }
@@ -415,10 +403,9 @@ struct GitHubPRDetailView: View {
         VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
             // Header with thread counts
             HStack {
-                Text("COMMENTS (\(viewModel.prComments.count))")
+                Text("Comments (\(viewModel.prComments.count))")
                     .font(AnvilFont.label)
                     .foregroundStyle(AnvilColor.textTertiary)
-                    .tracking(0.3)
 
                 Spacer()
 
@@ -560,7 +547,7 @@ struct GitHubPRDetailView: View {
                     .padding(.bottom, AnvilSpacing.sm)
             }
         }
-        .background(AnvilColor.backgroundSecondary)
+        .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .opacity(thread.isResolved ? 0.7 : 1.0)
     }

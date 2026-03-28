@@ -32,7 +32,6 @@ public struct ProjectNotes: View {
             .padding(AnvilSpacing.md)
 
             Divider()
-                .overlay(AnvilColor.borderSubtle)
 
             // Markdown editor (monospace)
             TextEditor(text: $viewModel.content)
@@ -42,33 +41,24 @@ public struct ProjectNotes: View {
                 .padding(AnvilSpacing.sm)
 
             Divider()
-                .overlay(AnvilColor.borderSubtle)
 
             // Quick append bar
             HStack(spacing: AnvilSpacing.sm) {
                 TextField("Append a note...", text: $appendText)
-                    .textFieldStyle(.plain)
+                    .textFieldStyle(.roundedBorder)
                     .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textPrimary)
                     .focused($isAppendFocused)
 
-                Button {
+                Button("Add") {
                     appendEntry()
-                } label: {
-                    Text("Add")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.accentBlue)
-                        .padding(.horizontal, AnvilSpacing.sm)
-                        .padding(.vertical, AnvilSpacing.xxs)
-                        .background(AnvilColor.selectionBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
                 .disabled(appendText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding(AnvilSpacing.md)
         }
-        .background(AnvilColor.backgroundSecondary)
+        .background(.background)
         .onAppear {
             viewModel.load()
         }

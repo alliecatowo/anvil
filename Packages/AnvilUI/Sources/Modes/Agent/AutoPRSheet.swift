@@ -53,7 +53,7 @@ struct AutoPRSheet: View {
             .padding(.top, AnvilSpacing.lg)
             .padding(.bottom, AnvilSpacing.md)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             switch state {
             case .generating:
@@ -70,7 +70,6 @@ struct AutoPRSheet: View {
             }
         }
         .frame(width: 620)
-        .background(AnvilColor.backgroundPrimary)
         .task { await setup() }
     }
 
@@ -130,66 +129,29 @@ struct AutoPRSheet: View {
                 // Title
                 fieldLabel("Title")
                 TextField("PR title", text: $title)
-                    .textFieldStyle(.plain)
+                    .textFieldStyle(.roundedBorder)
                     .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .padding(.horizontal, AnvilSpacing.md)
-                    .padding(.vertical, AnvilSpacing.sm)
-                    .background(AnvilColor.backgroundSecondary)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(AnvilColor.borderMedium, lineWidth: 1)
-                    )
                     .focused($titleFocused)
 
                 // Body
                 fieldLabel("Description")
                 TextEditor(text: $prBody)
                     .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .scrollContentBackground(.hidden)
-                    .padding(.horizontal, AnvilSpacing.sm)
-                    .padding(.vertical, AnvilSpacing.xs)
                     .frame(minHeight: 200)
-                    .background(AnvilColor.backgroundSecondary)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(AnvilColor.borderMedium, lineWidth: 1)
-                    )
 
                 // Branch config
                 HStack(spacing: AnvilSpacing.lg) {
                     VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
                         fieldLabel("From branch")
                         TextField("source", text: $sourceBranch)
-                            .textFieldStyle(.plain)
+                            .textFieldStyle(.roundedBorder)
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                            .padding(.horizontal, AnvilSpacing.md)
-                            .padding(.vertical, AnvilSpacing.sm)
-                            .background(AnvilColor.backgroundSecondary)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(AnvilColor.borderMedium, lineWidth: 1)
-                            )
                     }
                     VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
                         fieldLabel("Into branch")
                         TextField("main", text: $targetBranch)
-                            .textFieldStyle(.plain)
+                            .textFieldStyle(.roundedBorder)
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                            .padding(.horizontal, AnvilSpacing.md)
-                            .padding(.vertical, AnvilSpacing.sm)
-                            .background(AnvilColor.backgroundSecondary)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(AnvilColor.borderMedium, lineWidth: 1)
-                            )
                     }
                 }
 
@@ -198,17 +160,8 @@ struct AutoPRSheet: View {
                     VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
                         fieldLabel("Repository")
                         TextField("owner/repo", text: $repoName)
-                            .textFieldStyle(.plain)
+                            .textFieldStyle(.roundedBorder)
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                            .padding(.horizontal, AnvilSpacing.md)
-                            .padding(.vertical, AnvilSpacing.sm)
-                            .background(AnvilColor.backgroundSecondary)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(AnvilColor.borderMedium, lineWidth: 1)
-                            )
                     }
                     .frame(maxWidth: .infinity)
 

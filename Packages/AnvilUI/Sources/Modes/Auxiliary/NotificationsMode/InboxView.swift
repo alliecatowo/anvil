@@ -15,23 +15,17 @@ struct InboxView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Toolbar
             toolbar
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
-            // Items
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(viewModel.filteredInboxItems) { item in
-                        inboxRow(item)
-                        Divider().overlay(AnvilColor.borderSubtle)
-                    }
+            List {
+                ForEach(viewModel.filteredInboxItems) { item in
+                    inboxRow(item)
+                        .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
                 }
             }
-
-            // Keyboard hints
-            keyboardHints
+            .listStyle(.inset)
         }
     }
 
@@ -42,7 +36,6 @@ struct InboxView: View {
             HStack {
                 Text("Inbox")
                     .font(AnvilFont.subheading)
-                    .foregroundStyle(AnvilColor.textPrimary)
 
                 if viewModel.unreadCount > 0 {
                     AnvilBadge(
@@ -59,34 +52,21 @@ struct InboxView: View {
             }
             .padding(.horizontal, AnvilSpacing.lg)
             .padding(.vertical, AnvilSpacing.sm)
-
-            // Source filter chips
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: AnvilSpacing.xs) {
+            HStack {
+                Picker("Source", selection: $viewModel.sourceFilter) {
                     ForEach(NotificationsViewModel.NotificationSourceFilter.allCases, id: \.rawValue) { filter in
-                        sourceFilterChip(filter)
+                        Text(filter.rawValue).tag(filter)
                     }
                 }
-                .padding(.horizontal, AnvilSpacing.lg)
-                .padding(.bottom, AnvilSpacing.sm)
-            }
-        }
-    }
+                .pickerStyle(.menu)
+                .frame(width: 180)
 
-    private func sourceFilterChip(_ filter: NotificationsViewModel.NotificationSourceFilter) -> some View {
-        let isSelected = viewModel.sourceFilter == filter
-        return Button {
-            viewModel.sourceFilter = filter
-        } label: {
-            Text(filter.rawValue)
-                .font(AnvilFont.label)
-                .foregroundStyle(isSelected ? Color.white : AnvilColor.textSecondary)
-                .padding(.horizontal, AnvilSpacing.sm)
-                .padding(.vertical, AnvilSpacing.xxs)
-                .background(isSelected ? AnvilColor.accentBlue : AnvilColor.backgroundTertiary)
-                .clipShape(Capsule())
+                Spacer()
+            }
+            .padding(.horizontal, AnvilSpacing.lg)
+            .padding(.bottom, AnvilSpacing.sm)
         }
-        .buttonStyle(.plain)
+        .background(.bar)
     }
 
     // MARK: - Inbox Row
@@ -144,7 +124,7 @@ struct InboxView: View {
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.md)
-        .background(viewModel.selectedItemID == item.id ? AnvilColor.selectionBackground : .clear)
+        .background(viewModel.selectedItemID == item.id ? Color.accentColor.opacity(0.14) : .clear)
         .contentShape(Rectangle())
         .onHover { isHovered in
             hoveredItemID = isHovered ? item.id : nil
@@ -203,49 +183,10 @@ struct InboxView: View {
             Image(systemName: icon)
                 .font(.system(size: 11))
                 .foregroundStyle(AnvilColor.textSecondary)
-                .frame(width: 24, height: 24)
-                .background(AnvilColor.backgroundElevated)
-                .clipShape(RoundedRectangle(cornerRadius: 5))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5)
-                        .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-                )
+                .frame(width: 22, height: 22)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.borderless)
         .help(label)
     }
 
-    // MARK: - Keyboard Hints
-
-    private var keyboardHints: some View {
-        HStack(spacing: AnvilSpacing.lg) {
-            keyHint(key: "j", label: "next")
-            keyHint(key: "k", label: "prev")
-            keyHint(key: "e", label: "archive")
-            keyHint(key: "enter", label: "open")
-        }
-        .padding(.horizontal, AnvilSpacing.lg)
-        .padding(.vertical, AnvilSpacing.xs)
-        .background(AnvilColor.backgroundSecondary)
-    }
-
-    private func keyHint(key: String, label: String) -> some View {
-        HStack(spacing: AnvilSpacing.xxs) {
-            Text(key)
-                .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.textPrimary)
-                .padding(.horizontal, AnvilSpacing.xxs)
-                .padding(.vertical, 1)
-                .background(AnvilColor.backgroundElevated)
-                .clipShape(RoundedRectangle(cornerRadius: 3))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 3)
-                        .stroke(AnvilColor.borderMedium, lineWidth: 1)
-                )
-
-            Text(label)
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-        }
-    }
 }

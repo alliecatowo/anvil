@@ -4,64 +4,38 @@ struct ChannelList: View {
     @ObservedObject var viewModel: MessagingViewModel
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("CHANNELS")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                    .tracking(0.3)
-
-                Spacer()
-
-                Button {
-                    // Add channel
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 10))
-                        .foregroundStyle(AnvilColor.textTertiary)
+        List {
+            Section("Channels") {
+                ForEach(viewModel.channels) { channel in
+                    channelRow(channel)
                 }
-                .buttonStyle(.plain)
+            }
+            Section("Direct Messages") {
+                ForEach(viewModel.directMessages) { channel in
+                    channelRow(channel)
+                }
+            }
+        }
+        .listStyle(.sidebar)
+        .safeAreaInset(edge: .top) {
+            HStack {
+                Text("Channels")
+                    .font(AnvilFont.subheading)
+                Spacer()
+                Button {
+                    // Channel creation is intentionally unavailable until backend support exists.
+                } label: {
+                    Label("New", systemImage: "plus")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(true)
+                .help("Create Channel (coming when provider API supports channel creation)")
             }
             .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.sm)
-
-            Divider().overlay(AnvilColor.borderSubtle)
-
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    // Channels section
-                    sectionHeader("Channels")
-
-                    ForEach(viewModel.channels) { channel in
-                        channelRow(channel)
-                    }
-
-                    // DMs section
-                    sectionHeader("Direct Messages")
-
-                    ForEach(viewModel.directMessages) { channel in
-                        channelRow(channel)
-                    }
-                }
-                .padding(.vertical, AnvilSpacing.xxs)
-            }
+            .padding(.vertical, AnvilSpacing.xs)
+            .background(.bar)
         }
-    }
-
-    // MARK: - Section Header
-
-    private func sectionHeader(_ title: String) -> some View {
-        HStack {
-            Text(title.uppercased())
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .tracking(0.3)
-            Spacer()
-        }
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.top, AnvilSpacing.md)
-        .padding(.bottom, AnvilSpacing.xxs)
     }
 
     // MARK: - Channel Row
@@ -73,12 +47,12 @@ struct ChannelList: View {
         return HStack(spacing: AnvilSpacing.sm) {
             Image(systemName: channel.icon)
                 .font(.system(size: 11))
-                .foregroundStyle(isSelected ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                .foregroundStyle(isSelected ? Color.accentColor : AnvilColor.textTertiary)
                 .frame(width: 16)
 
             Text(channel.name)
                 .font(AnvilFont.sidebarItem)
-                .foregroundStyle(hasUnread ? AnvilColor.textPrimary : (isSelected ? AnvilColor.textPrimary : AnvilColor.textSecondary))
+                .foregroundStyle(hasUnread ? .primary : .secondary)
                 .fontWeight(hasUnread ? .medium : .regular)
                 .lineLimit(1)
 
@@ -87,19 +61,17 @@ struct ChannelList: View {
             if hasUnread {
                 Text("\(channel.unreadCount)")
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.backgroundPrimary)
+                    .foregroundStyle(.white)
                     .padding(.horizontal, AnvilSpacing.xs)
                     .padding(.vertical, AnvilSpacing.xxxs)
-                    .background(AnvilColor.accentBlue)
+                    .background(Color.accentColor)
                     .clipShape(Capsule())
             }
         }
-        .padding(.horizontal, AnvilSpacing.md)
-        .frame(height: 28)
-        .background(isSelected ? AnvilColor.selectionBackground : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture {
             viewModel.selectChannel(channel.id)
         }
+        .listRowBackground(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
     }
 }

@@ -97,11 +97,7 @@ struct ModelPicker: View {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 8, weight: .bold))
             }
-            .foregroundStyle(AnvilColor.textSecondary)
-            .padding(.horizontal, AnvilSpacing.sm)
-            .padding(.vertical, AnvilSpacing.xxs)
-            .background(AnvilColor.backgroundTertiary)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
+            .foregroundStyle(.secondary)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()

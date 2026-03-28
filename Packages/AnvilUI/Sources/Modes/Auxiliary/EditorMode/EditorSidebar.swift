@@ -7,10 +7,8 @@ struct EditorSidebar: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("EXPLORER")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                    .tracking(0.3)
+                Text("Explorer")
+                    .font(.headline)
 
                 Spacer()
 
@@ -20,24 +18,23 @@ struct EditorSidebar: View {
                 } label: {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(.system(size: 10))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // File tree
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(flattenedTree) { entry in
-                        fileTreeRow(entry: entry)
-                    }
+            List {
+                ForEach(flattenedTree) { entry in
+                    fileTreeRow(entry: entry)
+                        .listRowInsets(EdgeInsets(top: 0, leading: CGFloat(entry.depth) * 16 + 4, bottom: 0, trailing: 4))
                 }
-                .padding(.vertical, AnvilSpacing.xxs)
             }
+            .listStyle(.sidebar)
         }
     }
 
@@ -72,15 +69,11 @@ struct EditorSidebar: View {
             && viewModel.selectedFile?.path == node.filePath
 
         return HStack(spacing: AnvilSpacing.xxs) {
-            // Indentation
-            Spacer()
-                .frame(width: CGFloat(entry.depth) * 16)
-
             // Disclosure indicator for folders
             if node.isFolder {
                 Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
                     .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
                     .frame(width: 12)
             } else {
                 Spacer().frame(width: 12)
@@ -95,15 +88,14 @@ struct EditorSidebar: View {
             // Name
             Text(node.name)
                 .font(AnvilFont.code)
-                .foregroundStyle(isSelected ? AnvilColor.textPrimary : AnvilColor.textSecondary)
+                .foregroundStyle(isSelected ? .primary : .secondary)
                 .lineLimit(1)
 
             Spacer()
         }
-        .padding(.horizontal, AnvilSpacing.sm)
         .frame(height: 24)
-        .background(isSelected ? AnvilColor.selectionBackground : Color.clear)
         .contentShape(Rectangle())
+        .listRowBackground(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
         .onTapGesture {
             if node.isFolder {
                 viewModel.toggleFolder(node.id)
@@ -134,7 +126,7 @@ struct EditorSidebar: View {
         case "md": return AnvilColor.accentBlue
         case "json": return AnvilColor.accentAmber
         case "yml", "yaml": return AnvilColor.accentPurple
-        default: return AnvilColor.textTertiary
+        default: return Color.secondary
         }
     }
 }

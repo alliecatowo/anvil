@@ -35,7 +35,6 @@ public struct ContentArea: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(AnvilColor.backgroundPrimary)
     }
 }
 
@@ -292,16 +291,16 @@ struct ModeWelcomeView: View {
 
             Text(title)
                 .font(AnvilFont.heading)
-                .foregroundStyle(AnvilColor.textPrimary)
+                .foregroundStyle(.primary)
 
             Text(subtitle)
                 .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textSecondary)
+                .foregroundStyle(.secondary)
 
             if !hint.isEmpty {
                 Text(hint)
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
                     .padding(.top, AnvilSpacing.sm)
             }
         }

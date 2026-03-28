@@ -19,7 +19,6 @@ struct EditorPaneView: View {
                 if onClose != nil {
                     Divider()
                         .frame(height: 20)
-                        .overlay(AnvilColor.borderSubtle)
                         .padding(.horizontal, 4)
 
                     Button {
@@ -27,7 +26,7 @@ struct EditorPaneView: View {
                     } label: {
                         Image(systemName: "xmark.square")
                             .font(.system(size: 12))
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
                             .frame(width: 24, height: 24)
                     }
                     .buttonStyle(.plain)
@@ -36,17 +35,17 @@ struct EditorPaneView: View {
                 }
             }
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             BreadcrumbBar(viewModel: viewModel)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Find & Replace bar
             if viewModel.isFindBarVisible {
                 FindReplaceBar(viewModel: viewModel)
 
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
             }
 
             // Read-only banner
@@ -57,7 +56,7 @@ struct EditorPaneView: View {
             EditorView(viewModel: viewModel)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(AnvilColor.backgroundPrimary)
+        .background(.background)
         .overlay(
             RoundedRectangle(cornerRadius: 0)
                 .stroke(isActive ? AnvilColor.accentBlue.opacity(0.4) : Color.clear, lineWidth: 1)

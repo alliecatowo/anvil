@@ -193,7 +193,7 @@ struct AtReferencePopup: View {
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             ForEach(Array(filteredCategories.enumerated()), id: \.element.id) { index, ref in
                 Button {
@@ -223,23 +223,16 @@ struct AtReferencePopup: View {
                     }
                     .padding(.horizontal, AnvilSpacing.md)
                     .padding(.vertical, AnvilSpacing.sm)
-                    .background(index == selectedIndex ? AnvilColor.backgroundTertiary : .clear)
+                    .background(index == selectedIndex ? Color.accentColor.opacity(0.1) : .clear)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .onHover { isHovered in
-                    if isHovered { selectedIndex = index }
-                }
             }
         }
         .padding(.vertical, AnvilSpacing.xs)
-        .background(AnvilColor.backgroundElevated)
+        .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                .stroke(AnvilColor.borderMedium, lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.3), radius: 12, y: -4)
+        .shadow(color: .black.opacity(0.2), radius: 12, y: -4)
         .frame(maxWidth: 320)
         .onKeyPress(.upArrow) {
             selectedIndex = max(0, selectedIndex - 1)
@@ -293,7 +286,7 @@ struct AtReferencePopup: View {
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             if items.isEmpty {
                 Text("No matches")
@@ -323,13 +316,10 @@ struct AtReferencePopup: View {
                                 }
                                 .padding(.horizontal, AnvilSpacing.md)
                                 .padding(.vertical, AnvilSpacing.xs)
-                                .background(index == selectedIndex ? AnvilColor.backgroundTertiary : .clear)
+                                .background(index == selectedIndex ? Color.accentColor.opacity(0.1) : .clear)
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            .onHover { isHovered in
-                                if isHovered { selectedIndex = index }
-                            }
                         }
                     }
                 }
@@ -337,13 +327,9 @@ struct AtReferencePopup: View {
             }
         }
         .padding(.vertical, AnvilSpacing.xs)
-        .background(AnvilColor.backgroundElevated)
+        .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                .stroke(AnvilColor.borderMedium, lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.3), radius: 12, y: -4)
+        .shadow(color: .black.opacity(0.2), radius: 12, y: -4)
         .frame(maxWidth: 320)
         .onKeyPress(.upArrow) {
             selectedIndex = max(0, selectedIndex - 1)

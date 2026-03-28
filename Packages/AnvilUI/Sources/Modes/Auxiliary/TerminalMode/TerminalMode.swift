@@ -114,74 +114,48 @@ private struct TerminalWorkspace: View {
                 } label: {
                     Image(systemName: "plus")
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
+            .background(.bar)
 
-            Divider().overlay(AnvilColor.borderSubtle)
-
-            ScrollView {
-                LazyVStack(spacing: 4) {
+            List {
+                Section("Sessions") {
                     ForEach(viewModel.sessions) { session in
-                        Button {
-                            viewModel.selectTab(session.id)
-                        } label: {
-                            HStack(spacing: AnvilSpacing.sm) {
-                                Image(systemName: session.isRunning ? "terminal" : "terminal.fill")
-                                    .foregroundStyle(session.isRunning ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                        HStack(spacing: AnvilSpacing.sm) {
+                            Image(systemName: session.isRunning ? "terminal" : "terminal.fill")
+                                .foregroundStyle(session.isRunning ? Color.accentColor : .secondary)
 
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(session.title)
-                                        .font(AnvilFont.sidebarItem)
-                                        .foregroundStyle(AnvilColor.textPrimary)
-                                        .lineLimit(1)
-                                    Text(session.isRunning ? "Running" : "Exited")
-                                        .font(AnvilFont.label)
-                                        .foregroundStyle(AnvilColor.textTertiary)
-                                }
-
-                                Spacer()
-
-                                if viewModel.sessions.count > 1 {
-                                    Button {
-                                        viewModel.closeTab(session.id)
-                                    } label: {
-                                        Image(systemName: "xmark")
-                                            .font(.system(size: 8, weight: .bold))
-                                    }
-                                    .buttonStyle(.plain)
-                                }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(session.title)
+                                    .font(AnvilFont.sidebarItem)
+                                    .lineLimit(1)
+                                Text(session.isRunning ? "Running" : "Exited")
+                                    .font(AnvilFont.label)
+                                    .foregroundStyle(.secondary)
                             }
-                            .padding(.horizontal, AnvilSpacing.sm)
-                            .padding(.vertical, AnvilSpacing.sm)
-                            .background(
-                                viewModel.selectedSessionId == session.id
-                                    ? AnvilColor.selectionBackground
-                                    : Color.clear
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            Spacer()
+                            if viewModel.sessions.count > 1 {
+                                Button {
+                                    viewModel.closeTab(session.id)
+                                } label: {
+                                    Image(systemName: "xmark")
+                                }
+                                .buttonStyle(.borderless)
+                            }
                         }
-                        .buttonStyle(.plain)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            viewModel.selectTab(session.id)
+                        }
+                        .listRowBackground(viewModel.selectedSessionId == session.id ? Color.accentColor.opacity(0.14) : Color.clear)
                     }
                 }
-            }
-            .padding(AnvilSpacing.sm)
 
-            Divider().overlay(AnvilColor.borderSubtle)
-
-            VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
-                terminalAction("New Session", icon: "plus") {
-                    _ = viewModel.addTab()
-                }
-                terminalAction(splitSessionTitle, icon: splitIcon) {
-                    toggleSplit(axis: .vertical)
-                }
-                terminalAction("Clear Screen", icon: "eraser") {
-                    viewModel.clearBuffer()
-                }
             }
-            .padding(AnvilSpacing.sm)
+            .listStyle(.sidebar)
         }
         .background(.regularMaterial)
     }
@@ -237,15 +211,6 @@ private struct TerminalWorkspace: View {
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.sm)
         .background(AnvilColor.backgroundToolbar)
-    }
-
-    private func terminalAction(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Label(title, systemImage: icon)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(AnvilColor.textSecondary)
     }
 
     private var splitSessionTitle: String {

@@ -49,13 +49,12 @@ public struct QuickCapture: View {
                     TextField("Quick capture...", text: $text)
                         .textFieldStyle(.plain)
                         .font(AnvilFont.commandPaletteInput)
-                        .foregroundStyle(AnvilColor.textPrimary)
+                        .foregroundStyle(.primary)
                         .focused($isInputFocused)
                 }
                 .padding(AnvilSpacing.md)
 
                 Divider()
-                    .overlay(AnvilColor.borderSubtle)
 
                 // Type selector buttons
                 HStack(spacing: AnvilSpacing.sm) {
@@ -146,22 +145,10 @@ struct QuickCaptureTypeButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: AnvilSpacing.xxs) {
-                Image(systemName: type.icon)
-                    .font(.system(size: 11))
-                Text(type.rawValue)
-                    .font(AnvilFont.label)
-            }
-            .padding(.horizontal, AnvilSpacing.sm)
-            .padding(.vertical, AnvilSpacing.xxs)
-            .foregroundStyle(isSelected ? AnvilColor.accentBlue : AnvilColor.textSecondary)
-            .background(
-                isSelected
-                    ? AnvilColor.selectionBackground
-                    : Color.clear
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            Label(type.rawValue, systemImage: type.icon)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.bordered)
+        .tint(isSelected ? .accentColor : nil)
+        .controlSize(.small)
     }
 }

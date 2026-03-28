@@ -21,15 +21,10 @@ struct DeployDashboardView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AnvilSpacing.xl) {
-                // Header
-                HStack {
-                    Text("Deploy Dashboard")
-                        .font(AnvilFont.heading)
-                        .foregroundStyle(AnvilColor.textPrimary)
-
-                    Spacer()
-
-                    if viewModel.isDeploying, let envID = viewModel.deployingEnvironmentID {
+                // Deploy progress (if active)
+                if viewModel.isDeploying, let envID = viewModel.deployingEnvironmentID {
+                    HStack {
+                        Spacer()
                         deployProgressIndicator(envID: envID)
                     }
                 }
@@ -100,25 +95,28 @@ struct DeployDashboardView: View {
     private func environmentCard(_ card: EnvironmentCard) -> some View {
         let isSelected = viewModel.selectedEnvironmentID == card.id
 
-        return AnvilCard {
+        return GroupBox {
             VStack(alignment: .leading, spacing: AnvilSpacing.md) {
                 // Header row: name + status badge
                 HStack {
                     VStack(alignment: .leading, spacing: AnvilSpacing.xxxs) {
                         Text(card.environment.name)
                             .font(AnvilFont.subheading)
-                            .foregroundStyle(AnvilColor.textPrimary)
 
                         Text(card.currentVersion)
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.accentPurple)
+                            .foregroundStyle(.secondary)
                     }
 
                     Spacer()
 
                     VStack(alignment: .trailing, spacing: AnvilSpacing.xxxs) {
-                        AnvilBadge(text: card.status.label, color: card.status.color)
-                        AnvilBadge(text: card.overallHealth.label, color: card.overallHealth.color)
+                        Label(card.status.label, systemImage: "circle.fill")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(card.status.color)
+                        Label(card.overallHealth.label, systemImage: card.overallHealth.icon)
+                            .font(AnvilFont.label)
+                            .foregroundStyle(card.overallHealth.color)
                     }
                 }
 
@@ -126,11 +124,11 @@ struct DeployDashboardView: View {
                 HStack(spacing: AnvilSpacing.xs) {
                     Image(systemName: "arrow.triangle.branch")
                         .font(.system(size: 10))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.secondary)
 
                     Text(card.environment.branch ?? "--")
                         .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.textSecondary)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
 
                     Text("@")
@@ -139,7 +137,7 @@ struct DeployDashboardView: View {
 
                     Text(card.currentCommit)
                         .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.accentBlue)
+                        .foregroundStyle(.secondary)
                 }
 
                 // URL
@@ -150,7 +148,7 @@ struct DeployDashboardView: View {
                             .foregroundStyle(AnvilColor.textTertiary)
                         Text(url)
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.accentBlue)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .truncationMode(.middle)
                     }
@@ -160,19 +158,23 @@ struct DeployDashboardView: View {
                 if let lastDeploy = card.lastDeployTime {
                     Text("Deployed \(relativeTime(lastDeploy))")
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.secondary)
                 }
 
                 // Action buttons
                 HStack(spacing: AnvilSpacing.sm) {
-                    AnvilButton("Deploy", icon: "arrow.up.circle", style: .primary) {
+                    Button("Deploy", systemImage: "arrow.up.circle") {
                         viewModel.deploy(environmentID: card.id)
                     }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
 
-                    AnvilButton("Logs", icon: "doc.text", style: .secondary) {
+                    Button("Logs", systemImage: "doc.text") {
                         viewModel.selectedEnvironmentID = card.id
                         viewModel.selectedTab = .logs
                     }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
             }
         }
@@ -199,94 +201,28 @@ struct DeployDashboardView: View {
                 Spacer()
 
                 if card.environment.isProduction {
-                    HStack(spacing: AnvilSpacing.xxs) {
-                        Image(systemName: "lock.shield.fill")
-                            .font(.system(size: 11))
-                            .foregroundStyle(AnvilColor.accentAmber)
-                        Text("Production")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.accentAmber)
-                    }
-                    .padding(.horizontal, AnvilSpacing.sm)
-                    .padding(.vertical, AnvilSpacing.xxxs)
-                    .background(AnvilColor.accentAmber.opacity(0.1))
-                    .clipShape(Capsule())
+                    Label("Production", systemImage: "lock.shield")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(.orange)
                 }
             }
 
             AnvilCard {
-                HStack(spacing: AnvilSpacing.xxl) {
-                    // Version
-                    VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
-                        Text("VERSION")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
-                        Text(card.currentVersion)
-                            .font(AnvilFont.subheading)
-                            .foregroundStyle(AnvilColor.accentPurple)
+                VStack(spacing: AnvilSpacing.sm) {
+                    LabeledContent("Version", value: card.currentVersion)
+                    LabeledContent("Commit", value: card.currentCommit)
+                    LabeledContent("Branch", value: card.environment.branch ?? "--")
+                    LabeledContent("Deployed", value: card.lastDeployTime.map(dateTimeFormatter.string(from:)) ?? "--")
+                    LabeledContent("Status") {
+                        Label(card.status.label, systemImage: "circle.fill")
+                            .foregroundStyle(card.status.color)
                     }
-
-                    Divider().frame(height: 40).overlay(AnvilColor.borderSubtle)
-
-                    // Commit
-                    VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
-                        Text("COMMIT")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
-                        Text(card.currentCommit)
-                            .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textPrimary)
+                    LabeledContent("Health") {
+                        Label(card.overallHealth.label, systemImage: card.overallHealth.icon)
+                            .foregroundStyle(card.overallHealth.color)
                     }
-
-                    Divider().frame(height: 40).overlay(AnvilColor.borderSubtle)
-
-                    // Branch
-                    VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
-                        Text("BRANCH")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
-                        Text(card.environment.branch ?? "--")
-                            .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                    }
-
-                    Divider().frame(height: 40).overlay(AnvilColor.borderSubtle)
-
-                    // Deploy Time
-                    VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
-                        Text("DEPLOYED")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
-                        if let time = card.lastDeployTime {
-                            Text(dateTimeFormatter.string(from: time))
-                                .font(AnvilFont.label)
-                                .foregroundStyle(AnvilColor.textPrimary)
-                        } else {
-                            Text("--")
-                                .font(AnvilFont.label)
-                                .foregroundStyle(AnvilColor.textTertiary)
-                        }
-                    }
-
-                    Divider().frame(height: 40).overlay(AnvilColor.borderSubtle)
-
-                    // Status
-                    VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
-                        Text("STATUS")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
-                        HStack(spacing: AnvilSpacing.xxs) {
-                            Circle()
-                                .fill(card.status.color)
-                                .frame(width: 8, height: 8)
-                            Text(card.status.label)
-                                .font(AnvilFont.label)
-                                .foregroundStyle(card.status.color)
-                        }
-                    }
-
-                    Spacer()
                 }
+                .font(AnvilFont.label)
             }
         }
     }
@@ -321,7 +257,7 @@ struct DeployDashboardView: View {
     }
 
     private func healthCheckCard(_ check: HealthCheck) -> some View {
-        AnvilCard {
+        GroupBox {
             HStack(spacing: AnvilSpacing.sm) {
                 Image(systemName: check.status.icon)
                     .font(.system(size: 16))
@@ -335,7 +271,7 @@ struct DeployDashboardView: View {
 
                     Text("\(check.responseTime)ms")
                         .font(AnvilFont.code)
-                        .foregroundStyle(check.responseTime > 100 ? AnvilColor.accentAmber : AnvilColor.textSecondary)
+                        .foregroundStyle(check.responseTime > 100 ? AnvilColor.accentAmber : .secondary)
                 }
 
                 Spacer()
@@ -398,7 +334,6 @@ struct DeployDashboardView: View {
                     }
                 }
             }
-            .frame(minHeight: 220)
         }
     }
 
@@ -430,7 +365,6 @@ struct DeployDashboardView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .frame(minHeight: 220)
         }
     }
 

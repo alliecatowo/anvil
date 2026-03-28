@@ -17,7 +17,7 @@ struct FindReplaceBar: View {
                 } label: {
                     Image(systemName: isReplaceExpanded ? "chevron.down" : "chevron.right")
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                         .frame(width: 16, height: 16)
                 }
                 .buttonStyle(.plain)
@@ -27,12 +27,11 @@ struct FindReplaceBar: View {
                 HStack(spacing: AnvilSpacing.xxs) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 11))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
 
                     TextField("Find", text: $viewModel.findText)
                         .textFieldStyle(.plain)
                         .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.textPrimary)
                         .focused($isFindFocused)
                         .onSubmit { viewModel.findNext() }
 
@@ -42,19 +41,18 @@ struct FindReplaceBar: View {
                         } label: {
                             Image(systemName: "xmark.circle.fill")
                                 .font(.system(size: 10))
-                                .foregroundStyle(AnvilColor.textTertiary)
+                                .foregroundStyle(.tertiary)
                         }
                         .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, AnvilSpacing.xs)
                 .padding(.vertical, 3)
-                .background(AnvilColor.backgroundPrimary)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .background(.background, in: RoundedRectangle(cornerRadius: 4))
                 .overlay(
                     RoundedRectangle(cornerRadius: 4)
                         .stroke(
-                            isFindFocused ? AnvilColor.accentBlue : AnvilColor.borderSubtle,
+                            isFindFocused ? AnvilColor.accentBlue : Color.secondary.opacity(0.3),
                             lineWidth: 1
                         )
                 )
@@ -67,7 +65,7 @@ struct FindReplaceBar: View {
                         .foregroundStyle(
                             viewModel.findMatches.isEmpty
                                 ? AnvilColor.accentRed
-                                : AnvilColor.textTertiary
+                                : Color.secondary
                         )
                         .frame(minWidth: 60)
                 }
@@ -76,30 +74,23 @@ struct FindReplaceBar: View {
                 Button { viewModel.findPrevious() } label: {
                     Image(systemName: "chevron.up")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(AnvilColor.textSecondary)
-                        .frame(width: 22, height: 22)
-                        .background(AnvilColor.backgroundTertiary)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
                 .help("Previous Match (Shift+Enter)")
                 .disabled(viewModel.findMatches.isEmpty)
 
                 Button { viewModel.findNext() } label: {
                     Image(systemName: "chevron.down")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(AnvilColor.textSecondary)
-                        .frame(width: 22, height: 22)
-                        .background(AnvilColor.backgroundTertiary)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
                 .help("Next Match (Enter)")
                 .disabled(viewModel.findMatches.isEmpty)
 
                 Divider()
                     .frame(height: 16)
-                    .overlay(AnvilColor.borderSubtle)
 
                 // Toggle buttons: match case, whole word, regex
                 toggleButton(
@@ -126,7 +117,7 @@ struct FindReplaceBar: View {
                 Button { viewModel.closeFindBar() } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                         .frame(width: 22, height: 22)
                 }
                 .buttonStyle(.plain)
@@ -145,21 +136,19 @@ struct FindReplaceBar: View {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Image(systemName: "arrow.2.squarepath")
                             .font(.system(size: 11))
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
 
                         TextField("Replace", text: $viewModel.replaceText)
                             .textFieldStyle(.plain)
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textPrimary)
                             .onSubmit { viewModel.replaceCurrent() }
                     }
                     .padding(.horizontal, AnvilSpacing.xs)
                     .padding(.vertical, 3)
-                    .background(AnvilColor.backgroundPrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .background(.background, in: RoundedRectangle(cornerRadius: 4))
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
-                            .stroke(AnvilColor.borderSubtle, lineWidth: 1)
+                            .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
                     )
                     .frame(minWidth: 200, maxWidth: 300)
 
@@ -167,30 +156,18 @@ struct FindReplaceBar: View {
                     Button { viewModel.replaceCurrent() } label: {
                         Image(systemName: "arrow.turn.down.left")
                             .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(AnvilColor.textSecondary)
-                            .frame(width: 22, height: 22)
-                            .background(AnvilColor.backgroundTertiary)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                     .help("Replace")
                     .disabled(viewModel.findMatches.isEmpty)
 
                     Button { viewModel.replaceAll() } label: {
-                        Image(systemName: "arrow.turn.down.left")
+                        Label("All", systemImage: "arrow.turn.down.left")
                             .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(AnvilColor.textSecondary)
-                            .frame(width: 22, height: 22)
-                            .background(AnvilColor.backgroundTertiary)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                            .overlay(
-                                Text("All")
-                                    .font(.system(size: 7, weight: .bold))
-                                    .foregroundStyle(AnvilColor.textTertiary)
-                                    .offset(x: 5, y: 5)
-                            )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                     .help("Replace All")
                     .disabled(viewModel.findMatches.isEmpty)
 
@@ -201,7 +178,7 @@ struct FindReplaceBar: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .background(AnvilColor.backgroundSecondary)
+        .background(.bar)
         .onAppear {
             isFindFocused = true
         }
@@ -222,10 +199,9 @@ struct FindReplaceBar: View {
         } label: {
             Image(systemName: icon)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(isActive.wrappedValue ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                .foregroundStyle(isActive.wrappedValue ? AnvilColor.accentBlue : Color.secondary)
                 .frame(width: 22, height: 22)
-                .background(isActive.wrappedValue ? AnvilColor.accentBlue.opacity(0.15) : .clear)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .background(isActive.wrappedValue ? AnvilColor.accentBlue.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 4))
         }
         .buttonStyle(.plain)
         .help(label)

@@ -434,12 +434,12 @@ struct SourceControlPanel: View {
             // Header
             panelHeader
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Commit message input
             commitInput
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // File lists
             ScrollView {
@@ -530,7 +530,7 @@ struct SourceControlPanel: View {
                 }
             }
         }
-        .background(AnvilColor.backgroundSecondary)
+        .background(.background)
         .onAppear {
             guard let adapter = container.getOrCreateGitAdapter() else { return }
             viewModel.refresh(using: adapter)
@@ -648,12 +648,10 @@ struct SourceControlPanel: View {
                 TextField("Search or create branch...", text: $viewModel.branchSearchText)
                     .textFieldStyle(.plain)
                     .font(AnvilFont.code)
-                    .foregroundStyle(AnvilColor.textPrimary)
             }
             .padding(AnvilSpacing.sm)
-            .background(AnvilColor.backgroundPrimary)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Create branch option (shows when search text doesn't match existing)
             let trimmed = viewModel.branchSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -682,7 +680,7 @@ struct SourceControlPanel: View {
                 }
                 .buttonStyle(.plain)
 
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
             }
 
             // Branch list
@@ -710,7 +708,6 @@ struct SourceControlPanel: View {
             .frame(maxHeight: 300)
         }
         .frame(width: 320)
-        .background(AnvilColor.backgroundSecondary)
     }
 
     private func branchRow(_ branch: Branch) -> some View {
@@ -850,7 +847,6 @@ struct SourceControlPanel: View {
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
-        .background(AnvilColor.backgroundTertiary)
     }
 
     // MARK: - Commit Input
@@ -885,12 +881,8 @@ struct SourceControlPanel: View {
                     .padding(.bottom, AnvilSpacing.xs)
                 }
             }
-            .background(AnvilColor.backgroundPrimary)
+            .background(.background)
             .clipShape(RoundedRectangle(cornerRadius: 6))
-            .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(viewModel.isAmend ? AnvilColor.accentAmber.opacity(0.5) : AnvilColor.borderSubtle, lineWidth: 1)
-            )
 
             // Action row
             HStack(spacing: AnvilSpacing.sm) {
@@ -997,9 +989,8 @@ struct SourceControlPanel: View {
                     .foregroundStyle(AnvilColor.textTertiary)
 
                 Text(title)
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                    .tracking(0.3)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
 
                 Spacer()
 
@@ -1018,7 +1009,7 @@ struct SourceControlPanel: View {
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
-            .background(AnvilColor.backgroundSecondary)
+            .background(.background)
         }
     }
 
@@ -1130,10 +1121,9 @@ struct SourceControlPanel: View {
                             .font(.system(size: 10))
                             .foregroundStyle(AnvilColor.textTertiary)
 
-                        Text("HISTORY")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textSecondary)
-                            .tracking(0.3)
+                        Text("History")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .buttonStyle(.plain)
@@ -1146,7 +1136,7 @@ struct SourceControlPanel: View {
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
-            .background(AnvilColor.backgroundSecondary)
+            .background(.background)
         }
     }
 
@@ -1244,31 +1234,13 @@ struct SourceControlPanel: View {
                 VStack(spacing: AnvilSpacing.xs) {
                     HStack(spacing: AnvilSpacing.sm) {
                         TextField("Name", text: $viewModel.newRemoteName)
-                            .textFieldStyle(.plain)
+                            .textFieldStyle(.roundedBorder)
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                            .padding(.horizontal, AnvilSpacing.xs)
-                            .padding(.vertical, 4)
-                            .background(AnvilColor.backgroundPrimary)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-                            )
                             .frame(width: 100)
 
                         TextField("URL", text: $viewModel.newRemoteURL)
-                            .textFieldStyle(.plain)
+                            .textFieldStyle(.roundedBorder)
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                            .padding(.horizontal, AnvilSpacing.xs)
-                            .padding(.vertical, 4)
-                            .background(AnvilColor.backgroundPrimary)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-                            )
 
                         Button {
                             guard let adapter = container.getOrCreateGitAdapter() else { return }
@@ -1323,10 +1295,9 @@ struct SourceControlPanel: View {
                             .font(.system(size: 10))
                             .foregroundStyle(AnvilColor.textTertiary)
 
-                        Text("REMOTES")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textSecondary)
-                            .tracking(0.3)
+                        Text("Remotes")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .buttonStyle(.plain)
@@ -1339,7 +1310,7 @@ struct SourceControlPanel: View {
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
-            .background(AnvilColor.backgroundSecondary)
+            .background(.background)
         }
     }
 
@@ -1393,17 +1364,8 @@ struct SourceControlPanel: View {
                 VStack(spacing: AnvilSpacing.xs) {
                     HStack(spacing: AnvilSpacing.sm) {
                         TextField("Tag name", text: $viewModel.newTagName)
-                            .textFieldStyle(.plain)
+                            .textFieldStyle(.roundedBorder)
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                            .padding(.horizontal, AnvilSpacing.xs)
-                            .padding(.vertical, 4)
-                            .background(AnvilColor.backgroundPrimary)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-                            )
 
                         Button {
                             guard let adapter = container.getOrCreateGitAdapter() else { return }
@@ -1422,17 +1384,8 @@ struct SourceControlPanel: View {
                     }
 
                     TextField("Annotation (optional)", text: $viewModel.newTagMessage)
-                        .textFieldStyle(.plain)
+                        .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textSecondary)
-                        .padding(.horizontal, AnvilSpacing.xs)
-                        .padding(.vertical, 3)
-                        .background(AnvilColor.backgroundPrimary)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 4)
-                                .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-                        )
                 }
                 .padding(.horizontal, AnvilSpacing.md)
                 .padding(.vertical, AnvilSpacing.xs)
@@ -1471,10 +1424,9 @@ struct SourceControlPanel: View {
                             .font(.system(size: 10))
                             .foregroundStyle(AnvilColor.textTertiary)
 
-                        Text("TAGS")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textSecondary)
-                            .tracking(0.3)
+                        Text("Tags")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .buttonStyle(.plain)
@@ -1487,7 +1439,7 @@ struct SourceControlPanel: View {
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
-            .background(AnvilColor.backgroundSecondary)
+            .background(.background)
         }
     }
 
@@ -1555,17 +1507,8 @@ struct SourceControlPanel: View {
                 if viewModel.totalChangeCount > 0 {
                     HStack(spacing: AnvilSpacing.sm) {
                         TextField("Stash message (optional)", text: $viewModel.stashMessage)
-                            .textFieldStyle(.plain)
+                            .textFieldStyle(.roundedBorder)
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                            .padding(.horizontal, AnvilSpacing.xs)
-                            .padding(.vertical, 4)
-                            .background(AnvilColor.backgroundPrimary)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-                            )
 
                         Button {
                             guard let adapter = container.getOrCreateGitAdapter() else { return }
@@ -1615,10 +1558,9 @@ struct SourceControlPanel: View {
                             .font(.system(size: 10))
                             .foregroundStyle(AnvilColor.textTertiary)
 
-                        Text("STASHES")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textSecondary)
-                            .tracking(0.3)
+                        Text("Stashes")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .buttonStyle(.plain)
@@ -1644,7 +1586,7 @@ struct SourceControlPanel: View {
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
-            .background(AnvilColor.backgroundSecondary)
+            .background(.background)
         }
     }
 

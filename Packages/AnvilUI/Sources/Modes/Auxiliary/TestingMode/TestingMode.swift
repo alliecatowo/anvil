@@ -33,7 +33,6 @@ struct TestingMode: View {
                 TestDetailView(viewModel: viewModel)
                     .frame(minWidth: 400)
             }
-            .background(AnvilColor.backgroundPrimary)
         }
     }
 }
@@ -90,39 +89,39 @@ struct TestSuiteList: View {
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
-            .background(AnvilColor.backgroundSecondary)
+            .background(.bar)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Search
             if !viewModel.suites.isEmpty {
                 AnvilSearchField(text: $viewModel.filterText, placeholder: "Filter tests...")
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
             }
 
             // Test tree
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(viewModel.filteredSuites) { suite in
-                        TestSuiteRow(suite: suite, viewModel: viewModel)
-                    }
+            List {
+                ForEach(viewModel.filteredSuites) { suite in
+                    TestSuiteRow(suite: suite, viewModel: viewModel)
                 }
             }
+            .listStyle(.sidebar)
         }
-        .background(AnvilColor.backgroundSecondary)
     }
 
+    @ViewBuilder
     private func filterButton(_ filter: TestingViewModel.TestFilter) -> some View {
+        let isActive = viewModel.showFilter == filter
+
         Button {
             viewModel.showFilter = filter
         } label: {
             Text(filter.rawValue)
-                .font(.system(size: 10, weight: viewModel.showFilter == filter ? .semibold : .regular))
-                .foregroundStyle(viewModel.showFilter == filter ? AnvilColor.textPrimary : AnvilColor.textTertiary)
+                .font(.system(size: 10, weight: isActive ? .semibold : .regular))
+                .foregroundStyle(isActive ? .primary : .secondary)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(viewModel.showFilter == filter ? AnvilColor.backgroundTertiary : .clear)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .background(isActive ? Color.accentColor.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 4))
         }
         .buttonStyle(.plain)
     }
@@ -135,65 +134,50 @@ struct TestSuiteRow: View {
     @ObservedObject var viewModel: TestingViewModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Suite header
-            Button {
-                viewModel.toggleSuiteExpansion(suite.id)
-            } label: {
-                HStack(spacing: AnvilSpacing.xs) {
-                    Image(systemName: suite.isExpanded ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(AnvilColor.textTertiary)
-                        .frame(width: 12)
-
-                    statusIcon(suite.overallStatus)
-
-                    Text(suite.name)
-                        .font(AnvilFont.sidebarItem)
-                        .foregroundStyle(AnvilColor.textPrimary)
-                        .lineLimit(1)
-
-                    Spacer()
-
-                    // Pass/fail counts
-                    HStack(spacing: 3) {
-                        if suite.passedCount > 0 {
-                            Text("\(suite.passedCount)")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundStyle(AnvilColor.accentGreen)
-                        }
-                        if suite.failedCount > 0 {
-                            Text("\(suite.failedCount)")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundStyle(AnvilColor.accentRed)
-                        }
-                    }
-
-                    // Run suite button
-                    Button {
-                        viewModel.runSuite(suite.id)
-                    } label: {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 8))
-                            .foregroundStyle(AnvilColor.textTertiary)
-                    }
-                    .buttonStyle(.plain)
+        DisclosureGroup(isExpanded: Binding(
+            get: { suite.isExpanded },
+            set: { _ in viewModel.toggleSuiteExpansion(suite.id) }
+        )) {
+            ForEach(suite.tests) { test in
+                TestCaseRow(test: test, isSelected: viewModel.selectedTestId == test.id) {
+                    viewModel.selectedTestId = test.id
+                } onRun: {
+                    viewModel.runTest(test.id)
                 }
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xs)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+        } label: {
+            HStack(spacing: AnvilSpacing.xs) {
+                statusIcon(suite.overallStatus)
 
-            // Tests (when expanded)
-            if suite.isExpanded {
-                ForEach(suite.tests) { test in
-                    TestCaseRow(test: test, isSelected: viewModel.selectedTestId == test.id) {
-                        viewModel.selectedTestId = test.id
-                    } onRun: {
-                        viewModel.runTest(test.id)
+                Text(suite.name)
+                    .font(AnvilFont.sidebarItem)
+                    .lineLimit(1)
+
+                Spacer()
+
+                // Pass/fail counts
+                HStack(spacing: 3) {
+                    if suite.passedCount > 0 {
+                        Text("\(suite.passedCount)")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(AnvilColor.accentGreen)
+                    }
+                    if suite.failedCount > 0 {
+                        Text("\(suite.failedCount)")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(AnvilColor.accentRed)
                     }
                 }
+
+                // Run suite button
+                Button {
+                    viewModel.runSuite(suite.id)
+                } label: {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 8))
+                        .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -210,13 +194,11 @@ struct TestCaseRow: View {
     var body: some View {
         Button(action: onSelect) {
             HStack(spacing: AnvilSpacing.xs) {
-                Color.clear.frame(width: 12) // indent
-
                 statusIcon(test.status)
 
                 Text(test.name)
                     .font(AnvilFont.sidebarItem)
-                    .foregroundStyle(isSelected ? AnvilColor.textPrimary : AnvilColor.textSecondary)
+                    .foregroundStyle(isSelected ? .primary : .secondary)
                     .lineLimit(1)
 
                 Spacer()
@@ -224,21 +206,16 @@ struct TestCaseRow: View {
                 if test.durationMs > 0 {
                     Text(formatDuration(test.durationMs))
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
 
                 Button(action: onRun) {
                     Image(systemName: "play.fill")
                         .font(.system(size: 8))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.leading, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.xxs)
-            .background(isSelected ? AnvilColor.selectionBackground : .clear)
-            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -257,35 +234,26 @@ struct TestDetailView: View {
                     statusIcon(test.status)
                     Text(test.name)
                         .font(AnvilFont.subheading)
-                        .foregroundStyle(AnvilColor.textPrimary)
                     Spacer()
 
                     if test.durationMs > 0 {
                         Text(formatDuration(test.durationMs))
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
                     }
 
                     Button {
                         viewModel.runTest(test.id)
                     } label: {
-                        HStack(spacing: AnvilSpacing.xxs) {
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 10))
-                            Text("Re-run")
-                                .font(AnvilFont.label)
-                        }
-                        .foregroundStyle(AnvilColor.accentGreen)
-                        .padding(.horizontal, AnvilSpacing.sm)
-                        .padding(.vertical, AnvilSpacing.xxs)
-                        .background(AnvilColor.accentGreen.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        Label("Re-run", systemImage: "play.fill")
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .tint(AnvilColor.accentGreen)
                 }
                 .padding(AnvilSpacing.md)
 
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
 
                 // Failure info
                 if let message = test.failureMessage {
@@ -298,13 +266,11 @@ struct TestDetailView: View {
                                 .foregroundStyle(AnvilColor.accentRed)
                         }
 
-                        Text(message)
-                            .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                            .padding(AnvilSpacing.sm)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(AnvilColor.accentRed.opacity(0.08))
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                        GroupBox {
+                            Text(message)
+                                .font(AnvilFont.code)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
 
                         if let file = test.filePath, let line = test.failureLine {
                             HStack(spacing: AnvilSpacing.xs) {
@@ -318,20 +284,18 @@ struct TestDetailView: View {
                     }
                     .padding(AnvilSpacing.md)
 
-                    Divider().overlay(AnvilColor.borderSubtle)
+                    Divider()
                 }
 
                 // Output log
                 VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
-                    Text("OUTPUT")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                        .tracking(0.3)
+                    Text("Output")
+                        .font(.headline)
 
                     ScrollView {
                         Text(viewModel.testOutput)
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textSecondary)
+                            .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
@@ -341,7 +305,7 @@ struct TestDetailView: View {
                 testSummaryView
             }
         }
-        .background(AnvilColor.backgroundPrimary)
+        .background(.background)
     }
 
     private var testSummaryView: some View {
@@ -350,16 +314,16 @@ struct TestDetailView: View {
 
             // Stats cards
             HStack(spacing: AnvilSpacing.lg) {
-                statCard("Total", value: "\(viewModel.totalTests)", color: AnvilColor.textPrimary)
+                statCard("Total", value: "\(viewModel.totalTests)", color: .primary)
                 statCard("Passed", value: "\(viewModel.passedTests)", color: AnvilColor.accentGreen)
                 statCard("Failed", value: "\(viewModel.failedTests)", color: AnvilColor.accentRed)
-                statCard("Duration", value: formatDuration(viewModel.totalDuration), color: AnvilColor.textSecondary)
+                statCard("Duration", value: formatDuration(viewModel.totalDuration), color: .secondary)
             }
 
             if let lastRun = viewModel.lastRunDate {
                 Text("Last run: \(RelativeDateTimeFormatter().localizedString(for: lastRun, relativeTo: .now))")
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
             }
 
             // Progress bar
@@ -370,7 +334,7 @@ struct TestDetailView: View {
                         let failedWidth = geo.size.width * CGFloat(viewModel.failedTests) / CGFloat(viewModel.totalTests)
                         Rectangle().fill(AnvilColor.accentGreen).frame(width: passedWidth)
                         Rectangle().fill(AnvilColor.accentRed).frame(width: failedWidth)
-                        Rectangle().fill(AnvilColor.borderMedium)
+                        Rectangle().fill(.quaternary)
                     }
                 }
                 .frame(height: 6)
@@ -383,18 +347,17 @@ struct TestDetailView: View {
     }
 
     private func statCard(_ label: String, value: String, color: Color) -> some View {
-        VStack(spacing: AnvilSpacing.xs) {
-            Text(value)
-                .font(.system(size: 28, weight: .bold, design: .monospaced))
-                .foregroundStyle(color)
-            Text(label)
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
+        GroupBox {
+            VStack(spacing: AnvilSpacing.xs) {
+                Text(value)
+                    .font(.system(size: 28, weight: .bold, design: .monospaced))
+                    .foregroundStyle(color)
+                Text(label)
+                    .font(AnvilFont.label)
+                    .foregroundStyle(.tertiary)
+            }
+            .frame(width: 100)
         }
-        .frame(width: 100)
-        .padding(AnvilSpacing.md)
-        .background(AnvilColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
     }
 }
 
@@ -414,10 +377,10 @@ private func statusIcon(_ status: TestCaseStatus) -> some View {
                 .controlSize(.mini)
         case .skipped:
             Image(systemName: "minus.circle")
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.tertiary)
         case .pending:
             Image(systemName: "circle")
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.tertiary)
         }
     }
     .font(.system(size: 12))

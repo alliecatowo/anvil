@@ -5,19 +5,15 @@ struct DocsMode: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Left: Document browser
+        NavigationSplitView {
             DocBrowser(viewModel: viewModel)
-                .frame(width: AnvilSpacing.sidebarWidth)
-                .background(AnvilColor.backgroundSecondary)
-
-            Divider().overlay(AnvilColor.borderSubtle)
-
-            // Right: Document editor with split preview
+                .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 340)
+        } detail: {
             DocEditor(viewModel: viewModel)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(AnvilColor.backgroundPrimary)
+        .navigationSplitViewStyle(.balanced)
+        .background(.background)
         .onAppear {
             if let path = appState.currentProjectPath {
                 viewModel.loadFromProject(path)

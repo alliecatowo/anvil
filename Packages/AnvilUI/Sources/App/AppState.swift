@@ -143,6 +143,7 @@ public class AppState: ObservableObject {
     @Published public var intentViewModel = IntentViewModel()
     @Published public var reviewViewModel = ReviewViewModel()
     @Published public var shipViewModel = ShipViewModel()
+    @Published var notificationsViewModel = NotificationsViewModel()
     @Published var editorViewModel = EditorViewModel()
     @Published var gitHubPRViewModel = GitHubPRViewModel()
 

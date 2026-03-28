@@ -64,7 +64,7 @@ struct SlashCommandMenu: View {
                 .padding(.horizontal, AnvilSpacing.md)
                 .padding(.vertical, AnvilSpacing.xs)
 
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
 
                 ForEach(Array(filtered.enumerated()), id: \.element.id) { index, command in
                     Button {
@@ -92,31 +92,20 @@ struct SlashCommandMenu: View {
                                 Text("auto")
                                     .font(.system(size: 9, weight: .medium))
                                     .foregroundStyle(AnvilColor.accentGreen)
-                                    .padding(.horizontal, 4)
-                                    .padding(.vertical, 1)
-                                    .background(AnvilColor.accentGreen.opacity(0.12))
-                                    .clipShape(RoundedRectangle(cornerRadius: 3))
                             }
                         }
                         .padding(.horizontal, AnvilSpacing.md)
                         .padding(.vertical, AnvilSpacing.sm)
-                        .background(index == selectedIndex ? AnvilColor.backgroundTertiary : .clear)
+                        .background(index == selectedIndex ? Color.accentColor.opacity(0.1) : .clear)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .onHover { isHovered in
-                        if isHovered { selectedIndex = index }
-                    }
                 }
             }
             .padding(.vertical, AnvilSpacing.xs)
-            .background(AnvilColor.backgroundElevated)
+            .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                    .stroke(AnvilColor.borderMedium, lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.3), radius: 12, y: -4)
+            .shadow(color: .black.opacity(0.2), radius: 12, y: -4)
             .frame(maxWidth: 300)
             .onKeyPress(.upArrow) {
                 selectedIndex = max(0, selectedIndex - 1)

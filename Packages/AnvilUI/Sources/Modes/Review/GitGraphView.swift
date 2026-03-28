@@ -37,7 +37,7 @@ struct GitGraphView: View {
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             if graph.nodes.isEmpty {
                 AnvilEmptyState(
@@ -55,7 +55,6 @@ struct GitGraphView: View {
                 }
             }
         }
-        .background(AnvilColor.backgroundPrimary)
     }
 
     // MARK: - Commit Row
@@ -257,7 +256,7 @@ struct GitGraphView: View {
 
     private func commitDetail(node: GitGraphBuilder.GraphNode) -> some View {
         VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
                 // Full message
@@ -285,7 +284,7 @@ struct GitGraphView: View {
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
         }
-        .background(AnvilColor.backgroundSecondary)
+        .background(.background.secondary)
     }
 
     private func detailRow(_ label: String, value: String) -> some View {
@@ -306,7 +305,7 @@ struct GitGraphView: View {
     private func branchBadge(_ name: String, isHead: Bool) -> some View {
         Text(name)
             .font(.system(size: 9, weight: .semibold))
-            .foregroundStyle(isHead ? AnvilColor.backgroundPrimary : AnvilColor.accentBlue)
+            .foregroundStyle(isHead ? .white : AnvilColor.accentBlue)
             .padding(.horizontal, 4)
             .padding(.vertical, 1)
             .background(isHead ? AnvilColor.accentGreen : AnvilColor.accentBlue.opacity(0.2))

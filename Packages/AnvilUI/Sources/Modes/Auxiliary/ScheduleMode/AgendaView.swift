@@ -14,17 +14,16 @@ struct AgendaView: View {
             // Header
             header
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Entries
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(viewModel.entries) { entry in
-                        agendaRow(entry)
-                        Divider().overlay(AnvilColor.borderSubtle)
-                    }
+            List {
+                ForEach(viewModel.entries) { entry in
+                    agendaRow(entry)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
                 }
             }
+            .listStyle(.inset)
         }
     }
 
@@ -35,11 +34,10 @@ struct AgendaView: View {
             VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
                 Text("Today's Schedule")
                     .font(AnvilFont.subheading)
-                    .foregroundStyle(AnvilColor.textPrimary)
 
                 Text(todayString())
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
             }
 
             Spacer()
@@ -60,11 +58,10 @@ struct AgendaView: View {
             Text(label)
                 .font(AnvilFont.label)
         }
-        .foregroundStyle(AnvilColor.textSecondary)
+        .foregroundStyle(.secondary)
         .padding(.horizontal, AnvilSpacing.sm)
         .padding(.vertical, AnvilSpacing.xxs)
-        .background(AnvilColor.backgroundTertiary)
-        .clipShape(Capsule())
+        .background(.quaternary, in: Capsule())
     }
 
     // MARK: - Agenda Row
@@ -75,10 +72,9 @@ struct AgendaView: View {
             VStack(alignment: .trailing, spacing: AnvilSpacing.xxs) {
                 Text(timeFormatter.string(from: entry.start))
                     .font(AnvilFont.code)
-                    .foregroundStyle(AnvilColor.textPrimary)
                 Text(entry.duration)
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
             }
             .frame(width: 72, alignment: .trailing)
 
@@ -96,7 +92,6 @@ struct AgendaView: View {
 
                     Text(entry.title)
                         .font(AnvilFont.sidebarItem)
-                        .foregroundStyle(AnvilColor.textPrimary)
                         .lineLimit(1)
 
                     Spacer()
@@ -108,7 +103,7 @@ struct AgendaView: View {
                     if let subtitle = entry.subtitle {
                         Text(subtitle)
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textSecondary)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
 
@@ -123,19 +118,17 @@ struct AgendaView: View {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Image(systemName: "person.2")
                             .font(.system(size: 10))
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
                         Text(entry.attendees.joined(separator: ", "))
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
                             .lineLimit(1)
                     }
                 }
             }
         }
-        .padding(.horizontal, AnvilSpacing.lg)
-        .padding(.vertical, AnvilSpacing.md)
-        .background(viewModel.selectedEntryID == entry.id ? AnvilColor.selectionBackground : .clear)
         .contentShape(Rectangle())
+        .listRowBackground(viewModel.selectedEntryID == entry.id ? Color.accentColor.opacity(0.14) : Color.clear)
         .onTapGesture {
             viewModel.selectedEntryID = entry.id
         }

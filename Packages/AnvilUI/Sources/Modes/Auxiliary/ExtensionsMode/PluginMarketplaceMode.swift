@@ -5,10 +5,9 @@ struct PluginMarketplaceMode: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Navigation tabs (hidden in detail view)
             if !viewModel.viewMode.isDetail {
                 extensionsTabs
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
             }
 
             Group {
@@ -22,7 +21,7 @@ struct PluginMarketplaceMode: View {
                 }
             }
         }
-        .background(AnvilColor.backgroundPrimary)
+        .background(.background)
         .onAppear {
             if viewModel.plugins.isEmpty {
                 viewModel.loadBuiltInPlugins()
@@ -31,37 +30,22 @@ struct PluginMarketplaceMode: View {
     }
 
     private var extensionsTabs: some View {
-        HStack(spacing: 0) {
-            extensionTab("Marketplace", icon: "puzzlepiece.extension", isActive: viewModel.viewMode.isBrowse) {
-                viewModel.viewMode = .browse
+        HStack(spacing: AnvilSpacing.sm) {
+            Picker("View", selection: Binding(
+                get: { viewModel.viewMode.isInstalled ? 1 : 0 },
+                set: { viewModel.viewMode = $0 == 1 ? .installed : .browse }
+            )) {
+                Text("Marketplace").tag(0)
+                Text("Installed (\(viewModel.installedCount))").tag(1)
             }
-
-            extensionTab("Installed (\(viewModel.installedCount))", icon: "checkmark.circle", isActive: viewModel.viewMode.isInstalled) {
-                viewModel.viewMode = .installed
-            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 340)
 
             Spacer()
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
-        .background(AnvilColor.backgroundSecondary)
-    }
-
-    private func extensionTab(_ title: String, icon: String, isActive: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: AnvilSpacing.xs) {
-                Image(systemName: icon)
-                    .font(.system(size: 11))
-                Text(title)
-                    .font(AnvilFont.label)
-            }
-            .foregroundStyle(isActive ? AnvilColor.textPrimary : AnvilColor.textTertiary)
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.sm)
-            .background(isActive ? AnvilColor.backgroundTertiary : .clear)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
-        }
-        .buttonStyle(.plain)
+        .background(.bar)
     }
 }
 
@@ -94,25 +78,22 @@ struct MarketplaceBrowser: View {
             // Header with search and filters
             marketplaceHeader
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
-            // Plugin grid
-            ScrollView {
-                LazyVGrid(columns: [
-                    GridItem(.adaptive(minimum: 300, maximum: 400), spacing: AnvilSpacing.md)
-                ], spacing: AnvilSpacing.md) {
-                    ForEach(viewModel.filteredPlugins) { plugin in
-                        PluginCard(plugin: plugin) {
-                            viewModel.selectPlugin(plugin.id)
-                        } onInstall: {
-                            viewModel.installPlugin(plugin.id)
-                        } onUninstall: {
-                            viewModel.uninstallPlugin(plugin.id)
-                        }
+            // Plugin list
+            List {
+                ForEach(viewModel.filteredPlugins) { plugin in
+                    PluginCard(plugin: plugin) {
+                        viewModel.selectPlugin(plugin.id)
+                    } onInstall: {
+                        viewModel.installPlugin(plugin.id)
+                    } onUninstall: {
+                        viewModel.uninstallPlugin(plugin.id)
                     }
+                    .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
                 }
-                .padding(AnvilSpacing.lg)
             }
+            .listStyle(.inset)
 
             if viewModel.filteredPlugins.isEmpty {
                 AnvilEmptyState(
@@ -131,6 +112,14 @@ struct MarketplaceBrowser: View {
 
                 Spacer()
 
+                Picker("Category", selection: $viewModel.selectedCategory) {
+                    ForEach(PluginCategory.allCases) { category in
+                        Label(category.rawValue, systemImage: category.icon).tag(category)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(width: 170)
+
                 Picker("Sort", selection: $viewModel.sortOrder) {
                     ForEach(PluginSortOrder.allCases) { order in
                         Text(order.rawValue).tag(order)
@@ -141,44 +130,6 @@ struct MarketplaceBrowser: View {
             }
             .padding(.horizontal, AnvilSpacing.lg)
             .padding(.top, AnvilSpacing.md)
-
-            // Category filter bar
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: AnvilSpacing.xs) {
-                    ForEach(PluginCategory.allCases) { category in
-                        categoryChip(category)
-                    }
-                }
-                .padding(.horizontal, AnvilSpacing.lg)
-            }
-            .padding(.bottom, AnvilSpacing.sm)
         }
-    }
-
-    private func categoryChip(_ category: PluginCategory) -> some View {
-        Button {
-            viewModel.selectedCategory = category
-        } label: {
-            HStack(spacing: AnvilSpacing.xxs) {
-                Image(systemName: category.icon)
-                    .font(.system(size: 11))
-                Text(category.rawValue)
-                    .font(AnvilFont.label)
-            }
-            .padding(.horizontal, AnvilSpacing.sm)
-            .padding(.vertical, AnvilSpacing.xxs)
-            .foregroundStyle(
-                viewModel.selectedCategory == category
-                    ? Color.white
-                    : AnvilColor.textSecondary
-            )
-            .background(
-                viewModel.selectedCategory == category
-                    ? AnvilColor.accentPurple
-                    : AnvilColor.backgroundTertiary
-            )
-            .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
     }
 }

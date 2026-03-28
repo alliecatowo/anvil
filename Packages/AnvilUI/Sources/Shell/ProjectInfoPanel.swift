@@ -30,7 +30,7 @@ public struct ProjectInfoPanel: View {
             }
             .padding(AnvilSpacing.lg)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             if appState.currentProject != nil {
                 ScrollView {
@@ -38,34 +38,16 @@ public struct ProjectInfoPanel: View {
                         // Name
                         fieldSection("Name") {
                             TextField("Project name", text: $editName)
-                                .textFieldStyle(.plain)
+                                .textFieldStyle(.roundedBorder)
                                 .font(AnvilFont.body)
-                                .foregroundStyle(AnvilColor.textPrimary)
-                                .padding(.horizontal, AnvilSpacing.sm)
-                                .padding(.vertical, AnvilSpacing.xs)
-                                .background(AnvilColor.backgroundTertiary)
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(AnvilColor.borderMedium, lineWidth: 1)
-                                )
                         }
 
                         // Description
                         fieldSection("Description") {
                             TextField("What is this project about?", text: $editDescription, axis: .vertical)
-                                .textFieldStyle(.plain)
+                                .textFieldStyle(.roundedBorder)
                                 .font(AnvilFont.body)
-                                .foregroundStyle(AnvilColor.textPrimary)
                                 .lineLimit(3...6)
-                                .padding(.horizontal, AnvilSpacing.sm)
-                                .padding(.vertical, AnvilSpacing.xs)
-                                .background(AnvilColor.backgroundTertiary)
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(AnvilColor.borderMedium, lineWidth: 1)
-                                )
                         }
 
                         // Repos
@@ -98,8 +80,6 @@ public struct ProjectInfoPanel: View {
                                     }
                                     .padding(.horizontal, AnvilSpacing.sm)
                                     .padding(.vertical, AnvilSpacing.xs)
-                                    .background(AnvilColor.backgroundTertiary)
-                                    .clipShape(RoundedRectangle(cornerRadius: 6))
                                 }
 
                                 Button {
@@ -131,7 +111,7 @@ public struct ProjectInfoPanel: View {
                     .padding(AnvilSpacing.lg)
                 }
 
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
 
                 // Footer buttons
                 HStack {
@@ -147,13 +127,8 @@ public struct ProjectInfoPanel: View {
                     Button("Save") {
                         saveChanges()
                     }
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, AnvilSpacing.lg)
-                    .padding(.vertical, AnvilSpacing.xs)
-                    .background(AnvilColor.accentPurple)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.regular)
                 }
                 .padding(AnvilSpacing.lg)
             } else {
@@ -164,7 +139,7 @@ public struct ProjectInfoPanel: View {
                 Spacer()
             }
         }
-        .background(AnvilColor.backgroundPrimary)
+        .background(.background)
         .onAppear {
             loadFromProject()
         }
@@ -175,10 +150,8 @@ public struct ProjectInfoPanel: View {
     @ViewBuilder
     private func fieldSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
-            Text(title.uppercased())
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .tracking(0.3)
+            Text(title)
+                .font(.headline)
 
             content()
         }

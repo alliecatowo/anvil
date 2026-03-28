@@ -10,7 +10,6 @@ struct EnvVarManagerView: View {
             HStack {
                 Text("Environment Variables")
                     .font(AnvilFont.heading)
-                    .foregroundStyle(AnvilColor.textPrimary)
 
                 Spacer()
 
@@ -25,79 +24,63 @@ struct EnvVarManagerView: View {
 
                     Text("\(viewModel.envVarsForSelected.count) vars")
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
             }
             .padding(AnvilSpacing.lg)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             if let envID = viewModel.selectedEnvironmentID {
                 // Add new var form
                 addVariableForm(environmentID: envID)
 
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
 
                 // Variable list
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        // Header row
-                        HStack {
-                            Text("KEY")
-                                .frame(width: 200, alignment: .leading)
-                            Text("VALUE")
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            Text("SECRET")
-                                .frame(width: 60, alignment: .center)
-                            Text("")
-                                .frame(width: 80)
-                        }
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                        .padding(.horizontal, AnvilSpacing.lg)
-                        .padding(.vertical, AnvilSpacing.sm)
-                        .background(AnvilColor.backgroundSecondary)
-
-                        ForEach(viewModel.envVarsForSelected) { envVar in
-                            if viewModel.editingEnvVarID == envVar.id {
-                                editingRow(envVar, environmentID: envID)
-                            } else {
-                                envVarRow(envVar, environmentID: envID)
-                            }
-                            Divider().overlay(AnvilColor.borderSubtle)
-                        }
-
-                        if viewModel.envVarsForSelected.isEmpty {
-                            VStack(spacing: AnvilSpacing.sm) {
-                                Image(systemName: "key")
-                                    .font(.system(size: 24, weight: .thin))
-                                    .foregroundStyle(AnvilColor.textTertiary)
-                                Text("No environment variables")
-                                    .font(AnvilFont.body)
-                                    .foregroundStyle(AnvilColor.textSecondary)
-                                Text("Add variables using the form above")
-                                    .font(AnvilFont.label)
-                                    .foregroundStyle(AnvilColor.textTertiary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, AnvilSpacing.xxxl)
+                List {
+                    ForEach(viewModel.envVarsForSelected) { envVar in
+                        if viewModel.editingEnvVarID == envVar.id {
+                            editingRow(envVar, environmentID: envID)
+                                .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
+                        } else {
+                            envVarRow(envVar, environmentID: envID)
+                                .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
                         }
                     }
+
+                    if viewModel.envVarsForSelected.isEmpty {
+                        VStack(spacing: AnvilSpacing.sm) {
+                            Image(systemName: "key")
+                                .font(.system(size: 24, weight: .thin))
+                                .foregroundStyle(.tertiary)
+                            Text("No environment variables")
+                                .font(AnvilFont.body)
+                                .foregroundStyle(.secondary)
+                            Text("Add variables using the form above")
+                                .font(AnvilFont.label)
+                                .foregroundStyle(.tertiary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AnvilSpacing.xxxl)
+                        .listRowSeparator(.hidden)
+                    }
                 }
+                .listStyle(.inset)
             } else {
                 // No environment selected
                 VStack(spacing: AnvilSpacing.sm) {
                     Image(systemName: "server.rack")
                         .font(.system(size: 32, weight: .thin))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                     Text("Select an environment to manage variables")
                         .font(AnvilFont.body)
-                        .foregroundStyle(AnvilColor.textSecondary)
+                        .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .background(AnvilColor.backgroundPrimary)
+        .background(.background)
         .alert("Delete Variable", isPresented: $viewModel.showingDeleteConfirm) {
             Button("Delete", role: .destructive) { viewModel.confirmDeleteEnvVar() }
             Button("Cancel", role: .cancel) { viewModel.cancelDeleteEnvVar() }
@@ -126,7 +109,7 @@ struct EnvVarManagerView: View {
 
             Toggle("Secret", isOn: $viewModel.newEnvIsSecret)
                 .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textSecondary)
+                .foregroundStyle(.secondary)
                 .toggleStyle(.switch)
                 .controlSize(.small)
 
@@ -144,7 +127,6 @@ struct EnvVarManagerView: View {
             // Key
             Text(envVar.key)
                 .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.textPrimary)
                 .frame(width: 200, alignment: .leading)
                 .lineLimit(1)
 
@@ -153,7 +135,7 @@ struct EnvVarManagerView: View {
                 HStack(spacing: AnvilSpacing.xxs) {
                     Text(String(repeating: "\u{2022}", count: 12))
                         .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
 
                     Image(systemName: "lock.fill")
                         .font(.system(size: 10))
@@ -163,7 +145,7 @@ struct EnvVarManagerView: View {
             } else {
                 Text(envVar.value)
                     .font(AnvilFont.code)
-                    .foregroundStyle(AnvilColor.textSecondary)
+                    .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .lineLimit(1)
                     .textSelection(.enabled)
@@ -175,7 +157,7 @@ struct EnvVarManagerView: View {
             } label: {
                 Image(systemName: envVar.isSecret ? "eye.slash.fill" : "eye.fill")
                     .font(.system(size: 11))
-                    .foregroundStyle(envVar.isSecret ? AnvilColor.accentAmber : AnvilColor.textTertiary)
+                    .foregroundStyle(envVar.isSecret ? AnvilColor.accentAmber : Color.secondary)
             }
             .buttonStyle(.plain)
             .frame(width: 60, alignment: .center)
@@ -187,7 +169,7 @@ struct EnvVarManagerView: View {
                 } label: {
                     Image(systemName: "pencil")
                         .font(.system(size: 11))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
                 .help("Edit variable")
@@ -204,9 +186,6 @@ struct EnvVarManagerView: View {
             }
             .frame(width: 80)
         }
-        .padding(.horizontal, AnvilSpacing.lg)
-        .padding(.vertical, AnvilSpacing.sm)
-        .background(AnvilColor.backgroundTertiary)
     }
 
     // MARK: - Variable Row (edit mode)
@@ -248,7 +227,6 @@ struct EnvVarManagerView: View {
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.sm)
-        .background(AnvilColor.accentBlue.opacity(0.05))
     }
 
     // MARK: - Env Compare Sheet
@@ -259,7 +237,6 @@ struct EnvVarManagerView: View {
             HStack {
                 Text("Compare Environments")
                     .font(AnvilFont.heading)
-                    .foregroundStyle(AnvilColor.textPrimary)
 
                 Spacer()
 
@@ -268,7 +245,7 @@ struct EnvVarManagerView: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 16))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
             }
@@ -279,7 +256,7 @@ struct EnvVarManagerView: View {
                 VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
                     Text("SOURCE")
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                     Picker("Source", selection: Binding(
                         get: { viewModel.compareSourceID ?? "" },
                         set: { viewModel.compareSourceID = $0 }
@@ -293,12 +270,12 @@ struct EnvVarManagerView: View {
 
                 Image(systemName: "arrow.left.arrow.right")
                     .font(.system(size: 14))
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
 
                 VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
                     Text("TARGET")
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                     Picker("Target", selection: Binding(
                         get: { viewModel.compareTargetID ?? "" },
                         set: { viewModel.compareTargetID = $0 }
@@ -320,47 +297,30 @@ struct EnvVarManagerView: View {
             .padding(.horizontal, AnvilSpacing.lg)
             .padding(.bottom, AnvilSpacing.md)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Compare table
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    // Header
-                    HStack {
-                        Text("KEY")
-                            .frame(width: 200, alignment: .leading)
-                        Text(sourceEnvName)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        Text(targetEnvName)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .padding(.horizontal, AnvilSpacing.lg)
-                    .padding(.vertical, AnvilSpacing.sm)
-                    .background(AnvilColor.backgroundSecondary)
-
-                    ForEach(Array(viewModel.envCompareData.enumerated()), id: \.offset) { _, row in
-                        compareRow(row)
-                        Divider().overlay(AnvilColor.borderSubtle)
-                    }
+            List {
+                ForEach(Array(viewModel.envCompareData.enumerated()), id: \.offset) { _, row in
+                    compareRow(row)
+                        .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
                 }
             }
+            .listStyle(.inset)
         }
         .frame(minWidth: 700, minHeight: 500)
-        .background(AnvilColor.backgroundPrimary)
+        .background(.background)
     }
 
     private func compareRow(_ row: (key: String, sourceValue: String?, targetValue: String?, isDifferent: Bool)) -> some View {
         HStack {
             Text(row.key)
                 .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.textPrimary)
                 .frame(width: 200, alignment: .leading)
 
             Text(row.sourceValue ?? "--")
                 .font(AnvilFont.code)
-                .foregroundStyle(row.sourceValue == nil ? AnvilColor.textTertiary : AnvilColor.textSecondary)
+                .foregroundStyle(row.sourceValue == nil ? .tertiary : .secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .lineLimit(1)
                 .background(
@@ -371,7 +331,7 @@ struct EnvVarManagerView: View {
 
             Text(row.targetValue ?? "--")
                 .font(AnvilFont.code)
-                .foregroundStyle(row.targetValue == nil ? AnvilColor.textTertiary : AnvilColor.textSecondary)
+                .foregroundStyle(row.targetValue == nil ? .tertiary : .secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .lineLimit(1)
                 .background(
@@ -380,9 +340,6 @@ struct EnvVarManagerView: View {
                         : Color.clear
                 )
         }
-        .padding(.horizontal, AnvilSpacing.lg)
-        .padding(.vertical, AnvilSpacing.sm)
-        .background(row.isDifferent ? AnvilColor.accentAmber.opacity(0.03) : AnvilColor.backgroundTertiary)
     }
 
     private var sourceEnvName: String {

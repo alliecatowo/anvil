@@ -9,7 +9,7 @@ struct ScheduleMode: View {
             // Left panel: agenda list
             VStack(spacing: 0) {
                 tabSelector
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
 
                 Group {
                     switch viewModel.selectedTab {
@@ -22,7 +22,6 @@ struct ScheduleMode: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(AnvilColor.backgroundPrimary)
     }
 
     // MARK: - Tab Selector
@@ -37,14 +36,14 @@ struct ScheduleMode: View {
                         .font(AnvilFont.label)
                         .foregroundStyle(
                             viewModel.selectedTab == tab
-                                ? AnvilColor.textPrimary
-                                : AnvilColor.textTertiary
+                                ? .primary
+                                : .tertiary
                         )
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, AnvilSpacing.sm)
                         .background(
                             viewModel.selectedTab == tab
-                                ? AnvilColor.backgroundTertiary
+                                ? Color.accentColor.opacity(0.15)
                                 : Color.clear
                         )
                 }

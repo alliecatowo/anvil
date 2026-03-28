@@ -6,37 +6,33 @@ struct ShipSidebar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Tab selector
             tabSelector
 
             Divider().overlay(AnvilColor.borderSubtle)
 
-            // Environment list
-            ScrollView {
-                LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
+            List {
+                Section {
+                    ForEach(viewModel.environments) { env in
+                        environmentRow(env)
+                    }
+                } header: {
+                    sectionHeader(overviewSections[0])
+                }
+
+                if !viewModel.deploymentsForSelected.isEmpty {
                     Section {
-                        ForEach(viewModel.environments) { env in
-                            environmentRow(env)
+                        ForEach(viewModel.deploymentsForSelected.prefix(10)) { deployment in
+                            deploymentRow(deployment)
                         }
                     } header: {
-                        sectionHeader("Environments", icon: "server.rack", count: viewModel.environments.count)
-                    }
-
-                    if !viewModel.deploymentsForSelected.isEmpty {
-                        Section {
-                            ForEach(viewModel.deploymentsForSelected.prefix(10)) { deployment in
-                                deploymentRow(deployment)
-                            }
-                        } header: {
-                            sectionHeader("Deployments", icon: "arrow.up.circle", count: viewModel.deploymentsForSelected.count)
-                        }
+                        sectionHeader(overviewSections[1])
                     }
                 }
             }
+            .listStyle(.sidebar)
 
             Spacer()
 
-            // Deploy progress at bottom of sidebar
             if viewModel.isDeploying, let envID = viewModel.deployingEnvironmentID {
                 Divider().overlay(AnvilColor.borderSubtle)
                 sidebarDeployProgress(envID: envID)
@@ -44,7 +40,20 @@ struct ShipSidebar: View {
         }
     }
 
-    // MARK: - Tab Selector
+    private struct SidebarSectionDescriptor: Identifiable {
+        let id: String
+        let title: String
+        let icon: String
+        let count: Int
+    }
+
+    // Minimal adapter target for upcoming shared sidebar abstraction.
+    private var overviewSections: [SidebarSectionDescriptor] {
+        [
+            SidebarSectionDescriptor(id: "environments", title: "Environments", icon: "server.rack", count: viewModel.environments.count),
+            SidebarSectionDescriptor(id: "deployments", title: "Deployments", icon: "arrow.up.circle", count: viewModel.deploymentsForSelected.count)
+        ]
+    }
 
     private var tabSelector: some View {
         Picker("Ship View", selection: $viewModel.selectedTab) {
@@ -56,8 +65,6 @@ struct ShipSidebar: View {
         .padding(.horizontal, AnvilSpacing.sm)
         .padding(.vertical, AnvilSpacing.xs)
     }
-
-    // MARK: - Environment Row
 
     private func environmentRow(_ card: EnvironmentCard) -> some View {
         VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
@@ -115,9 +122,8 @@ struct ShipSidebar: View {
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.sm)
         .background(viewModel.selectedEnvironmentID == card.id ? AnvilColor.selectionBackground : .clear)
+        .listRowInsets(EdgeInsets(top: 2, leading: 2, bottom: 2, trailing: 2))
     }
-
-    // MARK: - Deployment Row
 
     private func deploymentRow(_ deployment: Deployment) -> some View {
         HStack(spacing: AnvilSpacing.sm) {
@@ -157,6 +163,7 @@ struct ShipSidebar: View {
         .padding(.vertical, AnvilSpacing.xs)
         .frame(height: AnvilSpacing.richListItemHeight)
         .contentShape(Rectangle())
+        .listRowInsets(EdgeInsets(top: 2, leading: 2, bottom: 2, trailing: 2))
     }
 
     // MARK: - Sidebar Deploy Progress
@@ -185,28 +192,24 @@ struct ShipSidebar: View {
         .background(AnvilColor.accentAmber.opacity(0.05))
     }
 
-    // MARK: - Section Header
-
-    private func sectionHeader(_ title: String, icon: String, count: Int) -> some View {
+    private func sectionHeader(_ descriptor: SidebarSectionDescriptor) -> some View {
         HStack {
-            Image(systemName: icon)
+            Image(systemName: descriptor.icon)
                 .font(.system(size: 10))
                 .foregroundStyle(AnvilColor.textTertiary)
 
-            Text(title.uppercased())
+            Text(descriptor.title.uppercased())
                 .font(AnvilFont.label)
                 .foregroundStyle(AnvilColor.textSecondary)
                 .tracking(0.3)
 
             Spacer()
 
-            Text("\(count)")
+            Text("\(descriptor.count)")
                 .font(AnvilFont.label)
                 .foregroundStyle(AnvilColor.textTertiary)
         }
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.xs)
-        .background(AnvilColor.backgroundSecondary)
+        .textCase(nil)
     }
 
     // MARK: - Helpers

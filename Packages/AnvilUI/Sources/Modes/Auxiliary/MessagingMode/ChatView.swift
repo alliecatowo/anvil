@@ -6,22 +6,19 @@ struct ChatView: View {
     var body: some View {
         VStack(spacing: 0) {
             if let channel = viewModel.selectedChannel {
-                // Channel header
                 channelHeader(channel)
+                Divider()
 
-                Divider().overlay(AnvilColor.borderSubtle)
-
-                // Messages
                 ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(spacing: AnvilSpacing.md) {
-                            ForEach(viewModel.messages) { message in
-                                messageRow(message)
-                                    .id(message.id)
-                            }
+                    List {
+                        ForEach(viewModel.messages) { message in
+                            messageRow(message)
+                                .id(message.id)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 10, bottom: 6, trailing: 10))
                         }
-                        .padding(AnvilSpacing.md)
                     }
+                    .listStyle(.plain)
                     .onChange(of: viewModel.messages.count) { _, _ in
                         if let lastId = viewModel.messages.last?.id {
                             proxy.scrollTo(lastId, anchor: .bottom)
@@ -29,9 +26,8 @@ struct ChatView: View {
                     }
                 }
 
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
 
-                // Message input
                 messageInput(channel)
             } else {
                 emptyState
@@ -50,12 +46,11 @@ struct ChatView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(channel.name)
                     .font(AnvilFont.subheading)
-                    .foregroundStyle(AnvilColor.textPrimary)
 
                 if !channel.topic.isEmpty {
                     Text(channel.topic)
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             }
@@ -69,12 +64,12 @@ struct ChatView: View {
                     Text("\(channel.memberCount)")
                         .font(AnvilFont.label)
                 }
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.secondary)
             }
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.sm)
-        .background(AnvilColor.backgroundSecondary)
+        .background(.bar)
     }
 
     // MARK: - Message Row
@@ -95,16 +90,15 @@ struct ChatView: View {
                 HStack(spacing: AnvilSpacing.sm) {
                     Text(message.author)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(AnvilColor.textPrimary)
 
                     Text(message.formattedTime)
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.secondary)
                 }
 
                 Text(message.content)
                     .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textSecondary)
+                    .foregroundStyle(.secondary)
                     .textSelection(.enabled)
             }
 
@@ -118,29 +112,21 @@ struct ChatView: View {
         HStack(spacing: AnvilSpacing.sm) {
             TextField("Message #\(channel.name)", text: $viewModel.inputText)
                 .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textPrimary)
-                .textFieldStyle(.plain)
+                .textFieldStyle(.roundedBorder)
                 .onSubmit {
                     viewModel.sendMessage()
                 }
 
-            Button {
+            Button("Send", systemImage: "paperplane.fill") {
                 viewModel.sendMessage()
-            } label: {
-                Image(systemName: "paperplane.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(
-                        viewModel.inputText.isEmpty
-                            ? AnvilColor.textTertiary
-                            : AnvilColor.accentBlue
-                    )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
             .disabled(viewModel.inputText.isEmpty)
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.sm)
-        .background(AnvilColor.backgroundSecondary)
+        .background(.bar)
     }
 
     // MARK: - Empty State
@@ -153,9 +139,9 @@ struct ChatView: View {
 
             Text("Select a channel to start chatting")
                 .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(AnvilColor.backgroundPrimary)
+        .background(.background)
     }
 }

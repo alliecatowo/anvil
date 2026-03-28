@@ -13,7 +13,7 @@ struct BoardView: View {
             // Board header
             boardHeader
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Columns
             ScrollView(.horizontal, showsIndicators: false) {
@@ -25,7 +25,6 @@ struct BoardView: View {
                 .padding(AnvilSpacing.lg)
             }
         }
-        .background(AnvilColor.backgroundPrimary)
     }
 
     // MARK: - Board Header
@@ -56,10 +55,8 @@ struct BoardView: View {
         return VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
             // Column header
             HStack {
-                Text(column.name.uppercased())
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                    .tracking(0.3)
+                Text(column.name)
+                    .font(.headline)
 
                 Text("\(tickets.count)")
                     .font(AnvilFont.label)
@@ -101,16 +98,8 @@ struct BoardView: View {
             if creatingInColumnId == column.id {
                 VStack(spacing: AnvilSpacing.xs) {
                     TextField("Ticket title", text: $newTicketTitle)
-                        .textFieldStyle(.plain)
+                        .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.sidebarItem)
-                        .foregroundStyle(AnvilColor.textPrimary)
-                        .padding(AnvilSpacing.sm)
-                        .background(AnvilColor.backgroundPrimary)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(AnvilColor.accentBlue, lineWidth: 1)
-                        )
                         .focused($isNewTicketFocused)
                         .onSubmit {
                             withAnimation(AnvilAnimation.standard) {
@@ -164,12 +153,7 @@ struct BoardView: View {
         }
         .frame(width: 240)
         .padding(AnvilSpacing.sm)
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-        )
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
         .dropDestination(for: String.self) { items, _ in
             guard let ticketId = items.first else { return false }
             withAnimation(AnvilAnimation.standard) {

@@ -89,7 +89,7 @@ struct GeneralSettingsView: View {
             Section("Project") {
                 HStack {
                     Text(settings.projectDirectory.isEmpty ? "No directory selected" : settings.projectDirectory)
-                        .foregroundStyle(settings.projectDirectory.isEmpty ? AnvilColor.textTertiary : AnvilColor.textPrimary)
+                        .foregroundStyle(settings.projectDirectory.isEmpty ? .tertiary : .primary)
                         .lineLimit(1)
                         .truncationMode(.head)
                     Spacer()
@@ -117,7 +117,7 @@ struct GeneralSettingsView: View {
                     Text("Theme")
                     Spacer()
                     Text("Dark")
-                        .foregroundStyle(AnvilColor.textSecondary)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -153,7 +153,7 @@ struct ProviderSettingsView: View {
                     Label("No Providers", systemImage: "cpu")
                 } description: {
                     Text("Add an ACP provider to get started.")
-                        .foregroundStyle(AnvilColor.textSecondary)
+                        .foregroundStyle(.secondary)
                 }
             } else {
                 List {
@@ -210,28 +210,27 @@ struct ProviderRow: View {
     var body: some View {
         HStack(spacing: 10) {
             Circle()
-                .fill(config.isDefault ? AnvilColor.accentGreen : AnvilColor.textTertiary)
+                .fill(config.isDefault ? AnvilColor.accentGreen : Color.secondary)
                 .frame(width: 8, height: 8)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     Text(config.providerId)
-                        .foregroundStyle(AnvilColor.textPrimary)
+                        .foregroundStyle(.primary)
                         .fontWeight(config.isDefault ? .semibold : .regular)
                     if config.isDefault {
-                        Text("DEFAULT")
+                        Text("Default")
                             .font(.caption2)
                             .fontWeight(.bold)
                             .foregroundStyle(AnvilColor.accentGreen)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 1)
-                            .background(AnvilColor.accentGreen.opacity(0.15))
-                            .clipShape(RoundedRectangle(cornerRadius: 3))
+                            .background(AnvilColor.accentGreen.opacity(0.15), in: RoundedRectangle(cornerRadius: 3))
                     }
                 }
                 Text(config.providerType.capitalized)
                     .font(.caption)
-                    .foregroundStyle(AnvilColor.textSecondary)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()
@@ -299,15 +298,15 @@ struct ProviderFormSheet: View {
                 if providerType == "claude-cli" {
                     HStack {
                         Text("CLI Path")
-                            .foregroundStyle(AnvilColor.textSecondary)
+                            .foregroundStyle(.secondary)
                         Spacer()
                         Text(detectedCLIPath)
                             .font(.system(.body, design: .monospaced))
-                            .foregroundStyle(AnvilColor.textPrimary)
+                            .foregroundStyle(.primary)
                     }
                     Text("Uses your existing Claude Code CLI authentication. No API key needed.")
                         .font(.caption)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 } else {
                     if providerType != "ollama" {
                         SecureField("API Key", text: $apiKey)
@@ -444,7 +443,7 @@ struct AppearanceSettingsView: View {
                     Text("Font Size")
                     Spacer()
                     Text("\(Int(settings.codeFontSize)) px")
-                        .foregroundStyle(AnvilColor.textSecondary)
+                        .foregroundStyle(.secondary)
                         .monospacedDigit()
                 }
                 Slider(value: $settings.codeFontSize, in: 10...20, step: 1)
@@ -458,7 +457,7 @@ struct AppearanceSettingsView: View {
                     Text("Sidebar Width")
                     Spacer()
                     Text("\(Int(settings.sidebarWidth)) px")
-                        .foregroundStyle(AnvilColor.textSecondary)
+                        .foregroundStyle(.secondary)
                         .monospacedDigit()
                 }
                 Slider(value: $settings.sidebarWidth, in: 200...400, step: 10)
@@ -475,21 +474,21 @@ struct IntegrationSettingsView: View {
         VStack(spacing: AnvilSpacing.lg) {
             Image(systemName: "puzzlepiece.extension")
                 .font(.system(size: 40))
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.tertiary)
 
             Text("Integrations")
                 .font(.headline)
-                .foregroundStyle(AnvilColor.textPrimary)
+                .foregroundStyle(.primary)
 
             Text("Configure third-party integrations such as GitHub, Jira, Linear, and Slack.")
                 .font(.subheadline)
-                .foregroundStyle(AnvilColor.textSecondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 360)
 
             Text("Coming soon")
                 .font(.caption)
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.tertiary)
                 .padding(.top, AnvilSpacing.sm)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -519,17 +518,10 @@ struct KeybindingSettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(AnvilColor.textTertiary)
-                TextField("Search keybindings...", text: $searchText)
-                    .textFieldStyle(.plain)
-            }
-            .padding(8)
-            .background(AnvilColor.backgroundTertiary)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
+            TextField("Search keybindings...", text: $searchText)
+                .textFieldStyle(.roundedBorder)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
 
             List {
                 ForEach(contextOrder, id: \.rawValue) { context in
@@ -567,17 +559,16 @@ struct KeybindingRow: View {
     var body: some View {
         HStack {
             Text(binding.label)
-                .foregroundStyle(AnvilColor.textPrimary)
+                .foregroundStyle(.primary)
 
             Spacer()
 
             Text(keyComboString)
                 .font(.system(.caption, design: .monospaced))
-                .foregroundStyle(AnvilColor.textSecondary)
+                .foregroundStyle(.secondary)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
-                .background(AnvilColor.backgroundTertiary)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 4))
         }
     }
 

@@ -11,14 +11,13 @@ struct ErrorFeed: View {
     }()
 
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(viewModel.errors) { error in
-                    errorRow(error)
-                    Divider().overlay(AnvilColor.borderSubtle)
-                }
+        List {
+            ForEach(viewModel.errors) { error in
+                errorRow(error)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
             }
         }
+        .listStyle(.inset)
     }
 
     // MARK: - Error Row
@@ -36,7 +35,6 @@ struct ErrorFeed: View {
                 HStack {
                     Text(item.event.title)
                         .font(AnvilFont.sidebarItem)
-                        .foregroundStyle(AnvilColor.textPrimary)
                         .lineLimit(1)
 
                     Spacer()
@@ -53,31 +51,29 @@ struct ErrorFeed: View {
                     if let service = item.event.tags["service"] {
                         Text(service)
                             .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
                     }
 
                     Text("·")
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
 
                     // First seen
                     Text("First: \(timeFormatter.localizedString(for: item.event.firstSeen, relativeTo: .now))")
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
 
                     Text("·")
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
 
                     // Last seen
                     Text("Last: \(timeFormatter.localizedString(for: item.event.lastSeen, relativeTo: .now))")
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
             }
         }
-        .padding(.horizontal, AnvilSpacing.lg)
-        .padding(.vertical, AnvilSpacing.md)
-        .background(viewModel.selectedErrorID == item.id ? AnvilColor.selectionBackground : .clear)
         .contentShape(Rectangle())
+        .listRowBackground(viewModel.selectedErrorID == item.id ? Color.accentColor.opacity(0.14) : Color.clear)
         .onTapGesture {
             viewModel.selectedErrorID = item.id
         }

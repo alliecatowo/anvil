@@ -10,12 +10,12 @@ struct SearchPanel: View {
             // Header
             searchHeader
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Search inputs
             searchInputs
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             // Results
             if viewModel.isSearching {
@@ -39,7 +39,7 @@ struct SearchPanel: View {
                 resultsList
             }
         }
-        .background(AnvilColor.backgroundSecondary)
+        .background(.background)
         .frame(width: 320)
         .onAppear { viewModel.projectPath = appState.currentProjectPath }
         .onChange(of: appState.currentProjectPath) { _, newPath in
@@ -55,10 +55,8 @@ struct SearchPanel: View {
                 .font(.system(size: 12))
                 .foregroundStyle(AnvilColor.textTertiary)
 
-            Text("SEARCH")
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textSecondary)
-                .tracking(0.3)
+            Text("Search")
+                .font(.headline)
 
             Spacer()
 
@@ -105,12 +103,11 @@ struct SearchPanel: View {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 11))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
 
                     TextField("Search", text: $viewModel.searchText)
                         .textFieldStyle(.plain)
                         .font(AnvilFont.body)
-                        .foregroundStyle(AnvilColor.textPrimary)
 
                     if !viewModel.searchText.isEmpty {
                         Button {
@@ -118,19 +115,15 @@ struct SearchPanel: View {
                         } label: {
                             Image(systemName: "xmark.circle.fill")
                                 .font(.system(size: 11))
-                                .foregroundStyle(AnvilColor.textTertiary)
+                                .foregroundStyle(.tertiary)
                         }
                         .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, AnvilSpacing.xs)
                 .padding(.vertical, 4)
-                .background(AnvilColor.backgroundPrimary)
+                .background(.background)
                 .cornerRadius(4)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-                )
             }
 
             // Toggle buttons row
@@ -152,34 +145,22 @@ struct SearchPanel: View {
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.right")
                             .font(.system(size: 11))
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
 
                         TextField("Replace", text: $viewModel.replaceText)
                             .textFieldStyle(.plain)
                             .font(AnvilFont.body)
-                            .foregroundStyle(AnvilColor.textPrimary)
                     }
                     .padding(.horizontal, AnvilSpacing.xs)
                     .padding(.vertical, 4)
-                    .background(AnvilColor.backgroundPrimary)
+                    .background(.background)
                     .cornerRadius(4)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-                    )
 
-                    Button {
+                    Button("Replace All") {
                         viewModel.replaceAll()
-                    } label: {
-                        Text("Replace All")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textSecondary)
-                            .padding(.horizontal, AnvilSpacing.xs)
-                            .padding(.vertical, 2)
-                            .background(AnvilColor.backgroundTertiary)
-                            .cornerRadius(4)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                     .disabled(viewModel.replaceText.isEmpty || viewModel.results.isEmpty)
                 }
             }
@@ -191,21 +172,16 @@ struct SearchPanel: View {
                 HStack(spacing: 4) {
                     Image(systemName: "doc")
                         .font(.system(size: 11))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
 
                     TextField("Files to include (e.g. *.swift, *.ts)", text: $viewModel.fileFilter)
                         .textFieldStyle(.plain)
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textPrimary)
                 }
                 .padding(.horizontal, AnvilSpacing.xs)
                 .padding(.vertical, 3)
-                .background(AnvilColor.backgroundPrimary)
+                .background(.background)
                 .cornerRadius(4)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-                )
             }
         }
         .padding(.horizontal, AnvilSpacing.md)
@@ -309,13 +285,6 @@ struct SearchPanel: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .onHover { hovering in
-            if hovering {
-                NSCursor.pointingHand.push()
-            } else {
-                NSCursor.pop()
-            }
-        }
     }
 
     @ViewBuilder
@@ -361,21 +330,12 @@ struct SearchPanel: View {
     // MARK: - Helpers
 
     private func searchToggle(_ label: String, isActive: Binding<Bool>, help: String) -> some View {
-        Button {
-            isActive.wrappedValue.toggle()
-        } label: {
+        Toggle(isOn: isActive) {
             Text(label)
                 .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundStyle(isActive.wrappedValue ? AnvilColor.accentBlue : AnvilColor.textTertiary)
-                .frame(width: 22, height: 18)
-                .background(isActive.wrappedValue ? AnvilColor.accentBlue.opacity(0.15) : Color.clear)
-                .cornerRadius(3)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 3)
-                        .stroke(isActive.wrappedValue ? AnvilColor.accentBlue.opacity(0.3) : AnvilColor.borderSubtle, lineWidth: 1)
-                )
         }
-        .buttonStyle(.plain)
+        .toggleStyle(.button)
+        .controlSize(.mini)
         .help(help)
     }
 

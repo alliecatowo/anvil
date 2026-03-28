@@ -10,31 +10,37 @@ struct IntentSidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             AnvilSearchField(text: $viewModel.searchText, placeholder: "Search tickets...")
+
+            HStack(spacing: AnvilSpacing.sm) {
+                Picker("View", selection: $viewModel.viewMode) {
+                    ForEach(IntentViewMode.allCases, id: \.rawValue) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: viewModel.viewMode) { _, _ in
+                    viewModel.selectTicket(nil)
+                }
+
+                Button {
+                    withAnimation(AnvilAnimation.standard) {
+                        isQuickAdding = true
+                        isQuickAddFocused = true
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+            .padding(.horizontal, AnvilSpacing.sm)
+            .padding(.vertical, AnvilSpacing.xs)
+
+            Divider()
+
             List {
-                Section {
-                    Picker("View", selection: $viewModel.viewMode) {
-                        ForEach(IntentViewMode.allCases, id: \.rawValue) { mode in
-                            Text(mode.rawValue).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .onChange(of: viewModel.viewMode) { _, _ in
-                        viewModel.selectTicket(nil)
-                    }
-
-                    Button {
-                        withAnimation(AnvilAnimation.standard) {
-                            isQuickAdding = true
-                            isQuickAddFocused = true
-                        }
-                    } label: {
-                        Label("New Ticket", systemImage: "plus")
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    if isQuickAdding {
-                        quickAddField
-                    }
+                if isQuickAdding {
+                    quickAddField
                 }
 
                 Section("Sprint") {
@@ -50,7 +56,7 @@ struct IntentSidebar: View {
                                 }
                         }
                     } header: {
-                        sectionHeader(group, count: tickets.count)
+                        AnvilSidebarSectionHeader(title: group, icon: "line.3.horizontal.decrease.circle", count: tickets.count)
                     }
                 }
             }
@@ -181,20 +187,15 @@ struct IntentSidebar: View {
     // MARK: - Cycle Header
 
     private var cycleHeader: some View {
-        HStack {
-            Image(systemName: "arrow.triangle.2.circlepath")
-                .font(.system(size: 11))
-                .foregroundStyle(Color.accentColor)
-
-            Text(viewModel.currentCycle.name)
-                .font(AnvilFont.label)
-
-            Spacer()
-
+        AnvilSidebarInfoRow(
+            title: viewModel.currentCycle.name,
+            icon: "arrow.triangle.2.circlepath",
+            detail: "Current cycle"
+        ) {
             if let velocity = viewModel.currentCycle.velocity {
                 Text("\(velocity) pts")
                     .font(AnvilFont.label)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AnvilColor.textTertiary)
             }
         }
     }
@@ -273,24 +274,6 @@ struct IntentSidebar: View {
         .background(viewModel.selectedTicketId == ticket.id ? Color.accentColor.opacity(0.14) : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture { viewModel.selectTicket(ticket.id) }
-    }
-
-    // MARK: - Section Header
-
-    private func sectionHeader(_ title: String, count: Int) -> some View {
-        HStack {
-            Text(title.uppercased())
-                .font(AnvilFont.label)
-                .foregroundStyle(.secondary)
-                .tracking(0.3)
-
-            Spacer()
-
-            Text("\(count)")
-                .font(AnvilFont.label)
-                .foregroundStyle(.secondary)
-        }
-        .textCase(nil)
     }
 
     // MARK: - Due Date

@@ -12,7 +12,7 @@ struct BreadcrumbBar: View {
             } else {
                 Text("No file selected")
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
             }
 
             Spacer()
@@ -21,13 +21,13 @@ struct BreadcrumbBar: View {
             if viewModel.selectedFile != nil {
                 Text("Ln \(viewModel.cursorLine), Col \(viewModel.cursorColumn)")
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
                     .padding(.trailing, AnvilSpacing.sm)
             }
         }
         .padding(.horizontal, AnvilSpacing.md)
         .frame(height: 28)
-        .background(AnvilColor.backgroundSecondary)
+        .background(.bar)
     }
 
     // MARK: - Breadcrumbs
@@ -59,7 +59,7 @@ struct BreadcrumbBar: View {
     private var chevron: some View {
         Image(systemName: "chevron.right")
             .font(.system(size: 8, weight: .bold))
-            .foregroundStyle(AnvilColor.textTertiary)
+            .foregroundStyle(.tertiary)
     }
 
     // MARK: - Path Segment with Dropdown
@@ -78,14 +78,14 @@ struct BreadcrumbBar: View {
                 Text(name)
                     .font(AnvilFont.label)
                     .foregroundStyle(
-                        isLast ? AnvilColor.textPrimary : AnvilColor.textSecondary
+                        isLast ? .primary : .secondary
                     )
             }
             .padding(.horizontal, 4)
             .padding(.vertical, 2)
             .background(
                 activePopoverIndex == index
-                    ? AnvilColor.backgroundTertiary
+                    ? Color.accentColor.opacity(0.1)
                     : Color.clear,
                 in: RoundedRectangle(cornerRadius: 4)
             )
@@ -138,7 +138,7 @@ struct BreadcrumbBar: View {
                 if siblings.isEmpty {
                     Text("No items")
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                         .padding(AnvilSpacing.sm)
                 } else {
                     ForEach(siblings) { node in
@@ -159,7 +159,7 @@ struct BreadcrumbBar: View {
                                     .foregroundStyle(
                                         node.name == (level < components.count ? components[level] : "")
                                             ? AnvilColor.accentBlue
-                                            : AnvilColor.textPrimary
+                                            : .primary
                                     )
 
                                 Spacer()
@@ -180,7 +180,6 @@ struct BreadcrumbBar: View {
         }
         .frame(width: 200)
         .frame(maxHeight: 300)
-        .background(AnvilColor.backgroundSecondary)
     }
 
     // MARK: - Helpers
@@ -210,7 +209,7 @@ struct BreadcrumbBar: View {
         case "py": return AnvilColor.accentGreen
         case "md": return AnvilColor.accentBlue
         case "json": return AnvilColor.accentAmber
-        default: return AnvilColor.textTertiary
+        default: return Color.secondary
         }
     }
 }

@@ -9,71 +9,67 @@ struct StreamingCodeBlock: View {
     let isStreaming: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Language label header
-            HStack {
-                if let language, !language.isEmpty {
-                    Text(language)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(AnvilColor.textTertiary)
-                }
-                Spacer()
-                if isStreaming {
-                    HStack(spacing: AnvilSpacing.xxs) {
-                        StreamingDot()
-                        Text("Streaming...")
-                            .font(.system(size: 10))
-                            .foregroundStyle(AnvilColor.accentPurple)
+        GroupBox {
+            VStack(alignment: .leading, spacing: 0) {
+                // Language label header
+                HStack {
+                    if let language, !language.isEmpty {
+                        Text(language)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(AnvilColor.textTertiary)
                     }
-                } else {
-                    copyButton
-                }
-            }
-            .padding(.horizontal, AnvilSpacing.sm)
-            .padding(.vertical, AnvilSpacing.xxs)
-
-            Divider().overlay(AnvilColor.borderSubtle)
-
-            // Code content with line numbers and highlighting
-            ScrollView([.horizontal, .vertical]) {
-                HStack(alignment: .top, spacing: 0) {
-                    // Line number gutter
-                    VStack(alignment: .trailing, spacing: 0) {
-                        ForEach(Array(lines.enumerated()), id: \.offset) { index, _ in
-                            Text("\(index + 1)")
-                                .font(AnvilFont.code)
-                                .foregroundStyle(AnvilColor.textTertiary)
-                                .frame(minWidth: 30, alignment: .trailing)
-                                .padding(.trailing, AnvilSpacing.sm)
+                    Spacer()
+                    if isStreaming {
+                        HStack(spacing: AnvilSpacing.xxs) {
+                            StreamingDot()
+                            Text("Streaming...")
+                                .font(.system(size: 10))
+                                .foregroundStyle(AnvilColor.accentPurple)
                         }
+                    } else {
+                        copyButton
                     }
+                }
+                .padding(.horizontal, AnvilSpacing.sm)
+                .padding(.vertical, AnvilSpacing.xxs)
 
-                    // Code with highlighting
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
-                            HStack(spacing: 0) {
-                                highlightedLine(line)
+                Divider()
 
-                                // Streaming cursor on the last line
-                                if isStreaming && index == lines.count - 1 {
-                                    StreamingCursor()
+                // Code content with line numbers and highlighting
+                ScrollView([.horizontal, .vertical]) {
+                    HStack(alignment: .top, spacing: 0) {
+                        // Line number gutter
+                        VStack(alignment: .trailing, spacing: 0) {
+                            ForEach(Array(lines.enumerated()), id: \.offset) { index, _ in
+                                Text("\(index + 1)")
+                                    .font(AnvilFont.code)
+                                    .foregroundStyle(AnvilColor.textTertiary)
+                                    .frame(minWidth: 30, alignment: .trailing)
+                                    .padding(.trailing, AnvilSpacing.sm)
+                            }
+                        }
+
+                        // Code with highlighting
+                        VStack(alignment: .leading, spacing: 0) {
+                            ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                                HStack(spacing: 0) {
+                                    highlightedLine(line)
+
+                                    // Streaming cursor on the last line
+                                    if isStreaming && index == lines.count - 1 {
+                                        StreamingCursor()
+                                    }
+
+                                    Spacer(minLength: 0)
                                 }
-
-                                Spacer(minLength: 0)
                             }
                         }
                     }
+                    .padding(AnvilSpacing.sm)
                 }
-                .padding(AnvilSpacing.sm)
+                .frame(maxHeight: 400)
             }
-            .frame(maxHeight: 400)
         }
-        .background(AnvilColor.backgroundPrimary)
-        .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                .stroke(isStreaming ? AnvilColor.accentPurple.opacity(0.3) : AnvilColor.borderSubtle, lineWidth: 1)
-        )
     }
 
     // MARK: - Lines

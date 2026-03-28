@@ -40,11 +40,7 @@ struct CodebaseQAView: View {
                     Spacer()
                     Text("⌘/")
                         .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                        .padding(.horizontal, AnvilSpacing.xs)
-                        .padding(.vertical, AnvilSpacing.xxxs)
-                        .background(AnvilColor.backgroundTertiary)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .foregroundStyle(.tertiary)
                     Button { appState.toggleCodebaseQA() } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 11, weight: .medium))
@@ -56,14 +52,14 @@ struct CodebaseQAView: View {
                 .padding(.top, AnvilSpacing.lg)
                 .padding(.bottom, AnvilSpacing.md)
 
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
 
                 // Query input
                 HStack(spacing: AnvilSpacing.sm) {
                     TextField("Ask anything about the codebase...", text: $query)
                         .textFieldStyle(.plain)
                         .font(AnvilFont.body)
-                        .foregroundStyle(AnvilColor.textPrimary)
+                        .foregroundStyle(.primary)
                         .focused($inputFocused)
                         .onSubmit { submitQuery() }
 
@@ -83,9 +79,8 @@ struct CodebaseQAView: View {
                 }
                 .padding(.horizontal, AnvilSpacing.lg)
                 .padding(.vertical, AnvilSpacing.md)
-                .background(AnvilColor.backgroundSecondary)
 
-                Divider().overlay(AnvilColor.borderSubtle)
+                Divider()
 
                 // Response area
                 if history.isEmpty && answer.isEmpty && errorMessage == nil {
@@ -123,7 +118,7 @@ struct CodebaseQAView: View {
                 }
             }
             .frame(width: 700, height: 540)
-            .background(AnvilColor.backgroundPrimary)
+            .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .shadow(color: .black.opacity(0.3), radius: 24, x: 0, y: 8)
         }
@@ -156,13 +151,9 @@ struct CodebaseQAView: View {
                     } label: {
                         Text(q)
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textSecondary)
-                            .padding(.horizontal, AnvilSpacing.md)
-                            .padding(.vertical, AnvilSpacing.xs)
-                            .background(AnvilColor.backgroundSecondary)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
             }
         }
@@ -205,8 +196,6 @@ struct CodebaseQAView: View {
             }
         }
         .padding(AnvilSpacing.md)
-        .background(AnvilColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     private func citationsView(_ files: [CitedFile]) -> some View {
@@ -220,19 +209,11 @@ struct CodebaseQAView: View {
                     Button {
                         openFile(file.path)
                     } label: {
-                        HStack(spacing: AnvilSpacing.xxs) {
-                            Image(systemName: "doc.text")
-                                .font(.system(size: 10))
-                            Text(file.displayName)
-                                .font(AnvilFont.code)
-                        }
-                        .foregroundStyle(AnvilColor.accentBlue)
-                        .padding(.horizontal, AnvilSpacing.sm)
-                        .padding(.vertical, AnvilSpacing.xxs)
-                        .background(AnvilColor.accentBlue.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        Label(file.displayName, systemImage: "doc.text")
+                            .font(AnvilFont.code)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
             }
         }
@@ -408,27 +389,21 @@ private struct QAEntryView: View {
                 .foregroundStyle(AnvilColor.textPrimary)
                 .textSelection(.enabled)
 
-            // Citations (display only in history — no open action)
+            // Citations (display only in history -- no open action)
             if !entry.citations.isEmpty {
                 HStack(spacing: AnvilSpacing.xs) {
                     Text("References:")
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                     ForEach(entry.citations) { file in
                         Text(file.displayName)
                             .font(AnvilFont.code)
                             .foregroundStyle(AnvilColor.accentBlue)
-                            .padding(.horizontal, AnvilSpacing.xs)
-                            .padding(.vertical, AnvilSpacing.xxxs)
-                            .background(AnvilColor.accentBlue.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 3))
                     }
                 }
             }
         }
         .padding(AnvilSpacing.md)
-        .background(AnvilColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 

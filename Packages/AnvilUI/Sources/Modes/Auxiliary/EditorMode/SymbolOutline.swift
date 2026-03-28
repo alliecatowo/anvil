@@ -7,21 +7,19 @@ struct SymbolOutline: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("OUTLINE")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                    .tracking(0.3)
+                Text("Outline")
+                    .font(.headline)
 
                 Spacer()
 
                 Text("\(viewModel.symbols.count)")
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Divider()
 
             if viewModel.symbols.isEmpty {
                 emptyState
@@ -34,14 +32,12 @@ struct SymbolOutline: View {
     // MARK: - Symbol List
 
     private var symbolList: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(viewModel.symbols) { symbol in
-                    symbolRow(symbol)
-                }
+        List {
+            ForEach(viewModel.symbols) { symbol in
+                symbolRow(symbol)
             }
-            .padding(.vertical, AnvilSpacing.xxs)
         }
+        .listStyle(.sidebar)
     }
 
     private func symbolRow(_ symbol: EditorSymbol) -> some View {
@@ -55,19 +51,16 @@ struct SymbolOutline: View {
 
             Text(symbol.name)
                 .font(AnvilFont.code)
-                .foregroundStyle(isAtCursor ? AnvilColor.textPrimary : AnvilColor.textSecondary)
+                .foregroundStyle(isAtCursor ? .primary : .secondary)
                 .lineLimit(1)
 
             Spacer()
 
             Text("L\(symbol.line)")
                 .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.tertiary)
         }
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.xxs)
-        .frame(height: 28)
-        .background(isAtCursor ? AnvilColor.selectionBackground.opacity(0.5) : Color.clear)
+        .listRowBackground(isAtCursor ? Color.accentColor.opacity(0.14) : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture {
             viewModel.navigateToSymbol(symbol)
@@ -77,16 +70,10 @@ struct SymbolOutline: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        VStack(spacing: AnvilSpacing.sm) {
-            Spacer()
-            Image(systemName: "list.bullet.indent")
-                .font(.system(size: 24, weight: .thin))
-                .foregroundStyle(AnvilColor.textTertiary.opacity(0.5))
-            Text("No symbols")
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-            Spacer()
+        ContentUnavailableView {
+            Label("No Symbols", systemImage: "list.bullet.indent")
+        } description: {
+            Text("Open a file to see its symbol outline.")
         }
-        .frame(maxWidth: .infinity)
     }
 }

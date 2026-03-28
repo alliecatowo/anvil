@@ -11,29 +11,25 @@ struct InlineEditView: View {
     let onRejectAll: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // File header
-            fileHeader
+        GroupBox {
+            VStack(alignment: .leading, spacing: 0) {
+                // File header
+                fileHeader
 
-            // Hunks
-            ForEach(suggestion.hunks) { hunk in
-                EditHunkView(
-                    hunk: hunk,
-                    onAccept: { onAcceptHunk(hunk.id) },
-                    onReject: { onRejectHunk(hunk.id) }
-                )
+                // Hunks
+                ForEach(suggestion.hunks) { hunk in
+                    EditHunkView(
+                        hunk: hunk,
+                        onAccept: { onAcceptHunk(hunk.id) },
+                        onReject: { onRejectHunk(hunk.id) }
+                    )
 
-                if hunk.id != suggestion.hunks.last?.id {
-                    Divider().overlay(AnvilColor.borderSubtle)
+                    if hunk.id != suggestion.hunks.last?.id {
+                        Divider()
+                    }
                 }
             }
         }
-        .background(AnvilColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                .stroke(AnvilColor.borderMedium, lineWidth: 1)
-        )
     }
 
     // MARK: - File Header
@@ -231,36 +227,20 @@ struct EditHunkView: View {
                 Button {
                     onAccept()
                 } label: {
-                    HStack(spacing: AnvilSpacing.xxs) {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 10, weight: .bold))
-                        Text("Accept")
-                            .font(AnvilFont.label)
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, AnvilSpacing.sm)
-                    .padding(.vertical, AnvilSpacing.xxs)
-                    .background(AnvilColor.accentGreen)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    Label("Accept", systemImage: "checkmark")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .tint(.green)
+                .controlSize(.small)
 
                 Button {
                     onReject()
                 } label: {
-                    HStack(spacing: AnvilSpacing.xxs) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 10, weight: .bold))
-                        Text("Reject")
-                            .font(AnvilFont.label)
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, AnvilSpacing.sm)
-                    .padding(.vertical, AnvilSpacing.xxs)
-                    .background(AnvilColor.accentRed)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    Label("Reject", systemImage: "xmark")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .tint(.red)
+                .controlSize(.small)
 
             case .accepted:
                 HStack(spacing: AnvilSpacing.xxs) {

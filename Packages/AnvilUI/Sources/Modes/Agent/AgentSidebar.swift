@@ -8,20 +8,20 @@ struct AgentSidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: AnvilSpacing.sm) {
-                Button {
-                    viewModel.startNewSession(prompt: "", model: viewModel.selectedModelId)
-                    viewModel.showConversation()
-                } label: {
-                    Label("New Session", systemImage: "plus")
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-
                 Picker("View", selection: $activeSidebarTab) {
                     Label("Sessions", systemImage: "message").tag(SidebarTab.sessions)
                     Label("Dashboard", systemImage: "square.grid.2x2").tag(SidebarTab.dashboard)
                 }
                 .pickerStyle(.segmented)
+
+                Button {
+                    viewModel.startNewSession(prompt: "", model: viewModel.selectedModelId)
+                    viewModel.showConversation()
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
@@ -30,7 +30,7 @@ struct AgentSidebar: View {
 
             List {
                 if !viewModel.synthesisRooms.isEmpty {
-                    Section("Synthesis Rooms") {
+                    Section {
                         ForEach(viewModel.synthesisRooms) { room in
                             let isActive = isSynthesisRoomActive(room.id)
                             HStack(spacing: AnvilSpacing.sm) {
@@ -58,10 +58,16 @@ struct AgentSidebar: View {
                                 }
                             }
                         }
+                    } header: {
+                        AnvilSidebarSectionHeader(
+                            title: "Synthesis Rooms",
+                            icon: "arrow.triangle.merge",
+                            count: viewModel.synthesisRooms.count
+                        )
                     }
                 }
 
-                Section("Sessions") {
+                Section {
                     ForEach(viewModel.sessions) { session in
                         AgentSessionRow(
                             session: session,
@@ -90,6 +96,12 @@ struct AgentSidebar: View {
                             }
                         }
                     }
+                } header: {
+                    AnvilSidebarSectionHeader(
+                        title: "Sessions",
+                        icon: "message",
+                        count: viewModel.sessions.count
+                    )
                 }
             }
             .listStyle(.sidebar)
