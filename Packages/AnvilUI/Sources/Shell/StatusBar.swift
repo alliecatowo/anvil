@@ -74,6 +74,9 @@ public struct StatusBar: View {
             // Center: Agent activity indicator
             AgentActivityIndicator()
 
+            // Background agent sessions badge
+            BackgroundSessionsBadge()
+
             Spacer()
 
             Circle()
@@ -277,6 +280,54 @@ struct AgentActivityIndicator: View {
         timerTask?.cancel()
         timerTask = nil
         elapsedSeconds = 0
+    }
+}
+
+// MARK: - Background Sessions Badge
+
+struct BackgroundSessionsBadge: View {
+    @EnvironmentObject var appState: AppState
+    @State private var isPulsing = false
+
+    private var count: Int {
+        appState.agentViewModel.runningBackgroundSessions.count
+    }
+
+    var body: some View {
+        if count > 0 {
+            Button {
+                appState.toggleAgentPanel()
+            } label: {
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(AnvilColor.accentGreen)
+                        .frame(width: 6, height: 6)
+                        .overlay(
+                            Circle()
+                                .stroke(AnvilColor.accentGreen.opacity(0.5), lineWidth: 2)
+                                .scaleEffect(isPulsing ? 1.8 : 1.0)
+                                .opacity(isPulsing ? 0 : 0.6)
+                                .animation(
+                                    .easeOut(duration: 1.4).repeatForever(autoreverses: false),
+                                    value: isPulsing
+                                )
+                        )
+
+                    Text("\(count) running")
+                        .font(AnvilFont.statusBar)
+                        .foregroundStyle(AnvilColor.accentGreen)
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(AnvilColor.accentGreen.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+            }
+            .buttonStyle(.borderless)
+            .help("\(count) background agent session\(count == 1 ? "" : "s") running")
+            .accessibilityLabel("\(count) agent sessions running")
+            .accessibilityAddTraits(.isButton)
+            .onAppear { isPulsing = true }
+        }
     }
 }
 
