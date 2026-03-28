@@ -23,6 +23,7 @@ struct BreadcrumbBar: View {
                     .font(AnvilFont.label)
                     .foregroundStyle(.tertiary)
                     .padding(.trailing, AnvilSpacing.sm)
+                    .accessibilityLabel("Cursor at line \(viewModel.cursorLine), column \(viewModel.cursorColumn)")
             }
         }
         .padding(.horizontal, AnvilSpacing.md)
@@ -60,6 +61,7 @@ struct BreadcrumbBar: View {
         Image(systemName: "chevron.right")
             .font(.system(size: 8, weight: .bold))
             .foregroundStyle(.tertiary)
+            .accessibilityHidden(true)
     }
 
     // MARK: - Path Segment with Dropdown
@@ -73,6 +75,7 @@ struct BreadcrumbBar: View {
                     Image(systemName: fileIcon(for: name))
                         .font(.system(size: 10))
                         .foregroundStyle(fileColor(for: name))
+                        .accessibilityHidden(true)
                 }
 
                 Text(name)
@@ -91,6 +94,8 @@ struct BreadcrumbBar: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(isLast ? "Current file: \(name)" : "Path segment: \(name)")
+        .accessibilityAddTraits(.isButton)
         .popover(isPresented: Binding(
             get: { activePopoverIndex == index },
             set: { if !$0 { activePopoverIndex = nil } }
@@ -109,12 +114,14 @@ struct BreadcrumbBar: View {
                 } label: {
                     Label(sym.name, systemImage: sym.kind.icon)
                 }
+                .accessibilityLabel("Navigate to \(sym.name)")
             }
         } label: {
             HStack(spacing: AnvilSpacing.xxxs) {
                 Image(systemName: symbol.kind.icon)
                     .font(.system(size: 10))
                     .foregroundStyle(symbol.kind.color)
+                    .accessibilityHidden(true)
 
                 Text(symbol.name)
                     .font(AnvilFont.label)
@@ -126,6 +133,7 @@ struct BreadcrumbBar: View {
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .fixedSize()
+        .accessibilityLabel("Current symbol: \(symbol.name)")
     }
 
     // MARK: - Sibling Dropdown
@@ -153,6 +161,7 @@ struct BreadcrumbBar: View {
                                     .font(.system(size: 12))
                                     .foregroundStyle(node.isFolder ? AnvilColor.accentBlue : fileColor(for: node.name))
                                     .frame(width: 16)
+                                    .accessibilityHidden(true)
 
                                 Text(node.name)
                                     .font(AnvilFont.label)
@@ -169,6 +178,8 @@ struct BreadcrumbBar: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel(node.isFolder ? "Folder: \(node.name)" : node.name)
+                        .accessibilityAddTraits(.isButton)
                         .background(
                             node.name == (level < components.count ? components[level] : "")
                                 ? AnvilColor.accentBlue.opacity(0.08)

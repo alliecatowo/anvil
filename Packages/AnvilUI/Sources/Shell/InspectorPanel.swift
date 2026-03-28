@@ -41,7 +41,7 @@ public struct InspectorPanel: View {
                 .padding(AnvilSpacing.md)
             }
         }
-        .background(.background)
+        .background(.regularMaterial)
     }
 }
 

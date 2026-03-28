@@ -42,6 +42,7 @@ struct EditorView: View {
             Image(systemName: "doc.text")
                 .font(.system(size: 48, weight: .thin))
                 .foregroundStyle(AnvilColor.textTertiary.opacity(0.5))
+                .accessibilityHidden(true)
 
             Text("No File Open")
                 .font(AnvilFont.heading)
@@ -53,6 +54,8 @@ struct EditorView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AnvilColor.backgroundPrimary)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("No file open. Open a file from the sidebar to start editing.")
     }
 
     // MARK: - Code View
@@ -122,6 +125,8 @@ struct EditorView: View {
                                     .frame(width: 14, height: 20)
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel(isCollapsed ? "Expand code fold at line \(lineNumber)" : "Collapse code fold at line \(lineNumber)")
+                            .accessibilityAddTraits(.isButton)
                         } else {
                             Spacer(minLength: 0)
                                 .frame(width: viewModel.codeFoldingEnabled ? 14 : 0)
@@ -184,14 +189,17 @@ struct EditorView: View {
             RoundedRectangle(cornerRadius: 1)
                 .fill(AnvilColor.accentGreen)
                 .frame(width: 3)
+                .accessibilityLabel("Line added")
         case .modified:
             RoundedRectangle(cornerRadius: 1)
                 .fill(AnvilColor.accentBlue)
                 .frame(width: 3)
+                .accessibilityLabel("Line modified")
         case .deleted:
             Triangle()
                 .fill(AnvilColor.accentRed)
                 .frame(width: 6, height: 6)
+                .accessibilityLabel("Line deleted")
         }
     }
 
@@ -245,6 +253,8 @@ struct EditorView: View {
                                     handleLineClick(lineNumber: lineNumber)
                                 }
                         )
+                        .accessibilityLabel("Line \(lineNumber)")
+                        .accessibilityAddTraits(.isButton)
 
                     // Collapsed fold placeholder in code area
                     if isCollapsed {
@@ -252,11 +262,13 @@ struct EditorView: View {
                             Image(systemName: "ellipsis")
                                 .font(.system(size: 10))
                                 .foregroundStyle(AnvilColor.textTertiary)
+                                .accessibilityHidden(true)
                         }
                         .frame(height: 16)
                         .padding(.horizontal, AnvilSpacing.md)
                         .background(AnvilColor.backgroundTertiary.opacity(0.3))
                         .clipShape(RoundedRectangle(cornerRadius: 3))
+                        .accessibilityLabel("Collapsed code region")
                     }
                 }
             }

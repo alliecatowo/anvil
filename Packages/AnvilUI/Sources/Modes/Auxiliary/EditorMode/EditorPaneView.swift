@@ -30,6 +30,8 @@ struct EditorPaneView: View {
                             .frame(width: 24, height: 24)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Close Split Pane")
+                    .accessibilityAddTraits(.isButton)
                     .help("Close Split")
                     .padding(.trailing, AnvilSpacing.xs)
                 }
@@ -65,5 +67,7 @@ struct EditorPaneView: View {
         .onTapGesture {
             onFocus()
         }
+        .accessibilityLabel(isActive ? "Active editor pane" : "Editor pane")
+        .accessibilityAddTraits(.isButton)
     }
 }

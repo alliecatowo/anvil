@@ -119,8 +119,8 @@ struct CodebaseQAView: View {
             }
             .frame(width: 700, height: 540)
             .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.3), radius: 24, x: 0, y: 8)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .shadow(color: .black.opacity(0.15), radius: 20)
         }
         .onAppear { inputFocused = true }
     }

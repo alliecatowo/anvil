@@ -42,6 +42,9 @@ struct AnvilMain: App {
                     // Wire SQLite database adapter
                     let sqliteAdapter = SQLiteDatabaseAdapter()
                     container.databaseService.setAdapter(sqliteAdapter)
+
+                    // Wire external ticket provider based on available credentials
+                    wireTicketProvider(container: container)
                 }
                 .sheet(isPresented: $showSetupWizard) {
                     SetupWizard {
@@ -66,5 +69,35 @@ struct AnvilMain: App {
                 .environmentObject(appState)
                 .environmentObject(container)
         }
+    }
+
+    /// Detect stored credentials and wire the matching external ticket provider.
+    /// Reads tokens from the Infrastructure-layer KeychainStore (service: com.anvil.providers)
+    /// which shares the same Keychain entries as ProviderKeychain in AnvilUI.
+    @MainActor
+    private func wireTicketProvider(container: DependencyContainer) {
+        let keychain = KeychainStore(service: "com.anvil.providers")
+
+        // Prefer GitHub Issues when credentials are present
+        if let token = try? keychain.get("github.token"), !token.isEmpty,
+           let owner = try? keychain.get("github.owner"), !owner.isEmpty,
+           let repo = try? keychain.get("github.repo"), !repo.isEmpty {
+            let provider = GitHubIssuesTicketProvider(owner: owner, repo: repo, token: token)
+            container.setTicketAdapter(provider)
+            container.selectedTicketProvider = .github
+            return
+        }
+
+        // Fall back to Linear
+        if let apiKey = try? keychain.get("linear.apiKey"), !apiKey.isEmpty {
+            let teamId = (try? keychain.get("linear.teamId")) ?? nil
+            let provider = LinearTicketProvider(apiKey: apiKey, teamId: teamId)
+            container.setTicketAdapter(provider)
+            container.selectedTicketProvider = .linear
+            return
+        }
+
+        // No external ticket provider configured; the in-memory service handles local tickets.
+        container.selectedTicketProvider = .none
     }
 }

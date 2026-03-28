@@ -36,12 +36,15 @@ struct GitHubPRDetailView: View {
                 HStack(spacing: AnvilSpacing.xxs) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 10, weight: .bold))
+                        .accessibilityHidden(true)
                     Text("Back")
                         .font(AnvilFont.label)
                 }
                 .foregroundStyle(AnvilColor.textSecondary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Back to pull request list")
+            .accessibilityAddTraits(.isButton)
 
             Spacer()
 
@@ -49,11 +52,13 @@ struct GitHubPRDetailView: View {
 
             if pr.isDraft {
                 AnvilBadge(text: "Draft", color: AnvilColor.textTertiary)
+                    .accessibilityLabel("Draft pull request")
             }
 
             Text("#\(pr.number)")
                 .font(AnvilFont.code)
                 .foregroundStyle(AnvilColor.textTertiary)
+                .accessibilityLabel("Pull request number \(pr.number)")
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.sm)
@@ -72,6 +77,7 @@ struct GitHubPRDetailView: View {
                 HStack(spacing: AnvilSpacing.xxs) {
                     Image(systemName: "arrow.triangle.branch")
                         .font(.system(size: 11))
+                        .accessibilityHidden(true)
                     Text(pr.sourceBranch)
                         .font(AnvilFont.code)
                 }
@@ -80,11 +86,14 @@ struct GitHubPRDetailView: View {
                 Image(systemName: "arrow.right")
                     .font(.system(size: 10))
                     .foregroundStyle(AnvilColor.textTertiary)
+                    .accessibilityHidden(true)
 
                 Text(pr.targetBranch)
                     .font(AnvilFont.code)
                     .foregroundStyle(AnvilColor.textSecondary)
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Branch \(pr.sourceBranch) into \(pr.targetBranch)")
 
             // Metadata row
             HStack(spacing: AnvilSpacing.lg) {
@@ -98,10 +107,13 @@ struct GitHubPRDetailView: View {
                                 .font(.system(size: 9, weight: .medium))
                                 .foregroundStyle(AnvilColor.textSecondary)
                         )
+                        .accessibilityHidden(true)
                     Text(pr.author)
                         .font(AnvilFont.label)
                         .foregroundStyle(AnvilColor.textSecondary)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Author: \(pr.author)")
 
                 // Changes
                 HStack(spacing: AnvilSpacing.xs) {
@@ -115,6 +127,8 @@ struct GitHubPRDetailView: View {
                         .font(AnvilFont.label)
                         .foregroundStyle(AnvilColor.textTertiary)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(pr.additions) additions, \(pr.deletions) deletions, \(pr.changedFiles) files changed")
 
                 // Reviewers
                 if !pr.reviewers.isEmpty {
@@ -122,10 +136,13 @@ struct GitHubPRDetailView: View {
                         Image(systemName: "person.2")
                             .font(.system(size: 10))
                             .foregroundStyle(AnvilColor.textTertiary)
+                            .accessibilityHidden(true)
                         Text(pr.reviewers.joined(separator: ", "))
                             .font(AnvilFont.label)
                             .foregroundStyle(AnvilColor.textSecondary)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Reviewers: \(pr.reviewers.joined(separator: ", "))")
                 }
 
                 Spacer()
@@ -138,6 +155,8 @@ struct GitHubPRDetailView: View {
                         AnvilBadge(text: label, color: AnvilColor.accentBlue)
                     }
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Labels: \(pr.labels.joined(separator: ", "))")
             }
 
             // Body
@@ -173,28 +192,37 @@ struct GitHubPRDetailView: View {
                     HStack(spacing: 2) {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 10))
+                            .accessibilityHidden(true)
                         Text("\(summary.passed)")
                             .font(AnvilFont.label)
                     }
                     .foregroundStyle(AnvilColor.accentGreen)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(summary.passed) checks passed")
                 }
                 if summary.failed > 0 {
                     HStack(spacing: 2) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 10))
+                            .accessibilityHidden(true)
                         Text("\(summary.failed)")
                             .font(AnvilFont.label)
                     }
                     .foregroundStyle(AnvilColor.accentRed)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(summary.failed) checks failed")
                 }
                 if summary.pending > 0 {
                     HStack(spacing: 2) {
                         Image(systemName: "clock")
                             .font(.system(size: 10))
+                            .accessibilityHidden(true)
                         Text("\(summary.pending)")
                             .font(AnvilFont.label)
                     }
                     .foregroundStyle(AnvilColor.accentAmber)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(summary.pending) checks pending")
                 }
             }
 
@@ -217,6 +245,7 @@ struct GitHubPRDetailView: View {
                 .font(.system(size: 12))
                 .foregroundStyle(ciColor(check))
                 .frame(width: 16)
+                .accessibilityHidden(true)
 
             Text(check.name)
                 .font(AnvilFont.code)
@@ -236,6 +265,8 @@ struct GitHubPRDetailView: View {
             }
         }
         .padding(AnvilSpacing.sm)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Check \(check.name), \(check.conclusion?.rawValue.capitalized ?? check.status.rawValue.capitalized)")
     }
 
     // MARK: - Merge Section
@@ -251,23 +282,29 @@ struct GitHubPRDetailView: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 14))
                         .foregroundStyle(AnvilColor.accentPurple)
+                        .accessibilityHidden(true)
                     Text("This pull request has been merged.")
                         .font(AnvilFont.body)
                         .foregroundStyle(AnvilColor.textSecondary)
                 }
                 .padding(AnvilSpacing.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("This pull request has been merged")
             } else if pr.status == .closed {
                 HStack(spacing: AnvilSpacing.sm) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 14))
                         .foregroundStyle(AnvilColor.accentRed)
+                        .accessibilityHidden(true)
                     Text("This pull request has been closed.")
                         .font(AnvilFont.body)
                         .foregroundStyle(AnvilColor.textSecondary)
                 }
                 .padding(AnvilSpacing.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("This pull request has been closed")
             } else {
                 // Open PR — show merge controls
                 VStack(spacing: AnvilSpacing.md) {
@@ -279,34 +316,44 @@ struct GitHubPRDetailView: View {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(.system(size: 12))
                                     .foregroundStyle(AnvilColor.accentRed)
+                                    .accessibilityHidden(true)
                                 Text("\(summary.failed) check(s) failing")
                                     .font(AnvilFont.label)
                                     .foregroundStyle(AnvilColor.accentRed)
                             }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("\(summary.failed) checks failing")
                         } else if summary.pending > 0 {
                             HStack(spacing: AnvilSpacing.xxs) {
                                 Image(systemName: "clock")
                                     .font(.system(size: 12))
                                     .foregroundStyle(AnvilColor.accentAmber)
+                                    .accessibilityHidden(true)
                                 Text("\(summary.pending) check(s) pending")
                                     .font(AnvilFont.label)
                                     .foregroundStyle(AnvilColor.accentAmber)
                             }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("\(summary.pending) checks pending")
                         } else if summary.passed > 0 {
                             HStack(spacing: AnvilSpacing.xxs) {
                                 Image(systemName: "checkmark.circle.fill")
                                     .font(.system(size: 12))
                                     .foregroundStyle(AnvilColor.accentGreen)
+                                    .accessibilityHidden(true)
                                 Text("All checks passed")
                                     .font(AnvilFont.label)
                                     .foregroundStyle(AnvilColor.accentGreen)
                             }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("All checks passed")
                         }
 
                         Spacer()
 
                         if pr.isDraft {
                             AnvilBadge(text: "Draft — cannot merge", color: AnvilColor.textTertiary)
+                                .accessibilityLabel("Draft, cannot merge")
                         }
                     }
 
@@ -316,6 +363,7 @@ struct GitHubPRDetailView: View {
                             Image(systemName: "arrow.down.circle")
                                 .font(.system(size: 12))
                                 .foregroundStyle(AnvilColor.accentAmber)
+                                .accessibilityHidden(true)
                             Text("Branch is \(pr.behindCount) commit\(pr.behindCount == 1 ? "" : "s") behind \(pr.targetBranch)")
                                 .font(AnvilFont.label)
                                 .foregroundStyle(AnvilColor.accentAmber)
@@ -323,6 +371,7 @@ struct GitHubPRDetailView: View {
                             Image(systemName: "arrow.triangle.merge")
                                 .font(.system(size: 12))
                                 .foregroundStyle(AnvilColor.textTertiary)
+                                .accessibilityHidden(true)
                             Text("Update with latest from \(pr.targetBranch)")
                                 .font(AnvilFont.label)
                                 .foregroundStyle(AnvilColor.textSecondary)
@@ -333,6 +382,7 @@ struct GitHubPRDetailView: View {
                         if viewModel.isUpdatingBranch {
                             ProgressView()
                                 .controlSize(.small)
+                                .accessibilityLabel("Updating branch")
                         }
 
                         AnvilButton("Update Branch", icon: "arrow.triangle.merge", style: .secondary) {
@@ -340,6 +390,8 @@ struct GitHubPRDetailView: View {
                             viewModel.updateBranch(using: adapter)
                         }
                         .disabled(viewModel.isUpdatingBranch)
+                        .accessibilityLabel("Update branch with latest from \(pr.targetBranch)")
+                        .accessibilityAddTraits(.isButton)
                     }
 
                     // Update branch error
@@ -347,11 +399,14 @@ struct GitHubPRDetailView: View {
                         HStack(spacing: AnvilSpacing.xs) {
                             Image(systemName: "exclamationmark.triangle")
                                 .font(.system(size: 10))
+                                .accessibilityHidden(true)
                             Text(error)
                                 .font(AnvilFont.label)
                                 .lineLimit(2)
                         }
                         .foregroundStyle(AnvilColor.accentRed)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Error: \(error)")
                     }
 
                     // Merge strategy + button
@@ -364,12 +419,14 @@ struct GitHubPRDetailView: View {
                             }
                             .pickerStyle(.segmented)
                             .frame(maxWidth: 360)
+                            .accessibilityLabel("Merge strategy")
 
                             Spacer()
 
                             if viewModel.isMerging {
                                 ProgressView()
                                     .controlSize(.small)
+                                    .accessibilityLabel("Merging pull request")
                             }
 
                             AnvilButton("Merge Pull Request", icon: "arrow.triangle.merge", style: .primary) {
@@ -377,6 +434,8 @@ struct GitHubPRDetailView: View {
                                 viewModel.mergePR(using: adapter)
                             }
                             .opacity(viewModel.canMerge ? 1.0 : 0.5)
+                            .accessibilityLabel("Merge pull request")
+                            .accessibilityAddTraits(.isButton)
                         }
                     }
 
@@ -385,11 +444,14 @@ struct GitHubPRDetailView: View {
                         HStack(spacing: AnvilSpacing.xs) {
                             Image(systemName: "exclamationmark.triangle")
                                 .font(.system(size: 10))
+                                .accessibilityHidden(true)
                             Text(error)
                                 .font(AnvilFont.label)
                                 .lineLimit(2)
                         }
                         .foregroundStyle(AnvilColor.accentRed)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Merge error: \(error)")
                     }
                 }
                 .padding(AnvilSpacing.md)
@@ -413,20 +475,26 @@ struct GitHubPRDetailView: View {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 10))
+                            .accessibilityHidden(true)
                         Text("\(viewModel.resolvedThreadCount) resolved")
                             .font(AnvilFont.label)
                     }
                     .foregroundStyle(AnvilColor.accentGreen)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(viewModel.resolvedThreadCount) resolved threads")
                 }
 
                 if viewModel.unresolvedThreadCount > 0 {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Image(systemName: "bubble.left.and.bubble.right")
                             .font(.system(size: 10))
+                            .accessibilityHidden(true)
                         Text("\(viewModel.unresolvedThreadCount) open")
                             .font(AnvilFont.label)
                     }
                     .foregroundStyle(AnvilColor.accentAmber)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(viewModel.unresolvedThreadCount) open threads")
                 }
             }
 
@@ -455,6 +523,7 @@ struct GitHubPRDetailView: View {
                             .foregroundStyle(AnvilColor.textTertiary)
                     }
                     .tint(AnvilColor.textTertiary)
+                    .accessibilityLabel("\(resolved.count) resolved threads")
                 }
             }
 
@@ -463,11 +532,14 @@ struct GitHubPRDetailView: View {
                 HStack(spacing: AnvilSpacing.xs) {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 10))
+                        .accessibilityHidden(true)
                     Text(error)
                         .font(AnvilFont.label)
                         .lineLimit(2)
                 }
                 .foregroundStyle(AnvilColor.accentRed)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Reply error: \(error)")
             }
         }
     }
@@ -487,12 +559,15 @@ struct GitHubPRDetailView: View {
                         HStack(spacing: AnvilSpacing.xxs) {
                             Image(systemName: viewModel.expandedThreads.contains(thread.id) ? "chevron.down" : "chevron.right")
                                 .font(.system(size: 9, weight: .bold))
+                                .accessibilityHidden(true)
                             Text("\(thread.replyCount) repl\(thread.replyCount == 1 ? "y" : "ies")")
                                 .font(AnvilFont.label)
                         }
                         .foregroundStyle(AnvilColor.accentBlue)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("\(thread.replyCount) replies, \(viewModel.expandedThreads.contains(thread.id) ? "collapse" : "expand")")
+                    .accessibilityAddTraits(.isButton)
                 }
 
                 Spacer()
@@ -505,12 +580,15 @@ struct GitHubPRDetailView: View {
                         HStack(spacing: AnvilSpacing.xxs) {
                             Image(systemName: "arrow.uturn.backward")
                                 .font(.system(size: 9))
+                                .accessibilityHidden(true)
                             Text("Unresolve")
                                 .font(AnvilFont.label)
                         }
                         .foregroundStyle(AnvilColor.textTertiary)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Unresolve thread")
+                    .accessibilityAddTraits(.isButton)
                 } else {
                     Button {
                         guard let adapter = container.getOrCreateGitHubAdapter() else { return }
@@ -519,12 +597,15 @@ struct GitHubPRDetailView: View {
                         HStack(spacing: AnvilSpacing.xxs) {
                             Image(systemName: "checkmark.circle")
                                 .font(.system(size: 10))
+                                .accessibilityHidden(true)
                             Text("Resolve")
                                 .font(AnvilFont.label)
                         }
                         .foregroundStyle(AnvilColor.accentGreen)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Resolve thread")
+                    .accessibilityAddTraits(.isButton)
                 }
             }
             .padding(.horizontal, AnvilSpacing.md)
@@ -563,6 +644,7 @@ struct GitHubPRDetailView: View {
                             .font(.system(size: 9, weight: .medium))
                             .foregroundStyle(AnvilColor.textSecondary)
                     )
+                    .accessibilityHidden(true)
 
                 Text(comment.author)
                     .font(AnvilFont.label)
@@ -587,6 +669,8 @@ struct GitHubPRDetailView: View {
                     .font(AnvilFont.label)
                     .foregroundStyle(AnvilColor.textTertiary)
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(comment.author)\(comment.filePath.map { " on \($0)" } ?? "")\(comment.lineNumber.map { " line \($0)" } ?? "")")
 
             Text(comment.body)
                 .font(AnvilFont.body)
@@ -607,6 +691,7 @@ struct GitHubPRDetailView: View {
                             .font(.system(size: 7, weight: .medium))
                             .foregroundStyle(AnvilColor.textSecondary)
                     )
+                    .accessibilityHidden(true)
 
                 Text(comment.author)
                     .font(AnvilFont.label)
@@ -618,6 +703,8 @@ struct GitHubPRDetailView: View {
                     .font(AnvilFont.label)
                     .foregroundStyle(AnvilColor.textTertiary)
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Reply by \(comment.author)")
 
             Text(comment.body)
                 .font(AnvilFont.body)
@@ -637,10 +724,12 @@ struct GitHubPRDetailView: View {
             ))
             .textFieldStyle(.roundedBorder)
             .font(AnvilFont.body)
+            .accessibilityLabel("Reply to thread")
 
             if viewModel.isReplying {
                 ProgressView()
                     .controlSize(.small)
+                    .accessibilityLabel("Sending reply")
             } else {
                 Button {
                     guard let adapter = container.getOrCreateGitHubAdapter() else { return }
@@ -656,6 +745,8 @@ struct GitHubPRDetailView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled((viewModel.replyText[threadId] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .accessibilityLabel("Send reply")
+                .accessibilityAddTraits(.isButton)
             }
         }
     }
@@ -669,6 +760,7 @@ struct GitHubPRDetailView: View {
         case .closed: ("Closed", AnvilColor.accentRed)
         }
         return AnvilBadge(text: text, color: color)
+            .accessibilityLabel("Status: \(text)")
     }
 
     private func ciIcon(_ check: CICheck) -> String {

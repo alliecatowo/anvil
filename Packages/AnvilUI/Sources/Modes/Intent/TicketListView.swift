@@ -27,26 +27,28 @@ struct TicketListView: View {
                 Text("Group:")
                     .foregroundStyle(.secondary)
 
-                Picker("", selection: $viewModel.grouping) {
+                Picker("Group by", selection: $viewModel.grouping) {
                     ForEach(TicketGrouping.allCases, id: \.self) { g in
                         Text(g.rawValue).tag(g)
                     }
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 200)
+                .accessibilityLabel("Group tickets by")
             }
 
             HStack(spacing: AnvilSpacing.xxs) {
                 Text("Sort:")
                     .foregroundStyle(.secondary)
 
-                Picker("", selection: $viewModel.sortField) {
+                Picker("Sort by", selection: $viewModel.sortField) {
                     ForEach(TicketSortField.allCases, id: \.self) { s in
                         Text(s.rawValue).tag(s)
                     }
                 }
                 .pickerStyle(.menu)
                 .frame(width: 100)
+                .accessibilityLabel("Sort tickets by")
             }
 
             Spacer()
@@ -55,6 +57,7 @@ struct TicketListView: View {
 
             Text("\(viewModel.filteredTickets.count) tickets")
                 .foregroundStyle(.secondary)
+                .accessibilityLabel("\(viewModel.filteredTickets.count) tickets shown")
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.sm)
@@ -70,11 +73,14 @@ struct TicketListView: View {
                 HStack(spacing: AnvilSpacing.xxs) {
                     Image(systemName: "line.3.horizontal.decrease.circle.fill")
                         .font(.system(size: 12))
+                        .accessibilityHidden(true)
                     Text("Clear Filters")
                 }
                 .foregroundStyle(.orange)
             }
             .buttonStyle(.borderless)
+            .accessibilityLabel("Clear all filters")
+            .accessibilityAddTraits(.isButton)
         }
     }
 
@@ -118,6 +124,8 @@ struct TicketListView: View {
             Spacer()
         }
         .textCase(nil)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title), \(count) tickets")
     }
 
     // MARK: - Ticket Row
@@ -127,11 +135,13 @@ struct TicketListView: View {
             Circle()
                 .fill(IntentViewModel.priorityColor(ticket.priority))
                 .frame(width: 8, height: 8)
+                .accessibilityLabel("\(IntentViewModel.priorityLabel(ticket.priority)) priority")
 
             Image(systemName: IntentViewModel.statusIcon(ticket.status))
                 .font(.system(size: 13))
                 .foregroundStyle(IntentViewModel.statusColor(ticket.status))
                 .frame(width: 18)
+                .accessibilityLabel("Status: \(ticket.status)")
 
             Text(ticket.id)
                 .font(AnvilFont.code)
@@ -151,6 +161,9 @@ struct TicketListView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { viewModel.selectTicket(ticket.id) }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(ticket.title), \(ticket.id), \(IntentViewModel.priorityLabel(ticket.priority)) priority, status \(ticket.status)")
+        .accessibilityAddTraits(.isButton)
         .contextMenu {
             Menu("Status") {
                 ForEach(viewModel.allStatuses, id: \.self) { status in
@@ -229,6 +242,8 @@ struct TicketListView: View {
                 AnvilBadge(text: label, color: AnvilColor.textTertiary)
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(ticket.labels.isEmpty ? "No labels" : "Labels: \(ticket.labels.prefix(2).joined(separator: ", "))")
     }
 
     private func storyPointsBadge(_ points: Int?) -> some View {
@@ -242,6 +257,7 @@ struct TicketListView: View {
                     .padding(.vertical, 1)
                     .background(.regularMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 3))
+                    .accessibilityLabel("\(sp) story points")
             }
         }
         .frame(width: 28)
@@ -259,15 +275,19 @@ struct TicketListView: View {
                                 .font(.system(size: 9, weight: .medium))
                                 .foregroundStyle(.secondary)
                         )
+                        .accessibilityHidden(true)
                     Text(name)
                         .font(AnvilFont.label)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Assignee: \(name)")
             } else {
                 Text("--")
                     .font(AnvilFont.label)
                     .foregroundStyle(.secondary)
+                    .accessibilityLabel("Unassigned")
             }
         }
         .frame(width: 90, alignment: .leading)
@@ -290,6 +310,7 @@ struct TicketListView: View {
             Image(systemName: "ticket")
                 .font(.system(size: 36, weight: .thin))
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
 
             Text("No tickets match your filters")
                 .font(AnvilFont.body)
@@ -298,6 +319,8 @@ struct TicketListView: View {
             AnvilButton("Clear Filters", icon: "xmark", style: .ghost) {
                 viewModel.clearFilters()
             }
+            .accessibilityLabel("Clear all filters")
+            .accessibilityAddTraits(.isButton)
             Spacer()
         }
     }
@@ -316,5 +339,6 @@ struct TicketListView: View {
         return Text(formatter.localizedString(for: date, relativeTo: .now))
             .font(AnvilFont.label)
             .foregroundStyle(color)
+            .accessibilityLabel("Due \(formatter.localizedString(for: date, relativeTo: .now))")
     }
 }

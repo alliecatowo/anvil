@@ -137,7 +137,38 @@ public final class DependencyContainer: ObservableObject {
 
     public let reviewService: any ReviewManagementPort = InMemoryReviewService()
 
-    // MARK: - Ticket Management
+    // MARK: - Ticket Provider (External)
+
+    /// Which external ticket provider the user has selected.
+    public enum TicketProviderChoice: String, Sendable, CaseIterable {
+        case github
+        case linear
+        case jira
+        case none
+    }
+
+    @Published public var selectedTicketProvider: TicketProviderChoice = .none
+
+    /// External ticket port adapter (e.g. GitHub Issues, Linear). Injected from App target.
+    private var _ticketPort: (any TicketPort)?
+    public var ticketPort: (any TicketPort)? { _ticketPort }
+
+    /// Set the external ticket port adapter and test its connection.
+    public func setTicketAdapter(_ adapter: any TicketPort) {
+        _ticketPort = adapter
+        testIntegration(adapter.providerId) { try await adapter.validateConnection() }
+    }
+
+    /// Remove the external ticket port adapter.
+    public func removeTicketAdapter() {
+        if let id = _ticketPort?.providerId {
+            integrationStatus.removeValue(forKey: id)
+        }
+        _ticketPort = nil
+        selectedTicketProvider = .none
+    }
+
+    // MARK: - Ticket Management (Internal)
 
     public let ticketService: any TicketManagementPort = InMemoryTicketService()
 
@@ -250,6 +281,8 @@ public final class DependencyContainer: ObservableObject {
         case "sentry": return ProviderKeychain.sentryToken != nil && ProviderKeychain.sentryOrganization != nil
         case "slack": return ProviderKeychain.slackToken != nil
         case "docker": return ProviderKeychain.dockerSocketPath != nil
+        case "github-issues": return ProviderKeychain.githubToken != nil && ProviderKeychain.githubOwner != nil
+        case "linear": return ProviderKeychain.linearApiKey != nil
         default: return false
         }
     }

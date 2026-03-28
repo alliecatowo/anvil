@@ -33,6 +33,7 @@ struct EditorTabBar: View {
             Image(systemName: fileIcon(for: file.name))
                 .font(.system(size: 11))
                 .foregroundStyle(fileColor(for: file.name))
+                .accessibilityHidden(true)
 
             Text(file.name)
                 .font(AnvilFont.label)
@@ -43,6 +44,7 @@ struct EditorTabBar: View {
                 Image(systemName: "lock.fill")
                     .font(.system(size: 8))
                     .foregroundStyle(AnvilColor.textTertiary)
+                    .accessibilityLabel("Read-only")
             }
 
             Button {
@@ -58,6 +60,8 @@ struct EditorTabBar: View {
                     )
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Close \(file.name)")
+            .accessibilityAddTraits(.isButton)
             .opacity(isSelected || isHovered ? 1 : 0)
         }
         .padding(.horizontal, AnvilSpacing.md)
@@ -86,6 +90,9 @@ struct EditorTabBar: View {
         .onTapGesture {
             viewModel.selectFile(file.id)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(file.name)\(isReadOnly ? ", read-only" : "")\(isSelected ? ", selected" : "")")
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 
     // MARK: - Helpers

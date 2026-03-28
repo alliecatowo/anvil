@@ -48,6 +48,7 @@ struct SymbolOutline: View {
                 .font(.system(size: 11))
                 .foregroundStyle(symbol.kind.color)
                 .frame(width: 16)
+                .accessibilityHidden(true)
 
             Text(symbol.name)
                 .font(AnvilFont.code)
@@ -65,6 +66,9 @@ struct SymbolOutline: View {
         .onTapGesture {
             viewModel.navigateToSymbol(symbol)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(symbol.name), line \(symbol.line)")
+        .accessibilityAddTraits(.isButton)
     }
 
     // MARK: - Empty State

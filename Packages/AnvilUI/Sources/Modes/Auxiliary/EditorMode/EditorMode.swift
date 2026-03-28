@@ -84,6 +84,8 @@ struct EditorMode: View {
                                 : AnvilColor.textTertiary
                         )
                 }
+                .accessibilityLabel("Toggle Source Control")
+                .accessibilityAddTraits(.isToggle)
                 .help("Toggle Source Control (Ctrl+Shift+G)")
             }
 
@@ -98,6 +100,8 @@ struct EditorMode: View {
                                 : AnvilColor.textTertiary
                         )
                 }
+                .accessibilityLabel("Toggle Symbol Outline")
+                .accessibilityAddTraits(.isToggle)
                 .help("Toggle Symbol Outline")
             }
         }
@@ -244,6 +248,7 @@ struct ReadOnlyBanner: View {
             Image(systemName: "lock.fill")
                 .font(.system(size: 11))
                 .foregroundStyle(AnvilColor.accentAmber)
+                .accessibilityHidden(true)
 
             Text("This file is read-only")
                 .font(AnvilFont.label)
@@ -259,9 +264,12 @@ struct ReadOnlyBanner: View {
             .font(AnvilFont.label)
             .buttonStyle(.plain)
             .foregroundStyle(AnvilColor.accentBlue)
+            .accessibilityLabel("Enable Editing")
+            .accessibilityAddTraits(.isButton)
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
         .background(AnvilColor.accentAmber.opacity(0.08))
+        .accessibilityElement(children: .combine)
     }
 }

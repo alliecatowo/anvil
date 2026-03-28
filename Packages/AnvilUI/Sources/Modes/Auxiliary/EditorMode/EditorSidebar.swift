@@ -22,6 +22,7 @@ struct EditorSidebar: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Collapse all folders")
+                .accessibilityAddTraits(.isButton)
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)

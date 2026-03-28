@@ -39,6 +39,7 @@ struct InlineEditView: View {
             Image(systemName: "pencil.circle")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(AnvilColor.accentAmber)
+                .accessibilityHidden(true)
 
             Text(suggestion.filePath)
                 .font(AnvilFont.code)
@@ -68,11 +69,15 @@ struct InlineEditView: View {
                     .font(AnvilFont.label)
                     .foregroundStyle(AnvilColor.accentGreen)
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Accept all hunks")
+                    .accessibilityAddTraits(.isButton)
 
                 Button("Reject All") { onRejectAll() }
                     .font(AnvilFont.label)
                     .foregroundStyle(AnvilColor.accentRed)
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Reject all hunks")
+                    .accessibilityAddTraits(.isButton)
             } else {
                 let accepted = suggestion.acceptedCount
                 let rejected = suggestion.rejectedCount
@@ -81,19 +86,25 @@ struct InlineEditView: View {
                         HStack(spacing: 2) {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 10))
+                                .accessibilityHidden(true)
                             Text("\(accepted)")
                                 .font(AnvilFont.label)
                         }
                         .foregroundStyle(AnvilColor.accentGreen)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("\(accepted) accepted")
                     }
                     if rejected > 0 {
                         HStack(spacing: 2) {
                             Image(systemName: "xmark.circle.fill")
                                 .font(.system(size: 10))
+                                .accessibilityHidden(true)
                             Text("\(rejected)")
                                 .font(AnvilFont.label)
                         }
                         .foregroundStyle(AnvilColor.accentRed)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("\(rejected) rejected")
                     }
                 }
             }
@@ -232,6 +243,8 @@ struct EditHunkView: View {
                 .buttonStyle(.bordered)
                 .tint(.green)
                 .controlSize(.small)
+                .accessibilityLabel("Accept hunk")
+                .accessibilityAddTraits(.isButton)
 
                 Button {
                     onReject()
@@ -241,24 +254,32 @@ struct EditHunkView: View {
                 .buttonStyle(.bordered)
                 .tint(.red)
                 .controlSize(.small)
+                .accessibilityLabel("Reject hunk")
+                .accessibilityAddTraits(.isButton)
 
             case .accepted:
                 HStack(spacing: AnvilSpacing.xxs) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 12))
+                        .accessibilityHidden(true)
                     Text("Accepted")
                         .font(AnvilFont.label)
                 }
                 .foregroundStyle(AnvilColor.accentGreen)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Hunk accepted")
 
             case .rejected:
                 HStack(spacing: AnvilSpacing.xxs) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 12))
+                        .accessibilityHidden(true)
                     Text("Rejected")
                         .font(AnvilFont.label)
                 }
                 .foregroundStyle(AnvilColor.accentRed)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Hunk rejected")
             }
         }
         .padding(.horizontal, AnvilSpacing.md)

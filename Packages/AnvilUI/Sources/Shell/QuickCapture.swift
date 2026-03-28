@@ -79,8 +79,8 @@ public struct QuickCapture: View {
             }
             .frame(width: 500)
             .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.3), radius: 20)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .shadow(color: .black.opacity(0.15), radius: 20)
         }
         .onAppear {
             isInputFocused = true

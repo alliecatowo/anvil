@@ -58,6 +58,8 @@ struct ReviewInboxView: View {
                 .toggleStyle(.checkbox)
                 .labelsHidden()
                 .frame(width: 18)
+                .accessibilityLabel("Select \(review.title)")
+                .accessibilityAddTraits(.isToggle)
 
                 statusIcon(for: review.status)
 
@@ -91,10 +93,13 @@ struct ReviewInboxView: View {
                             HStack(spacing: AnvilSpacing.xxxs) {
                                 Image(systemName: "bubble.left")
                                     .font(.system(size: 10))
+                                    .accessibilityHidden(true)
                                 Text("\(review.comments.count)")
                                     .font(AnvilFont.label)
                             }
                             .foregroundStyle(.secondary)
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("\(review.comments.count) comments")
                         }
                     }
                 }
@@ -104,6 +109,8 @@ struct ReviewInboxView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(review.title), by \(review.author), \(review.sourceId), \(review.diff.count) files, status \(String(describing: review.status))")
+        .accessibilityAddTraits(.isButton)
     }
 
     private var batchActionBar: some View {
@@ -117,14 +124,20 @@ struct ReviewInboxView: View {
             AnvilButton("Approve All", icon: "checkmark", style: .primary) {
                 viewModel.approveSelected()
             }
+            .accessibilityLabel("Approve all selected reviews")
+            .accessibilityAddTraits(.isButton)
 
             AnvilButton("Clear", style: .ghost) {
                 viewModel.selectedReviewIDs.removeAll()
             }
+            .accessibilityLabel("Clear selection")
+            .accessibilityAddTraits(.isButton)
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.sm)
         .background(.bar)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Batch actions for \(viewModel.selectedReviewIDs.count) selected reviews")
     }
 
     private func statusIcon(for status: ReviewStatus) -> some View {
@@ -137,6 +150,7 @@ struct ReviewInboxView: View {
         return Image(systemName: icon)
             .font(.system(size: 14))
             .foregroundStyle(color)
+            .accessibilityLabel("Review status: \(String(describing: status))")
     }
 
 }

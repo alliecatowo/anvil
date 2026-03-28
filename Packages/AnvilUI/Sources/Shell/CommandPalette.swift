@@ -28,8 +28,8 @@ public struct CommandPalette: View {
             }
             .frame(width: AnvilSpacing.commandPaletteWidth)
             .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.3), radius: 20)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .shadow(color: .black.opacity(0.15), radius: 20)
             .padding(.top, 100)
             .frame(maxHeight: .infinity, alignment: .top)
         }
@@ -77,6 +77,7 @@ public struct CommandPalette: View {
                 .foregroundStyle(searchIconColor)
                 .frame(width: 20)
                 .animation(.easeOut(duration: 0.12), value: viewModel.paletteMode)
+                .accessibilityHidden(true)
 
             // Group breadcrumb chip
             if let group = viewModel.activeGroup {
@@ -100,6 +101,7 @@ public struct CommandPalette: View {
                 .font(AnvilFont.commandPaletteInput)
                 .foregroundStyle(.primary)
                 .focused($isSearchFocused)
+                .accessibilityLabel("Command palette search")
 
             if viewModel.isLoadingFiles {
                 ProgressView()
@@ -225,6 +227,8 @@ public struct CommandPalette: View {
                             viewModel.selectedIndex = entry.index
                             viewModel.execute(appState: appState)
                         }
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityLabel(entry.item.title)
                     }
                 }
             }
@@ -268,6 +272,8 @@ public struct CommandPalette: View {
                             viewModel.selectedIndex = index
                             viewModel.execute(appState: appState)
                         }
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityLabel(file.name)
                     }
                 }
             }
@@ -290,6 +296,8 @@ public struct CommandPalette: View {
                                 viewModel.selectedIndex = index
                                 viewModel.execute(appState: appState)
                             }
+                            .accessibilityAddTraits(.isButton)
+                            .accessibilityLabel(file.name)
                         }
                     }
                 } else {
@@ -305,6 +313,8 @@ public struct CommandPalette: View {
                             viewModel.selectedIndex = index
                             viewModel.execute(appState: appState)
                         }
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityLabel(file.name)
                     }
                 }
             }
@@ -352,6 +362,8 @@ public struct CommandPalette: View {
                     viewModel.selectedIndex = index
                     viewModel.execute(appState: appState)
                 }
+                .accessibilityAddTraits(.isButton)
+                .accessibilityLabel("\(symbol.name), \(symbol.kind)")
             }
         }
     }
@@ -406,6 +418,8 @@ private struct ModeHintChip: View {
         .buttonStyle(.bordered)
         .tint(isActive ? .accentColor : nil)
         .controlSize(.mini)
+        .accessibilityLabel("\(label) mode")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -450,6 +464,7 @@ struct CommandResultItem: View {
                 .font(.system(size: 13))
                 .foregroundStyle(iconColor ?? (isSelected ? AnvilColor.accentBlue : AnvilColor.textSecondary))
                 .frame(width: 20)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 1) {
                 highlightedTitle
@@ -511,6 +526,7 @@ private struct FileResultItem: View {
                 .font(.system(size: 12))
                 .foregroundStyle(isSelected ? AnvilColor.accentBlue : AnvilColor.textSecondary)
                 .frame(width: 20)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 1) {
                 highlightedName
@@ -564,6 +580,7 @@ private struct SymbolResultItem: View {
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(symbol.kindColor)
                 .frame(width: 20)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 1) {
                 highlightedName

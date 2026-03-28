@@ -21,6 +21,8 @@ struct FindReplaceBar: View {
                         .frame(width: 16, height: 16)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(isReplaceExpanded ? "Collapse Replace" : "Expand Replace")
+                .accessibilityAddTraits(.isToggle)
                 .help("Toggle Replace")
 
                 // Find input
@@ -28,12 +30,14 @@ struct FindReplaceBar: View {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 11))
                         .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
 
                     TextField("Find", text: $viewModel.findText)
                         .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.code)
                         .focused($isFindFocused)
                         .onSubmit { viewModel.findNext() }
+                        .accessibilityLabel("Find text")
 
                     if !viewModel.findText.isEmpty {
                         Button {
@@ -44,6 +48,8 @@ struct FindReplaceBar: View {
                                 .foregroundStyle(.tertiary)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Clear find text")
+                        .accessibilityAddTraits(.isButton)
                     }
                 }
                 .padding(.horizontal, AnvilSpacing.xs)
@@ -77,6 +83,8 @@ struct FindReplaceBar: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .accessibilityLabel("Previous Match")
+                .accessibilityAddTraits(.isButton)
                 .help("Previous Match (Shift+Enter)")
                 .disabled(viewModel.findMatches.isEmpty)
 
@@ -86,6 +94,8 @@ struct FindReplaceBar: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .accessibilityLabel("Next Match")
+                .accessibilityAddTraits(.isButton)
                 .help("Next Match (Enter)")
                 .disabled(viewModel.findMatches.isEmpty)
 
@@ -121,6 +131,8 @@ struct FindReplaceBar: View {
                         .frame(width: 22, height: 22)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Close Find Bar")
+                .accessibilityAddTraits(.isButton)
                 .help("Close (Escape)")
             }
             .padding(.horizontal, AnvilSpacing.md)
@@ -137,11 +149,13 @@ struct FindReplaceBar: View {
                         Image(systemName: "arrow.2.squarepath")
                             .font(.system(size: 11))
                             .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
 
                         TextField("Replace", text: $viewModel.replaceText)
                             .textFieldStyle(.roundedBorder)
                             .font(AnvilFont.code)
                             .onSubmit { viewModel.replaceCurrent() }
+                            .accessibilityLabel("Replace text")
                     }
                     .padding(.horizontal, AnvilSpacing.xs)
                     .padding(.vertical, 3)
@@ -159,6 +173,8 @@ struct FindReplaceBar: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
+                    .accessibilityLabel("Replace Current Match")
+                    .accessibilityAddTraits(.isButton)
                     .help("Replace")
                     .disabled(viewModel.findMatches.isEmpty)
 
@@ -168,6 +184,8 @@ struct FindReplaceBar: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
+                    .accessibilityLabel("Replace All Matches")
+                    .accessibilityAddTraits(.isButton)
                     .help("Replace All")
                     .disabled(viewModel.findMatches.isEmpty)
 
@@ -204,6 +222,9 @@ struct FindReplaceBar: View {
                 .background(isActive.wrappedValue ? AnvilColor.accentBlue.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 4))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(.isToggle)
+        .accessibilityValue(isActive.wrappedValue ? "On" : "Off")
         .help(label)
     }
 }

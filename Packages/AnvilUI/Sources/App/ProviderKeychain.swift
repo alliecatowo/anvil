@@ -97,4 +97,46 @@ enum ProviderKeychain {
             else { delete("docker.socketPath") }
         }
     }
+
+    // MARK: - Ticket Providers
+
+    static var githubToken: String? {
+        get { get("github.token") }
+        set {
+            if let newValue { set("github.token", value: newValue) }
+            else { delete("github.token") }
+        }
+    }
+
+    static var githubOwner: String? {
+        get { get("github.owner") }
+        set {
+            if let newValue, !newValue.isEmpty { set("github.owner", value: newValue) }
+            else { delete("github.owner") }
+        }
+    }
+
+    static var githubRepo: String? {
+        get { get("github.repo") }
+        set {
+            if let newValue, !newValue.isEmpty { set("github.repo", value: newValue) }
+            else { delete("github.repo") }
+        }
+    }
+
+    static var linearApiKey: String? {
+        get { get("linear.apiKey") }
+        set {
+            if let newValue { set("linear.apiKey", value: newValue) }
+            else { delete("linear.apiKey") }
+        }
+    }
+
+    static var linearTeamId: String? {
+        get { get("linear.teamId") }
+        set {
+            if let newValue, !newValue.isEmpty { set("linear.teamId", value: newValue) }
+            else { delete("linear.teamId") }
+        }
+    }
 }

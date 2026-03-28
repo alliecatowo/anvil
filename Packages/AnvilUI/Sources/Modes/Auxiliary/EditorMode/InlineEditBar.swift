@@ -70,6 +70,7 @@ struct InlineEditBar: View {
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(AnvilColor.accentPurple)
                 .frame(width: 20)
+                .accessibilityHidden(true)
 
             // Prompt field
             TextField("Edit with AI... (↵ to apply, esc to cancel)", text: $viewModel.inlineEditPrompt)
@@ -80,6 +81,7 @@ struct InlineEditBar: View {
                 .onSubmit {
                     viewModel.submitInlineEdit()
                 }
+                .accessibilityLabel("Inline edit prompt")
 
             // Model badge
             Text("claude-sonnet")
@@ -89,6 +91,7 @@ struct InlineEditBar: View {
                 .padding(.vertical, 2)
                 .background(AnvilColor.accentPurple.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 4))
+                .accessibilityLabel("AI model: Claude Sonnet")
 
             // Cancel
             Button {
@@ -99,6 +102,8 @@ struct InlineEditBar: View {
                     .foregroundStyle(AnvilColor.textTertiary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Cancel Inline Edit")
+            .accessibilityAddTraits(.isButton)
             .help("Cancel (esc)")
         }
         .padding(.horizontal, AnvilSpacing.md)
@@ -126,6 +131,7 @@ struct InlineEditBar: View {
                 .fill(AnvilColor.accentPurple)
                 .frame(width: 8, height: 8)
                 .modifier(PulsingModifier())
+                .accessibilityHidden(true)
 
             Text("Generating edit...")
                 .font(.system(size: 13, weight: .regular))
@@ -140,6 +146,7 @@ struct InlineEditBar: View {
                 HStack(spacing: AnvilSpacing.xxs) {
                     Image(systemName: "stop.fill")
                         .font(.system(size: 10))
+                        .accessibilityHidden(true)
                     Text("Stop")
                         .font(.system(size: 11))
                 }
@@ -150,6 +157,8 @@ struct InlineEditBar: View {
                 .clipShape(RoundedRectangle(cornerRadius: 4))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Stop Generating")
+            .accessibilityAddTraits(.isButton)
         }
         .padding(.horizontal, AnvilSpacing.md)
         .frame(height: barHeight)
@@ -172,6 +181,7 @@ struct InlineEditBar: View {
                 Image(systemName: "sparkles")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(AnvilColor.accentPurple)
+                    .accessibilityHidden(true)
 
                 Text(viewModel.inlineEditPrompt)
                     .font(.system(size: 12, weight: .medium))
@@ -205,6 +215,7 @@ struct InlineEditBar: View {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Image(systemName: "checkmark")
                             .font(.system(size: 10, weight: .semibold))
+                            .accessibilityHidden(true)
                         Text("Accept")
                             .font(.system(size: 12, weight: .medium))
                     }
@@ -215,6 +226,8 @@ struct InlineEditBar: View {
                     .clipShape(RoundedRectangle(cornerRadius: 5))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Accept Edit")
+                .accessibilityAddTraits(.isButton)
                 .keyboardShortcut(.return, modifiers: [])
                 .help("Accept edit (↵)")
 
@@ -225,6 +238,7 @@ struct InlineEditBar: View {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Image(systemName: "arrow.uturn.backward")
                             .font(.system(size: 10, weight: .medium))
+                            .accessibilityHidden(true)
                         Text("Reject")
                             .font(.system(size: 12, weight: .medium))
                     }
@@ -239,6 +253,8 @@ struct InlineEditBar: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Reject Edit")
+                .accessibilityAddTraits(.isButton)
                 .help("Reject edit (esc)")
 
                 // Cancel entirely
@@ -250,6 +266,8 @@ struct InlineEditBar: View {
                         .foregroundStyle(AnvilColor.textTertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Cancel Inline Edit")
+                .accessibilityAddTraits(.isButton)
             }
             .padding(.horizontal, AnvilSpacing.md)
             .frame(height: barHeight)

@@ -6,6 +6,8 @@ struct IntentMode: View {
 
     var body: some View {
         IntentModeContent(viewModel: appState.intentViewModel)
-            .background(AnvilColor.backgroundPrimary)
+            .background(.background)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Intent mode")
     }
 }
