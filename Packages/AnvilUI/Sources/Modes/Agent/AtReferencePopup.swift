@@ -192,6 +192,8 @@ struct AtReferencePopup: View {
             .foregroundStyle(AnvilColor.textTertiary)
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Use arrow keys to navigate, return to select")
 
             Divider()
 
@@ -204,6 +206,7 @@ struct AtReferencePopup: View {
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(AnvilColor.accentBlue)
                             .frame(width: 20)
+                            .accessibilityHidden(true)
 
                         VStack(alignment: .leading, spacing: 1) {
                             Text(ref.prefix)
@@ -220,6 +223,7 @@ struct AtReferencePopup: View {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 9, weight: .bold))
                             .foregroundStyle(AnvilColor.textTertiary)
+                            .accessibilityHidden(true)
                     }
                     .padding(.horizontal, AnvilSpacing.md)
                     .padding(.vertical, AnvilSpacing.sm)
@@ -227,6 +231,7 @@ struct AtReferencePopup: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("\(ref.prefix) \(ref.description)")
             }
         }
         .padding(.vertical, AnvilSpacing.xs)
@@ -270,6 +275,7 @@ struct AtReferencePopup: View {
                         .foregroundStyle(AnvilColor.accentBlue)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Back to categories")
 
                 if let cat = selectedCategory {
                     Text(cat.prefix)
@@ -305,6 +311,7 @@ struct AtReferencePopup: View {
                                         .font(.system(size: 11, weight: .medium))
                                         .foregroundStyle(AnvilColor.accentBlue)
                                         .frame(width: 16)
+                                        .accessibilityHidden(true)
 
                                     Text(item.detail.isEmpty ? item.label : item.detail)
                                         .font(AnvilFont.code)
@@ -320,6 +327,7 @@ struct AtReferencePopup: View {
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel("\(item.category): \(item.label)")
                         }
                     }
                 }

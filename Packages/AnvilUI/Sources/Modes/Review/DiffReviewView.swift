@@ -40,11 +40,13 @@ struct DiffReviewView: View {
             Image(systemName: iconForStatus(file.status))
                 .font(.system(size: 12))
                 .foregroundStyle(colorForStatus(file.status))
+                .accessibilityHidden(true)
 
             Text(file.filePath)
                 .font(AnvilFont.code)
                 .foregroundStyle(AnvilColor.textPrimary)
                 .lineLimit(1)
+                .accessibilityLabel("File: \(file.filePath)")
 
             Spacer()
 
@@ -136,6 +138,7 @@ struct DiffReviewView: View {
                     Rectangle()
                         .fill(AnvilColor.borderSubtle)
                         .frame(width: 1)
+                        .accessibilityHidden(true)
 
                     // New side
                     if i < newLines.count {
@@ -208,6 +211,7 @@ struct DiffReviewView: View {
                                 .foregroundStyle(hasComments ? AnvilColor.accentBlue : AnvilColor.textTertiary)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Add comment on line \(lineNum)")
                     }
                 }
                 .frame(width: 20)
@@ -243,6 +247,8 @@ struct DiffReviewView: View {
             .padding(.vertical, 1)
             .background(backgroundColorFor(line.type))
             .contentShape(Rectangle())
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Line \(lineNum): \(line.content)")
             .onHover { isHovered in
                 hoveredLineKey = isHovered ? lineKey : nil
             }
@@ -282,6 +288,7 @@ struct DiffReviewView: View {
                         .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(AnvilColor.accentBlue)
                 )
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: AnvilSpacing.xs) {
@@ -367,6 +374,8 @@ struct DiffReviewView: View {
         .padding(.vertical, 1)
         .frame(maxWidth: .infinity)
         .background(backgroundColorFor(type))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Line \(lineNumber.map(String.init) ?? ""): \(content)")
     }
 
     private func emptyLineCell(side: LineSide) -> some View {
@@ -384,6 +393,7 @@ struct DiffReviewView: View {
                 .font(AnvilFont.code)
                 .foregroundStyle(AnvilColor.textTertiary)
                 .lineLimit(1)
+                .accessibilityLabel("Diff hunk: \(hunk.header)")
 
             Spacer()
 
@@ -405,6 +415,7 @@ struct DiffReviewView: View {
             .buttonStyle(.bordered)
             .tint(decision == .approved ? AnvilColor.accentGreen : nil)
             .help("Approve hunk")
+            .accessibilityLabel("Approve hunk \(index + 1)")
 
             Button {
                 viewModel.rejectHunk(hunk.id)
@@ -415,6 +426,7 @@ struct DiffReviewView: View {
             .buttonStyle(.bordered)
             .tint(decision == .rejected ? AnvilColor.accentRed : nil)
             .help("Reject hunk")
+            .accessibilityLabel("Reject hunk \(index + 1)")
         }
         .id(hunk.id)
         .padding(.horizontal, AnvilSpacing.md)

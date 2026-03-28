@@ -70,6 +70,7 @@ struct GitGraphView: View {
                 // Graph lane canvas
                 graphLane(node: node, prevNode: prevNode, nextNode: nextNode)
                     .frame(width: graphWidth, height: Self.rowHeight)
+                    .accessibilityHidden(true)
 
                 // Commit info
                 commitInfo(node: node, isSelected: isSelected)
@@ -78,6 +79,8 @@ struct GitGraphView: View {
             .frame(height: Self.rowHeight)
             .background(isSelected ? AnvilColor.selectionBackground : Color.clear)
             .contentShape(Rectangle())
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(node.commit.message.components(separatedBy: "\n").first ?? node.commit.message), by \(node.commit.author), \(relativeDate(node.commit.date))")
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.15)) {
                     selectedNodeIndex = selectedNodeIndex == index ? nil : index
@@ -310,6 +313,7 @@ struct GitGraphView: View {
             .padding(.vertical, 1)
             .background(isHead ? AnvilColor.accentGreen : AnvilColor.accentBlue.opacity(0.2))
             .clipShape(RoundedRectangle(cornerRadius: 3))
+            .accessibilityLabel("Branch: \(name)")
     }
 
     private func commitLabels(for node: GitGraphBuilder.GraphNode) -> [String] {

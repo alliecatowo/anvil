@@ -46,6 +46,7 @@ struct MetricsDashboard: View {
                     Image(systemName: card.trend.icon)
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(card.trend.color)
+                        .accessibilityHidden(true)
 
                     Text(card.subtitle)
                         .font(AnvilFont.label)
@@ -53,5 +54,7 @@ struct MetricsDashboard: View {
                 }
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(card.title): \(card.value)")
     }
 }

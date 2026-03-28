@@ -38,6 +38,7 @@ struct AutoPRSheet: View {
                 Image(systemName: "arrow.triangle.pull")
                     .font(.system(size: 15))
                     .foregroundStyle(AnvilColor.accentPurple)
+                    .accessibilityHidden(true)
                 Text("Create Pull Request")
                     .font(AnvilFont.heading)
                     .foregroundStyle(AnvilColor.textPrimary)
@@ -48,6 +49,7 @@ struct AutoPRSheet: View {
                         .foregroundStyle(AnvilColor.textTertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Close")
             }
             .padding(.horizontal, AnvilSpacing.lg)
             .padding(.top, AnvilSpacing.lg)
@@ -132,12 +134,14 @@ struct AutoPRSheet: View {
                     .textFieldStyle(.roundedBorder)
                     .font(AnvilFont.body)
                     .focused($titleFocused)
+                    .accessibilityLabel("Pull request title")
 
                 // Body
                 fieldLabel("Description")
                 TextEditor(text: $prBody)
                     .font(AnvilFont.body)
                     .frame(minHeight: 120)
+                    .accessibilityLabel("Pull request description")
 
                 // Branch config
                 HStack(spacing: AnvilSpacing.lg) {
@@ -146,12 +150,14 @@ struct AutoPRSheet: View {
                         TextField("source", text: $sourceBranch)
                             .textFieldStyle(.roundedBorder)
                             .font(AnvilFont.code)
+                            .accessibilityLabel("Source branch")
                     }
                     VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
                         fieldLabel("Into branch")
                         TextField("main", text: $targetBranch)
                             .textFieldStyle(.roundedBorder)
                             .font(AnvilFont.code)
+                            .accessibilityLabel("Target branch")
                     }
                 }
 
@@ -162,6 +168,7 @@ struct AutoPRSheet: View {
                         TextField("owner/repo", text: $repoName)
                             .textFieldStyle(.roundedBorder)
                             .font(AnvilFont.code)
+                            .accessibilityLabel("Repository name")
                     }
                     .frame(maxWidth: .infinity)
 
@@ -171,12 +178,15 @@ struct AutoPRSheet: View {
                         .font(AnvilFont.body)
                         .foregroundStyle(AnvilColor.textSecondary)
                         .padding(.top, AnvilSpacing.lg)
+                        .accessibilityLabel("Draft pull request")
+                        .accessibilityAddTraits(.isToggle)
                 }
 
                 // Actions
                 HStack {
                     Spacer()
                     AnvilButton("Cancel", style: .ghost) { onDismiss() }
+                        .accessibilityLabel("Cancel")
                     AnvilButton(
                         "Create Pull Request",
                         icon: "arrow.triangle.pull",
@@ -185,6 +195,7 @@ struct AutoPRSheet: View {
                         Task { await submitPR() }
                     }
                     .disabled(title.isEmpty || sourceBranch.isEmpty || repoName.isEmpty)
+                    .accessibilityLabel("Create pull request")
                 }
                 .padding(.top, AnvilSpacing.sm)
             }

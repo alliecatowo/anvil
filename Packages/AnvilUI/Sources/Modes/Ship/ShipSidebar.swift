@@ -72,6 +72,7 @@ struct ShipSidebar: View {
                 Image(systemName: environmentIcon(card.status))
                     .foregroundStyle(card.status.color)
                     .frame(width: 16)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(card.environment.name)
@@ -88,7 +89,10 @@ struct ShipSidebar: View {
                 Label(card.overallHealth.label, systemImage: card.overallHealth.icon)
                     .font(AnvilFont.label)
                     .foregroundStyle(card.overallHealth.color)
+                    .accessibilityLabel("Health: \(card.overallHealth.label)")
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(card.environment.name), \(card.status.label), \(card.currentVersion)")
             .contentShape(Rectangle())
             .onTapGesture {
                 viewModel.selectedEnvironmentID = card.id
@@ -102,6 +106,7 @@ struct ShipSidebar: View {
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                     .disabled(viewModel.isDeploying)
+                    .accessibilityLabel("Deploy to \(card.environment.name)")
 
                     Button("Logs") {
                         viewModel.selectedTab = .logs
@@ -131,6 +136,7 @@ struct ShipSidebar: View {
                 .labelStyle(.iconOnly)
                 .foregroundStyle(deploymentColor(deployment.status))
                 .frame(width: 16)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: AnvilSpacing.xxs) {
@@ -159,6 +165,8 @@ struct ShipSidebar: View {
                 .font(AnvilFont.label)
                 .foregroundStyle(.secondary)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(deployment.commitHash ?? "unknown"), \(deployment.status.rawValue), \(relativeTime(deployment.createdAt))")
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
         .frame(height: AnvilSpacing.richListItemHeight)

@@ -63,10 +63,12 @@ struct SchemaExplorer: View {
                         ) {
                             viewModel.selectTable(table.id)
                         }
+                        .accessibilityLabel("Table: \(table.name), \(table.rowCount.map { "\($0) rows" } ?? "\(table.columns.count) columns")")
                     }
                 }
             } label: {
                 Label("Tables", systemImage: "tablecells")
+                    .accessibilityLabel("Tables")
             }
 
             DisclosureGroup(isExpanded: $showsViews) {
@@ -83,10 +85,12 @@ struct SchemaExplorer: View {
                         ) {
                             viewModel.selectView(view.name)
                         }
+                        .accessibilityLabel("View: \(view.name), Query view")
                     }
                 }
             } label: {
                 Label("Views", systemImage: "rectangle.on.rectangle")
+                    .accessibilityLabel("Views")
             }
         }
     }
@@ -157,6 +161,7 @@ struct SchemaExplorer: View {
             HStack(spacing: 10) {
                 Image(systemName: systemImage)
                     .foregroundStyle(isSelected ? AnvilColor.accentBlue : .secondary)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
@@ -169,6 +174,7 @@ struct SchemaExplorer: View {
                 Spacer()
             }
             .padding(.vertical, 2)
+            .accessibilityElement(children: .combine)
         }
         .buttonStyle(.plain)
     }

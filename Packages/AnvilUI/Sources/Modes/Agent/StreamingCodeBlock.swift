@@ -17,6 +17,7 @@ struct StreamingCodeBlock: View {
                         Text(language)
                             .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(AnvilColor.textTertiary)
+                            .accessibilityHidden(true)
                     }
                     Spacer()
                     if isStreaming {
@@ -70,6 +71,8 @@ struct StreamingCodeBlock: View {
                 .frame(maxHeight: 400)
             }
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Code block\(language.map { ", \($0)" } ?? "")\(isStreaming ? ", streaming" : "")")
     }
 
     // MARK: - Lines
@@ -207,6 +210,7 @@ struct StreamingCodeBlock: View {
         }
         .buttonStyle(.plain)
         .help("Copy code")
+        .accessibilityLabel("Copy code")
     }
 }
 

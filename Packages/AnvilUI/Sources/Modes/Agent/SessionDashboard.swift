@@ -41,9 +41,13 @@ struct SessionDashboard: View {
 
             HStack(spacing: AnvilSpacing.md) {
                 Text("\(viewModel.sessions.count) sessions")
+                    .accessibilityLabel("\(viewModel.sessions.count) sessions")
                 Text("$\(String(format: "%.2f", NSDecimalNumber(decimal: viewModel.totalCost).doubleValue)) cost")
+                    .accessibilityLabel("Total cost: $\(String(format: "%.2f", NSDecimalNumber(decimal: viewModel.totalCost).doubleValue))")
                 Text("\(formatTokenCount(viewModel.totalTokens)) tokens")
+                    .accessibilityLabel("\(formatTokenCount(viewModel.totalTokens)) tokens used")
                 Text("\(viewModel.synthesisRooms.count) rooms")
+                    .accessibilityLabel("\(viewModel.synthesisRooms.count) synthesis rooms")
             }
             .font(AnvilFont.label)
             .foregroundStyle(.secondary)
@@ -63,6 +67,7 @@ struct SessionDashboard: View {
                 }
             }
             .pickerStyle(.segmented)
+            .accessibilityLabel("Filter sessions")
 
             if !viewModel.dashboardSelectedSessionIds.isEmpty {
                 Spacer()
@@ -77,6 +82,7 @@ struct SessionDashboard: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
+                    .accessibilityLabel("Synthesize selected sessions")
                 }
 
                 Button("Clear") {
@@ -84,6 +90,7 @@ struct SessionDashboard: View {
                 }
                 .buttonStyle(.borderless)
                 .controlSize(.small)
+                .accessibilityLabel("Clear session selection")
             }
         }
         .padding(.horizontal, AnvilSpacing.lg)
@@ -172,6 +179,7 @@ struct SessionRow: View {
             Circle()
                 .fill(statusColor)
                 .frame(width: 8, height: 8)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(session.displayName)
@@ -197,6 +205,9 @@ struct SessionRow: View {
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(session.displayName), \(session.status.rawValue), model \(session.model)\(linkedCount > 0 ? ", \(linkedCount) linked" : "")")
+        .accessibilityAddTraits(.isButton)
         .contentShape(Rectangle())
         .onTapGesture(perform: onOpen)
         .contextMenu {
@@ -229,6 +240,7 @@ struct SynthesisRoomRow: View {
             Image(systemName: "arrow.triangle.merge")
                 .font(.system(size: 11))
                 .foregroundStyle(AnvilColor.accentPurple)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(room.title)
@@ -247,7 +259,11 @@ struct SynthesisRoomRow: View {
             Circle()
                 .fill(synthesisStatusColor)
                 .frame(width: 6, height: 6)
+                .accessibilityHidden(true)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Synthesis room: \(room.title), status \(room.status.rawValue), sessions: \(sessionNames.joined(separator: ", "))")
+        .accessibilityAddTraits(.isButton)
         .contentShape(Rectangle())
         .onTapGesture(perform: onOpen)
         .contextMenu {

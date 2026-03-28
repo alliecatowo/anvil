@@ -41,12 +41,14 @@ struct QueryConsole: View {
                     if viewModel.isRunningQuery {
                         ProgressView()
                             .controlSize(.small)
+                            .accessibilityLabel("Running...")
                     } else {
                         Label("Run", systemImage: "play.fill")
                     }
                 }
                 .keyboardShortcut(.return, modifiers: .command)
                 .disabled(viewModel.isRunningQuery || viewModel.queryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .accessibilityLabel("Execute query")
             }
 
             TextEditor(text: $viewModel.queryText)
@@ -57,6 +59,7 @@ struct QueryConsole: View {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(.quaternary.opacity(0.35))
                 }
+                .accessibilityLabel("SQL query input")
 
             if let errorMessage = viewModel.errorMessage {
                 Label(errorMessage, systemImage: "exclamationmark.triangle.fill")

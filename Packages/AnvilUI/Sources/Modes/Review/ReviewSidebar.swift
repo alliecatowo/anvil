@@ -90,6 +90,7 @@ struct ReviewSidebar: View {
                 .font(.system(size: 11))
                 .foregroundStyle(branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textTertiary)
                 .frame(width: 16)
+                .accessibilityHidden(true)
 
             Text(branch.name)
                 .font(AnvilFont.code)
@@ -113,6 +114,8 @@ struct ReviewSidebar: View {
                     .foregroundStyle(AnvilColor.accentRed)
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Branch \(branch.name)\(branch.isCurrent ? ", current" : "")")
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
         .frame(height: AnvilSpacing.listItemHeight)
@@ -146,6 +149,7 @@ struct ReviewSidebar: View {
                                 .font(.system(size: 9, weight: .semibold))
                                 .foregroundStyle(AnvilColor.accentGreen)
                         )
+                        .accessibilityHidden(true)
                     Text(username)
                         .font(AnvilFont.label)
                         .foregroundStyle(AnvilColor.textSecondary)
@@ -241,6 +245,7 @@ struct ReviewSidebar: View {
                 .font(.system(size: 11))
                 .foregroundStyle(prStatusColor(pr.status))
                 .frame(width: 16)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(pr.title)
@@ -262,6 +267,8 @@ struct ReviewSidebar: View {
                     .foregroundStyle(AnvilColor.textTertiary)
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(pr.title), #\(pr.number) by \(pr.author), \(pr.status.rawValue)\(pr.isDraft ? ", draft" : "")")
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
         .frame(minHeight: AnvilSpacing.listItemHeight)
@@ -453,6 +460,7 @@ struct ReviewSidebar: View {
                 .font(.system(size: 12))
                 .foregroundStyle(fileColor(for: file.status))
                 .frame(width: 16)
+                .accessibilityHidden(true)
 
             Text(file.filePath.components(separatedBy: "/").last ?? file.filePath)
                 .font(AnvilFont.code)
@@ -472,6 +480,8 @@ struct ReviewSidebar: View {
                     )
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(file.filePath.components(separatedBy: "/").last ?? file.filePath), \(file.status)")
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
         .frame(height: AnvilSpacing.listItemHeight)
@@ -513,6 +523,7 @@ struct ReviewSidebar: View {
         case .dismissed: ("Dismissed", AnvilColor.textTertiary)
         }
         return AnvilBadge(text: text, color: color)
+            .accessibilityLabel("Status: \(text)")
     }
 
     private func reviewIcon(for review: Review) -> String {

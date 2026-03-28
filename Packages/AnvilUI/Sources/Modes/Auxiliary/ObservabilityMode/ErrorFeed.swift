@@ -16,6 +16,8 @@ struct ErrorFeed: View {
                 Section {
                     ForEach(viewModel.alerts) { alert in
                         alertRow(alert)
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("Alert: \(alert.name), status: \(alert.status.rawValue)")
                             .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
                     }
                 } header: {
@@ -48,6 +50,7 @@ struct ErrorFeed: View {
                     .font(.system(size: 14))
                     .foregroundStyle(alertColor(for: alert.status))
                     .frame(width: 20)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(alert.name)
@@ -124,6 +127,7 @@ struct ErrorFeed: View {
                 .font(.system(size: 14))
                 .foregroundStyle(item.severity.color)
                 .frame(width: 20)
+                .accessibilityHidden(true)
 
             // Content
             VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
@@ -168,6 +172,8 @@ struct ErrorFeed: View {
             }
         }
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(item.event.title), \(item.severity.rawValue), \(item.event.occurrences) occurrences")
         .listRowBackground(viewModel.selectedErrorID == item.id ? Color.accentColor.opacity(0.14) : Color.clear)
         .onTapGesture {
             viewModel.selectedErrorID = item.id

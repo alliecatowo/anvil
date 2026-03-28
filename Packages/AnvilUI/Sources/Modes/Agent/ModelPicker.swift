@@ -77,12 +77,15 @@ struct ModelPicker: View {
                             HStack {
                                 if model.id == selectedModelId {
                                     Image(systemName: "checkmark")
+                                        .accessibilityHidden(true)
                                 }
                                 Image(systemName: ModelPicker.providerIcon(for: model.provider))
                                     .font(.system(size: 10))
+                                    .accessibilityHidden(true)
                                 Text(model.name)
                             }
                         }
+                        .accessibilityLabel("\(model.name), \(model.provider)\(model.id == selectedModelId ? ", selected" : "")")
                     }
                 } header: {
                     Label(provider, systemImage: ModelPicker.providerIcon(for: provider))
@@ -101,5 +104,6 @@ struct ModelPicker: View {
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
+        .accessibilityLabel("Select AI model: \(selectedModel.name)")
     }
 }

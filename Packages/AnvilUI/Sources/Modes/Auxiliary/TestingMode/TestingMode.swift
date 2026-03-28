@@ -59,6 +59,7 @@ struct TestSuiteList: View {
                 }
                 .buttonStyle(.plain)
                 .help(viewModel.isRunning ? "Stop Tests" : "Run All Tests")
+                .accessibilityLabel(viewModel.isRunning ? "Stop tests" : "Run all tests")
 
                 Divider().frame(height: 14)
 
@@ -148,6 +149,7 @@ struct TestSuiteRow: View {
         } label: {
             HStack(spacing: AnvilSpacing.xs) {
                 statusIcon(suite.overallStatus)
+                    .accessibilityHidden(true)
 
                 Text(suite.name)
                     .font(AnvilFont.sidebarItem)
@@ -178,7 +180,10 @@ struct TestSuiteRow: View {
                         .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Run \(suite.name)")
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(suite.name), \(suite.passedCount) passed, \(suite.failedCount) failed")
         }
     }
 }
@@ -195,6 +200,7 @@ struct TestCaseRow: View {
         Button(action: onSelect) {
             HStack(spacing: AnvilSpacing.xs) {
                 statusIcon(test.status)
+                    .accessibilityHidden(true)
 
                 Text(test.name)
                     .font(AnvilFont.sidebarItem)
@@ -215,9 +221,12 @@ struct TestCaseRow: View {
                         .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Run \(test.name)")
             }
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(test.name), \(test.status.rawValue)")
     }
 }
 
@@ -375,6 +384,7 @@ private func statusIcon(_ status: TestCaseStatus) -> some View {
         case .running:
             ProgressView()
                 .controlSize(.mini)
+                .accessibilityLabel("Running...")
         case .skipped:
             Image(systemName: "minus.circle")
                 .foregroundStyle(.tertiary)

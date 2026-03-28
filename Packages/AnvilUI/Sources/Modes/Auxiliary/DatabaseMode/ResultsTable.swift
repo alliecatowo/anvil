@@ -62,6 +62,7 @@ struct ResultsTable: View {
                             .fill(.quaternary.opacity(0.2))
                     )
                 }
+                .accessibilityLabel("Query results")
             } else {
                 ContentUnavailableView(
                     "No Results Yet",

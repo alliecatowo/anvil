@@ -123,6 +123,7 @@ struct ObservabilityMode: View {
             if viewModel.isLoading {
                 ProgressView()
                     .controlSize(.small)
+                    .accessibilityLabel("Running...")
             }
 
             if let error = viewModel.errorMessage {
@@ -256,6 +257,7 @@ struct ObservabilityMode: View {
                         .font(.system(size: 12))
                         .foregroundStyle(metric.trend.color)
                         .frame(width: 20)
+                        .accessibilityHidden(true)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(metric.title)
@@ -267,6 +269,8 @@ struct ObservabilityMode: View {
 
                     Spacer()
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(metric.title): \(metric.value)")
             }
         }
         .listStyle(.inset)

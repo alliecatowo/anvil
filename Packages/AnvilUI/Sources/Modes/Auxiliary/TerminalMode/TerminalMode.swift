@@ -127,6 +127,7 @@ private struct TerminalWorkspace: View {
                         HStack(spacing: AnvilSpacing.sm) {
                             Image(systemName: session.isRunning ? "terminal" : "terminal.fill")
                                 .foregroundStyle(session.isRunning ? AnvilColor.accentBlue : .secondary)
+                                .accessibilityHidden(true)
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(session.title)
@@ -144,9 +145,12 @@ private struct TerminalWorkspace: View {
                                     Image(systemName: "xmark")
                                 }
                                 .buttonStyle(.borderless)
+                                .accessibilityLabel("Close \(session.title)")
                             }
                         }
                         .contentShape(Rectangle())
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("\(session.title), \(session.isRunning ? "running" : "exited")")
                         .onTapGesture {
                             viewModel.selectTab(session.id)
                         }
@@ -168,6 +172,7 @@ private struct TerminalWorkspace: View {
             TerminalView(viewModel: viewModel, sessionOverrideId: session?.id)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(AnvilSpacing.md)
+                .accessibilityLabel("Terminal output")
         }
         .contentShape(Rectangle())
         .onTapGesture {

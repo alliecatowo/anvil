@@ -22,6 +22,7 @@ struct TokenUsageBar: View {
                         Image(systemName: "chart.bar.fill")
                             .font(.system(size: 10))
                             .foregroundStyle(AnvilColor.textTertiary)
+                            .accessibilityHidden(true)
                         Text("Token Usage")
                             .font(AnvilFont.label)
                             .foregroundStyle(AnvilColor.textSecondary)
@@ -82,6 +83,8 @@ struct TokenUsageBar: View {
                     }
                 }
                 .frame(height: 6)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Token usage: \(formatTokenCount(totalTokens)) of \(formatTokenCount(contextLimit)) tokens used, \(Int(usageRatio * 100)) percent")
 
                 // Legend
                 HStack(spacing: AnvilSpacing.md) {
@@ -98,18 +101,24 @@ struct TokenUsageBar: View {
                         HStack(spacing: AnvilSpacing.xxs) {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .font(.system(size: 10))
+                                .accessibilityHidden(true)
                             Text("Context limit reached")
                                 .font(AnvilFont.label)
                         }
                         .foregroundStyle(AnvilColor.accentRed)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Warning: context limit reached")
                     } else if isNearLimit {
                         HStack(spacing: AnvilSpacing.xxs) {
                             Image(systemName: "exclamationmark.circle")
                                 .font(.system(size: 10))
+                                .accessibilityHidden(true)
                             Text("Approaching limit (\(Int(usageRatio * 100))%)")
                                 .font(AnvilFont.label)
                         }
                         .foregroundStyle(AnvilColor.accentAmber)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Warning: approaching context limit at \(Int(usageRatio * 100)) percent")
                     }
                 }
             }
@@ -134,10 +143,13 @@ struct TokenUsageBar: View {
             Circle()
                 .fill(color)
                 .frame(width: 6, height: 6)
+                .accessibilityHidden(true)
             Text("\(label): \(formatTokenCount(count))")
                 .font(AnvilFont.label)
                 .foregroundStyle(AnvilColor.textTertiary)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(formatTokenCount(count)) tokens")
     }
 
     private func formatTokenCount(_ count: Int) -> String {

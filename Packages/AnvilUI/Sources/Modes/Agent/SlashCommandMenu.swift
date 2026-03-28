@@ -63,6 +63,8 @@ struct SlashCommandMenu: View {
                 .foregroundStyle(AnvilColor.textTertiary)
                 .padding(.horizontal, AnvilSpacing.md)
                 .padding(.vertical, AnvilSpacing.xs)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Use arrow keys to navigate, return to select, escape to dismiss")
 
                 Divider()
 
@@ -75,6 +77,7 @@ struct SlashCommandMenu: View {
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(AnvilColor.accentPurple)
                                 .frame(width: 20)
+                                .accessibilityHidden(true)
 
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(command.name)
@@ -92,6 +95,7 @@ struct SlashCommandMenu: View {
                                 Text("auto")
                                     .font(.system(size: 9, weight: .medium))
                                     .foregroundStyle(AnvilColor.accentGreen)
+                                    .accessibilityLabel("Auto-send enabled")
                             }
                         }
                         .padding(.horizontal, AnvilSpacing.md)
@@ -100,6 +104,7 @@ struct SlashCommandMenu: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("\(command.name): \(command.description)")
                 }
             }
             .padding(.vertical, AnvilSpacing.xs)

@@ -114,9 +114,11 @@ struct DeployDashboardView: View {
                         Label(card.status.label, systemImage: "circle.fill")
                             .font(AnvilFont.label)
                             .foregroundStyle(card.status.color)
+                            .accessibilityLabel("Status: \(card.status.label)")
                         Label(card.overallHealth.label, systemImage: card.overallHealth.icon)
                             .font(AnvilFont.label)
                             .foregroundStyle(card.overallHealth.color)
+                            .accessibilityLabel("Health: \(card.overallHealth.label)")
                     }
                 }
 
@@ -125,6 +127,7 @@ struct DeployDashboardView: View {
                     Image(systemName: "arrow.triangle.branch")
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
 
                     Text(card.environment.branch ?? "--")
                         .font(AnvilFont.code)
@@ -146,6 +149,7 @@ struct DeployDashboardView: View {
                         Image(systemName: "link")
                             .font(.system(size: 9))
                             .foregroundStyle(AnvilColor.textTertiary)
+                            .accessibilityHidden(true)
                         Text(url)
                             .font(AnvilFont.code)
                             .foregroundStyle(.secondary)
@@ -168,6 +172,7 @@ struct DeployDashboardView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
+                    .accessibilityLabel("Deploy to \(card.environment.name)")
 
                     Button("Logs", systemImage: "doc.text") {
                         viewModel.selectedEnvironmentID = card.id
@@ -182,6 +187,8 @@ struct DeployDashboardView: View {
             RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
                 .stroke(isSelected ? AnvilColor.accentBlue : Color.clear, lineWidth: 2)
         )
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(card.environment.name), \(card.status.label), version \(card.currentVersion)")
         .onTapGesture {
             withAnimation(AnvilAnimation.standard) {
                 viewModel.selectedEnvironmentID = card.id
@@ -262,6 +269,7 @@ struct DeployDashboardView: View {
                 Image(systemName: check.status.icon)
                     .font(.system(size: 16))
                     .foregroundStyle(check.status.color)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: AnvilSpacing.xxxs) {
                     Text(check.name)
@@ -277,6 +285,8 @@ struct DeployDashboardView: View {
                 Spacer()
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(check.name), \(check.status.label), \(check.responseTime) milliseconds")
     }
 
     // MARK: - Deploy History

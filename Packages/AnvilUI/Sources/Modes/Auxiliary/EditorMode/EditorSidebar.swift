@@ -21,6 +21,7 @@ struct EditorSidebar: View {
                         .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Collapse all folders")
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
@@ -75,6 +76,7 @@ struct EditorSidebar: View {
                     .font(.system(size: 8, weight: .bold))
                     .foregroundStyle(.tertiary)
                     .frame(width: 12)
+                    .accessibilityHidden(true)
             } else {
                 Spacer().frame(width: 12)
             }
@@ -84,6 +86,7 @@ struct EditorSidebar: View {
                 .font(.system(size: 12))
                 .foregroundStyle(node.isFolder ? AnvilColor.accentAmber : fileColor(for: node.name))
                 .frame(width: 16)
+                .accessibilityHidden(true)
 
             // Name
             Text(node.name)
@@ -95,6 +98,9 @@ struct EditorSidebar: View {
         }
         .frame(height: 24)
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(node.isFolder ? "Folder: \(node.name)" : "\(node.name), \(fileTypeDescription(for: node.name))")
+        .accessibilityAddTraits(node.isFolder ? .isButton : .isStaticText)
         .listRowBackground(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
         .onTapGesture {
             if node.isFolder {
@@ -106,6 +112,18 @@ struct EditorSidebar: View {
     }
 
     // MARK: - File Type Helpers
+
+    private func fileTypeDescription(for name: String) -> String {
+        let ext = name.components(separatedBy: ".").last?.lowercased() ?? ""
+        switch ext {
+        case "swift": return "Swift file"
+        case "md": return "Markdown file"
+        case "json": return "JSON file"
+        case "yml", "yaml": return "YAML file"
+        case "txt": return "Text file"
+        default: return "file"
+        }
+    }
 
     private func fileIcon(for name: String) -> String {
         let ext = name.components(separatedBy: ".").last?.lowercased() ?? ""
