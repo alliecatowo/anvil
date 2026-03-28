@@ -172,81 +172,8 @@ struct BoardView: View {
     // MARK: - Board Card
 
     private func boardCard(_ ticket: Ticket) -> some View {
-        AnvilCard {
-            VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
-                // Priority + ID
-                HStack {
-                    Circle()
-                        .fill(IntentViewModel.priorityColor(ticket.priority))
-                        .frame(width: 6, height: 6)
-                        .accessibilityLabel("\(IntentViewModel.priorityLabel(ticket.priority)) priority")
-
-                    Text(ticket.id)
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-
-                    Spacer()
-
-                    if let sp = ticket.storyPoints {
-                        Text("\(sp)")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(AnvilColor.backgroundElevated)
-                            .clipShape(RoundedRectangle(cornerRadius: 3))
-                    }
-                }
-
-                // Title
-                Text(ticket.title)
-                    .font(AnvilFont.sidebarItem)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .lineLimit(2)
-
-                // Subtask progress
-                let progress = viewModel.subtaskProgress(ticket.id)
-                if progress.total > 0 {
-                    HStack(spacing: AnvilSpacing.xxs) {
-                        Image(systemName: "checklist")
-                            .font(.system(size: 9))
-                        Text("\(progress.completed)/\(progress.total)")
-                            .font(AnvilFont.label)
-                    }
-                    .foregroundStyle(progress.completed == progress.total ? AnvilColor.accentGreen : AnvilColor.textTertiary)
-                }
-
-                // Assignee + due date
-                HStack {
-                    if let assignee = ticket.assignee {
-                        Circle()
-                            .fill(AnvilColor.backgroundElevated)
-                            .frame(width: 16, height: 16)
-                            .overlay(
-                                Text(String(assignee.prefix(1)).uppercased())
-                                    .font(.system(size: 8, weight: .medium))
-                                    .foregroundStyle(AnvilColor.textSecondary)
-                            )
-                            .accessibilityHidden(true)
-                        Text(assignee)
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textSecondary)
-                            .lineLimit(1)
-                            .accessibilityLabel("Assigned to \(assignee)")
-                    }
-
-                    Spacer()
-
-                    if let due = ticket.dueDate {
-                        Text(due, style: .date)
-                            .font(AnvilFont.label)
-                            .foregroundStyle(IntentViewModel.dueDateColor(due))
-                    }
-                }
-            }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture { viewModel.selectTicket(ticket.id) }
+        KanbanCard(ticket: ticket, viewModel: viewModel)
+            .onTapGesture { viewModel.selectTicket(ticket.id) }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(ticket.title), \(IntentViewModel.priorityLabel(ticket.priority)) priority, \(ticket.id)")
         .accessibilityAddTraits(.isButton)
