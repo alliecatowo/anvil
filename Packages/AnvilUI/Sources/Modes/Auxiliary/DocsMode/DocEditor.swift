@@ -92,54 +92,12 @@ struct DocEditor: View {
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-                    ForEach(Array(viewModel.editorContent.components(separatedBy: "\n").enumerated()), id: \.offset) { _, line in
-                        renderedLine(line)
-                    }
-                }
-                .padding(AnvilSpacing.md)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                MarkdownPreview(source: viewModel.editorContent)
+                    .padding(AnvilSpacing.md)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .background(.background)
-    }
-
-    // MARK: - Simple Markdown Rendering
-
-    private func renderedLine(_ line: String) -> some View {
-        let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-        return Group {
-            if trimmed.hasPrefix("# ") {
-                Text(trimmed.dropFirst(2))
-                    .font(AnvilFont.heading)
-                    .foregroundStyle(.primary)
-            } else if trimmed.hasPrefix("## ") {
-                Text(trimmed.dropFirst(3))
-                    .font(AnvilFont.subheading)
-                    .foregroundStyle(.primary)
-            } else if trimmed.hasPrefix("### ") {
-                Text(trimmed.dropFirst(4))
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.primary)
-            } else if trimmed.hasPrefix("- ") {
-                HStack(alignment: .top, spacing: AnvilSpacing.xs) {
-                    Text("\u{2022}")
-                        .foregroundStyle(.tertiary)
-                    Text(trimmed.dropFirst(2))
-                        .font(AnvilFont.body)
-                        .foregroundStyle(.secondary)
-                }
-            } else if trimmed.hasPrefix("```") {
-                EmptyView()
-            } else if trimmed.isEmpty {
-                Spacer().frame(height: AnvilSpacing.xs)
-            } else {
-                Text(trimmed)
-                    .font(AnvilFont.body)
-                    .foregroundStyle(.secondary)
-            }
-        }
     }
 
     // MARK: - Empty State
@@ -156,5 +114,157 @@ struct DocEditor: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.background)
+    }
+}
+
+// MARK: - Markdown Preview
+
+private struct MarkdownPreview: View {
+    let source: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(renderedBlocks, id: \.id) { block in
+                blockView(block)
+            }
+        }
+    }
+
+    // MARK: - Block Model
+
+    private struct MarkdownBlock: Identifiable {
+        let id: Int
+        let kind: Kind
+
+        enum Kind {
+            case h1(String)
+            case h2(String)
+            case h3(String)
+            case h4(String)
+            case bullet(String)
+            case code([String])
+            case body(String)
+            case spacer
+        }
+    }
+
+    // MARK: - Parsing
+
+    private var renderedBlocks: [MarkdownBlock] {
+        var blocks: [MarkdownBlock] = []
+        var codeLines: [String] = []
+        var inCode = false
+        var index = 0
+
+        for line in source.components(separatedBy: "\n") {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            if trimmed.hasPrefix("```") {
+                if inCode {
+                    // Close code block
+                    blocks.append(MarkdownBlock(id: index, kind: .code(codeLines)))
+                    index += 1
+                    codeLines = []
+                    inCode = false
+                } else {
+                    inCode = true
+                }
+                continue
+            }
+
+            if inCode {
+                codeLines.append(line)
+                continue
+            }
+
+            if trimmed.hasPrefix("#### ") {
+                blocks.append(MarkdownBlock(id: index, kind: .h4(String(trimmed.dropFirst(5)))))
+            } else if trimmed.hasPrefix("### ") {
+                blocks.append(MarkdownBlock(id: index, kind: .h3(String(trimmed.dropFirst(4)))))
+            } else if trimmed.hasPrefix("## ") {
+                blocks.append(MarkdownBlock(id: index, kind: .h2(String(trimmed.dropFirst(3)))))
+            } else if trimmed.hasPrefix("# ") {
+                blocks.append(MarkdownBlock(id: index, kind: .h1(String(trimmed.dropFirst(2)))))
+            } else if trimmed.hasPrefix("- ") {
+                blocks.append(MarkdownBlock(id: index, kind: .bullet(String(trimmed.dropFirst(2)))))
+            } else if trimmed.isEmpty {
+                blocks.append(MarkdownBlock(id: index, kind: .spacer))
+            } else {
+                blocks.append(MarkdownBlock(id: index, kind: .body(trimmed)))
+            }
+            index += 1
+        }
+
+        // Unclosed code fence: emit remaining lines as code
+        if inCode && !codeLines.isEmpty {
+            blocks.append(MarkdownBlock(id: index, kind: .code(codeLines)))
+        }
+
+        return blocks
+    }
+
+    // MARK: - Block View
+
+    @ViewBuilder
+    private func blockView(_ block: MarkdownBlock) -> some View {
+        switch block.kind {
+        case .h1(let text):
+            Text(text)
+                .font(.title)
+                .foregroundStyle(.primary)
+                .padding(.top, AnvilSpacing.sm)
+
+        case .h2(let text):
+            Text(text)
+                .font(.title2)
+                .foregroundStyle(.primary)
+                .padding(.top, AnvilSpacing.xs)
+
+        case .h3(let text):
+            Text(text)
+                .font(.title3)
+                .foregroundStyle(.primary)
+
+        case .h4(let text):
+            Text(text)
+                .font(.headline)
+                .foregroundStyle(.primary)
+
+        case .bullet(let text):
+            HStack(alignment: .top, spacing: AnvilSpacing.xs) {
+                Text("\u{2022}")
+                    .font(AnvilFont.body)
+                    .foregroundStyle(.tertiary)
+                inlineText(text)
+                    .font(AnvilFont.body)
+                    .foregroundStyle(.secondary)
+            }
+
+        case .code(let lines):
+            Text(lines.joined(separator: "\n"))
+                .font(AnvilFont.code)
+                .foregroundStyle(.primary)
+                .padding(AnvilSpacing.sm)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.secondary.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+
+        case .body(let text):
+            inlineText(text)
+                .font(AnvilFont.body)
+                .foregroundStyle(.secondary)
+
+        case .spacer:
+            Spacer().frame(height: AnvilSpacing.xs)
+        }
+    }
+
+    // MARK: - Inline Markdown
+
+    private func inlineText(_ text: String) -> Text {
+        if let attributed = try? AttributedString(markdown: text) {
+            return Text(attributed)
+        }
+        return Text(text)
     }
 }
