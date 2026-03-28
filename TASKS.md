@@ -1,5 +1,10 @@
 # Anvil Task List
 
+> [!WARNING]
+> This file is historical and may contain stale completion status.
+> Do not use it to judge release readiness.
+> Use [`ROADMAP_NATIVE_2026.md`](/Users/allie/Develop/anvil/ROADMAP_NATIVE_2026.md) as the canonical roadmap, [`TRUTH_MATRIX.md`](/Users/allie/Develop/anvil/TRUTH_MATRIX.md) for surfaced interactions, and [`UI_IMPLEMENTATION_GOVERNANCE.md`](/Users/allie/Develop/anvil/UI_IMPLEMENTATION_GOVERNANCE.md) for merge rules.
+
 **Total: 399 | Completed: 77 | Pending: 322**
 
 ## Completed

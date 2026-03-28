@@ -1,5 +1,6 @@
 import SwiftUI
 import AnvilDomain
+import AnvilApplication
 
 // MARK: - Observability Tab
 
@@ -26,6 +27,18 @@ enum ErrorSeverity: String, CaseIterable {
         case .critical: "exclamationmark.octagon.fill"
         case .warning: "exclamationmark.triangle.fill"
         case .info: "info.circle.fill"
+        }
+    }
+
+    init(from event: ErrorEvent) {
+        let title = event.title.lowercased()
+        let level = event.tags["level"]?.lowercased()
+        if level == "fatal" || level == "error" || title.contains("error") || title.contains("exception") || event.occurrences > 100 {
+            self = .critical
+        } else if level == "warning" || title.contains("warning") || title.contains("deprecat") {
+            self = .warning
+        } else {
+            self = .info
         }
     }
 }
@@ -69,6 +82,13 @@ enum MetricTrend: String {
     }
 }
 
+/// Data point for error trend chart.
+struct ErrorTrendPoint: Identifiable {
+    let id = UUID()
+    let date: Date
+    let count: Double
+}
+
 // MARK: - View Model
 
 @MainActor
@@ -83,6 +103,18 @@ final class ObservabilityViewModel: ObservableObject {
 
     @Published var errors: [ErrorItem] = []
     @Published var metrics: [MetricCard] = []
+    @Published var errorTrend: [ErrorTrendPoint] = []
+    @Published var detailedError: ErrorEvent?
+
+    // MARK: Connection State
+
+    @Published var isConnected: Bool = false
+    @Published var isLoading: Bool = false
+    @Published var errorMessage: String?
+    @Published var sentryOrg: String = ""
+    @Published var sentryProject: String = ""
+    @Published var sentryToken: String = ""
+    @Published var usingDemoData: Bool = false
 
     // MARK: Computed
 
@@ -94,13 +126,137 @@ final class ObservabilityViewModel: ObservableObject {
         errors.filter { $0.severity == .critical }.count
     }
 
-    // MARK: Init
+    private weak var observabilityService: ObservabilityService?
 
-    init() {
+    func configure(service: ObservabilityService) {
+        self.observabilityService = service
+        self.isConnected = service.isConnected
+    }
+
+    // MARK: - Connection
+
+    func connectToSentry() async {
+        guard let service = observabilityService else {
+            errorMessage = "Observability service not configured"
+            return
+        }
+        isLoading = true
+        errorMessage = nil
+
+        await service.connect(projectId: sentryProject)
+        isConnected = service.isConnected
+        errorMessage = service.lastError
+
+        if isConnected {
+            usingDemoData = false
+            await loadErrors()
+            await loadMetrics()
+        }
+        isLoading = false
+    }
+
+    func disconnect() {
+        observabilityService?.disconnect()
+        isConnected = false
+        errors = []
+        metrics = []
+        errorTrend = []
+        detailedError = nil
+        selectedErrorID = nil
+        usingDemoData = false
+    }
+
+    func loadDemoData() {
         let (sampleErrors, sampleMetrics) = Self.makeSampleData()
         self.errors = sampleErrors
         self.metrics = sampleMetrics
+        self.errorTrend = Self.makeSampleTrend()
         self.selectedErrorID = sampleErrors.first?.id
+        self.usingDemoData = true
+    }
+
+    // MARK: - Data Loading
+
+    func loadErrors() async {
+        guard let service = observabilityService, isConnected else { return }
+        isLoading = true
+
+        let now = Date()
+        let dayAgo = now.addingTimeInterval(-86400)
+        let range = TimeRange(start: dayAgo, end: now)
+
+        let events = await service.fetchErrors(timeRange: range)
+        errorMessage = service.lastError
+
+        self.errors = events.map { event in
+            ErrorItem(
+                id: event.id,
+                event: event,
+                severity: ErrorSeverity(from: event),
+                affectedUsers: event.tags["users"].flatMap(Int.init) ?? event.occurrences / 3,
+                breadcrumbs: [] // Populated on detail fetch
+            )
+        }
+
+        if selectedErrorID == nil {
+            selectedErrorID = errors.first?.id
+        }
+
+        isLoading = false
+    }
+
+    func loadErrorDetail(errorId: String) async {
+        guard let service = observabilityService, isConnected else { return }
+        detailedError = await service.fetchErrorDetail(errorId: errorId)
+        errorMessage = service.lastError
+    }
+
+    func loadMetrics() async {
+        guard let service = observabilityService, isConnected else { return }
+
+        let now = Date()
+        let dayAgo = now.addingTimeInterval(-86400)
+        let range = TimeRange(start: dayAgo, end: now)
+
+        let rawMetrics = await service.fetchMetrics(query: "", timeRange: range)
+        errorMessage = service.lastError
+
+        // Build trend data from raw time series
+        self.errorTrend = rawMetrics.map { metric in
+            ErrorTrendPoint(date: metric.timestamp, count: metric.value)
+        }
+
+        // Build summary cards from aggregated data
+        let totalErrors = rawMetrics.reduce(0.0) { $0 + $1.value }
+        let avgRate = rawMetrics.isEmpty ? 0 : totalErrors / Double(rawMetrics.count)
+
+        self.metrics = [
+            MetricCard(id: "m-1", title: "Total Errors (24h)", value: formatNumber(totalErrors), subtitle: "Last 24 hours", trend: totalErrors > 100 ? .up : .flat, color: AnvilColor.accentRed),
+            MetricCard(id: "m-2", title: "Avg Error Rate", value: String(format: "%.1f/hr", avgRate), subtitle: "Per time bucket", trend: avgRate > 10 ? .up : .down, color: AnvilColor.accentAmber),
+            MetricCard(id: "m-3", title: "Unique Issues", value: "\(errors.count)", subtitle: "Active issues", trend: errors.count > 10 ? .up : .flat, color: AnvilColor.accentBlue),
+            MetricCard(id: "m-4", title: "Critical", value: "\(criticalCount)", subtitle: "Requires attention", trend: criticalCount > 0 ? .up : .down, color: AnvilColor.accentRed),
+        ]
+    }
+
+    func refresh() async {
+        if usingDemoData { return }
+        await loadErrors()
+        await loadMetrics()
+    }
+
+    func selectError(_ id: String) {
+        selectedErrorID = id
+        if !usingDemoData {
+            Task { await loadErrorDetail(errorId: id) }
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func formatNumber(_ n: Double) -> String {
+        if n >= 1_000_000 { return String(format: "%.1fM", n / 1_000_000) }
+        if n >= 1_000 { return String(format: "%.1fK", n / 1_000) }
+        return String(format: "%.0f", n)
     }
 
     // MARK: - Sample Data
@@ -126,7 +282,7 @@ final class ObservabilityViewModel: ObservableObject {
                     occurrences: 247,
                     firstSeen: now.addingTimeInterval(-86400 * 3),
                     lastSeen: now.addingTimeInterval(-120),
-                    tags: ["service": "exercise-service", "env": "production"]
+                    tags: ["service": "exercise-service", "env": "production", "level": "error"]
                 ),
                 severity: .critical,
                 affectedUsers: 1_842,
@@ -153,7 +309,7 @@ final class ObservabilityViewModel: ObservableObject {
                     occurrences: 89,
                     firstSeen: now.addingTimeInterval(-7200),
                     lastSeen: now.addingTimeInterval(-300),
-                    tags: ["service": "exercise-service", "env": "production", "dependency": "redis"]
+                    tags: ["service": "exercise-service", "env": "production", "dependency": "redis", "level": "error"]
                 ),
                 severity: .critical,
                 affectedUsers: 634,
@@ -178,7 +334,7 @@ final class ObservabilityViewModel: ObservableObject {
                     occurrences: 12,
                     firstSeen: now.addingTimeInterval(-86400 * 14),
                     lastSeen: now.addingTimeInterval(-86400),
-                    tags: ["service": "analytics-service", "env": "staging"]
+                    tags: ["service": "analytics-service", "env": "staging", "level": "warning"]
                 ),
                 severity: .warning,
                 affectedUsers: 0,
@@ -198,7 +354,7 @@ final class ObservabilityViewModel: ObservableObject {
                     occurrences: 1_503,
                     firstSeen: now.addingTimeInterval(-86400 * 7),
                     lastSeen: now.addingTimeInterval(-60),
-                    tags: ["service": "exercise-service", "flag": "exercise-v2"]
+                    tags: ["service": "exercise-service", "flag": "exercise-v2", "level": "info"]
                 ),
                 severity: .info,
                 affectedUsers: 3,
@@ -219,5 +375,15 @@ final class ObservabilityViewModel: ObservableObject {
         ]
 
         return (errors, metrics)
+    }
+
+    static func makeSampleTrend() -> [ErrorTrendPoint] {
+        let now = Date()
+        return (0..<24).map { hour in
+            let date = now.addingTimeInterval(-Double(23 - hour) * 3600)
+            let base = 15.0 + Double.random(in: -5...10)
+            let spike = hour == 18 ? 45.0 : 0.0
+            return ErrorTrendPoint(date: date, count: max(0, base + spike))
+        }
     }
 }

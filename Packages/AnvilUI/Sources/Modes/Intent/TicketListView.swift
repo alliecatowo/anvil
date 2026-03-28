@@ -61,6 +61,7 @@ struct TicketListView: View {
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.sm)
+        .background(AnvilColor.backgroundToolbar)
     }
 
     @ViewBuilder
@@ -123,7 +124,7 @@ struct TicketListView: View {
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.xs)
-        .background(AnvilColor.backgroundSecondary)
+        .background(.regularMaterial)
     }
 
     // MARK: - Ticket Row
@@ -163,8 +164,83 @@ struct TicketListView: View {
                 ? AnvilColor.selectionBackground
                 : Color.clear
         )
+        .overlay(alignment: .leading) {
+            Rectangle()
+                .fill(viewModel.selectedTicketId == ticket.id ? AnvilColor.selectionBorder : Color.clear)
+                .frame(width: 3)
+        }
         .contentShape(Rectangle())
         .onTapGesture { viewModel.selectTicket(ticket.id) }
+        .contextMenu {
+            Menu("Status") {
+                ForEach(viewModel.allStatuses, id: \.self) { status in
+                    Button {
+                        withAnimation(AnvilAnimation.standard) {
+                            viewModel.updateStatus(ticket.id, status: status)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: IntentViewModel.statusIcon(status))
+                            Text(status.capitalized)
+                            if ticket.status == status {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            }
+
+            Menu("Priority") {
+                ForEach([TicketPriority.critical, .high, .medium, .low, .none], id: \.rawValue) { priority in
+                    Button {
+                        viewModel.updatePriority(ticket.id, priority: priority)
+                    } label: {
+                        HStack {
+                            Text(IntentViewModel.priorityLabel(priority))
+                            if ticket.priority == priority {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            }
+
+            Menu("Assignee") {
+                Button {
+                    viewModel.updateAssignee(ticket.id, assignee: nil)
+                } label: {
+                    HStack {
+                        Text("Unassigned")
+                        if ticket.assignee == nil {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+                Divider()
+                ForEach(viewModel.allAssignees, id: \.self) { name in
+                    Button {
+                        viewModel.updateAssignee(ticket.id, assignee: name)
+                    } label: {
+                        HStack {
+                            Text(name)
+                            if ticket.assignee == name {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            }
+
+            Divider()
+
+            Button(role: .destructive) {
+                withAnimation(AnvilAnimation.standard) {
+                    viewModel.deleteTicket(ticket.id)
+                }
+            } label: {
+                Label("Delete Ticket", systemImage: "trash")
+            }
+        }
     }
 
     private func labelsView(for ticket: Ticket) -> some View {

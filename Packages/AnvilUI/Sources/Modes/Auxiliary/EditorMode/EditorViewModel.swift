@@ -1,4 +1,7 @@
 import SwiftUI
+import AnvilACP
+import AnvilDomain
+import AnvilGit
 
 // MARK: - Whitespace Mode
 
@@ -24,9 +27,19 @@ struct EditorFile: Identifiable {
     let path: String
     let content: String
     let language: String
+    /// Path relative to the project root, for display in breadcrumbs.
+    let relativePath: String
+
+    init(name: String, path: String, content: String, language: String, relativePath: String? = nil) {
+        self.name = name
+        self.path = path
+        self.content = content
+        self.language = language
+        self.relativePath = relativePath ?? path
+    }
 
     var pathComponents: [String] {
-        path.components(separatedBy: "/").filter { !$0.isEmpty }
+        relativePath.components(separatedBy: "/").filter { !$0.isEmpty }
     }
 }
 
@@ -157,6 +170,13 @@ class EditorViewModel: ObservableObject {
 
     private var inlineEditTask: Task<Void, Never>?
 
+    /// Set by EditorMode on appear so inline edits can call ACP
+    /// and git gutter can load diff data.
+    weak var container: DependencyContainer?
+
+    /// Cached unstaged diff from git, keyed by relative file path.
+    private var cachedFileDiffs: [String: FileDiff] = [:]
+
     var selectedFile: EditorFile? {
         openFiles.first { $0.id == selectedFileId }
     }
@@ -248,7 +268,17 @@ class EditorViewModel: ObservableObject {
             content = "// Unable to read file"
         }
 
-        let file = EditorFile(name: name, path: path, content: content, language: language)
+        // Compute project-relative path for breadcrumbs
+        let relPath: String
+        if let root = projectPath, path.hasPrefix(root) {
+            var rel = String(path.dropFirst(root.count))
+            if rel.hasPrefix("/") { rel = String(rel.dropFirst()) }
+            relPath = rel
+        } else {
+            relPath = path
+        }
+
+        let file = EditorFile(name: name, path: path, content: content, language: language, relativePath: relPath)
         openFiles.append(file)
         selectedFileId = file.id
         cursorLine = 1
@@ -258,6 +288,8 @@ class EditorViewModel: ObservableObject {
         if shouldAutoMarkReadOnly(path) {
             readOnlyFileIds.insert(file.id)
         }
+
+        loadGitGutterForSelectedFile()
     }
 
     // MARK: - Helpers
@@ -310,6 +342,7 @@ class EditorViewModel: ObservableObject {
         selectedFileId = id
         cursorLine = 1
         cursorColumn = 1
+        loadGitGutterForSelectedFile()
     }
 
     func closeFile(_ id: UUID) {
@@ -377,6 +410,84 @@ class EditorViewModel: ObservableObject {
 
     func navigateToSymbol(_ symbol: EditorSymbol) {
         cursorLine = symbol.line
+    }
+
+    // MARK: - Git Gutter
+
+    /// Refresh the cached git diff data from the working tree.
+    func refreshGitDiffs() {
+        guard let container, let adapter = container.getOrCreateGitAdapter() else { return }
+        Task { @MainActor in
+            do {
+                let diffs = try await adapter.unstagedDiff()
+                cachedFileDiffs = Dictionary(uniqueKeysWithValues: diffs.map { ($0.filePath, $0) })
+                loadGitGutterForSelectedFile()
+            } catch {
+                cachedFileDiffs = [:]
+                gitLineChanges = [:]
+            }
+        }
+    }
+
+    /// Populate gitLineChanges for the currently selected file from cached diff data.
+    private func loadGitGutterForSelectedFile() {
+        guard showGitGutter, let file = selectedFile, let projectPath else {
+            gitLineChanges = [:]
+            return
+        }
+
+        // Compute relative path from project root
+        let relativePath: String
+        if file.path.hasPrefix(projectPath) {
+            var rel = String(file.path.dropFirst(projectPath.count))
+            if rel.hasPrefix("/") { rel = String(rel.dropFirst()) }
+            relativePath = rel
+        } else {
+            relativePath = file.path
+        }
+
+        guard let fileDiff = cachedFileDiffs[relativePath] else {
+            gitLineChanges = [:]
+            return
+        }
+
+        var changes: [Int: GitLineChange] = [:]
+        for hunk in fileDiff.hunks {
+            for line in hunk.lines {
+                switch line.type {
+                case .added:
+                    if let lineNum = line.newLineNumber {
+                        changes[lineNum] = .added
+                    }
+                case .removed:
+                    // Mark the line after the deletion with a delete marker
+                    let markerLine = hunk.newStart + hunk.newCount
+                    if changes[markerLine] == nil {
+                        changes[markerLine] = .deleted
+                    }
+                case .context:
+                    break
+                }
+            }
+
+            // Lines that appear as both added where removed lines existed nearby are "modified"
+            let addedLines = Set(hunk.lines.compactMap { $0.type == .added ? $0.newLineNumber : nil })
+            let removedLines = hunk.lines.filter { $0.type == .removed }
+            if !removedLines.isEmpty {
+                // Pair up: removed lines map to added lines at same hunk-relative position
+                var addedInOrder = hunk.lines.compactMap { $0.type == .added ? $0.newLineNumber : nil }
+                for _ in removedLines {
+                    if let paired = addedInOrder.first {
+                        if addedLines.contains(paired) {
+                            changes[paired] = .modified
+                        }
+                        addedInOrder.removeFirst()
+                    }
+                }
+            }
+        }
+
+        gitLineChanges = changes
     }
 
     // MARK: - Bracket Matching
@@ -609,7 +720,7 @@ class EditorViewModel: ObservableObject {
         line.replaceSubrange(startIdx..<endIdx, with: replaceText)
         lines[lineIdx] = line
 
-        let updated = EditorFile(name: file.name, path: file.path, content: lines.joined(separator: "\n"), language: file.language)
+        let updated = EditorFile(name: file.name, path: file.path, content: lines.joined(separator: "\n"), language: file.language, relativePath: file.relativePath)
         openFiles[fileIndex] = updated
         selectedFileId = updated.id
         updateFindMatches()
@@ -639,7 +750,7 @@ class EditorViewModel: ObservableObject {
             content = content.replacingOccurrences(of: findText, with: replaceText, options: options)
         }
 
-        let updated = EditorFile(name: file.name, path: file.path, content: content, language: file.language)
+        let updated = EditorFile(name: file.name, path: file.path, content: content, language: file.language, relativePath: file.relativePath)
         openFiles[fileIndex] = updated
         selectedFileId = updated.id
         updateFindMatches()
@@ -791,7 +902,8 @@ class EditorViewModel: ObservableObject {
             name: file.name,
             path: file.path,
             content: newContent,
-            language: file.language
+            language: file.language,
+            relativePath: file.relativePath
         )
         openFiles[fileIndex] = updated
         selectedFileId = updated.id
@@ -809,68 +921,60 @@ class EditorViewModel: ObservableObject {
         inlineEditPhase = .prompting
     }
 
-    // MARK: - Edit Generation (stub — replace with real ACP call)
+    // MARK: - Edit Generation (ACP-powered)
 
     private func generateInlineEdit(originalLines: [String], prompt: String) async -> [String] {
-        // Simulate streaming delay
-        try? await Task.sleep(nanoseconds: 800_000_000)
+        guard let container else {
+            // No ACP client available — return original unchanged
+            return originalLines
+        }
 
-        // Stub: apply simple transformations based on common prompt keywords
-        // In production this calls ACPClient with the file context + prompt
-        let lower = prompt.lowercased()
+        let client = await container.getOrCreateACPClient()
+        let originalCode = originalLines.joined(separator: "\n")
+        let language = selectedFile?.language ?? "text"
 
-        if lower.contains("comment") || lower.contains("document") || lower.contains("explain") {
-            return addDocComments(to: originalLines)
-        } else if lower.contains("async") || lower.contains("await") {
-            return makeAsync(lines: originalLines)
-        } else if lower.contains("guard") || lower.contains("unwrap") {
-            return addGuardStatements(to: originalLines)
-        } else if lower.contains("todo") {
-            return originalLines.map { "// TODO: \($0.trimmingCharacters(in: .whitespaces))" }
-        } else {
-            // Return original with a comment showing the prompt was received
-            var result = originalLines
-            result.insert("// AI edit: \(prompt)", at: 0)
-            return result
+        let systemPrompt = """
+        You are a code editor assistant. The user has selected a block of \(language) code and wants you to edit it.
+        Return ONLY the edited code — no explanations, no markdown fences, no surrounding text.
+        Preserve the original indentation style. If the instruction is unclear, make your best judgment.
+        """
+
+        let userPrompt = """
+        Edit the following code according to this instruction: \(prompt)
+
+        ```
+        \(originalCode)
+        ```
+        """
+
+        do {
+            let result = try await client.complete(
+                prompt: userPrompt,
+                systemPrompt: systemPrompt
+            )
+
+            // Strip markdown fences if the model included them despite instructions
+            let cleaned = stripMarkdownFences(result)
+            let resultLines = cleaned.components(separatedBy: "\n")
+            return resultLines.isEmpty ? originalLines : resultLines
+        } catch {
+            // ACP call failed — return original unchanged
+            return originalLines
         }
     }
 
-    private func addDocComments(to lines: [String]) -> [String] {
-        var result: [String] = []
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed.hasPrefix("func ") {
-                let indent = String(line.prefix(while: { $0 == " " }))
-                let name = trimmed.dropFirst(5).prefix(while: { $0 != "(" })
-                result.append("\(indent)/// \(name) performs the described operation.")
-                result.append(line)
-            } else {
-                result.append(line)
-            }
+    /// Strip leading/trailing markdown code fences if present.
+    private func stripMarkdownFences(_ text: String) -> String {
+        var lines = text.components(separatedBy: "\n")
+        if let first = lines.first?.trimmingCharacters(in: .whitespaces),
+           first.hasPrefix("```") {
+            lines.removeFirst()
         }
-        return result
-    }
-
-    private func makeAsync(lines: [String]) -> [String] {
-        lines.map { line in
-            if line.contains("func ") && !line.contains("async") {
-                return line.replacingOccurrences(of: "func ", with: "func ")
-                    .replacingOccurrences(of: ") {", with: ") async {")
-            }
-            return line
+        if let last = lines.last?.trimmingCharacters(in: .whitespaces),
+           last == "```" {
+            lines.removeLast()
         }
-    }
-
-    private func addGuardStatements(to lines: [String]) -> [String] {
-        var result: [String] = []
-        for line in lines {
-            result.append(line)
-            if line.contains("let ") && line.contains("= ") && !line.contains("guard") {
-                let indent = String(line.prefix(while: { $0 == " " }))
-                result.append("\(indent)// guard let ... else { return } — add guard here")
-            }
-        }
-        return result
+        return lines.joined(separator: "\n")
     }
 
     // MARK: - Symbol Extraction

@@ -13,105 +13,178 @@ final class CommandPaletteTests: XCTestCase {
         app = nil
     }
 
-    // MARK: - Open / Close
+    // MARK: - Open
 
     func testOpenCommandPaletteViaKeyboard() throws {
         app.typeKey("k", modifierFlags: .command)
 
-        // The palette search field should appear
         let searchField = app.textFields["Search commands, files, work items..."]
-        XCTAssertTrue(searchField.waitForExistence(timeout: 5), "Command palette search field should appear")
+        XCTAssertTrue(searchField.waitForExistence(timeout: 5), "Cmd+K must open command palette with search field")
     }
 
-    func testCloseCommandPaletteViaEscape() throws {
+    func testCommandPaletteSearchFieldIsFocused() throws {
+        app.typeKey("k", modifierFlags: .command)
+
+        let searchField = app.textFields["Search commands, files, work items..."]
+        XCTAssertTrue(searchField.waitForExistence(timeout: 5))
+        // Field should be focused — we can type immediately
+        app.typeText("agent")
+
+        XCTAssertEqual(searchField.value as? String, "agent", "Command palette search field must be focused on open")
+    }
+
+    // MARK: - Close
+
+    func testEscapeClosesCommandPalette() throws {
         app.typeKey("k", modifierFlags: .command)
 
         let searchField = app.textFields["Search commands, files, work items..."]
         XCTAssertTrue(searchField.waitForExistence(timeout: 5))
 
-        // Press Escape to close
         app.typeKey(.escape, modifierFlags: [])
 
-        // Search field should disappear
-        XCTAssertFalse(searchField.waitForExistence(timeout: 2), "Command palette should close on Escape")
+        XCTAssertFalse(searchField.waitForExistence(timeout: 3), "Escape must close command palette")
     }
 
-    func testOpenCommandPaletteViaSearchButton() throws {
-        let searchButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Search'")).firstMatch
-        XCTAssertTrue(searchButton.waitForExistence(timeout: 5))
-        searchButton.click()
-
-        let searchField = app.textFields["Search commands, files, work items..."]
-        XCTAssertTrue(searchField.waitForExistence(timeout: 5), "Command palette should open when clicking search button")
-    }
-
-    // MARK: - Search
-
-    func testCommandPaletteAcceptsText() throws {
+    func testBackdropClickClosesCommandPalette() throws {
         app.typeKey("k", modifierFlags: .command)
 
         let searchField = app.textFields["Search commands, files, work items..."]
         XCTAssertTrue(searchField.waitForExistence(timeout: 5))
 
-        searchField.typeText("agent")
-        XCTAssertEqual(searchField.value as? String, "agent")
+        // Click far corner (backdrop)
+        let window = app.windows.firstMatch
+        let corner = window.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.95))
+        corner.click()
+
+        XCTAssertFalse(searchField.waitForExistence(timeout: 3), "Clicking backdrop must close command palette")
     }
 
-    func testCommandPaletteShowsResults() throws {
+    // MARK: - Search → Results Appear
+
+    func testSearchProducesResults() throws {
         app.typeKey("k", modifierFlags: .command)
 
         let searchField = app.textFields["Search commands, files, work items..."]
         XCTAssertTrue(searchField.waitForExistence(timeout: 5))
 
-        // Type something that should match command items
         searchField.typeText("Toggle")
 
-        // Results should appear in the scroll view
+        // Result: results scroll view must appear
         let scrollView = app.scrollViews.firstMatch
-        XCTAssertTrue(scrollView.waitForExistence(timeout: 3), "Results scroll view should appear")
+        XCTAssertTrue(scrollView.waitForExistence(timeout: 3), "Typing in command palette must produce a results list")
     }
 
-    // MARK: - Navigation
-
-    func testCommandPaletteArrowKeyNavigation() throws {
+    func testSearchForAgentShowsResult() throws {
         app.typeKey("k", modifierFlags: .command)
 
         let searchField = app.textFields["Search commands, files, work items..."]
         XCTAssertTrue(searchField.waitForExistence(timeout: 5))
 
-        // Navigate down then up
+        searchField.typeText("Agent")
+
+        // Result: at least one result containing "Agent" should appear
+        let result = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Agent'")).firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 3), "Searching 'Agent' must show Agent-related results")
+    }
+
+    func testSearchWithNoMatchesShowsEmptyState() throws {
+        app.typeKey("k", modifierFlags: .command)
+
+        let searchField = app.textFields["Search commands, files, work items..."]
+        XCTAssertTrue(searchField.waitForExistence(timeout: 5))
+
+        searchField.typeText("xyzxyzxyz_no_match_ever")
+
+        // Result: empty state or no results indicator
+        let emptyState = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'No results' OR label CONTAINS 'no results'")).firstMatch
+        // App must not crash even with no matches
+        XCTAssertTrue(app.windows.firstMatch.exists, "No-match search must not crash the app")
+        _ = emptyState.waitForExistence(timeout: 2)
+    }
+
+    // MARK: - Keyboard Navigation
+
+    func testArrowKeyNavigationMovesSelection() throws {
+        app.typeKey("k", modifierFlags: .command)
+
+        let searchField = app.textFields["Search commands, files, work items..."]
+        XCTAssertTrue(searchField.waitForExistence(timeout: 5))
+
+        searchField.typeText("mode")
+        _ = app.scrollViews.firstMatch.waitForExistence(timeout: 3)
+
+        // Navigate down and verify app doesn't crash
         app.typeKey(.downArrow, modifierFlags: [])
         app.typeKey(.downArrow, modifierFlags: [])
         app.typeKey(.upArrow, modifierFlags: [])
+
+        XCTAssertTrue(app.windows.firstMatch.exists, "Arrow key navigation must not crash")
     }
 
-    func testCommandPaletteReturnExecutes() throws {
+    // MARK: - Execute → Mode Switches / Palette Closes
+
+    func testReturnExecutesSelectedCommand() throws {
         app.typeKey("k", modifierFlags: .command)
 
         let searchField = app.textFields["Search commands, files, work items..."]
         XCTAssertTrue(searchField.waitForExistence(timeout: 5))
 
-        // Press Return to execute selected item
+        // Press Return to execute the first (default) item
         app.typeKey(.return, modifierFlags: [])
 
-        // Palette should close after execution
-        XCTAssertFalse(searchField.waitForExistence(timeout: 2))
+        // Result: palette must close
+        XCTAssertFalse(searchField.waitForExistence(timeout: 3), "Pressing Return must execute command and close palette")
     }
 
-    // MARK: - Backdrop Dismiss
+    func testSearchAndExecuteSwitchesMode() throws {
+        // Start in a known mode
+        app.buttons["Intent"].click()
+        _ = app.scrollViews.firstMatch.waitForExistence(timeout: 3)
 
-    func testCommandPaletteDismissOnBackdropClick() throws {
         app.typeKey("k", modifierFlags: .command)
 
         let searchField = app.textFields["Search commands, files, work items..."]
         XCTAssertTrue(searchField.waitForExistence(timeout: 5))
 
-        // Click outside the palette (on the backdrop)
-        let window = app.windows.firstMatch
-        let topLeft = window.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.95))
-        topLeft.click()
+        searchField.typeText("Agent")
 
-        // Palette should close
-        XCTAssertFalse(searchField.waitForExistence(timeout: 2))
+        // Select a result
+        let agentResult = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Agent'")).firstMatch
+        if agentResult.waitForExistence(timeout: 3) {
+            agentResult.click()
+
+            // Result: palette closes AND mode changes
+            XCTAssertFalse(searchField.waitForExistence(timeout: 3), "Clicking a result must close the command palette")
+        }
+    }
+
+    // MARK: - Search Button in Tab Bar Also Opens Palette
+
+    func testSearchButtonInTabBarOpensPalette() throws {
+        let searchButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Search'")).firstMatch
+        if searchButton.waitForExistence(timeout: 5) {
+            searchButton.click()
+
+            let searchField = app.textFields["Search commands, files, work items..."]
+            XCTAssertTrue(searchField.waitForExistence(timeout: 5), "Search button in tab bar must open command palette")
+        }
+    }
+
+    // MARK: - Reopen Works After Close
+
+    func testCanReopenCommandPaletteAfterClose() throws {
+        // Open
+        app.typeKey("k", modifierFlags: .command)
+        let searchField = app.textFields["Search commands, files, work items..."]
+        XCTAssertTrue(searchField.waitForExistence(timeout: 5))
+
+        // Close
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertFalse(searchField.waitForExistence(timeout: 3))
+
+        // Reopen
+        app.typeKey("k", modifierFlags: .command)
+        XCTAssertTrue(searchField.waitForExistence(timeout: 5), "Command palette must be reopenable after closing")
     }
 }

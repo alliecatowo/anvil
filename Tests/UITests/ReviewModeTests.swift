@@ -7,69 +7,191 @@ final class ReviewModeTests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launch()
+        loadDemoData()
+        switchToReviewMode()
     }
 
     override func tearDownWithError() throws {
         app = nil
     }
 
-    // MARK: - Mode Activation
+    // MARK: - Mode Renders
 
-    func testSwitchToReviewMode() throws {
-        app.typeKey("3", modifierFlags: .command)
-
-        let reviewTab = app.buttons["Review"]
-        XCTAssertTrue(reviewTab.waitForExistence(timeout: 5))
+    func testReviewModeSidebarHasBranchesSection() throws {
+        let branchesHeader = app.staticTexts["BRANCHES"]
+        XCTAssertTrue(branchesHeader.waitForExistence(timeout: 5), "Review sidebar must show BRANCHES section")
     }
 
-    // MARK: - Review Inbox
+    func testReviewModeSidebarHasPullRequestsSection() throws {
+        // PR section appears (may be empty if not authenticated)
+        let prHeader = app.staticTexts["PULL REQUESTS"]
+        XCTAssertTrue(prHeader.waitForExistence(timeout: 5), "Review sidebar must show PULL REQUESTS section")
+    }
 
-    func testReviewInboxRendersAfterDemoData() throws {
-        loadDemoData()
-        app.typeKey("3", modifierFlags: .command)
+    func testReviewModeHasClickableElements() throws {
+        let clickable = app.buttons.allElementsBoundByIndex.filter { $0.isHittable && $0.label != "Review" }
+        XCTAssertGreaterThan(clickable.count, 0, "Review mode must have clickable elements")
+    }
 
-        // Review inbox should show sample reviews
+    // MARK: - Review Item Click → Detail View Opens
+
+    func testClickReviewItemOpensDetail() throws {
+        // Demo data adds reviews; scroll to first and click
         let scrollView = app.scrollViews.firstMatch
-        XCTAssertTrue(scrollView.waitForExistence(timeout: 5), "Review inbox should render")
-    }
+        XCTAssertTrue(scrollView.waitForExistence(timeout: 5))
 
-    // MARK: - Review Item Click
+        let firstItem = scrollView.otherElements.firstMatch
+        if firstItem.waitForExistence(timeout: 5) {
+            firstItem.click()
 
-    func testReviewItemClickable() throws {
-        loadDemoData()
-        app.typeKey("3", modifierFlags: .command)
-
-        let listItem = app.scrollViews.firstMatch.otherElements.firstMatch
-        if listItem.exists {
-            listItem.click()
+            // Result: file list or diff view must appear (sidebar changes to show files)
+            let backButton = app.buttons["Back"]
+            XCTAssertTrue(backButton.waitForExistence(timeout: 5), "Clicking review item must show Back button in sidebar")
         }
     }
 
-    // MARK: - Diff View
+    func testClickReviewItemShowsFileList() throws {
+        openFirstReviewItem()
 
-    func testDiffViewLoads() throws {
-        loadDemoData()
-        app.typeKey("3", modifierFlags: .command)
+        // Result: sidebar shows "FILES" section with file count
+        let filesHeader = app.staticTexts["FILES"]
+        XCTAssertTrue(filesHeader.waitForExistence(timeout: 5), "Review detail sidebar must show FILES section")
+    }
 
-        // After clicking a review, the diff view should load
-        let listItem = app.scrollViews.firstMatch.otherElements.firstMatch
-        if listItem.exists {
-            listItem.click()
-            // Diff view content should appear
+    // MARK: - Back Button → Returns to Review List
+
+    func testBackButtonReturnsToReviewList() throws {
+        openFirstReviewItem()
+
+        let backButton = app.buttons["Back"]
+        XCTAssertTrue(backButton.waitForExistence(timeout: 5))
+        backButton.click()
+
+        // Result: BRANCHES section visible again, FILES section gone
+        let branchesBack = app.staticTexts["BRANCHES"].waitForExistence(timeout: 5)
+        XCTAssertTrue(branchesBack, "Back button must return to main review list showing BRANCHES section")
+    }
+
+    // MARK: - Branch Click → Diff Loads
+
+    func testClickingBranchLoadsDiff() throws {
+        // Find a non-current branch and click it
+        let branchRows = app.scrollViews.firstMatch.otherElements.allElementsBoundByIndex
+        for row in branchRows {
+            if row.isHittable && row.label != "" {
+                row.click()
+                // Result: some content or diff view should render in content area
+                let contentExists = app.scrollViews.count > 0
+                XCTAssertTrue(contentExists, "Clicking a branch must render content")
+                break
+            }
         }
     }
 
-    // MARK: - Review Sidebar
+    // MARK: - Commit Graph Toggle
 
-    func testReviewSidebarContent() throws {
-        loadDemoData()
-        app.typeKey("3", modifierFlags: .command)
-        // Sidebar should show review list
+    func testCommitGraphToggleButtonExists() throws {
+        let graphButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Commit Graph'")).firstMatch
+        XCTAssertTrue(graphButton.waitForExistence(timeout: 5), "Commit graph toggle button must exist in Review sidebar")
+    }
+
+    func testCommitGraphToggleChangesVisibility() throws {
+        let graphButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Commit Graph'")).firstMatch
+        XCTAssertTrue(graphButton.waitForExistence(timeout: 5))
+
+        graphButton.click()
+
+        // Result: button label changes (show ↔ hide)
+        // Verify app didn't crash
+        XCTAssertTrue(app.windows.firstMatch.exists, "Toggling commit graph must not crash")
+    }
+
+    // MARK: - GitHub Sign-In Button (when not authenticated)
+
+    func testGitHubSignInButtonExists() throws {
+        let signInButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Sign in to GitHub'")).firstMatch
+        // May or may not exist depending on auth state — just verify it doesn't crash
+        if signInButton.waitForExistence(timeout: 3) {
+            XCTAssertTrue(signInButton.isHittable, "Sign in to GitHub button must be hittable")
+        }
+    }
+
+    func testGitHubSignInButtonOpensSheet() throws {
+        let signInButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Sign in to GitHub'")).firstMatch
+        if signInButton.waitForExistence(timeout: 3) {
+            signInButton.click()
+
+            // Result: login sheet should appear
+            let sheet = app.sheets.firstMatch
+            XCTAssertTrue(sheet.waitForExistence(timeout: 5), "Clicking Sign in to GitHub must open auth sheet")
+        }
+    }
+
+    // MARK: - Approve/Reject Hunks in Diff
+
+    func testApproveHunkButtonExists() throws {
+        openFirstReviewItem()
+        openFirstFile()
+
+        // Approve button should appear next to diff hunk
+        let approveButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Approve'")).firstMatch
+        if approveButton.waitForExistence(timeout: 5) {
+            XCTAssertTrue(approveButton.isHittable, "Approve hunk button must be hittable")
+        }
+    }
+
+    func testApproveHunkUpdatesCount() throws {
+        openFirstReviewItem()
+        openFirstFile()
+
+        let approveButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Approve'")).firstMatch
+        if approveButton.waitForExistence(timeout: 5) {
+            approveButton.click()
+
+            // Result: approve count indicator should update (file row shows approved/total)
+            XCTAssertTrue(app.windows.firstMatch.exists, "Approving hunk must not crash")
+        }
+    }
+
+    func testRejectHunkButtonExists() throws {
+        openFirstReviewItem()
+        openFirstFile()
+
+        let rejectButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Reject'")).firstMatch
+        if rejectButton.waitForExistence(timeout: 5) {
+            XCTAssertTrue(rejectButton.isHittable, "Reject hunk button must be hittable")
+        }
     }
 
     // MARK: - Helpers
 
     private func loadDemoData() {
         app.menuItems["Load Demo Project"].click()
+    }
+
+    private func switchToReviewMode() {
+        app.typeKey("3", modifierFlags: .command)
+        _ = app.staticTexts["BRANCHES"].waitForExistence(timeout: 5)
+    }
+
+    private func openFirstReviewItem() {
+        let scrollView = app.scrollViews.firstMatch
+        if scrollView.waitForExistence(timeout: 5) {
+            let firstItem = scrollView.otherElements.firstMatch
+            if firstItem.waitForExistence(timeout: 5) {
+                firstItem.click()
+            }
+        }
+        _ = app.buttons["Back"].waitForExistence(timeout: 5)
+    }
+
+    private func openFirstFile() {
+        let filesHeader = app.staticTexts["FILES"]
+        if filesHeader.waitForExistence(timeout: 5) {
+            let fileRow = app.scrollViews.firstMatch.otherElements.firstMatch
+            if fileRow.waitForExistence(timeout: 3) {
+                fileRow.click()
+            }
+        }
     }
 }

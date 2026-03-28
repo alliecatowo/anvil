@@ -123,6 +123,11 @@ class PluginMarketplaceViewModel: ObservableObject {
     }
 
     init() {
+        plugins = []
+    }
+
+    /// Load built-in plugin catalog for previews and initial state.
+    func loadBuiltInPlugins() {
         plugins = Self.samplePlugins()
     }
 

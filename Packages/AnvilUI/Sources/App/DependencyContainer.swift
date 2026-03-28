@@ -133,9 +133,90 @@ public class DependencyContainer: ObservableObject {
         return client
     }
 
+    // MARK: - Database Service
+
+    public let databaseService = DatabaseService()
+
+    // MARK: - Observability Service
+
+    public let observabilityService = ObservabilityService()
+
     // MARK: - File System
 
     public let fileSystemService = FileSystemService()
+
+    // MARK: - Integration Providers
+
+    /// Connection status for each integration provider.
+    @Published public var integrationStatus: [String: IntegrationConnectionStatus] = [:]
+
+    /// Hosting port adapter (e.g. Vercel). Injected from App target.
+    private var _hostingPort: (any HostingPort)?
+    public var hostingPort: (any HostingPort)? { _hostingPort }
+
+    /// Observability port adapter (e.g. Sentry). Injected from App target.
+    private var _observabilityPort: (any ObservabilityPort)?
+    public var observabilityPort: (any ObservabilityPort)? { _observabilityPort }
+
+    /// Messaging port adapter (e.g. Slack). Injected from App target.
+    private var _messagingPort: (any MessagingPort)?
+    public var messagingPort: (any MessagingPort)? { _messagingPort }
+
+    public enum IntegrationConnectionStatus: String {
+        case connected, disconnected, testing, error
+    }
+
+    /// Set the hosting port adapter and test connection.
+    public func setHostingAdapter(_ adapter: any HostingPort) {
+        _hostingPort = adapter
+        testIntegration("vercel") { try await adapter.validateConnection() }
+    }
+
+    /// Set the observability port adapter and test connection.
+    public func setObservabilityAdapter(_ adapter: any ObservabilityPort) {
+        _observabilityPort = adapter
+        testIntegration("sentry") { try await adapter.validateConnection() }
+    }
+
+    /// Set the messaging port adapter and test connection.
+    public func setMessagingAdapter(_ adapter: any MessagingPort) {
+        _messagingPort = adapter
+        testIntegration("slack") { try await adapter.validateConnection() }
+    }
+
+    /// Remove an integration adapter and clear its status.
+    public func removeIntegration(_ id: String) {
+        switch id {
+        case "vercel": _hostingPort = nil
+        case "sentry": _observabilityPort = nil
+        case "slack": _messagingPort = nil
+        default: break
+        }
+        integrationStatus.removeValue(forKey: id)
+    }
+
+    private func testIntegration(_ id: String, validate: @escaping @Sendable () async throws -> Bool) {
+        integrationStatus[id] = .testing
+        Task { @MainActor [weak self] in
+            do {
+                let ok = try await validate()
+                self?.integrationStatus[id] = ok ? .connected : .error
+            } catch {
+                self?.integrationStatus[id] = .error
+            }
+        }
+    }
+
+    /// Check whether an integration has stored credentials.
+    public func hasIntegrationCredentials(for provider: String) -> Bool {
+        switch provider {
+        case "vercel": return ProviderKeychain.vercelToken != nil
+        case "sentry": return ProviderKeychain.sentryToken != nil && ProviderKeychain.sentryOrganization != nil
+        case "slack": return ProviderKeychain.slackToken != nil
+        case "docker": return ProviderKeychain.dockerSocketPath != nil
+        default: return false
+        }
+    }
 
     // MARK: - Configuration
 
@@ -325,6 +406,10 @@ public class DependencyContainer: ObservableObject {
 
     public func makeAIReviewUseCase() -> AIReviewUseCase {
         AIReviewUseCase()
+    }
+
+    public func makeGenerateCommitMessageUseCase() -> GenerateCommitMessageUseCase {
+        GenerateCommitMessageUseCase()
     }
 
     public func makeCreateProjectUseCase() -> CreateProjectUseCase {

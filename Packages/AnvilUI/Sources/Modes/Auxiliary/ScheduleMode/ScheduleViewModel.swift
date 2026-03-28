@@ -97,6 +97,12 @@ final class ScheduleViewModel: ObservableObject {
     // MARK: Init
 
     init() {
+        self.entries = []
+        self.selectedEntryID = nil
+    }
+
+    /// Load sample data for previews and demos.
+    func loadSampleData() {
         self.entries = Self.makeSampleData()
         self.selectedEntryID = entries.first?.id
     }

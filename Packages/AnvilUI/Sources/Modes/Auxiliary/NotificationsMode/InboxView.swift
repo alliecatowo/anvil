@@ -38,26 +38,55 @@ struct InboxView: View {
     // MARK: - Toolbar
 
     private var toolbar: some View {
-        HStack {
-            Text("Inbox")
-                .font(AnvilFont.subheading)
-                .foregroundStyle(AnvilColor.textPrimary)
+        VStack(spacing: 0) {
+            HStack {
+                Text("Inbox")
+                    .font(AnvilFont.subheading)
+                    .foregroundStyle(AnvilColor.textPrimary)
 
-            if viewModel.unreadCount > 0 {
-                AnvilBadge(
-                    text: "\(viewModel.unreadCount) unread",
-                    color: AnvilColor.accentBlue
-                )
+                if viewModel.unreadCount > 0 {
+                    AnvilBadge(
+                        text: "\(viewModel.unreadCount) unread",
+                        color: AnvilColor.accentBlue
+                    )
+                }
+
+                Spacer()
+
+                AnvilButton("Mark All Read", icon: "checkmark", style: .ghost) {
+                    viewModel.markAllAsRead()
+                }
             }
+            .padding(.horizontal, AnvilSpacing.lg)
+            .padding(.vertical, AnvilSpacing.sm)
 
-            Spacer()
-
-            AnvilButton("Mark All Read", icon: "checkmark", style: .ghost) {
-                viewModel.markAllAsRead()
+            // Source filter chips
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: AnvilSpacing.xs) {
+                    ForEach(NotificationsViewModel.NotificationSourceFilter.allCases, id: \.rawValue) { filter in
+                        sourceFilterChip(filter)
+                    }
+                }
+                .padding(.horizontal, AnvilSpacing.lg)
+                .padding(.bottom, AnvilSpacing.sm)
             }
         }
-        .padding(.horizontal, AnvilSpacing.lg)
-        .padding(.vertical, AnvilSpacing.sm)
+    }
+
+    private func sourceFilterChip(_ filter: NotificationsViewModel.NotificationSourceFilter) -> some View {
+        let isSelected = viewModel.sourceFilter == filter
+        return Button {
+            viewModel.sourceFilter = filter
+        } label: {
+            Text(filter.rawValue)
+                .font(AnvilFont.label)
+                .foregroundStyle(isSelected ? Color.white : AnvilColor.textSecondary)
+                .padding(.horizontal, AnvilSpacing.sm)
+                .padding(.vertical, AnvilSpacing.xxs)
+                .background(isSelected ? AnvilColor.accentBlue : AnvilColor.backgroundTertiary)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Inbox Row
@@ -160,6 +189,11 @@ struct InboxView: View {
                 actionButton(icon: "checkmark", label: "Mark Read") {
                     viewModel.markAsRead(item.id)
                 }
+            }
+
+            // Dismiss
+            actionButton(icon: "xmark", label: "Dismiss") {
+                viewModel.dismissNotification(item.id)
             }
         }
     }

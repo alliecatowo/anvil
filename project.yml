@@ -45,6 +45,7 @@ targets:
         MACOSX_DEPLOYMENT_TARGET: "15.0"
         SWIFT_VERSION: "6.0"
         ENABLE_STRICT_CONCURRENCY: complete
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
   AnvilUITests:
     type: bundle.ui-testing

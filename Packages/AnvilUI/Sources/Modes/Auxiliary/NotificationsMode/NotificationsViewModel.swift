@@ -13,7 +13,7 @@ enum NotificationsTab: String, CaseIterable {
 
 // MARK: - Notification Source (UI-level)
 
-enum NotificationSource: String {
+enum NotificationSource: String, CaseIterable {
     case pr, deploy, error, message, mention
 
     var icon: String {
@@ -62,6 +62,25 @@ final class NotificationsViewModel: ObservableObject {
 
     @Published var selectedTab: NotificationsTab = .inbox
     @Published var selectedItemID: String?
+    @Published var sourceFilter: NotificationSourceFilter = .all
+
+    enum NotificationSourceFilter: String, CaseIterable {
+        case all = "All"
+        case prs = "PRs"
+        case deploys = "Deploys"
+        case errors = "Errors"
+        case mentions = "Mentions"
+
+        var matchingSources: [NotificationSource] {
+            switch self {
+            case .all: NotificationSource.allCases
+            case .prs: [.pr]
+            case .deploys: [.deploy]
+            case .errors: [.error]
+            case .mentions: [.mention, .message]
+            }
+        }
+    }
 
     // MARK: Data
 
@@ -70,10 +89,15 @@ final class NotificationsViewModel: ObservableObject {
 
     // MARK: Computed
 
-    /// Items filtered by the user's notification preferences (source toggles, urgency, rules).
+    /// Items filtered by the user's notification preferences (source toggles, urgency, rules)
+    /// and the active source filter in the inbox toolbar.
     var filteredInboxItems: [InboxItem] {
         let preferences = NotificationPreferences.shared
-        return inboxItems.filter { preferences.shouldShow($0) }
+        return inboxItems.filter { item in
+            guard preferences.shouldShow(item) else { return false }
+            guard sourceFilter == .all || sourceFilter.matchingSources.contains(item.source) else { return false }
+            return true
+        }
     }
 
     var unreadCount: Int {
@@ -83,6 +107,12 @@ final class NotificationsViewModel: ObservableObject {
     // MARK: Init
 
     init() {
+        self.inboxItems = []
+        self.activityEvents = []
+    }
+
+    /// Load sample data for previews and demos.
+    func loadSampleData() {
         let (items, events) = Self.makeSampleData()
         self.inboxItems = items
         self.activityEvents = events
@@ -121,6 +151,10 @@ final class NotificationsViewModel: ObservableObject {
             )
             inboxItems[index] = updated
         }
+    }
+
+    func dismissNotification(_ id: String) {
+        inboxItems.removeAll { $0.id == id }
     }
 
     func markAllAsRead() {

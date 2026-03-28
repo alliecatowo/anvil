@@ -129,8 +129,31 @@ public actor GitHubSourceControlCloudAdapter: SourceControlCloudPort {
     }
 
     public func resolveReviewThread(repo: String, threadId: String) async throws {
-        // GitHub GraphQL is needed for thread resolution — not available via REST.
-        // For now this is a no-op stub; the UI can still track resolved state locally.
+        struct GraphQLResponse: Decodable {
+            struct Data: Decodable {
+                struct ResolveThread: Decodable {
+                    struct Thread: Decodable {
+                        let id: String
+                    }
+                    let thread: Thread?
+                }
+                let resolveReviewThread: ResolveThread?
+            }
+            let data: Data?
+        }
+
+        let mutation = """
+        mutation($threadId: ID!) {
+            resolveReviewThread(input: {threadId: $threadId}) {
+                thread { id }
+            }
+        }
+        """
+
+        let _: GraphQLResponse = try await client.graphql(
+            query: mutation,
+            variables: ["threadId": threadId]
+        )
     }
 
     // MARK: - CI Status

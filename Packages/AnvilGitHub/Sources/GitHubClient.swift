@@ -54,6 +54,38 @@ actor GitHubClient {
         _ = try await request("PATCH", path: path)
     }
 
+    /// Execute a GraphQL query/mutation against the GitHub GraphQL API.
+    func graphql<T: Decodable>(query: String, variables: [String: String] = [:]) async throws -> T {
+        let body: [String: Any] = [
+            "query": query,
+            "variables": variables
+        ]
+        let bodyData = try JSONSerialization.data(withJSONObject: body)
+
+        // GraphQL uses a different endpoint
+        var components = URLComponents(string: "https://api.github.com/graphql")!
+        var request = URLRequest(url: components.url!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = bodyData
+
+        let (data, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw GitHubError.invalidResponse
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw GitHubError.apiError(statusCode: httpResponse.statusCode, message: message)
+        }
+
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(T.self, from: data)
+    }
+
     // MARK: - Private
 
     private func request(_ method: String, path: String, query: [String: String] = [:], body: Data? = nil) async throws -> Data {

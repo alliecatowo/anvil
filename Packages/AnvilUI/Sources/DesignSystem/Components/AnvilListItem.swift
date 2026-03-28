@@ -25,14 +25,14 @@ public struct AnvilListItem: View {
         HStack(spacing: AnvilSpacing.sm) {
             if isSelected {
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(AnvilColor.accentBlue)
+                    .fill(Color.accentColor)
                     .frame(width: 3)
             }
 
             if let icon {
                 Image(systemName: icon)
                     .font(.system(size: 14))
-                    .foregroundStyle(AnvilColor.textSecondary)
+                    .foregroundStyle(.secondary)
                     .frame(width: 20)
             }
 
@@ -40,13 +40,13 @@ public struct AnvilListItem: View {
                 HStack {
                     Text(title)
                         .font(AnvilFont.sidebarItem)
-                        .foregroundStyle(AnvilColor.textPrimary)
+                        .foregroundStyle(.primary)
                         .lineLimit(1)
 
                     Spacer()
 
                     if let tag {
-                        AnvilBadge(text: tag, color: tagColor ?? AnvilColor.accentBlue)
+                        AnvilBadge(text: tag, color: tagColor ?? Color.accentColor)
                     }
                 }
 
@@ -54,7 +54,7 @@ public struct AnvilListItem: View {
                     HStack {
                         Text(subtitle)
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textSecondary)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
 
                         Spacer()
@@ -62,7 +62,7 @@ public struct AnvilListItem: View {
                         if let timestamp {
                             Text(timestamp)
                                 .font(AnvilFont.label)
-                                .foregroundStyle(AnvilColor.textTertiary)
+                                .foregroundStyle(.tertiary)
                         }
                     }
                 }
@@ -71,7 +71,7 @@ public struct AnvilListItem: View {
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
         .frame(height: isCompact ? AnvilSpacing.listItemHeight : AnvilSpacing.richListItemHeight)
-        .background(isSelected ? AnvilColor.selectionBackground : .clear)
+        .background(isSelected ? Color.accentColor.opacity(0.15) : .clear)
         .contentShape(Rectangle())
     }
 }

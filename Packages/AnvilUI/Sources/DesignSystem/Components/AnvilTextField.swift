@@ -16,20 +16,10 @@ public struct AnvilTextField: View {
             if let icon {
                 Image(systemName: icon)
                     .font(.system(size: 13))
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.secondary)
             }
             TextField(placeholder, text: $text)
-                .textFieldStyle(.plain)
-                .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textPrimary)
+                .textFieldStyle(.roundedBorder)
         }
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.sm)
-        .background(AnvilColor.backgroundTertiary)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
-        .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(AnvilColor.borderMedium, lineWidth: 1)
-        )
     }
 }

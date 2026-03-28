@@ -14,12 +14,11 @@ public struct AnvilApp: App {
             MainWindow()
                 .environmentObject(appState)
                 .environmentObject(container)
-                .preferredColorScheme(.dark)
                 .task {
                     // Set up desktop notifications
                     let notificationService = DesktopNotificationService.shared
                     UNUserNotificationCenter.current().delegate = notificationService
-                    await notificationService.requestPermission()
+                    _ = await notificationService.requestPermission()
 
                     if let adapter = container.getOrCreateGitAdapter() {
                         await appState.loadGitStatus(from: adapter)
@@ -35,14 +34,15 @@ public struct AnvilApp: App {
                     .environmentObject(container)
                     .environmentObject(appState)
                     .frame(minWidth: 800, minHeight: 600)
-                    .preferredColorScheme(.dark)
                     .interactiveDismissDisabled()
                 }
         }
-        .windowStyle(.hiddenTitleBar)
+        .windowToolbarStyle(.unified)
         .defaultSize(width: 1400, height: 900)
         .commands {
             AnvilCommands(appState: appState)
+            SidebarCommands()
+            InspectorCommands()
         }
 
         Settings {

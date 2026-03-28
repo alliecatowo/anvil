@@ -10,8 +10,9 @@ public struct CommandPalette: View {
 
     public var body: some View {
         ZStack {
-            // Backdrop
-            Color.black.opacity(0.4)
+            // Backdrop — clear so sidebar remains clickable, tap dismisses
+            Color.clear
+                .contentShape(Rectangle())
                 .ignoresSafeArea()
                 .onTapGesture {
                     appState.toggleCommandPalette()
@@ -27,9 +28,8 @@ public struct CommandPalette: View {
             }
             .frame(width: AnvilSpacing.commandPaletteWidth)
             .background(.ultraThinMaterial)
-            .background(AnvilColor.backgroundElevated.opacity(0.85))
             .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.5), radius: 40, y: 10)
+            .shadow(color: .black.opacity(0.3), radius: 20)
             .padding(.top, 100)
             .frame(maxHeight: .infinity, alignment: .top)
         }

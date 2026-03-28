@@ -1,4 +1,5 @@
 import SwiftUI
+import AnvilTerminal
 
 struct TerminalTabBar: View {
     @ObservedObject var viewModel: TerminalViewModel
@@ -7,8 +8,8 @@ struct TerminalTabBar: View {
         HStack(spacing: 0) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 0) {
-                    ForEach(viewModel.tabs) { tab in
-                        tabItem(tab)
+                    ForEach(viewModel.sessions) { session in
+                        tabItem(session)
                     }
                 }
             }
@@ -32,22 +33,28 @@ struct TerminalTabBar: View {
 
     // MARK: - Tab Item
 
-    private func tabItem(_ tab: TerminalTab) -> some View {
-        let isSelected = viewModel.selectedTabId == tab.id
+    private func tabItem(_ session: TerminalSession) -> some View {
+        let isSelected = viewModel.selectedSessionId == session.id
 
         return HStack(spacing: AnvilSpacing.xxs) {
-            Image(systemName: tab.icon)
+            Image(systemName: "terminal")
                 .font(.system(size: 10))
                 .foregroundStyle(isSelected ? AnvilColor.accentBlue : AnvilColor.textTertiary)
 
-            Text(tab.name)
+            Text(session.title)
                 .font(AnvilFont.label)
                 .foregroundStyle(isSelected ? AnvilColor.textPrimary : AnvilColor.textSecondary)
                 .lineLimit(1)
 
-            if viewModel.tabs.count > 1 {
+            if !session.isRunning {
+                Circle()
+                    .fill(AnvilColor.textTertiary)
+                    .frame(width: 6, height: 6)
+            }
+
+            if viewModel.sessions.count > 1 {
                 Button {
-                    viewModel.closeTab(tab.id)
+                    viewModel.closeTab(session.id)
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 8))
@@ -67,7 +74,7 @@ struct TerminalTabBar: View {
         )
         .contentShape(Rectangle())
         .onTapGesture {
-            viewModel.selectTab(tab.id)
+            viewModel.selectTab(session.id)
         }
     }
 }

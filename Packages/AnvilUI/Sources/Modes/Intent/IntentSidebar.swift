@@ -3,6 +3,9 @@ import AnvilDomain
 
 struct IntentSidebar: View {
     @ObservedObject var viewModel: IntentViewModel
+    @State private var quickAddText = ""
+    @State private var isQuickAdding = false
+    @FocusState private var isQuickAddFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -11,37 +14,52 @@ struct IntentSidebar: View {
 
             Divider().overlay(AnvilColor.borderSubtle)
 
-            // View mode picker
-            HStack(spacing: AnvilSpacing.xxs) {
-                ForEach(IntentViewMode.allCases, id: \.rawValue) { mode in
-                    Button {
-                        viewModel.viewMode = mode
-                        viewModel.selectTicket(nil)
-                    } label: {
-                        Text(mode.rawValue)
-                            .font(AnvilFont.label)
-                            .foregroundStyle(
-                                viewModel.viewMode == mode
-                                    ? AnvilColor.textPrimary
-                                    : AnvilColor.textTertiary
-                            )
-                            .padding(.horizontal, AnvilSpacing.sm)
-                            .padding(.vertical, AnvilSpacing.xxs)
-                            .background(
-                                viewModel.viewMode == mode
-                                    ? AnvilColor.backgroundTertiary
-                                    : Color.clear
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+            // View mode picker + New Ticket
+            HStack(spacing: AnvilSpacing.sm) {
+                Picker("View", selection: $viewModel.viewMode) {
+                    ForEach(IntentViewMode.allCases, id: \.rawValue) { mode in
+                        Text(mode.rawValue).tag(mode)
                     }
-                    .buttonStyle(.plain)
                 }
+                .pickerStyle(.segmented)
+                .onChange(of: viewModel.viewMode) { _, _ in
+                    viewModel.selectTicket(nil)
+                }
+
                 Spacer()
+
+                Button {
+                    withAnimation(AnvilAnimation.standard) {
+                        isQuickAdding = true
+                        isQuickAddFocused = true
+                    }
+                } label: {
+                    HStack(spacing: AnvilSpacing.xxs) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 10, weight: .medium))
+                        Text("New")
+                            .font(AnvilFont.label)
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, AnvilSpacing.sm)
+                    .padding(.vertical, AnvilSpacing.xxs)
+                    .background(AnvilColor.accentBlue)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
+            .background(AnvilColor.backgroundSidebar.opacity(0.45))
 
             Divider().overlay(AnvilColor.borderSubtle)
+
+            // Inline quick-add
+            if isQuickAdding {
+                quickAddField
+
+                Divider().overlay(AnvilColor.borderSubtle)
+            }
 
             // Cycle info
             cycleHeader
@@ -55,6 +73,9 @@ struct IntentSidebar: View {
                         Section {
                             ForEach(tickets) { ticket in
                                 ticketRow(ticket)
+                                    .contextMenu {
+                                        ticketContextMenu(ticket)
+                                    }
                             }
                         } header: {
                             sectionHeader(group, count: tickets.count)
@@ -62,6 +83,129 @@ struct IntentSidebar: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Quick Add Field
+
+    private var quickAddField: some View {
+        HStack(spacing: AnvilSpacing.sm) {
+            Image(systemName: "plus.circle")
+                .font(.system(size: 12))
+                .foregroundStyle(AnvilColor.accentBlue)
+
+            TextField("New ticket title...", text: $quickAddText)
+                .textFieldStyle(.plain)
+                .font(AnvilFont.sidebarItem)
+                .foregroundStyle(AnvilColor.textPrimary)
+                .focused($isQuickAddFocused)
+                .onSubmit {
+                    if !quickAddText.isEmpty {
+                        withAnimation(AnvilAnimation.standard) {
+                            viewModel.createTicket(title: quickAddText)
+                        }
+                        quickAddText = ""
+                    }
+                }
+                .onKeyPress(.escape) {
+                    quickAddText = ""
+                    isQuickAdding = false
+                    return .handled
+                }
+
+            if !quickAddText.isEmpty {
+                Button {
+                    quickAddText = ""
+                    isQuickAdding = false
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(AnvilColor.textTertiary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, AnvilSpacing.sm)
+        .background(.thinMaterial)
+    }
+
+    // MARK: - Context Menu
+
+    @ViewBuilder
+    private func ticketContextMenu(_ ticket: Ticket) -> some View {
+        // Status submenu
+        Menu("Status") {
+            ForEach(viewModel.allStatuses, id: \.self) { status in
+                Button {
+                    withAnimation(AnvilAnimation.standard) {
+                        viewModel.updateStatus(ticket.id, status: status)
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: IntentViewModel.statusIcon(status))
+                        Text(status.capitalized)
+                        if ticket.status == status {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        }
+
+        // Priority submenu
+        Menu("Priority") {
+            ForEach([TicketPriority.critical, .high, .medium, .low, .none], id: \.rawValue) { priority in
+                Button {
+                    viewModel.updatePriority(ticket.id, priority: priority)
+                } label: {
+                    HStack {
+                        Text(IntentViewModel.priorityLabel(priority))
+                        if ticket.priority == priority {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        }
+
+        // Assignee submenu
+        Menu("Assignee") {
+            Button {
+                viewModel.updateAssignee(ticket.id, assignee: nil)
+            } label: {
+                HStack {
+                    Text("Unassigned")
+                    if ticket.assignee == nil {
+                        Image(systemName: "checkmark")
+                    }
+                }
+            }
+
+            Divider()
+
+            ForEach(viewModel.allAssignees, id: \.self) { name in
+                Button {
+                    viewModel.updateAssignee(ticket.id, assignee: name)
+                } label: {
+                    HStack {
+                        Text(name)
+                        if ticket.assignee == name {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        }
+
+        Divider()
+
+        Button(role: .destructive) {
+            withAnimation(AnvilAnimation.standard) {
+                viewModel.deleteTicket(ticket.id)
+            }
+        } label: {
+            Label("Delete Ticket", systemImage: "trash")
         }
     }
 
@@ -87,6 +231,7 @@ struct IntentSidebar: View {
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.sm)
+        .background(AnvilColor.backgroundSidebar.opacity(0.35))
     }
 
     // MARK: - Ticket Row
@@ -124,7 +269,6 @@ struct IntentSidebar: View {
                         .foregroundStyle(AnvilColor.textTertiary)
 
                     if let assignee = ticket.assignee {
-                        // Avatar placeholder
                         Circle()
                             .fill(AnvilColor.backgroundElevated)
                             .frame(width: 14, height: 14)
@@ -140,6 +284,18 @@ struct IntentSidebar: View {
                     }
 
                     Spacer()
+
+                    // Subtask progress
+                    let progress = viewModel.subtaskProgress(ticket.id)
+                    if progress.total > 0 {
+                        HStack(spacing: 2) {
+                            Image(systemName: "checklist")
+                                .font(.system(size: 9))
+                            Text("\(progress.completed)/\(progress.total)")
+                                .font(AnvilFont.label)
+                        }
+                        .foregroundStyle(progress.completed == progress.total ? AnvilColor.accentGreen : AnvilColor.textTertiary)
+                    }
 
                     if let due = ticket.dueDate {
                         dueDateLabel(due)

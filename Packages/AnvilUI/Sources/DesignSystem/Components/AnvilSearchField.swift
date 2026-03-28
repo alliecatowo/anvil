@@ -13,12 +13,11 @@ public struct AnvilSearchField: View {
         HStack(spacing: AnvilSpacing.sm) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 13))
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.tertiary)
 
             TextField(placeholder, text: $text)
                 .textFieldStyle(.plain)
                 .font(AnvilFont.commandPaletteInput)
-                .foregroundStyle(AnvilColor.textPrimary)
 
             if !text.isEmpty {
                 Button {
@@ -26,7 +25,7 @@ public struct AnvilSearchField: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 12))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
             }

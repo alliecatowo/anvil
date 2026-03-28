@@ -2,125 +2,199 @@ import SwiftUI
 
 struct SchemaExplorer: View {
     @ObservedObject var viewModel: DatabaseViewModel
+    let onExportResults: () -> Void
+
+    @State private var showsTables = true
+    @State private var showsViews = true
+    @State private var showsHistory = true
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("SCHEMA")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                    .tracking(0.3)
+        List {
+            connectionSection
+            objectsSection
+            historySection
+            actionsSection
+        }
+        .listStyle(.sidebar)
+    }
 
-                Spacer()
+    private var connectionSection: some View {
+        Section("Connection") {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(viewModel.connectionTitle)
+                    .font(.headline)
 
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 10))
-                    .foregroundStyle(AnvilColor.textTertiary)
+                if !viewModel.connectionSubtitle.isEmpty {
+                    Text(viewModel.connectionSubtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
             }
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.sm)
+            .padding(.vertical, 4)
 
-            Divider().overlay(AnvilColor.borderSubtle)
+            Button {
+                Task { await viewModel.refreshSchema() }
+            } label: {
+                Label("Refresh Schema", systemImage: "arrow.clockwise")
+            }
 
-            // Table list
-            ScrollView {
-                LazyVStack(spacing: 0) {
+            Button(role: .destructive) {
+                Task { await viewModel.disconnect() }
+            } label: {
+                Label("Disconnect", systemImage: "eject.fill")
+            }
+        }
+    }
+
+    private var objectsSection: some View {
+        Section("Objects") {
+            DisclosureGroup(isExpanded: $showsTables) {
+                if viewModel.tables.isEmpty {
+                    Text("No tables")
+                        .foregroundStyle(.secondary)
+                } else {
                     ForEach(viewModel.tables) { table in
-                        tableRow(table)
+                        objectRow(
+                            title: table.name,
+                            subtitle: table.rowCount.map { "\($0) rows" } ?? "\(table.columns.count) columns",
+                            systemImage: "tablecells",
+                            isSelected: viewModel.selectedTableId == table.id
+                        ) {
+                            viewModel.selectTable(table.id)
+                        }
+                    }
+                }
+            } label: {
+                Label("Tables", systemImage: "tablecells")
+            }
 
-                        if viewModel.expandedTableIds.contains(table.id) {
-                            ForEach(table.columns) { column in
-                                columnRow(column, tableId: table.id)
+            DisclosureGroup(isExpanded: $showsViews) {
+                if viewModel.views.isEmpty {
+                    Text("No views")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(viewModel.views) { view in
+                        objectRow(
+                            title: view.name,
+                            subtitle: "Query view",
+                            systemImage: "rectangle.on.rectangle",
+                            isSelected: viewModel.selectedTableId == view.name
+                        ) {
+                            viewModel.selectView(view.name)
+                        }
+                    }
+                }
+            } label: {
+                Label("Views", systemImage: "rectangle.on.rectangle")
+            }
+        }
+    }
+
+    private var historySection: some View {
+        Section("History") {
+            DisclosureGroup(isExpanded: $showsHistory) {
+                if viewModel.queryHistory.isEmpty {
+                    Text("No queries run yet")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(viewModel.queryHistory.prefix(20)) { entry in
+                        Button {
+                            viewModel.rerun(entry)
+                        } label: {
+                            historyRow(entry)
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button("Load Into Editor") {
+                                viewModel.selectHistoryEntry(entry)
+                            }
+                            Button("Run Again") {
+                                viewModel.rerun(entry)
                             }
                         }
                     }
                 }
-                .padding(.vertical, AnvilSpacing.xxs)
+            } label: {
+                Label("Recent Queries", systemImage: "clock.arrow.circlepath")
             }
         }
     }
 
-    // MARK: - Table Row
+    private var actionsSection: some View {
+        Section("Actions") {
+            Button {
+                viewModel.resetEditor()
+            } label: {
+                Label("New Query", systemImage: "square.and.pencil")
+            }
 
-    private func tableRow(_ table: DatabaseTable) -> some View {
-        let isExpanded = viewModel.expandedTableIds.contains(table.id)
-        let isSelected = viewModel.selectedTableId == table.id
+            Button {
+                viewModel.clearResults()
+            } label: {
+                Label("Clear Results", systemImage: "trash")
+            }
+            .disabled(viewModel.queryResult == nil)
 
-        return HStack(spacing: AnvilSpacing.xxs) {
-            Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                .font(.system(size: 8, weight: .bold))
-                .foregroundStyle(AnvilColor.textTertiary)
-                .frame(width: 12)
-
-            Image(systemName: "tablecells")
-                .font(.system(size: 11))
-                .foregroundStyle(AnvilColor.accentBlue)
-                .frame(width: 16)
-
-            Text(table.name)
-                .font(AnvilFont.code)
-                .foregroundStyle(isSelected ? AnvilColor.textPrimary : AnvilColor.textSecondary)
-                .lineLimit(1)
-
-            Spacer()
-
-            Text("\(table.columns.count)")
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-        }
-        .padding(.horizontal, AnvilSpacing.sm)
-        .frame(height: 24)
-        .background(isSelected ? AnvilColor.selectionBackground : Color.clear)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            viewModel.selectTable(table.id)
-            viewModel.toggleTable(table.id)
+            if viewModel.canExportResults {
+                Button {
+                    onExportResults()
+                } label: {
+                    Label("Export CSV…", systemImage: "square.and.arrow.up")
+                }
+            }
         }
     }
 
-    // MARK: - Column Row
+    private func objectRow(
+        title: String,
+        subtitle: String,
+        systemImage: String,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: systemImage)
+                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
 
-    private func columnRow(_ column: DatabaseColumn, tableId: UUID) -> some View {
-        HStack(spacing: AnvilSpacing.xxs) {
-            Spacer().frame(width: 28)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .foregroundStyle(.primary)
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
 
-            Image(systemName: constraintIcon(column.constraint))
-                .font(.system(size: 9))
-                .foregroundStyle(constraintColor(column.constraint))
-                .frame(width: 14)
-
-            Text(column.name)
-                .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.textSecondary)
-                .lineLimit(1)
-
-            Spacer()
-
-            Text(column.type)
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .lineLimit(1)
+                Spacer()
+            }
+            .padding(.vertical, 2)
         }
-        .padding(.horizontal, AnvilSpacing.sm)
-        .frame(height: 22)
+        .buttonStyle(.plain)
     }
 
-    // MARK: - Helpers
+    private func historyRow(_ entry: QueryHistoryEntry) -> some View {
+        let displaySQL = entry.sql.replacingOccurrences(of: "\n", with: " ")
+        let textColor: Color = entry.error == nil ? .primary : .red
 
-    private func constraintIcon(_ constraint: String?) -> String {
-        guard let c = constraint else { return "circle" }
-        if c.contains("PRIMARY KEY") { return "key.fill" }
-        if c.contains("REFERENCES") { return "link" }
-        if c.contains("UNIQUE") { return "star" }
-        return "circle"
-    }
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(displaySQL)
+                .font(.system(.body, design: .monospaced))
+                .lineLimit(2)
+                .foregroundStyle(textColor)
 
-    private func constraintColor(_ constraint: String?) -> Color {
-        guard let c = constraint else { return AnvilColor.textTertiary }
-        if c.contains("PRIMARY KEY") { return AnvilColor.accentAmber }
-        if c.contains("REFERENCES") { return AnvilColor.accentPurple }
-        if c.contains("UNIQUE") { return AnvilColor.accentTeal }
-        return AnvilColor.textTertiary
+            HStack(spacing: 8) {
+                if let rowCount = entry.rowCount {
+                    Text("\(rowCount) rows")
+                }
+                if let executionTimeMs = entry.executionTimeMs {
+                    Text(String(format: "%.1f ms", executionTimeMs))
+                }
+                Text(entry.timestamp, style: .time)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

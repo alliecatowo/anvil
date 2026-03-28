@@ -26,9 +26,12 @@ struct EditorMode: View {
         }
         .background(AnvilColor.backgroundPrimary)
         .onAppear {
+            viewModel.container = deps
             if viewModel.fileTree.isEmpty, let path = deps.currentProjectPath {
                 viewModel.loadFileTree(from: path, using: deps.fileSystemService)
             }
+            // Load git diff data for gutter decorations
+            viewModel.refreshGitDiffs()
             // Handle file open request from command palette
             if let filePath = appState.pendingFileToOpen {
                 openPendingFile(filePath)

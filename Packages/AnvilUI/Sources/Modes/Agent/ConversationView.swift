@@ -22,6 +22,7 @@ struct ConversationView: View {
     let onAddAttachment: (ContextAttachment) -> Void
     var onSetBudget: ((Decimal?, Bool) -> Void)?
     var onSetAutonomy: ((AutonomyLevel) -> Void)?
+    var onModelChange: ((String) -> Void)?
     var guardrailCount: Int = 0
     var pendingApproval: AgentViewModel.PendingToolApproval?
     var onApproveToolCall: ((Bool) -> Void)?
@@ -49,6 +50,7 @@ struct ConversationView: View {
                 onExportFile: onExportFile,
                 onSetBudget: onSetBudget,
                 onSetAutonomy: onSetAutonomy,
+                onModelChange: onModelChange,
                 guardrailCount: guardrailCount,
                 onCreatePR: onCreatePR,
                 onSendToBackground: onSendToBackground
@@ -65,7 +67,9 @@ struct ConversationView: View {
                                 message: message,
                                 isStreaming: session.status == .running
                                     && message.role == .assistant
-                                    && message.id == session.messages.last?.id
+                                    && message.id == session.messages.last?.id,
+                                onApproveToolCall: onApproveToolCall,
+                                onRejectToolCall: onRejectToolCall
                             )
                             .id(message.id)
                         }
@@ -161,6 +165,7 @@ struct SessionHeader: View {
     let onExportFile: ((SessionExportFormat) -> Void)?
     var onSetBudget: ((Decimal?, Bool) -> Void)?
     var onSetAutonomy: ((AutonomyLevel) -> Void)?
+    var onModelChange: ((String) -> Void)?
     let guardrailCount: Int
     var onCreatePR: (() -> Void)?
     var onSendToBackground: (() -> Void)?
@@ -252,7 +257,7 @@ struct SessionHeader: View {
                 }
 
                 // Model picker
-                ModelPicker(selectedModelId: $selectedModelId)
+                ModelPicker(selectedModelId: $selectedModelId, onModelChange: onModelChange)
 
                 // Autonomy level picker
                 AutonomyPicker(level: session.autonomyLevel, onChange: onSetAutonomy)
@@ -492,6 +497,8 @@ struct BudgetSettingPopover: View {
 struct MessageBubble: View {
     let message: AgentMessage
     var isStreaming: Bool = false
+    var onApproveToolCall: ((Bool) -> Void)?
+    var onRejectToolCall: ((Bool) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
@@ -530,7 +537,11 @@ struct MessageBubble: View {
 
             // Tool calls
             ForEach(message.toolCalls) { toolCall in
-                ToolCallView(toolCall: toolCall)
+                ToolCallView(
+                    toolCall: toolCall,
+                    onApprove: onApproveToolCall,
+                    onReject: onRejectToolCall
+                )
             }
         }
         .padding(AnvilSpacing.md)
@@ -638,6 +649,8 @@ struct StreamingMarkdownContent: View {
 
 struct ToolCallView: View {
     let toolCall: ToolCall
+    var onApprove: ((Bool) -> Void)?
+    var onReject: ((Bool) -> Void)?
     @State private var isExpanded = false
 
     var body: some View {
@@ -680,8 +693,12 @@ struct ToolCallView: View {
             // Approve/Reject for pending tool calls
             if toolCall.status == .pending {
                 HStack(spacing: AnvilSpacing.sm) {
-                    AnvilButton("Approve", icon: "checkmark", style: .primary) {}
-                    AnvilButton("Reject", icon: "xmark", style: .destructive) {}
+                    AnvilButton("Approve", icon: "checkmark", style: .primary) {
+                        onApprove?(false)
+                    }
+                    AnvilButton("Reject", icon: "xmark", style: .destructive) {
+                        onReject?(false)
+                    }
                 }
             }
         }
@@ -741,6 +758,9 @@ struct InputBar: View {
     @State private var showSlashMenu = false
     @State private var showAtPopup = false
     @State private var isDropTargeted = false
+    @State private var projectFiles: [String] = []
+    @State private var branches: [String] = []
+    @State private var ticketIds: [String] = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -751,8 +771,14 @@ struct InputBar: View {
             if showSlashMenu {
                 HStack {
                     SlashCommandMenu(filter: text) { command in
-                        text = command.name + " "
-                        showSlashMenu = false
+                        if command.autoSend {
+                            text = command.name
+                            showSlashMenu = false
+                            onSend()
+                        } else {
+                            text = command.name + " "
+                            showSlashMenu = false
+                        }
                     }
                     Spacer()
                 }
@@ -761,11 +787,17 @@ struct InputBar: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
-            // @ reference popup
+            // @ reference popup (two-level: categories then items)
             if showAtPopup {
                 HStack {
-                    AtReferencePopup(filter: currentAtToken) { ref in
-                        replaceCurrentAtToken(with: ref.prefix)
+                    AtReferencePopup(
+                        filter: currentAtToken,
+                        projectFiles: projectFiles,
+                        branches: branches,
+                        ticketIds: ticketIds
+                    ) { attachment in
+                        replaceCurrentAtToken(with: "")
+                        onAddAttachment(attachment)
                         showAtPopup = false
                     }
                     Spacer()
@@ -830,6 +862,10 @@ struct InputBar: View {
             }
             return true
         }
+        .onAppear {
+            projectFiles = InputBarHelpers.loadProjectFiles()
+            branches = InputBarHelpers.loadBranches()
+        }
     }
 
     // MARK: - @ token detection
@@ -849,6 +885,68 @@ struct InputBar: View {
             updated.replaceSubrange(atRange, with: replacement)
             text = updated
         }
+    }
+}
+
+// MARK: - Input Bar Helpers
+
+/// Static helpers for loading project context (files, branches) used by InputBar.
+enum InputBarHelpers {
+    /// List source files from the current working directory (shallow scan, common extensions).
+    static func loadProjectFiles() -> [String] {
+        let cwd = FileManager.default.currentDirectoryPath
+        return listFiles(at: cwd, maxDepth: 3)
+    }
+
+    /// List git branches from the current working directory.
+    static func loadBranches() -> [String] {
+        let task = Process()
+        let pipe = Pipe()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        task.arguments = ["branch", "--format=%(refname:short)"]
+        task.standardOutput = pipe
+        task.standardError = FileHandle.nullDevice
+        do {
+            try task.run()
+            task.waitUntilExit()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            guard let output = String(data: data, encoding: .utf8) else { return [] }
+            return output.components(separatedBy: .newlines)
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+        } catch {
+            return []
+        }
+    }
+
+    private static let sourceExtensions: Set<String> = [
+        "swift", "ts", "tsx", "js", "jsx", "py", "rs", "go", "java", "kt",
+        "c", "h", "cpp", "hpp", "m", "mm", "rb", "ex", "exs", "yaml", "yml",
+        "json", "toml", "md", "txt", "html", "css", "scss"
+    ]
+
+    private static func listFiles(at path: String, maxDepth: Int, currentDepth: Int = 0) -> [String] {
+        guard currentDepth < maxDepth else { return [] }
+        let fm = FileManager.default
+        guard let items = try? fm.contentsOfDirectory(atPath: path) else { return [] }
+        var results: [String] = []
+        for item in items {
+            // Skip hidden dirs and common noise
+            if item.hasPrefix(".") || item == "node_modules" || item == ".build" || item == "DerivedData" { continue }
+            let full = (path as NSString).appendingPathComponent(item)
+            var isDir: ObjCBool = false
+            guard fm.fileExists(atPath: full, isDirectory: &isDir) else { continue }
+            if isDir.boolValue {
+                results.append(contentsOf: listFiles(at: full, maxDepth: maxDepth, currentDepth: currentDepth + 1))
+            } else {
+                let ext = (item as NSString).pathExtension.lowercased()
+                if sourceExtensions.contains(ext) {
+                    results.append(full)
+                }
+            }
+            if results.count >= 500 { break }
+        }
+        return results
     }
 }
 

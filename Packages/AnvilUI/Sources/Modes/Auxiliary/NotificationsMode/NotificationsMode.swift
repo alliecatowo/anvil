@@ -32,6 +32,10 @@ struct NotificationsMode: View {
             if let adapter = container.getOrCreateGitHubAdapter() {
                 viewModel.startGitHubPolling(adapter: adapter)
             }
+            // Load sample data so the inbox isn't empty when no GitHub token is configured
+            if viewModel.inboxItems.isEmpty {
+                viewModel.loadSampleData()
+            }
         }
         .onDisappear {
             viewModel.stopGitHubPolling()

@@ -45,7 +45,7 @@ struct SymbolOutline: View {
     }
 
     private func symbolRow(_ symbol: EditorSymbol) -> some View {
-        let isAtCursor = symbol.line == viewModel.cursorLine
+        let isAtCursor = viewModel.symbolAtCursor?.id == symbol.id
 
         return HStack(spacing: AnvilSpacing.sm) {
             Image(systemName: symbol.kind.icon)

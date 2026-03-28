@@ -34,6 +34,8 @@ public final class IntentViewModel: ObservableObject {
     @Published var board: Board
     @Published var currentCycle: Cycle
     @Published var relations: [TicketRelation] = []
+    @Published var subtasks: [String: [Subtask]] = [:]
+    @Published var comments: [String: [TicketComment]] = [:]
 
     // MARK: Filters / Sort
 
@@ -49,6 +51,9 @@ public final class IntentViewModel: ObservableObject {
 
     @Published var isCreatingTicket = false
     @Published var editingTitle = ""
+    @Published var editingDescription = ""
+    @Published var newCommentText = ""
+    @Published var newSubtaskTitle = ""
 
     // MARK: Computed
 
@@ -101,6 +106,15 @@ public final class IntentViewModel: ObservableObject {
         }
     }
 
+    var allStatuses: [String] {
+        board.columns.map(\.status)
+    }
+
+    var allAssignees: [String] {
+        let names = Set(tickets.compactMap(\.assignee))
+        return names.sorted()
+    }
+
     func ticketsForColumn(_ column: BoardColumn) -> [Ticket] {
         filteredTickets.filter { $0.status == column.status }
     }
@@ -109,9 +123,23 @@ public final class IntentViewModel: ObservableObject {
         relations.filter { $0.sourceId == ticketId || $0.targetId == ticketId }
     }
 
+    func subtasksFor(_ ticketId: String) -> [Subtask] {
+        subtasks[ticketId] ?? []
+    }
+
+    func commentsFor(_ ticketId: String) -> [TicketComment] {
+        comments[ticketId] ?? []
+    }
+
+    func subtaskProgress(_ ticketId: String) -> (completed: Int, total: Int) {
+        let items = subtasksFor(ticketId)
+        return (items.filter(\.isCompleted).count, items.count)
+    }
+
+    // MARK: - Relation Actions
+
     func addRelation(type: TicketRelationType, sourceId: String, targetId: String) {
         guard sourceId != targetId else { return }
-        // Avoid duplicates
         let exists = relations.contains {
             ($0.sourceId == sourceId && $0.targetId == targetId && $0.type == type) ||
             ($0.sourceId == targetId && $0.targetId == sourceId && $0.type == type)
@@ -125,6 +153,8 @@ public final class IntentViewModel: ObservableObject {
         relations.removeAll { $0.id == id }
     }
 
+    // MARK: - Ticket CRUD
+
     /// Move a ticket to a new status (used by kanban drag-and-drop).
     func moveTicket(_ ticketId: String, toStatus newStatus: String) {
         guard let idx = tickets.firstIndex(where: { $0.id == ticketId }) else { return }
@@ -132,21 +162,43 @@ public final class IntentViewModel: ObservableObject {
         tickets[idx].updatedAt = .now
     }
 
-    // MARK: Actions
-
     /// Quick-create a ticket with just a title and status.
-    func createTicket(title: String, status: String = "open") {
+    func createTicket(title: String, status: String = "backlog") {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         let ticket = Ticket(title: trimmed, status: status)
         tickets.append(ticket)
     }
 
+    /// Full-create a ticket with all fields.
+    func createTicketFull(title: String, description: String = "", status: String = "backlog", priority: TicketPriority = .medium, assignee: String? = nil, dueDate: Date? = nil, storyPoints: Int? = nil) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let ticket = Ticket(title: trimmed, description: description, status: status, priority: priority, assignee: assignee, dueDate: dueDate, storyPoints: storyPoints)
+        tickets.append(ticket)
+        selectedTicketId = ticket.id
+        editingTitle = ticket.title
+        editingDescription = ticket.description
+    }
+
+    func deleteTicket(_ ticketId: String) {
+        tickets.removeAll { $0.id == ticketId }
+        subtasks.removeValue(forKey: ticketId)
+        comments.removeValue(forKey: ticketId)
+        relations.removeAll { $0.sourceId == ticketId || $0.targetId == ticketId }
+        if selectedTicketId == ticketId {
+            selectedTicketId = nil
+        }
+    }
+
     func selectTicket(_ id: String?) {
         selectedTicketId = id
         if let ticket = tickets.first(where: { $0.id == id }) {
             editingTitle = ticket.title
+            editingDescription = ticket.description
         }
+        newCommentText = ""
+        newSubtaskTitle = ""
     }
 
     func updateTitle(_ newTitle: String) {
@@ -155,6 +207,76 @@ public final class IntentViewModel: ObservableObject {
         tickets[idx].title = newTitle
         tickets[idx].updatedAt = .now
     }
+
+    func updateDescription(_ newDescription: String) {
+        guard let id = selectedTicketId,
+              let idx = tickets.firstIndex(where: { $0.id == id }) else { return }
+        tickets[idx].description = newDescription
+        tickets[idx].updatedAt = .now
+    }
+
+    func updateStatus(_ ticketId: String, status: String) {
+        guard let idx = tickets.firstIndex(where: { $0.id == ticketId }) else { return }
+        tickets[idx].status = status
+        tickets[idx].updatedAt = .now
+    }
+
+    func updatePriority(_ ticketId: String, priority: TicketPriority) {
+        guard let idx = tickets.firstIndex(where: { $0.id == ticketId }) else { return }
+        tickets[idx].priority = priority
+        tickets[idx].updatedAt = .now
+    }
+
+    func updateAssignee(_ ticketId: String, assignee: String?) {
+        guard let idx = tickets.firstIndex(where: { $0.id == ticketId }) else { return }
+        tickets[idx].assignee = assignee
+        tickets[idx].updatedAt = .now
+    }
+
+    func updateDueDate(_ ticketId: String, dueDate: Date?) {
+        guard let idx = tickets.firstIndex(where: { $0.id == ticketId }) else { return }
+        tickets[idx].dueDate = dueDate
+        tickets[idx].updatedAt = .now
+    }
+
+    func updateStoryPoints(_ ticketId: String, storyPoints: Int?) {
+        guard let idx = tickets.firstIndex(where: { $0.id == ticketId }) else { return }
+        tickets[idx].storyPoints = storyPoints
+        tickets[idx].updatedAt = .now
+    }
+
+    // MARK: - Subtask Actions
+
+    func addSubtask(to ticketId: String, title: String) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let subtask = Subtask(ticketId: ticketId, title: trimmed)
+        subtasks[ticketId, default: []].append(subtask)
+    }
+
+    func toggleSubtask(ticketId: String, subtaskId: String) {
+        guard let idx = subtasks[ticketId]?.firstIndex(where: { $0.id == subtaskId }) else { return }
+        subtasks[ticketId]?[idx].isCompleted.toggle()
+    }
+
+    func deleteSubtask(ticketId: String, subtaskId: String) {
+        subtasks[ticketId]?.removeAll { $0.id == subtaskId }
+    }
+
+    // MARK: - Comment Actions
+
+    func addComment(to ticketId: String, author: String = "You", body: String) {
+        let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let comment = TicketComment(ticketId: ticketId, author: author, body: trimmed)
+        comments[ticketId, default: []].append(comment)
+    }
+
+    func deleteComment(ticketId: String, commentId: String) {
+        comments[ticketId]?.removeAll { $0.id == commentId }
+    }
+
+    // MARK: - Filters
 
     func clearFilters() {
         filterPriority = nil
@@ -187,7 +309,8 @@ public final class IntentViewModel: ObservableObject {
 
     static func statusIcon(_ status: String) -> String {
         switch status.lowercased() {
-        case "open":        "circle"
+        case "backlog":     "circle.dashed"
+        case "todo":        "circle"
         case "in progress": "circle.lefthalf.filled"
         case "in review":   "eye.circle"
         case "done":        "checkmark.circle.fill"
@@ -204,7 +327,8 @@ public final class IntentViewModel: ObservableObject {
 
     static func statusColor(_ status: String) -> Color {
         switch status.lowercased() {
-        case "open":        AnvilColor.textSecondary
+        case "backlog":     AnvilColor.textTertiary
+        case "todo":        AnvilColor.textSecondary
         case "in progress": AnvilColor.accentBlue
         case "in review":   AnvilColor.accentPurple
         case "done":        AnvilColor.accentGreen
@@ -216,54 +340,44 @@ public final class IntentViewModel: ObservableObject {
 
     public init() {
         let columns = [
-            BoardColumn(name: "Open", status: "open", wipLimit: nil),
+            BoardColumn(name: "Backlog", status: "backlog", wipLimit: nil),
+            BoardColumn(name: "Todo", status: "todo", wipLimit: nil),
             BoardColumn(name: "In Progress", status: "in progress", wipLimit: 3),
             BoardColumn(name: "In Review", status: "in review", wipLimit: 2),
             BoardColumn(name: "Done", status: "done", wipLimit: nil),
         ]
         self.board = Board(name: "Sprint Board", columns: columns)
-        self.currentCycle = Cycle(
-            name: "No Sprint",
-            startDate: .now,
-            endDate: .now,
-            ticketIds: [],
-            velocity: nil
-        )
-    }
 
-    // MARK: - Sample Data (for previews only)
-
-    #if DEBUG
-    static func withSampleData() -> IntentViewModel {
-        let vm = IntentViewModel()
-
+        let cal = Calendar.current
         let now = Date.now
-        let calendar = Calendar.current
-        let sprintStart = calendar.date(byAdding: .day, value: -5, to: now) ?? now
-        let sprintEnd = calendar.date(byAdding: .day, value: 9, to: now) ?? now
+        let sprintStart = cal.date(byAdding: .day, value: -5, to: now) ?? now
+        let sprintEnd = cal.date(byAdding: .day, value: 9, to: now) ?? now
 
-        let sampleTickets = makeSampleTickets()
-        vm.tickets = sampleTickets
-        vm.currentCycle = Cycle(
+        let demoTickets = Self.makeDemoTickets()
+        self.tickets = demoTickets
+
+        self.currentCycle = Cycle(
             name: "Sprint 14",
             startDate: sprintStart,
             endDate: sprintEnd,
-            ticketIds: sampleTickets.map(\.id),
+            ticketIds: demoTickets.map(\.id),
             velocity: 21
         )
 
-        vm.relations = [
-            TicketRelation(type: .blocks, sourceId: sampleTickets[0].id, targetId: sampleTickets[2].id),
-            TicketRelation(type: .related, sourceId: sampleTickets[1].id, targetId: sampleTickets[3].id),
+        self.relations = [
+            TicketRelation(type: .blocks, sourceId: "ANV-101", targetId: "ANV-105"),
+            TicketRelation(type: .related, sourceId: "ANV-102", targetId: "ANV-104"),
+            TicketRelation(type: .parent, sourceId: "ANV-107", targetId: "ANV-112"),
         ]
 
-        vm.selectedTicketId = sampleTickets.first?.id
-        vm.editingTitle = sampleTickets.first?.title ?? ""
-        return vm
+        // Demo subtasks
+        self.subtasks = Self.makeDemoSubtasks()
+        self.comments = Self.makeDemoComments()
     }
-    #endif
 
-    private static func makeSampleTickets() -> [Ticket] {
+    // MARK: - Demo Data
+
+    private static func makeDemoTickets() -> [Ticket] {
         let cal = Calendar.current
         let now = Date.now
 
@@ -285,7 +399,7 @@ public final class IntentViewModel: ObservableObject {
                 id: "ANV-102",
                 title: "Add connection pool timeout to database config",
                 description: "Production DB connections occasionally hang without timeout. Add a `connectionTimeout` of 10s to the Postgres pool config and enable SSL in production.\n\nRef: incident INC-892",
-                status: "open",
+                status: "todo",
                 priority: .high,
                 assignee: "daniel.k",
                 labels: ["infra", "database"],
@@ -323,7 +437,7 @@ public final class IntentViewModel: ObservableObject {
                 id: "ANV-105",
                 title: "Migrate feature flags to LaunchDarkly SDK v7",
                 description: "The current `feature-flag-service` uses LaunchDarkly SDK v5 which is EOL in April. Migrate to v7, update the streaming connection config, and verify all existing flag evaluations still work.\n\nBlocked by ANV-101 (needs stable auth before flag relay trusts tokens).",
-                status: "open",
+                status: "backlog",
                 priority: .high,
                 assignee: "allie.c",
                 labels: ["infra", "migration", "feature-flags"],
@@ -336,7 +450,7 @@ public final class IntentViewModel: ObservableObject {
                 id: "ANV-106",
                 title: "Write E2E tests for onboarding flow",
                 description: "Cover the happy path and 3 error cases for the new user onboarding wizard. Use Playwright, follow the existing test patterns in `e2e/`.\n\n**Cases:**\n- Happy path: complete all steps\n- Missing required field on step 2\n- Network error on final submit\n- Back-navigation preserves form state",
-                status: "open",
+                status: "backlog",
                 priority: .low,
                 assignee: nil,
                 labels: ["testing", "onboarding"],
@@ -357,8 +471,166 @@ public final class IntentViewModel: ObservableObject {
                 createdAt: cal.date(byAdding: .day, value: -4, to: now) ?? now,
                 updatedAt: cal.date(byAdding: .hour, value: -1, to: now) ?? now
             ),
+            Ticket(
+                id: "ANV-108",
+                title: "Set up rate limiting for public API endpoints",
+                description: "Add a sliding-window rate limiter to all public `/api/v1/` endpoints. Default: 100 req/min per API key, 1000 req/min per organization. Use Redis for distributed counting.",
+                status: "todo",
+                priority: .high,
+                assignee: "allie.c",
+                labels: ["security", "api"],
+                dueDate: cal.date(byAdding: .day, value: 4, to: now),
+                storyPoints: 5,
+                createdAt: cal.date(byAdding: .day, value: -2, to: now) ?? now,
+                updatedAt: cal.date(byAdding: .day, value: -2, to: now) ?? now
+            ),
+            Ticket(
+                id: "ANV-109",
+                title: "Add Prometheus metrics to payment service",
+                description: "Instrument the payment service with Prometheus metrics:\n- `payment_requests_total` (counter)\n- `payment_duration_seconds` (histogram)\n- `payment_failures_total` (counter with error_type label)\n\nUse the `prom-client` library.",
+                status: "todo",
+                priority: .medium,
+                assignee: "priya.s",
+                labels: ["observability", "payments"],
+                storyPoints: 3,
+                createdAt: cal.date(byAdding: .day, value: -3, to: now) ?? now,
+                updatedAt: cal.date(byAdding: .day, value: -2, to: now) ?? now
+            ),
+            Ticket(
+                id: "ANV-110",
+                title: "Fix CORS preflight caching in production",
+                description: "OPTIONS preflight responses are not being cached by browsers because `Access-Control-Max-Age` is missing. Add the header with a 24h TTL to reduce redundant preflight requests.",
+                status: "done",
+                priority: .low,
+                assignee: "daniel.k",
+                labels: ["bug", "performance"],
+                storyPoints: 1,
+                createdAt: cal.date(byAdding: .day, value: -8, to: now) ?? now,
+                updatedAt: cal.date(byAdding: .day, value: -2, to: now) ?? now
+            ),
+            Ticket(
+                id: "ANV-111",
+                title: "Design webhook retry backoff strategy",
+                description: "Current webhook delivery retries immediately on failure. Design and implement exponential backoff with jitter: 1s, 2s, 4s, 8s, 16s, max 5 retries. Store retry state in the outbox table.",
+                status: "backlog",
+                priority: .medium,
+                assignee: nil,
+                labels: ["architecture", "webhooks"],
+                storyPoints: 5,
+                createdAt: cal.date(byAdding: .day, value: -1, to: now) ?? now,
+                updatedAt: cal.date(byAdding: .day, value: -1, to: now) ?? now
+            ),
+            Ticket(
+                id: "ANV-112",
+                title: "Create Slack notification channel adapter",
+                description: "Implement the Slack adapter for the new notification event bus (child of ANV-107). Support rich Block Kit messages for deployment alerts and PR review requests.",
+                status: "backlog",
+                priority: .low,
+                assignee: nil,
+                labels: ["feature", "notifications", "slack"],
+                storyPoints: 3,
+                createdAt: cal.date(byAdding: .day, value: -1, to: now) ?? now,
+                updatedAt: cal.date(byAdding: .day, value: -1, to: now) ?? now
+            ),
+            Ticket(
+                id: "ANV-113",
+                title: "Upgrade Node.js runtime from 18 to 20 LTS",
+                description: "Node 18 reaches EOL in April 2025. Update the base Docker image, CI runners, and local `.nvmrc` to Node 20 LTS. Run the full test suite to catch any breaking changes.",
+                status: "backlog",
+                priority: .medium,
+                assignee: "daniel.k",
+                labels: ["infra", "migration"],
+                dueDate: cal.date(byAdding: .day, value: 14, to: now),
+                storyPoints: 3,
+                createdAt: cal.date(byAdding: .day, value: -6, to: now) ?? now,
+                updatedAt: cal.date(byAdding: .day, value: -4, to: now) ?? now
+            ),
+            Ticket(
+                id: "ANV-114",
+                title: "Add CSV export for analytics dashboard",
+                description: "Users have requested the ability to export analytics data as CSV files. Add an export button to the dashboard header that generates a CSV with the currently visible date range and metrics.",
+                status: "in review",
+                priority: .low,
+                assignee: "priya.s",
+                labels: ["feature", "analytics"],
+                storyPoints: 2,
+                createdAt: cal.date(byAdding: .day, value: -5, to: now) ?? now,
+                updatedAt: cal.date(byAdding: .hour, value: -4, to: now) ?? now
+            ),
+            Ticket(
+                id: "ANV-115",
+                title: "Implement API key rotation without downtime",
+                description: "When users rotate their API key, there should be a grace period where both old and new keys work. Implement a 24h overlap window using the `api_keys` table's `expires_at` column.",
+                status: "todo",
+                priority: .high,
+                assignee: nil,
+                labels: ["security", "api"],
+                storyPoints: 5,
+                createdAt: cal.date(byAdding: .day, value: -2, to: now) ?? now,
+                updatedAt: cal.date(byAdding: .day, value: -1, to: now) ?? now
+            ),
         ]
     }
+
+    private static func makeDemoSubtasks() -> [String: [Subtask]] {
+        [
+            "ANV-101": [
+                Subtask(ticketId: "ANV-101", title: "Identify all Date.now() calls in auth module", isCompleted: true),
+                Subtask(ticketId: "ANV-101", title: "Replace with UTC-based comparison", isCompleted: true),
+                Subtask(ticketId: "ANV-101", title: "Add timezone-aware unit tests", isCompleted: false),
+                Subtask(ticketId: "ANV-101", title: "Test across PST, EST, UTC, IST timezones", isCompleted: false),
+            ],
+            "ANV-103": [
+                Subtask(ticketId: "ANV-103", title: "Create GET endpoint", isCompleted: true),
+                Subtask(ticketId: "ANV-103", title: "Create PUT endpoint", isCompleted: true),
+                Subtask(ticketId: "ANV-103", title: "Add input validation", isCompleted: true),
+                Subtask(ticketId: "ANV-103", title: "Write integration tests", isCompleted: false),
+                Subtask(ticketId: "ANV-103", title: "Update API docs", isCompleted: false),
+            ],
+            "ANV-107": [
+                Subtask(ticketId: "ANV-107", title: "Define event schema for notifications", isCompleted: true),
+                Subtask(ticketId: "ANV-107", title: "Create event bus publisher", isCompleted: true),
+                Subtask(ticketId: "ANV-107", title: "Create event bus subscriber", isCompleted: false),
+                Subtask(ticketId: "ANV-107", title: "Migrate email service to use events", isCompleted: false),
+                Subtask(ticketId: "ANV-107", title: "Migrate push notification service", isCompleted: false),
+                Subtask(ticketId: "ANV-107", title: "Remove direct HTTP calls", isCompleted: false),
+            ],
+            "ANV-108": [
+                Subtask(ticketId: "ANV-108", title: "Set up Redis sliding window counter", isCompleted: false),
+                Subtask(ticketId: "ANV-108", title: "Add rate limit middleware", isCompleted: false),
+                Subtask(ticketId: "ANV-108", title: "Add rate limit headers to responses", isCompleted: false),
+                Subtask(ticketId: "ANV-108", title: "Write load tests", isCompleted: false),
+            ],
+        ]
+    }
+
+    private static func makeDemoComments() -> [String: [TicketComment]] {
+        let cal = Calendar.current
+        let now = Date.now
+
+        return [
+            "ANV-101": [
+                TicketComment(ticketId: "ANV-101", author: "daniel.k", body: "Confirmed this affects all users west of UTC. Logs show token rejections spiking at 4-5 PM PST.", createdAt: cal.date(byAdding: .day, value: -2, to: now) ?? now),
+                TicketComment(ticketId: "ANV-101", author: "allie.c", body: "Found the root cause - the JWT library defaults to local time when no timezone is specified. Working on a fix now.", createdAt: cal.date(byAdding: .day, value: -1, to: now) ?? now),
+                TicketComment(ticketId: "ANV-101", author: "priya.s", body: "Should we also audit the refresh token flow? It might have the same issue.", createdAt: cal.date(byAdding: .hour, value: -6, to: now) ?? now),
+            ],
+            "ANV-107": [
+                TicketComment(ticketId: "ANV-107", author: "daniel.k", body: "Started with the event schema. Using CloudEvents spec for the envelope format.", createdAt: cal.date(byAdding: .day, value: -3, to: now) ?? now),
+                TicketComment(ticketId: "ANV-107", author: "allie.c", body: "Makes sense. Let's make sure we have dead letter queue support from the start.", createdAt: cal.date(byAdding: .day, value: -2, to: now) ?? now),
+            ],
+            "ANV-103": [
+                TicketComment(ticketId: "ANV-103", author: "priya.s", body: "PR is up for review. Added validation for all preference fields and wrote 12 test cases.", createdAt: cal.date(byAdding: .hour, value: -8, to: now) ?? now),
+            ],
+        ]
+    }
+
+    // MARK: - Sample Data (for previews only)
+
+    #if DEBUG
+    static func withSampleData() -> IntentViewModel {
+        return IntentViewModel()
+    }
+    #endif
 
     private func groupBy(_ tickets: [Ticket], key: (Ticket) -> String) -> [(String, [Ticket])] {
         var dict: [String: [Ticket]] = [:]

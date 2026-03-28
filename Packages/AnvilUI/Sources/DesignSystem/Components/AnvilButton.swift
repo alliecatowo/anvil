@@ -19,51 +19,34 @@ public struct AnvilButton: View {
 
     public var body: some View {
         Button(action: action) {
-            HStack(spacing: AnvilSpacing.xs) {
+            Label {
+                Text(title)
+            } icon: {
                 if let icon {
                     Image(systemName: icon)
-                        .font(.system(size: 12, weight: .medium))
                 }
-                Text(title)
-                    .font(AnvilFont.body)
             }
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.xs)
-            .foregroundStyle(foregroundColor)
-            .background(backgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
-            .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(borderColor, lineWidth: 1)
-            )
         }
-        .buttonStyle(.plain)
+        .modify(for: style)
     }
+}
 
-    private var foregroundColor: Color {
+private extension View {
+    @ViewBuilder
+    func modify(for style: AnvilButtonStyle) -> some View {
         switch style {
-        case .primary: .white
-        case .secondary: AnvilColor.textPrimary
-        case .destructive: .white
-        case .ghost: AnvilColor.textSecondary
-        }
-    }
-
-    private var backgroundColor: Color {
-        switch style {
-        case .primary: AnvilColor.accentBlue
-        case .secondary: AnvilColor.backgroundTertiary
-        case .destructive: AnvilColor.accentRed
-        case .ghost: .clear
-        }
-    }
-
-    private var borderColor: Color {
-        switch style {
-        case .primary: AnvilColor.accentBlue
-        case .secondary: AnvilColor.borderMedium
-        case .destructive: AnvilColor.accentRed
-        case .ghost: .clear
+        case .primary:
+            self.buttonStyle(.borderedProminent)
+                .controlSize(.small)
+        case .secondary:
+            self.buttonStyle(.bordered)
+                .controlSize(.small)
+        case .destructive:
+            self.buttonStyle(.borderedProminent)
+                .tint(.red)
+                .controlSize(.small)
+        case .ghost:
+            self.buttonStyle(.plain)
         }
     }
 }

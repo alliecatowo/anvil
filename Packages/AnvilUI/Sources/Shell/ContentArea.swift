@@ -147,6 +147,9 @@ struct AgentModeContent: View {
                     onSetAutonomy: { level in
                         viewModel.setAutonomyLevel(session.id, level: level)
                     },
+                    onModelChange: { modelId in
+                        viewModel.updateSessionModel(session.id, modelId: modelId)
+                    },
                     guardrailCount: viewModel.guardrails.protectedFiles.count + viewModel.guardrails.blockedCommands.count,
                     pendingApproval: viewModel.pendingToolApproval,
                     onApproveToolCall: { remember in

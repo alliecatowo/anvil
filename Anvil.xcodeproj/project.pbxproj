@@ -1,0 +1,671 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0388F3427CCF2B60949ED66F /* WelcomePageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52F77DC9F83398017D5A5D7 /* WelcomePageTests.swift */; };
+		075F71762F365B3020772617 /* AnvilGit in Frameworks */ = {isa = PBXBuildFile; productRef = 941B587BC949491EFAB365AE /* AnvilGit */; };
+		0BC23C3C353B24FD9E47AA51 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2CAE23C81D7950D976E7065E /* Assets.xcassets */; };
+		0E761383B218EAFDBA71D599 /* AnvilDomain in Frameworks */ = {isa = PBXBuildFile; productRef = F5873548AA49F6F5558A47FE /* AnvilDomain */; };
+		11CDFB68DED7A021D39F4700 /* StashManagementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F11B7F94CC2761574DE870C /* StashManagementTests.swift */; };
+		154A9F07EC5048C2BCE551D1 /* AnvilUI in Frameworks */ = {isa = PBXBuildFile; productRef = 28DBB048996F83A2ECCE41B9 /* AnvilUI */; };
+		162C727B45A3AF6137B949B2 /* InlineEditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5669EC03CADDBA273480AF35 /* InlineEditTests.swift */; };
+		1AFCF78DCD012E144B0A63C7 /* MergeButtonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65521FF7D26078DCDBC08E3C /* MergeButtonTests.swift */; };
+		211B6A2C3441C5768FCDA3B9 /* AnvilACP in Frameworks */ = {isa = PBXBuildFile; productRef = 10B98EE1145ECB63327A35D7 /* AnvilACP */; };
+		2189CF4EC4FE488F263CFA3B /* ReviewModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ED028C8D7687C15FB24087A /* ReviewModeTests.swift */; };
+		21AF7410C90EFF44CC8D1AC6 /* TagManagementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B635D5B914EC22692BE0CB28 /* TagManagementTests.swift */; };
+		221B37C8DD7CDB137EA54CC9 /* SidebarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 465D94CFBBA1049887BDA06C /* SidebarTests.swift */; };
+		368FDF9D46C980297D7C9A62 /* TicketToAgentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 049137F5C59D74930E916EC3 /* TicketToAgentTests.swift */; };
+		3DACEE6D0735B4300C1092E7 /* AnvilApplication in Frameworks */ = {isa = PBXBuildFile; productRef = 8D9F9B183E09F79C6BF90A90 /* AnvilApplication */; };
+		43DA9A0D79992B713D934A02 /* NavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA0E25E1FB1FA3CDD65C97A3 /* NavigationTests.swift */; };
+		4594485A29700F5BF2442F8E /* SymbolSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93008A5B6C886474FC4A4C3F /* SymbolSearchTests.swift */; };
+		4AC9F1FBC1099F5E39A31047 /* CursorPositionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D780F1FA5C5FB1CA48984C6D /* CursorPositionTests.swift */; };
+		4DE027B2E3DB02BE4257535B /* ShipModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DACACCB454D8B756E4A21A6 /* ShipModeTests.swift */; };
+		51A09A0349150F4AA689439C /* QuickCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D9033C94E685995BC01DDE /* QuickCaptureTests.swift */; };
+		532BD417162BB0745A5E9A5D /* CommandPaletteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62D060DEBD876567517EFD6F /* CommandPaletteTests.swift */; };
+		53DC1E3D2D026BE07CED2094 /* SlashCommandAndRefTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F66AE196D49A2CE982E36CD /* SlashCommandAndRefTests.swift */; };
+		56784BCB030419AA05D9D907 /* UIPolishTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A66868515454E451BB5E116 /* UIPolishTests.swift */; };
+		650A1B6371CDC2F730A39737 /* AgentActivityIndicatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00136CFFCD08229F91C5213 /* AgentActivityIndicatorTests.swift */; };
+		7154429CDF2C507C1E3576DA /* AnvilPluginSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 245E4D000FCF68F83BCCAFFC /* AnvilPluginSDK */; };
+		7DD1009D2BE145F9498819FB /* ModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 858C42C82D23AE08B2F1A464 /* ModeTests.swift */; };
+		7F4DD508CFC0395BE2E478B0 /* ModelPickerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6A468039895E6190AA16449 /* ModelPickerTests.swift */; };
+		85514B8BE3BA116C87C4E460 /* AnvilApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29C5CC01219C6BAB574C3D49 /* AnvilApp.swift */; };
+		8BAF4256D40A9E3B1AE0FCAB /* EditorModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6990D66CCF7442B756F660 /* EditorModeTests.swift */; };
+		8DB2CEFEE08C9CB2BB42F5E4 /* SettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD9BE66CE6D1B8F8BB687607 /* SettingsTests.swift */; };
+		8DE059A64810144107BB7DAA /* IntentModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F250D8E6ED76BB0B0FF845A /* IntentModeTests.swift */; };
+		8E18474B86BECD6B3D8B854C /* FileSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE3CCB38C6FDEE7FE642D5BF /* FileSearchTests.swift */; };
+		979406BFEE931AEF93A6C0F2 /* CostBudgetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 171FFBB3D31B14435C095799 /* CostBudgetTests.swift */; };
+		9C51DC615D28D57B9D9CA5E2 /* SourceControlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2C0255D7CECCE8664D9BC6 /* SourceControlTests.swift */; };
+		9C7E8D00B0CEAEB2ED2A05EB /* AnvilInfrastructure in Frameworks */ = {isa = PBXBuildFile; productRef = FA3ADC07C28237F55ACB4D20 /* AnvilInfrastructure */; };
+		9F0E3C1F07F2FCEAD387E47F /* TokenUsageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F40F2FEF3E69D5EE12C3BC /* TokenUsageTests.swift */; };
+		A17B53E3304B5EF636AB58D6 /* AgentModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9551FE95E96F690BBF5E64 /* AgentModeTests.swift */; };
+		A2DAE36EE1D70A3332F4C243 /* AppIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0BA8694BD09CFF38E3A6AB1 /* AppIconView.swift */; };
+		A5E01016126EC22855E05D60 /* CrossModeFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8E65C0D4F0B96E958C2C3C4 /* CrossModeFlowTests.swift */; };
+		B11A86314BE683CE3A87D8D2 /* StreamingCodeBlockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D733AC474861365F2B4073E0 /* StreamingCodeBlockTests.swift */; };
+		C4F873ED50655AFE74E60120 /* GitHubPRTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C02AAC219EE66FE4B00EEB1 /* GitHubPRTests.swift */; };
+		D4B14C28544AC9FF1B413B57 /* AppLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9DBFBF97368BA44840EFCC /* AppLaunchTests.swift */; };
+		DD970FBFF917346C9844DE79 /* ContextInjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13E63D9B3E69B3AF4BFC5560 /* ContextInjectionTests.swift */; };
+		E2FD375E8791CF210C6940F8 /* TestingModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FA6070F257B5DFC0A629B1 /* TestingModeTests.swift */; };
+		E35CE242E58EA17749E67105 /* AIInlineEditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7A583A4F4730C77F6BC83C5 /* AIInlineEditTests.swift */; };
+		E627D97352F00357E76D5227 /* GitBlameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63A0C42179D9E4EBD431DEDC /* GitBlameTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		3199A1DC000C053E5B86DB99 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1BF8F834FCAD12B760CBE145 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B55C465576B95B84C026B755;
+			remoteInfo = Anvil;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		049137F5C59D74930E916EC3 /* TicketToAgentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TicketToAgentTests.swift; sourceTree = "<group>"; };
+		0F250D8E6ED76BB0B0FF845A /* IntentModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentModeTests.swift; sourceTree = "<group>"; };
+		13E63D9B3E69B3AF4BFC5560 /* ContextInjectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextInjectionTests.swift; sourceTree = "<group>"; };
+		171FFBB3D31B14435C095799 /* CostBudgetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CostBudgetTests.swift; sourceTree = "<group>"; };
+		1F11B7F94CC2761574DE870C /* StashManagementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StashManagementTests.swift; sourceTree = "<group>"; };
+		29C5CC01219C6BAB574C3D49 /* AnvilApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnvilApp.swift; sourceTree = "<group>"; };
+		2CAE23C81D7950D976E7065E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		3F9551FE95E96F690BBF5E64 /* AgentModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentModeTests.swift; sourceTree = "<group>"; };
+		3F9DBFBF97368BA44840EFCC /* AppLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLaunchTests.swift; sourceTree = "<group>"; };
+		465D94CFBBA1049887BDA06C /* SidebarTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarTests.swift; sourceTree = "<group>"; };
+		53FA6070F257B5DFC0A629B1 /* TestingModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestingModeTests.swift; sourceTree = "<group>"; };
+		55F40F2FEF3E69D5EE12C3BC /* TokenUsageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenUsageTests.swift; sourceTree = "<group>"; };
+		5669EC03CADDBA273480AF35 /* InlineEditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineEditTests.swift; sourceTree = "<group>"; };
+		5DC466FC14E977C9A5B0BF36 /* Anvil.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Anvil.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		62D060DEBD876567517EFD6F /* CommandPaletteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPaletteTests.swift; sourceTree = "<group>"; };
+		63A0C42179D9E4EBD431DEDC /* GitBlameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitBlameTests.swift; sourceTree = "<group>"; };
+		6421B82DFA8ABACD306F4171 /* AnvilUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AnvilUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		65521FF7D26078DCDBC08E3C /* MergeButtonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MergeButtonTests.swift; sourceTree = "<group>"; };
+		6ED028C8D7687C15FB24087A /* ReviewModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewModeTests.swift; sourceTree = "<group>"; };
+		7D2C0255D7CECCE8664D9BC6 /* SourceControlTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceControlTests.swift; sourceTree = "<group>"; };
+		7E01E70D2E8D77660D70A690 /* AnvilUI */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AnvilUI; path = Packages/AnvilUI; sourceTree = SOURCE_ROOT; };
+		85264645E37A974BDB22EE12 /* AnvilApplication */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AnvilApplication; path = Packages/AnvilApplication; sourceTree = SOURCE_ROOT; };
+		858C42C82D23AE08B2F1A464 /* ModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeTests.swift; sourceTree = "<group>"; };
+		8C02AAC219EE66FE4B00EEB1 /* GitHubPRTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubPRTests.swift; sourceTree = "<group>"; };
+		8DACACCB454D8B756E4A21A6 /* ShipModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipModeTests.swift; sourceTree = "<group>"; };
+		8F66AE196D49A2CE982E36CD /* SlashCommandAndRefTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlashCommandAndRefTests.swift; sourceTree = "<group>"; };
+		93008A5B6C886474FC4A4C3F /* SymbolSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolSearchTests.swift; sourceTree = "<group>"; };
+		93821DD9DB0A0A24BB3A7DF5 /* AnvilPluginSDK */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AnvilPluginSDK; path = Packages/AnvilPluginSDK; sourceTree = SOURCE_ROOT; };
+		9A66868515454E451BB5E116 /* UIPolishTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIPolishTests.swift; sourceTree = "<group>"; };
+		B4D9033C94E685995BC01DDE /* QuickCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureTests.swift; sourceTree = "<group>"; };
+		B635D5B914EC22692BE0CB28 /* TagManagementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagManagementTests.swift; sourceTree = "<group>"; };
+		B8E65C0D4F0B96E958C2C3C4 /* CrossModeFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrossModeFlowTests.swift; sourceTree = "<group>"; };
+		BB6990D66CCF7442B756F660 /* EditorModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorModeTests.swift; sourceTree = "<group>"; };
+		C6A468039895E6190AA16449 /* ModelPickerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPickerTests.swift; sourceTree = "<group>"; };
+		CA0E25E1FB1FA3CDD65C97A3 /* NavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationTests.swift; sourceTree = "<group>"; };
+		CE3CCB38C6FDEE7FE642D5BF /* FileSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchTests.swift; sourceTree = "<group>"; };
+		D4200176DECF1DED2F432E8B /* AnvilDomain */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AnvilDomain; path = Packages/AnvilDomain; sourceTree = SOURCE_ROOT; };
+		D733AC474861365F2B4073E0 /* StreamingCodeBlockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingCodeBlockTests.swift; sourceTree = "<group>"; };
+		D780F1FA5C5FB1CA48984C6D /* CursorPositionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorPositionTests.swift; sourceTree = "<group>"; };
+		DD9BE66CE6D1B8F8BB687607 /* SettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTests.swift; sourceTree = "<group>"; };
+		E00136CFFCD08229F91C5213 /* AgentActivityIndicatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentActivityIndicatorTests.swift; sourceTree = "<group>"; };
+		E3BB7D0530A4BC96079FC6B3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		E52F77DC9F83398017D5A5D7 /* WelcomePageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomePageTests.swift; sourceTree = "<group>"; };
+		E6D771021A76C4E847E3740C /* AnvilACP */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AnvilACP; path = Packages/AnvilACP; sourceTree = SOURCE_ROOT; };
+		E7680C81FA64A597F6FBB876 /* AnvilGit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AnvilGit; path = Packages/AnvilGit; sourceTree = SOURCE_ROOT; };
+		EF73D13DDBF64DCC3C06EB9C /* AnvilInfrastructure */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AnvilInfrastructure; path = Packages/AnvilInfrastructure; sourceTree = SOURCE_ROOT; };
+		F0BA8694BD09CFF38E3A6AB1 /* AppIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconView.swift; sourceTree = "<group>"; };
+		F7A583A4F4730C77F6BC83C5 /* AIInlineEditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIInlineEditTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		30058BA7D507DE0FB539CFBA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0E761383B218EAFDBA71D599 /* AnvilDomain in Frameworks */,
+				3DACEE6D0735B4300C1092E7 /* AnvilApplication in Frameworks */,
+				211B6A2C3441C5768FCDA3B9 /* AnvilACP in Frameworks */,
+				9C7E8D00B0CEAEB2ED2A05EB /* AnvilInfrastructure in Frameworks */,
+				154A9F07EC5048C2BCE551D1 /* AnvilUI in Frameworks */,
+				7154429CDF2C507C1E3576DA /* AnvilPluginSDK in Frameworks */,
+				075F71762F365B3020772617 /* AnvilGit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		42BC1533F0D4937D162D772F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5DC466FC14E977C9A5B0BF36 /* Anvil.app */,
+				6421B82DFA8ABACD306F4171 /* AnvilUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		64B15A9C24339A1E5D141171 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				E6D771021A76C4E847E3740C /* AnvilACP */,
+				85264645E37A974BDB22EE12 /* AnvilApplication */,
+				D4200176DECF1DED2F432E8B /* AnvilDomain */,
+				E7680C81FA64A597F6FBB876 /* AnvilGit */,
+				EF73D13DDBF64DCC3C06EB9C /* AnvilInfrastructure */,
+				93821DD9DB0A0A24BB3A7DF5 /* AnvilPluginSDK */,
+				7E01E70D2E8D77660D70A690 /* AnvilUI */,
+			);
+			path = Packages;
+			sourceTree = "<group>";
+		};
+		E2467C1A183FCE31D1F8A25F /* App */ = {
+			isa = PBXGroup;
+			children = (
+				29C5CC01219C6BAB574C3D49 /* AnvilApp.swift */,
+				F0BA8694BD09CFF38E3A6AB1 /* AppIconView.swift */,
+				2CAE23C81D7950D976E7065E /* Assets.xcassets */,
+				E3BB7D0530A4BC96079FC6B3 /* Info.plist */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		E301512FDC70A2AEF483DFC5 = {
+			isa = PBXGroup;
+			children = (
+				E2467C1A183FCE31D1F8A25F /* App */,
+				64B15A9C24339A1E5D141171 /* Packages */,
+				EFA94FC4554114D2AAC9ECEF /* UITests */,
+				42BC1533F0D4937D162D772F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		EFA94FC4554114D2AAC9ECEF /* UITests */ = {
+			isa = PBXGroup;
+			children = (
+				E00136CFFCD08229F91C5213 /* AgentActivityIndicatorTests.swift */,
+				3F9551FE95E96F690BBF5E64 /* AgentModeTests.swift */,
+				F7A583A4F4730C77F6BC83C5 /* AIInlineEditTests.swift */,
+				3F9DBFBF97368BA44840EFCC /* AppLaunchTests.swift */,
+				62D060DEBD876567517EFD6F /* CommandPaletteTests.swift */,
+				13E63D9B3E69B3AF4BFC5560 /* ContextInjectionTests.swift */,
+				171FFBB3D31B14435C095799 /* CostBudgetTests.swift */,
+				B8E65C0D4F0B96E958C2C3C4 /* CrossModeFlowTests.swift */,
+				D780F1FA5C5FB1CA48984C6D /* CursorPositionTests.swift */,
+				BB6990D66CCF7442B756F660 /* EditorModeTests.swift */,
+				CE3CCB38C6FDEE7FE642D5BF /* FileSearchTests.swift */,
+				63A0C42179D9E4EBD431DEDC /* GitBlameTests.swift */,
+				8C02AAC219EE66FE4B00EEB1 /* GitHubPRTests.swift */,
+				5669EC03CADDBA273480AF35 /* InlineEditTests.swift */,
+				0F250D8E6ED76BB0B0FF845A /* IntentModeTests.swift */,
+				65521FF7D26078DCDBC08E3C /* MergeButtonTests.swift */,
+				C6A468039895E6190AA16449 /* ModelPickerTests.swift */,
+				858C42C82D23AE08B2F1A464 /* ModeTests.swift */,
+				CA0E25E1FB1FA3CDD65C97A3 /* NavigationTests.swift */,
+				B4D9033C94E685995BC01DDE /* QuickCaptureTests.swift */,
+				6ED028C8D7687C15FB24087A /* ReviewModeTests.swift */,
+				DD9BE66CE6D1B8F8BB687607 /* SettingsTests.swift */,
+				8DACACCB454D8B756E4A21A6 /* ShipModeTests.swift */,
+				465D94CFBBA1049887BDA06C /* SidebarTests.swift */,
+				8F66AE196D49A2CE982E36CD /* SlashCommandAndRefTests.swift */,
+				7D2C0255D7CECCE8664D9BC6 /* SourceControlTests.swift */,
+				1F11B7F94CC2761574DE870C /* StashManagementTests.swift */,
+				D733AC474861365F2B4073E0 /* StreamingCodeBlockTests.swift */,
+				93008A5B6C886474FC4A4C3F /* SymbolSearchTests.swift */,
+				B635D5B914EC22692BE0CB28 /* TagManagementTests.swift */,
+				53FA6070F257B5DFC0A629B1 /* TestingModeTests.swift */,
+				049137F5C59D74930E916EC3 /* TicketToAgentTests.swift */,
+				55F40F2FEF3E69D5EE12C3BC /* TokenUsageTests.swift */,
+				9A66868515454E451BB5E116 /* UIPolishTests.swift */,
+				E52F77DC9F83398017D5A5D7 /* WelcomePageTests.swift */,
+			);
+			name = UITests;
+			path = Tests/UITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		05F5EAD7966860133A644DD8 /* AnvilUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA743BC7D72B8D799E100A89 /* Build configuration list for PBXNativeTarget "AnvilUITests" */;
+			buildPhases = (
+				76D90807F90FD25924C7D6CE /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5A006013C2B02F7CDE80DEC8 /* PBXTargetDependency */,
+			);
+			name = AnvilUITests;
+			packageProductDependencies = (
+			);
+			productName = AnvilUITests;
+			productReference = 6421B82DFA8ABACD306F4171 /* AnvilUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		B55C465576B95B84C026B755 /* Anvil */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2B040BF60FD18712D3CA2B83 /* Build configuration list for PBXNativeTarget "Anvil" */;
+			buildPhases = (
+				2C1883ADA8D0CEDE6A16E3E6 /* Sources */,
+				610F474E23C7837C3F98214A /* Resources */,
+				30058BA7D507DE0FB539CFBA /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Anvil;
+			packageProductDependencies = (
+				F5873548AA49F6F5558A47FE /* AnvilDomain */,
+				8D9F9B183E09F79C6BF90A90 /* AnvilApplication */,
+				10B98EE1145ECB63327A35D7 /* AnvilACP */,
+				FA3ADC07C28237F55ACB4D20 /* AnvilInfrastructure */,
+				28DBB048996F83A2ECCE41B9 /* AnvilUI */,
+				245E4D000FCF68F83BCCAFFC /* AnvilPluginSDK */,
+				941B587BC949491EFAB365AE /* AnvilGit */,
+			);
+			productName = Anvil;
+			productReference = 5DC466FC14E977C9A5B0BF36 /* Anvil.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1BF8F834FCAD12B760CBE145 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					05F5EAD7966860133A644DD8 = {
+						TestTargetID = B55C465576B95B84C026B755;
+					};
+				};
+			};
+			buildConfigurationList = EFC13CB28ED05AED929FCD08 /* Build configuration list for PBXProject "Anvil" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = E301512FDC70A2AEF483DFC5;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				29E2F153E172F0F41D2FE0C0 /* XCLocalSwiftPackageReference "Packages/AnvilACP" */,
+				03C737016ADC3541CE1F7883 /* XCLocalSwiftPackageReference "Packages/AnvilApplication" */,
+				D80326125867B663951172A7 /* XCLocalSwiftPackageReference "Packages/AnvilDomain" */,
+				0C4A07B11E446F2B6B333FFB /* XCLocalSwiftPackageReference "Packages/AnvilGit" */,
+				78058DF146FE9ECFCA3C2F30 /* XCLocalSwiftPackageReference "Packages/AnvilInfrastructure" */,
+				291C35B06F73D559302A55A1 /* XCLocalSwiftPackageReference "Packages/AnvilPluginSDK" */,
+				E06E848BE195E845F8A68684 /* XCLocalSwiftPackageReference "Packages/AnvilUI" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 42BC1533F0D4937D162D772F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B55C465576B95B84C026B755 /* Anvil */,
+				05F5EAD7966860133A644DD8 /* AnvilUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		610F474E23C7837C3F98214A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0BC23C3C353B24FD9E47AA51 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2C1883ADA8D0CEDE6A16E3E6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				85514B8BE3BA116C87C4E460 /* AnvilApp.swift in Sources */,
+				A2DAE36EE1D70A3332F4C243 /* AppIconView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		76D90807F90FD25924C7D6CE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E35CE242E58EA17749E67105 /* AIInlineEditTests.swift in Sources */,
+				650A1B6371CDC2F730A39737 /* AgentActivityIndicatorTests.swift in Sources */,
+				A17B53E3304B5EF636AB58D6 /* AgentModeTests.swift in Sources */,
+				D4B14C28544AC9FF1B413B57 /* AppLaunchTests.swift in Sources */,
+				532BD417162BB0745A5E9A5D /* CommandPaletteTests.swift in Sources */,
+				DD970FBFF917346C9844DE79 /* ContextInjectionTests.swift in Sources */,
+				979406BFEE931AEF93A6C0F2 /* CostBudgetTests.swift in Sources */,
+				A5E01016126EC22855E05D60 /* CrossModeFlowTests.swift in Sources */,
+				4AC9F1FBC1099F5E39A31047 /* CursorPositionTests.swift in Sources */,
+				8BAF4256D40A9E3B1AE0FCAB /* EditorModeTests.swift in Sources */,
+				8E18474B86BECD6B3D8B854C /* FileSearchTests.swift in Sources */,
+				E627D97352F00357E76D5227 /* GitBlameTests.swift in Sources */,
+				C4F873ED50655AFE74E60120 /* GitHubPRTests.swift in Sources */,
+				162C727B45A3AF6137B949B2 /* InlineEditTests.swift in Sources */,
+				8DE059A64810144107BB7DAA /* IntentModeTests.swift in Sources */,
+				1AFCF78DCD012E144B0A63C7 /* MergeButtonTests.swift in Sources */,
+				7DD1009D2BE145F9498819FB /* ModeTests.swift in Sources */,
+				7F4DD508CFC0395BE2E478B0 /* ModelPickerTests.swift in Sources */,
+				43DA9A0D79992B713D934A02 /* NavigationTests.swift in Sources */,
+				51A09A0349150F4AA689439C /* QuickCaptureTests.swift in Sources */,
+				2189CF4EC4FE488F263CFA3B /* ReviewModeTests.swift in Sources */,
+				8DB2CEFEE08C9CB2BB42F5E4 /* SettingsTests.swift in Sources */,
+				4DE027B2E3DB02BE4257535B /* ShipModeTests.swift in Sources */,
+				221B37C8DD7CDB137EA54CC9 /* SidebarTests.swift in Sources */,
+				53DC1E3D2D026BE07CED2094 /* SlashCommandAndRefTests.swift in Sources */,
+				9C51DC615D28D57B9D9CA5E2 /* SourceControlTests.swift in Sources */,
+				11CDFB68DED7A021D39F4700 /* StashManagementTests.swift in Sources */,
+				B11A86314BE683CE3A87D8D2 /* StreamingCodeBlockTests.swift in Sources */,
+				4594485A29700F5BF2442F8E /* SymbolSearchTests.swift in Sources */,
+				21AF7410C90EFF44CC8D1AC6 /* TagManagementTests.swift in Sources */,
+				E2FD375E8791CF210C6940F8 /* TestingModeTests.swift in Sources */,
+				368FDF9D46C980297D7C9A62 /* TicketToAgentTests.swift in Sources */,
+				9F0E3C1F07F2FCEAD387E47F /* TokenUsageTests.swift in Sources */,
+				56784BCB030419AA05D9D907 /* UIPolishTests.swift in Sources */,
+				0388F3427CCF2B60949ED66F /* WelcomePageTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		5A006013C2B02F7CDE80DEC8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B55C465576B95B84C026B755 /* Anvil */;
+			targetProxy = 3199A1DC000C053E5B86DB99 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		15376E88F4D1579FC9A8DF1F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_STRICT_CONCURRENCY = complete;
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anvil.app;
+				PRODUCT_NAME = Anvil;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		1DCD5383FC1D0E9BB2878CAA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		55B851E388AEA19F12FCC41E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		6F2DAB0FD115B05123719002 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.anvil.AnvilUITests;
+				SDKROOT = macosx;
+				TEST_TARGET_NAME = Anvil;
+			};
+			name = Debug;
+		};
+		A492B586C6C9AC463C5753FA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.anvil.AnvilUITests;
+				SDKROOT = macosx;
+				TEST_TARGET_NAME = Anvil;
+			};
+			name = Release;
+		};
+		E7491D9B3983581527A72B51 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_STRICT_CONCURRENCY = complete;
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anvil.app;
+				PRODUCT_NAME = Anvil;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2B040BF60FD18712D3CA2B83 /* Build configuration list for PBXNativeTarget "Anvil" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E7491D9B3983581527A72B51 /* Debug */,
+				15376E88F4D1579FC9A8DF1F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AA743BC7D72B8D799E100A89 /* Build configuration list for PBXNativeTarget "AnvilUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6F2DAB0FD115B05123719002 /* Debug */,
+				A492B586C6C9AC463C5753FA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EFC13CB28ED05AED929FCD08 /* Build configuration list for PBXProject "Anvil" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				55B851E388AEA19F12FCC41E /* Debug */,
+				1DCD5383FC1D0E9BB2878CAA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		03C737016ADC3541CE1F7883 /* XCLocalSwiftPackageReference "Packages/AnvilApplication" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/AnvilApplication;
+		};
+		0C4A07B11E446F2B6B333FFB /* XCLocalSwiftPackageReference "Packages/AnvilGit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/AnvilGit;
+		};
+		291C35B06F73D559302A55A1 /* XCLocalSwiftPackageReference "Packages/AnvilPluginSDK" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/AnvilPluginSDK;
+		};
+		29E2F153E172F0F41D2FE0C0 /* XCLocalSwiftPackageReference "Packages/AnvilACP" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/AnvilACP;
+		};
+		78058DF146FE9ECFCA3C2F30 /* XCLocalSwiftPackageReference "Packages/AnvilInfrastructure" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/AnvilInfrastructure;
+		};
+		D80326125867B663951172A7 /* XCLocalSwiftPackageReference "Packages/AnvilDomain" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/AnvilDomain;
+		};
+		E06E848BE195E845F8A68684 /* XCLocalSwiftPackageReference "Packages/AnvilUI" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/AnvilUI;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		10B98EE1145ECB63327A35D7 /* AnvilACP */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnvilACP;
+		};
+		245E4D000FCF68F83BCCAFFC /* AnvilPluginSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnvilPluginSDK;
+		};
+		28DBB048996F83A2ECCE41B9 /* AnvilUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnvilUI;
+		};
+		8D9F9B183E09F79C6BF90A90 /* AnvilApplication */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnvilApplication;
+		};
+		941B587BC949491EFAB365AE /* AnvilGit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnvilGit;
+		};
+		F5873548AA49F6F5558A47FE /* AnvilDomain */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnvilDomain;
+		};
+		FA3ADC07C28237F55ACB4D20 /* AnvilInfrastructure */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnvilInfrastructure;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 1BF8F834FCAD12B760CBE145 /* Project object */;
+}

@@ -5,14 +5,14 @@ import AnvilDomain
 final class AnvilApplicationTests: XCTestCase {
     func testEventBusPublishAndSubscribe() async {
         let bus = EventBus.shared
-        var received = false
+        let received = expectation(description: "event received")
 
         await bus.subscribe(to: "*") { _ in
-            received = true
+            received.fulfill()
         }
 
         await bus.publish(AnyDomainEvent(sourcePrimitive: "test", payload: "hello"))
-        XCTAssertTrue(received)
+        await fulfillment(of: [received], timeout: 1.0)
     }
 
     func testACPRouterRegistration() async {

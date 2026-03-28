@@ -11,6 +11,16 @@ enum HunkDecision: String {
     case pending, approved, rejected
 }
 
+// MARK: - Inline Comment
+
+struct InlineComment: Identifiable {
+    let id: String
+    let author: String
+    let body: String
+    let lineNumber: Int
+    let createdAt: Date
+}
+
 // MARK: - Review View Model
 
 @MainActor
@@ -43,6 +53,22 @@ public final class ReviewViewModel: ObservableObject {
     @Published var isBlameVisible: Bool = false
     @Published var blameData: [Int: BlameLine] = [:]  // lineNumber -> BlameLine
     @Published var isLoadingBlame: Bool = false
+
+    // MARK: Inline comments
+
+    @Published var inlineComments: [String: [InlineComment]] = [:] // "fileId:lineNumber" -> comments
+    @Published var activeCommentLine: InlineCommentTarget?
+    @Published var inlineCommentText: String = ""
+
+    struct InlineCommentTarget: Equatable {
+        let fileId: String
+        let lineNumber: Int
+        let side: InlineCommentSide
+    }
+
+    enum InlineCommentSide: Equatable {
+        case old, new
+    }
 
     // MARK: Batch actions
 
@@ -107,14 +133,98 @@ public final class ReviewViewModel: ObservableObject {
 
     func approveHunk(_ hunkID: String) {
         hunkDecisions[hunkID] = .approved
+        updateReviewStatusFromHunks()
     }
 
     func rejectHunk(_ hunkID: String) {
         hunkDecisions[hunkID] = .rejected
+        updateReviewStatusFromHunks()
     }
 
     func decisionFor(_ hunkID: String) -> HunkDecision {
         hunkDecisions[hunkID] ?? .pending
+    }
+
+    /// Auto-updates the review status when all hunks have been decided.
+    private func updateReviewStatusFromHunks() {
+        guard let review = selectedReview, !review.diff.isEmpty else { return }
+        let allHunkIDs = review.diff.flatMap { $0.hunks.map(\.id) }
+        guard !allHunkIDs.isEmpty else { return }
+
+        let decisions = allHunkIDs.compactMap { hunkDecisions[$0] }
+        guard decisions.count == allHunkIDs.count else { return }
+
+        // All hunks decided — determine overall status
+        let hasRejections = decisions.contains(.rejected)
+        let newStatus: ReviewStatus = hasRejections ? .changesRequested : .approved
+
+        if let idx = reviews.firstIndex(where: { $0.id == review.id }) {
+            reviews[idx].status = newStatus
+        }
+    }
+
+    /// Summary of hunk decisions for the current review.
+    var hunkDecisionSummary: (approved: Int, rejected: Int, pending: Int, total: Int) {
+        guard let review = selectedReview else { return (0, 0, 0, 0) }
+        let allHunks = review.diff.flatMap(\.hunks)
+        let total = allHunks.count
+        let approved = allHunks.filter { decisionFor($0.id) == .approved }.count
+        let rejected = allHunks.filter { decisionFor($0.id) == .rejected }.count
+        let pending = total - approved - rejected
+        return (approved, rejected, pending, total)
+    }
+
+    // MARK: - Merge (local git)
+
+    @Published var isMerging: Bool = false
+    @Published var mergeResult: MergeResult?
+    @Published var mergeError: String?
+
+    /// Merge the selected branch into the current branch using the git adapter.
+    func mergeSelectedBranch(using adapter: GitSourceControlAdapter, strategy: MergeStrategy = .merge) {
+        guard let branchName = selectedBranchName else { return }
+        guard !isMerging else { return }
+        isMerging = true
+        mergeError = nil
+        mergeResult = nil
+
+        Task { @MainActor in
+            defer { isMerging = false }
+
+            // Determine current branch to merge into
+            let currentBranch: String
+            do {
+                let branches = try await adapter.branches()
+                if let current = branches.first(where: { $0.isCurrent }) {
+                    currentBranch = current.name
+                } else {
+                    mergeError = "Could not determine current branch"
+                    return
+                }
+            } catch {
+                mergeError = "Failed to get branches: \(error.localizedDescription)"
+                return
+            }
+
+            do {
+                let result = try await adapter.merge(source: branchName, into: currentBranch, strategy: strategy)
+                mergeResult = result
+
+                switch result {
+                case .success:
+                    // Mark the review as approved
+                    if let idx = reviews.firstIndex(where: { $0.id == selectedReviewID }) {
+                        reviews[idx].status = .approved
+                    }
+                case .conflicts(let conflicts):
+                    mergeError = "\(conflicts.count) file(s) have merge conflicts"
+                case .alreadyUpToDate:
+                    break
+                }
+            } catch {
+                mergeError = "Merge failed: \(error.localizedDescription)"
+            }
+        }
     }
 
     // MARK: Batch
@@ -132,6 +242,40 @@ public final class ReviewViewModel: ObservableObject {
             reviews[i].status = .approved
         }
         selectedReviewIDs.removeAll()
+    }
+
+    // MARK: Inline Comments
+
+    func startInlineComment(fileId: String, lineNumber: Int, side: InlineCommentSide) {
+        activeCommentLine = InlineCommentTarget(fileId: fileId, lineNumber: lineNumber, side: side)
+        inlineCommentText = ""
+    }
+
+    func cancelInlineComment() {
+        activeCommentLine = nil
+        inlineCommentText = ""
+    }
+
+    func submitInlineComment() {
+        guard let target = activeCommentLine,
+              !inlineCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+
+        let key = "\(target.fileId):\(target.lineNumber)"
+        let comment = InlineComment(
+            id: UUID().uuidString,
+            author: "You",
+            body: inlineCommentText,
+            lineNumber: target.lineNumber,
+            createdAt: .now
+        )
+        inlineComments[key, default: []].append(comment)
+        activeCommentLine = nil
+        inlineCommentText = ""
+    }
+
+    func inlineCommentsForLine(fileId: String, lineNumber: Int) -> [InlineComment] {
+        let key = "\(fileId):\(lineNumber)"
+        return inlineComments[key] ?? []
     }
 
     // MARK: - Branch Diff (real git)

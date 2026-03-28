@@ -61,6 +61,14 @@ public enum AnvilMode: String, CaseIterable, Identifiable, Sendable {
     public static var auxiliaryModes: [AnvilMode] {
         [.editor, .database, .terminal, .testing, .docs, .messaging, .notifications, .extensions]
     }
+
+    public static var workspaceModes: [AnvilMode] {
+        [.editor, .terminal, .database, .testing]
+    }
+
+    public static var contextModes: [AnvilMode] {
+        [.docs, .messaging, .notifications, .extensions]
+    }
 }
 
 public enum FileEncoding: String, CaseIterable, Sendable {
@@ -84,6 +92,7 @@ public enum LineEnding: String, CaseIterable, Sendable {
 @MainActor
 public class AppState: ObservableObject {
     @Published public var currentMode: AnvilMode = .agent
+    @Published public var lastCoreMode: AnvilMode = .agent
     @Published public var isSidebarVisible: Bool = true
     @Published public var isSidebarCollapsed: Bool = false
     @Published public var isInspectorVisible: Bool = false
@@ -170,6 +179,7 @@ public class AppState: ObservableObject {
     public func switchBranch(_ name: String, using adapter: GitSourceControlAdapter) async {
         do {
             try await adapter.switchBranch(name: name)
+            await Task.yield()
             await loadGitStatus(from: adapter)
         } catch {
             // Branch switch failed — status unchanged
@@ -180,6 +190,7 @@ public class AppState: ObservableObject {
     public func createBranch(_ name: String, using adapter: GitSourceControlAdapter) async {
         do {
             _ = try await adapter.createBranch(name: name, from: nil)
+            await Task.yield()
             await loadGitStatus(from: adapter)
         } catch {
             // Branch creation failed
@@ -188,7 +199,13 @@ public class AppState: ObservableObject {
 
     public func switchMode(_ mode: AnvilMode) {
         withAnimation(AnvilAnimation.modeSwitch) {
+            if AnvilMode.coreModes.contains(mode) {
+                lastCoreMode = mode
+            }
             currentMode = mode
+            if mode == .terminal {
+                isTerminalPanelVisible = false
+            }
         }
     }
 
@@ -230,15 +247,15 @@ public class AppState: ObservableObject {
         withAnimation(AnvilAnimation.standard) {
             isTerminalPanelVisible.toggle()
         }
-        // Ensure at least one tab exists when opening
-        if isTerminalPanelVisible && terminalViewModel.tabs.isEmpty {
+        // Ensure at least one session exists when opening
+        if isTerminalPanelVisible && terminalViewModel.sessions.isEmpty {
             terminalViewModel.addTab()
         }
     }
 
     public func closeTerminalTab(_ id: UUID) {
         terminalViewModel.closeTab(id)
-        if terminalViewModel.tabs.isEmpty {
+        if terminalViewModel.sessions.isEmpty {
             withAnimation(AnvilAnimation.standard) {
                 isTerminalPanelVisible = false
             }
@@ -307,26 +324,15 @@ public class AppState: ObservableObject {
         agentViewModel.sessions = [session]
         agentViewModel.selectedSessionId = session.id
 
-        // Intent: sample tickets
-        let tickets = [
-            Ticket(id: "ANV-101", title: "Fix SSO token refresh", status: "in-progress", priority: .critical, assignee: "allie", labels: ["auth", "bug"]),
-            Ticket(id: "ANV-102", title: "Add dark mode to settings", status: "open", priority: .medium, labels: ["ui"]),
-            Ticket(id: "ANV-103", title: "Migrate to new API v3", status: "open", priority: .high, assignee: "allie", labels: ["api", "migration"]),
-            Ticket(id: "ANV-104", title: "Write E2E tests for checkout", status: "in-review", priority: .medium, labels: ["testing"]),
-            Ticket(id: "ANV-105", title: "Update dependencies", status: "done", priority: .low, labels: ["chore"]),
-        ]
-        intentViewModel.tickets = tickets
+        // Intent: reinitialize with demo data (already loaded on init, this resets to defaults)
+        intentViewModel = IntentViewModel()
 
         // Review: sample reviews
         reviewViewModel.reviews = ReviewViewModel.makeSampleReviews()
 
-        // Ship: sample environments and deployments
-        let (envs, deploys, logs, vars) = ShipViewModel.makeSampleData()
-        shipViewModel.environments = envs
-        shipViewModel.deployments = deploys
-        shipViewModel.buildLogs = logs
-        shipViewModel.envVars = vars
-        shipViewModel.selectedEnvironmentID = envs.first?.id
+        // Ship: load demo data
+        shipViewModel = ShipViewModel()
+        shipViewModel.loadSampleData()
 
         switchMode(.agent)
     }

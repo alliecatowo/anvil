@@ -15,13 +15,14 @@ struct DocBrowser: View {
                 Spacer()
 
                 Button {
-                    // New document action
+                    viewModel.showNewDocSheet = true
                 } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 10))
                         .foregroundStyle(AnvilColor.textTertiary)
                 }
                 .buttonStyle(.plain)
+                .help("New Document")
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
@@ -38,12 +39,54 @@ struct DocBrowser: View {
                 .padding(.vertical, AnvilSpacing.xxs)
             }
         }
+        .sheet(isPresented: $viewModel.showNewDocSheet) {
+            newDocumentSheet
+        }
+    }
+
+    // MARK: - New Document Sheet
+
+    private var newDocumentSheet: some View {
+        VStack(spacing: AnvilSpacing.lg) {
+            Text("New Document")
+                .font(AnvilFont.heading)
+                .foregroundStyle(AnvilColor.textPrimary)
+
+            TextField("Document name", text: $viewModel.newDocName)
+                .textFieldStyle(.plain)
+                .font(AnvilFont.body)
+                .foregroundStyle(AnvilColor.textPrimary)
+                .padding(AnvilSpacing.sm)
+                .background(AnvilColor.backgroundSecondary)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .onSubmit {
+                    viewModel.createNewDocument()
+                }
+
+            HStack {
+                Button("Cancel") {
+                    viewModel.newDocName = ""
+                    viewModel.showNewDocSheet = false
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Spacer()
+
+                Button("Create") {
+                    viewModel.createNewDocument()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(viewModel.newDocName.isEmpty)
+            }
+        }
+        .padding(AnvilSpacing.xl)
+        .frame(width: 360)
     }
 
     // MARK: - Flattened Tree
 
     private struct FlatDocEntry: Identifiable {
-        let id: UUID
+        let id: String
         let node: DocNode
         let depth: Int
     }

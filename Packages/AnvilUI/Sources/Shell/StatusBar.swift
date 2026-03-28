@@ -24,9 +24,9 @@ public struct StatusBar: View {
             .buttonStyle(.borderless)
             .help("Switch Project (\u{2318}\u{21E7}O)")
 
-            Divider()
-                .frame(height: 12)
-                .overlay(AnvilColor.borderSubtle)
+            Circle()
+                .fill(AnvilColor.textTertiary.opacity(0.3))
+                .frame(width: 3, height: 3)
 
             // Branch + source control (clickable for branch picker)
             Button {
@@ -59,9 +59,9 @@ public struct StatusBar: View {
                 BranchPicker(isPresented: $isBranchPickerVisible)
             }
 
-            Divider()
-                .frame(height: 12)
-                .overlay(AnvilColor.borderSubtle)
+            Circle()
+                .fill(AnvilColor.textTertiary.opacity(0.3))
+                .frame(width: 3, height: 3)
 
             Spacer()
 
@@ -70,25 +70,25 @@ public struct StatusBar: View {
 
             Spacer()
 
-            Divider()
-                .frame(height: 12)
-                .overlay(AnvilColor.borderSubtle)
+            Circle()
+                .fill(AnvilColor.textTertiary.opacity(0.3))
+                .frame(width: 3, height: 3)
 
             // Cursor position (visible in editor-like modes)
             CursorPositionIndicator()
 
-            Divider()
-                .frame(height: 12)
-                .overlay(AnvilColor.borderSubtle)
+            Circle()
+                .fill(AnvilColor.textTertiary.opacity(0.3))
+                .frame(width: 3, height: 3)
 
             // File encoding + line ending
             EncodingIndicator()
 
             LineEndingIndicator()
 
-            Divider()
-                .frame(height: 12)
-                .overlay(AnvilColor.borderSubtle)
+            Circle()
+                .fill(AnvilColor.textTertiary.opacity(0.3))
+                .frame(width: 3, height: 3)
 
             // Right: Cost + time
             HStack(spacing: AnvilSpacing.xs) {
@@ -104,9 +104,9 @@ public struct StatusBar: View {
             }
             .foregroundStyle(AnvilColor.textSecondary)
 
-            Divider()
-                .frame(height: 12)
-                .overlay(AnvilColor.borderSubtle)
+            Circle()
+                .fill(AnvilColor.textTertiary.opacity(0.3))
+                .frame(width: 3, height: 3)
 
             // Settings gear
             Button {
@@ -121,7 +121,7 @@ public struct StatusBar: View {
         }
         .padding(.horizontal, AnvilSpacing.md)
         .frame(height: AnvilSpacing.statusBarHeight)
-        .background(AnvilColor.backgroundSecondary)
+        .background(.bar)
     }
 
     private func formatCost(_ cost: Decimal) -> String {
@@ -369,8 +369,6 @@ struct EncodingIndicator: View {
                     .foregroundStyle(AnvilColor.textPrimary)
                     .padding(.horizontal, AnvilSpacing.md)
                     .padding(.vertical, AnvilSpacing.sm)
-
-                Divider().overlay(AnvilColor.borderSubtle)
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {

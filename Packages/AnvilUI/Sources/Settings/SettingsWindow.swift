@@ -59,6 +59,11 @@ public struct SettingsWindow: View {
                     Label("Providers", systemImage: "cpu")
                 }
 
+            IntegrationSettingsView()
+                .tabItem {
+                    Label("Integrations", systemImage: "puzzlepiece.extension")
+                }
+
             AppearanceSettingsView()
                 .tabItem {
                     Label("Appearance", systemImage: "paintbrush")
@@ -69,7 +74,7 @@ public struct SettingsWindow: View {
                     Label("Keybindings", systemImage: "keyboard")
                 }
         }
-        .frame(width: 600, height: 450)
+        .frame(width: 640, height: 500)
     }
 }
 
@@ -460,6 +465,34 @@ struct AppearanceSettingsView: View {
             }
         }
         .formStyle(.grouped)
+    }
+}
+
+// MARK: - Integrations Tab
+
+struct IntegrationSettingsView: View {
+    var body: some View {
+        VStack(spacing: AnvilSpacing.lg) {
+            Image(systemName: "puzzlepiece.extension")
+                .font(.system(size: 40))
+                .foregroundStyle(AnvilColor.textTertiary)
+
+            Text("Integrations")
+                .font(.headline)
+                .foregroundStyle(AnvilColor.textPrimary)
+
+            Text("Configure third-party integrations such as GitHub, Jira, Linear, and Slack.")
+                .font(.subheadline)
+                .foregroundStyle(AnvilColor.textSecondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 360)
+
+            Text("Coming soon")
+                .font(.caption)
+                .foregroundStyle(AnvilColor.textTertiary)
+                .padding(.top, AnvilSpacing.sm)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

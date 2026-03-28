@@ -116,6 +116,11 @@ public actor GitSourceControlAdapter: SourceControlPort {
         return diffParser.parse(output)
     }
 
+    /// Returns the raw staged diff text (for feeding to AI models).
+    public func stagedDiffRaw() async throws -> String {
+        try await shell.run(["diff", "--cached"])
+    }
+
     public func unstagedDiff() async throws -> [FileDiff] {
         let output = try await shell.run(["diff"])
         return diffParser.parse(output)

@@ -45,6 +45,9 @@ class ProjectSearchViewModel: ObservableObject {
     @Published var isSearching: Bool = false
     @Published var collapsedFiles: Set<String> = []
 
+    /// The project root to search. Set by the owning view from AppState.currentProjectPath.
+    var projectPath: String?
+
     var totalMatchCount: Int {
         results.reduce(0) { $0 + $1.matches.count }
     }
@@ -76,12 +79,18 @@ class ProjectSearchViewModel: ObservableObject {
         isSearching = true
         defer { isSearching = false }
 
-        // Build sample results to demonstrate the UI
-        // In production this would walk the project file tree
-        let sampleFiles = sampleProjectFiles()
-        var newResults: [FileSearchResult] = []
+        guard let root = projectPath else {
+            results = []
+            return
+        }
 
-        for (path, content) in sampleFiles {
+        // Use grep for fast project-wide search
+        let grepResults = await runGrep(query: searchText, root: root)
+        guard !Task.isCancelled else { return }
+
+        var grouped: [String: [SearchMatch]] = [:]
+
+        for match in grepResults {
             if Task.isCancelled { return }
 
             // Apply file filter
@@ -90,38 +99,118 @@ class ProjectSearchViewModel: ObservableObject {
                 let matchesFilter = patterns.contains { pattern in
                     if pattern.hasPrefix("*.") {
                         let ext = String(pattern.dropFirst(2))
-                        return path.hasSuffix(".\(ext)")
+                        return match.filePath.hasSuffix(".\(ext)")
                     }
-                    return path.contains(pattern)
+                    return match.filePath.contains(pattern)
                 }
                 if !matchesFilter { continue }
             }
 
-            let lines = content.components(separatedBy: "\n")
-            var matches: [SearchMatch] = []
-
-            for (index, line) in lines.enumerated() {
-                let ranges = findMatchRanges(in: line)
-                for range in ranges {
-                    matches.append(SearchMatch(
-                        lineNumber: index + 1,
-                        lineContent: line,
-                        matchRange: range
-                    ))
-                }
-            }
-
-            if !matches.isEmpty {
-                let fileName = (path as NSString).lastPathComponent
-                newResults.append(FileSearchResult(
-                    filePath: path,
-                    fileName: fileName,
-                    matches: matches
-                ))
+            // Find exact match ranges within the line for highlighting
+            let ranges = findMatchRanges(in: match.lineContent)
+            for range in ranges {
+                let sm = SearchMatch(
+                    lineNumber: match.lineNumber,
+                    lineContent: match.lineContent,
+                    matchRange: range
+                )
+                grouped[match.filePath, default: []].append(sm)
             }
         }
 
+        var newResults: [FileSearchResult] = []
+        for (path, matches) in grouped.sorted(by: { $0.key < $1.key }) {
+            let displayPath = path.hasPrefix(root) ? String(path.dropFirst(root.count + 1)) : path
+            let fileName = (path as NSString).lastPathComponent
+            newResults.append(FileSearchResult(
+                filePath: displayPath,
+                fileName: fileName,
+                matches: matches
+            ))
+        }
+
         results = newResults
+    }
+
+    // MARK: - Grep Subprocess
+
+    private struct GrepMatch {
+        let filePath: String
+        let lineNumber: Int
+        let lineContent: String
+    }
+
+    private func runGrep(query: String, root: String) async -> [GrepMatch] {
+        let matchCase = self.matchCase
+        let wholeWord = self.wholeWord
+        let useRegex = self.useRegex
+
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                var args: [String] = ["-rn", "--max-count=200"]
+
+                // Exclude common noise directories
+                for dir in [".git", ".build", "node_modules", "DerivedData", ".swiftpm", "Pods"] {
+                    args.append(contentsOf: ["--exclude-dir=\(dir)"])
+                }
+                // Exclude binary files
+                args.append("-I")
+
+                if !matchCase {
+                    args.append("-i")
+                }
+                if wholeWord {
+                    args.append("-w")
+                }
+                if useRegex {
+                    args.append("-E")
+                } else {
+                    args.append("-F")
+                }
+
+                args.append(query)
+                args.append(root)
+
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/grep")
+                process.arguments = args
+
+                let pipe = Pipe()
+                process.standardOutput = pipe
+                process.standardError = FileHandle.nullDevice
+
+                do {
+                    try process.run()
+                } catch {
+                    continuation.resume(returning: [])
+                    return
+                }
+
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                process.waitUntilExit()
+
+                guard let output = String(data: data, encoding: .utf8) else {
+                    continuation.resume(returning: [])
+                    return
+                }
+
+                var matches: [GrepMatch] = []
+                let lines = output.components(separatedBy: "\n")
+                for line in lines {
+                    guard !line.isEmpty else { continue }
+                    // Format: filepath:lineNumber:content
+                    guard let firstColon = line.firstIndex(of: ":") else { continue }
+                    let filePath = String(line[line.startIndex..<firstColon])
+                    let rest = line[line.index(after: firstColon)...]
+                    guard let secondColon = rest.firstIndex(of: ":") else { continue }
+                    guard let lineNum = Int(rest[rest.startIndex..<secondColon]) else { continue }
+                    let content = String(rest[rest.index(after: secondColon)...])
+                    matches.append(GrepMatch(filePath: filePath, lineNumber: lineNum, lineContent: content))
+                }
+
+                continuation.resume(returning: matches)
+            }
+        }
     }
 
     private func findMatchRanges(in line: String) -> [Range<String.Index>] {
@@ -179,14 +268,36 @@ class ProjectSearchViewModel: ObservableObject {
     }
 
     func replaceAllInFile(_ filePath: String) {
-        // In production: read file, replace all matches, write back
-        // For now, remove from results to show feedback
+        guard let root = projectPath, !replaceText.isEmpty else { return }
+        let fullPath = filePath.hasPrefix("/") ? filePath : (root as NSString).appendingPathComponent(filePath)
+        guard let content = try? String(contentsOfFile: fullPath, encoding: .utf8) else { return }
+        let replaced = applyReplacements(in: content)
+        try? replaced.write(toFile: fullPath, atomically: true, encoding: .utf8)
         results.removeAll { $0.filePath == filePath }
     }
 
     func replaceAll() {
-        // In production: iterate all files and replace
+        guard let root = projectPath, !replaceText.isEmpty else { return }
+        for result in results {
+            let fullPath = result.filePath.hasPrefix("/") ? result.filePath : (root as NSString).appendingPathComponent(result.filePath)
+            guard let content = try? String(contentsOfFile: fullPath, encoding: .utf8) else { continue }
+            let replaced = applyReplacements(in: content)
+            try? replaced.write(toFile: fullPath, atomically: true, encoding: .utf8)
+        }
         results.removeAll()
+    }
+
+    private func applyReplacements(in content: String) -> String {
+        if useRegex {
+            var options: NSRegularExpression.Options = []
+            if !matchCase { options.insert(.caseInsensitive) }
+            guard let regex = try? NSRegularExpression(pattern: searchText, options: options) else { return content }
+            return regex.stringByReplacingMatches(in: content, range: NSRange(content.startIndex..., in: content), withTemplate: replaceText)
+        } else {
+            var options: String.CompareOptions = []
+            if !matchCase { options.insert(.caseInsensitive) }
+            return content.replacingOccurrences(of: searchText, with: replaceText, options: options)
+        }
     }
 
     func clear() {
@@ -196,119 +307,4 @@ class ProjectSearchViewModel: ObservableObject {
         collapsedFiles = []
     }
 
-    // MARK: - Sample Data
-
-    private func sampleProjectFiles() -> [(String, String)] {
-        [
-            ("src/auth/handler.ts", """
-            import { Request, Response } from 'express';
-            import { validateToken } from './token';
-
-            export async function handleLogin(req: Request, res: Response) {
-                const { email, password } = req.body;
-                const user = await findUser(email);
-                if (!user) {
-                    return res.status(401).json({ error: 'Invalid credentials' });
-                }
-                const token = generateToken(user);
-                res.json({ token, user: { id: user.id, email: user.email } });
-            }
-
-            export async function handleLogout(req: Request, res: Response) {
-                const token = req.headers.authorization?.split(' ')[1];
-                if (token) {
-                    await revokeToken(token);
-                }
-                res.status(204).send();
-            }
-            """),
-            ("src/auth/token.ts", """
-            import jwt from 'jsonwebtoken';
-            import { User } from '../models/user';
-
-            const SECRET = process.env.JWT_SECRET || 'dev-secret';
-
-            export function generateToken(user: User): string {
-                return jwt.sign({ userId: user.id, email: user.email }, SECRET, {
-                    expiresIn: '24h',
-                });
-            }
-
-            export function validateToken(token: string): boolean {
-                try {
-                    jwt.verify(token, SECRET);
-                    return true;
-                } catch {
-                    return false;
-                }
-            }
-            """),
-            ("src/models/user.ts", """
-            export interface User {
-                id: string;
-                email: string;
-                name: string;
-                createdAt: Date;
-                updatedAt: Date;
-            }
-
-            export interface UserProfile extends User {
-                avatar?: string;
-                bio?: string;
-                settings: UserSettings;
-            }
-
-            export interface UserSettings {
-                theme: 'light' | 'dark' | 'system';
-                notifications: boolean;
-                email: string;
-            }
-            """),
-            ("src/api/routes.ts", """
-            import { Router } from 'express';
-            import { handleLogin, handleLogout } from '../auth/handler';
-            import { authMiddleware } from '../middleware/auth';
-
-            const router = Router();
-
-            router.post('/login', handleLogin);
-            router.post('/logout', authMiddleware, handleLogout);
-            router.get('/profile', authMiddleware, getProfile);
-            router.put('/profile', authMiddleware, updateProfile);
-
-            export default router;
-            """),
-            ("src/middleware/auth.ts", """
-            import { Request, Response, NextFunction } from 'express';
-            import { validateToken } from '../auth/token';
-
-            export function authMiddleware(req: Request, res: Response, next: NextFunction) {
-                const token = req.headers.authorization?.split(' ')[1];
-                if (!token || !validateToken(token)) {
-                    return res.status(401).json({ error: 'Unauthorized' });
-                }
-                next();
-            }
-            """),
-            ("README.md", """
-            # Project
-
-            A sample web application with authentication.
-
-            ## Setup
-
-            ```bash
-            npm install
-            npm run dev
-            ```
-
-            ## Architecture
-
-            - `src/auth/` — Authentication handlers and token management
-            - `src/api/` — API route definitions
-            - `src/middleware/` — Express middleware (auth, logging, etc.)
-            - `src/models/` — Data models and interfaces
-            """),
-        ]
-    }
 }

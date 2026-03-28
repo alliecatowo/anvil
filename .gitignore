@@ -1,6 +1,8 @@
 # Xcode
 *.xcodeproj/
 *.xcworkspace/
+!Anvil.xcodeproj/
+!Anvil.xcodeproj/**
 xcuserdata/
 *.xccheckout
 *.moved-aside

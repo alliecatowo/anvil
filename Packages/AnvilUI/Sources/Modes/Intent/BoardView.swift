@@ -44,6 +44,7 @@ struct BoardView: View {
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.md)
+        .background(AnvilColor.backgroundToolbar)
     }
 
     // MARK: - Column
@@ -163,8 +164,12 @@ struct BoardView: View {
         }
         .frame(width: 240)
         .padding(AnvilSpacing.sm)
-        .background(AnvilColor.backgroundSecondary)
+        .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
+                .stroke(AnvilColor.borderSubtle, lineWidth: 1)
+        )
         .dropDestination(for: String.self) { items, _ in
             guard let ticketId = items.first else { return false }
             withAnimation(AnvilAnimation.standard) {
@@ -211,6 +216,18 @@ struct BoardView: View {
                     .foregroundStyle(AnvilColor.textPrimary)
                     .lineLimit(2)
 
+                // Subtask progress
+                let progress = viewModel.subtaskProgress(ticket.id)
+                if progress.total > 0 {
+                    HStack(spacing: AnvilSpacing.xxs) {
+                        Image(systemName: "checklist")
+                            .font(.system(size: 9))
+                        Text("\(progress.completed)/\(progress.total)")
+                            .font(AnvilFont.label)
+                    }
+                    .foregroundStyle(progress.completed == progress.total ? AnvilColor.accentGreen : AnvilColor.textTertiary)
+                }
+
                 // Assignee + due date
                 HStack {
                     if let assignee = ticket.assignee {
@@ -240,6 +257,76 @@ struct BoardView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { viewModel.selectTicket(ticket.id) }
+        .contextMenu {
+            Menu("Status") {
+                ForEach(viewModel.allStatuses, id: \.self) { status in
+                    Button {
+                        withAnimation(AnvilAnimation.standard) {
+                            viewModel.updateStatus(ticket.id, status: status)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: IntentViewModel.statusIcon(status))
+                            Text(status.capitalized)
+                            if ticket.status == status {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            }
+
+            Menu("Priority") {
+                ForEach([TicketPriority.critical, .high, .medium, .low, .none], id: \.rawValue) { priority in
+                    Button {
+                        viewModel.updatePriority(ticket.id, priority: priority)
+                    } label: {
+                        HStack {
+                            Text(IntentViewModel.priorityLabel(priority))
+                            if ticket.priority == priority {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            }
+
+            Menu("Assignee") {
+                Button {
+                    viewModel.updateAssignee(ticket.id, assignee: nil)
+                } label: {
+                    HStack {
+                        Text("Unassigned")
+                        if ticket.assignee == nil {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+                Divider()
+                ForEach(viewModel.allAssignees, id: \.self) { name in
+                    Button {
+                        viewModel.updateAssignee(ticket.id, assignee: name)
+                    } label: {
+                        HStack {
+                            Text(name)
+                            if ticket.assignee == name {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            }
+
+            Divider()
+
+            Button(role: .destructive) {
+                withAnimation(AnvilAnimation.standard) {
+                    viewModel.deleteTicket(ticket.id)
+                }
+            } label: {
+                Label("Delete Ticket", systemImage: "trash")
+            }
+        }
     }
 
     /// Compact preview shown while dragging a card.
@@ -257,7 +344,7 @@ struct BoardView: View {
                 .lineLimit(1)
         }
         .padding(AnvilSpacing.sm)
-        .background(AnvilColor.backgroundElevated)
+        .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
         .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
     }

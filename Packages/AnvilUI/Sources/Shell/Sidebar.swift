@@ -1,4 +1,5 @@
 import SwiftUI
+import AnvilTerminal
 
 public struct Sidebar: View {
     @EnvironmentObject var appState: AppState
@@ -25,7 +26,12 @@ public struct Sidebar: View {
                 }
             }
         }
-        .background(AnvilColor.backgroundSecondary)
+        .background(.regularMaterial)
+        .overlay(alignment: .trailing) {
+            Rectangle()
+                .fill(AnvilColor.borderSubtle)
+                .frame(width: 1)
+        }
     }
 }
 
@@ -33,27 +39,80 @@ struct CollapsedSidebar: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        VStack(spacing: AnvilSpacing.sm) {
-            // Show mode icon as expand button
-            Button {
-                appState.isSidebarCollapsed = false
-            } label: {
-                Image(systemName: appState.currentMode.icon)
-                    .font(.system(size: 16))
-                    .foregroundStyle(AnvilColor.textSecondary)
-                    .frame(width: 32, height: 32)
-            }
-            .buttonStyle(.plain)
-            .help(appState.currentMode.rawValue)
+        VStack(spacing: 0) {
+            railButton(
+                icon: "sidebar.leading",
+                title: "Expand Navigation",
+                isActive: false,
+                action: { appState.isSidebarCollapsed = false }
+            )
+
+            railDivider
+            railSection(modes: AnvilMode.coreModes)
+            railDivider
+            railSection(modes: AnvilMode.workspaceModes)
+            railDivider
+            railSection(modes: AnvilMode.contextModes)
 
             Spacer()
+
+            railDivider
+            railButton(
+                icon: "magnifyingglass",
+                title: "Find in Project",
+                isActive: appState.isProjectSearchVisible,
+                action: { appState.toggleProjectSearch() }
+            )
+            railButton(
+                icon: "sidebar.right",
+                title: "Toggle Inspector",
+                isActive: appState.isInspectorVisible,
+                action: { appState.toggleInspector() }
+            )
         }
-        .padding(.top, AnvilSpacing.sm)
+        .padding(.vertical, AnvilSpacing.sm)
+    }
+
+    private var railDivider: some View {
+        Rectangle()
+            .fill(AnvilColor.borderSubtle)
+            .frame(height: 1)
+            .padding(.horizontal, AnvilSpacing.sm)
+            .padding(.vertical, AnvilSpacing.xs)
+    }
+
+    private func railSection(modes: [AnvilMode]) -> some View {
+        VStack(spacing: 4) {
+            ForEach(modes) { mode in
+                railButton(
+                    icon: mode.icon,
+                    title: mode.rawValue,
+                    isActive: appState.currentMode == mode,
+                    action: { appState.switchMode(mode) }
+                )
+            }
+        }
+    }
+
+    private func railButton(icon: String, title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: isActive ? .semibold : .regular))
+                .foregroundStyle(isActive ? AnvilColor.textPrimary : AnvilColor.textSecondary)
+                .frame(width: 36, height: 32)
+                .background(isActive ? Color.accentColor.opacity(0.14) : .clear)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(title)
     }
 }
 
 struct AuxiliarySidebar: View {
     let mode: AnvilMode
+    @EnvironmentObject var appState: AppState
+    @State private var collapsedSections: Set<String> = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -68,8 +127,7 @@ struct AuxiliarySidebar: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
-
-            Divider().overlay(AnvilColor.borderSubtle)
+            .background(AnvilColor.backgroundSidebar.opacity(0.55))
 
             // Mode-specific navigation items
             ScrollView {
@@ -96,6 +154,7 @@ struct AuxiliarySidebar: View {
                     }
                 }
             }
+            .scrollIndicators(.hidden)
 
             Spacer()
         }
@@ -105,19 +164,35 @@ struct AuxiliarySidebar: View {
 
     @ViewBuilder
     private var editorItems: some View {
-        sidebarSection("EXPLORER", icon: "folder") {
-            navItem("Open Files", icon: "doc.text", shortcut: "Cmd+O")
-            navItem("File Tree", icon: "list.triangle", shortcut: "Cmd+Shift+E")
-            navItem("Symbol Outline", icon: "list.bullet.indent", shortcut: "Cmd+Shift+O")
+        sidebarSection("WORKSPACE", icon: "folder") {
+            navItem("Open Files", icon: "doc.text", shortcut: "\u{2318}P") { appState.openFilePalette() }
+            navItem("File Tree", icon: "list.triangle", shortcut: "\u{2318}\u{21E7}E", isActive: appState.currentMode == .editor) {
+                // Switch to editor mode so the file tree sidebar is visible
+                appState.switchMode(.editor)
+                appState.isSidebarVisible = true
+                appState.isSidebarCollapsed = false
+            }
+            navItem("Symbol Outline", icon: "list.bullet.indent", shortcut: "\u{2318}\u{21E7}O") {
+                appState.commandPaletteInitialMode = .symbols
+                appState.toggleCommandPalette()
+            }
         }
         sidebarSection("SOURCE CONTROL", icon: "arrow.triangle.branch") {
-            navItem("Changes", icon: "pencil.circle", shortcut: "Ctrl+Shift+G")
-            navItem("Branches", icon: "arrow.triangle.branch", shortcut: nil)
-            navItem("Stashes", icon: "tray.and.arrow.down", shortcut: nil)
+            navItem("Changes", icon: "pencil.circle", shortcut: nil, isActive: appState.isSourceControlVisible) {
+                appState.toggleSourceControl()
+            }
+            navItem("Branches", icon: "arrow.triangle.branch", shortcut: nil, isActive: appState.isSourceControlVisible) {
+                appState.isSourceControlVisible = true
+            }
+            navItem("Stashes", icon: "tray.and.arrow.down", shortcut: nil, isActive: appState.isSourceControlVisible) {
+                appState.isSourceControlVisible = true
+            }
         }
         sidebarSection("SEARCH", icon: "magnifyingglass") {
-            navItem("Find in Files", icon: "doc.text.magnifyingglass", shortcut: "Cmd+Shift+F")
-            navItem("Find & Replace", icon: "arrow.left.arrow.right", shortcut: "Cmd+H")
+            navItem("Find in Files", icon: "doc.text.magnifyingglass", shortcut: "\u{2318}\u{21E7}F", isActive: appState.isProjectSearchVisible) {
+                appState.toggleProjectSearch()
+            }
+            navItem("Find in Current File", icon: "arrow.left.arrow.right", shortcut: "\u{2318}F") { appState.triggerFindInFile = true }
         }
     }
 
@@ -125,16 +200,21 @@ struct AuxiliarySidebar: View {
 
     @ViewBuilder
     private var databaseItems: some View {
-        sidebarSection("SCHEMA", icon: "cylinder") {
-            navItem("Tables", icon: "tablecells", shortcut: nil)
-            navItem("Views", icon: "eye", shortcut: nil)
-            navItem("Functions", icon: "function", shortcut: nil)
-            navItem("Indexes", icon: "list.number", shortcut: nil)
+        sidebarSection("WORKSPACE", icon: "cylinder") {
+            infoItem("SQLite Workspace", icon: "internaldrive", detail: "Current provider surface")
+            infoItem("Schema Browser", icon: "tablecells", detail: "Tables, indexes, and views")
+            infoItem("Query Runner", icon: "terminal", detail: "Ad hoc queries and results")
         }
-        sidebarSection("TOOLS", icon: "wrench.and.screwdriver") {
-            navItem("Query Console", icon: "terminal", shortcut: "Cmd+Enter")
-            navItem("Query History", icon: "clock.arrow.circlepath", shortcut: nil)
-            navItem("Export Data", icon: "arrow.down.doc", shortcut: nil)
+        sidebarSection("WORKSPACE ACTIONS", icon: "bolt") {
+            navItem("Find in Project", icon: "doc.text.magnifyingglass", shortcut: "\u{2318}\u{21E7}F", isActive: appState.isProjectSearchVisible) {
+                appState.toggleProjectSearch()
+            }
+            navItem("Ask Codebase", icon: "questionmark.bubble", shortcut: "\u{2318}/", isActive: appState.isCodebaseQAVisible) {
+                appState.toggleCodebaseQA()
+            }
+            navItem("Inspector", icon: "sidebar.right", shortcut: "\u{2318}\u{21E7}I", isActive: appState.isInspectorVisible) {
+                appState.toggleInspector()
+            }
         }
     }
 
@@ -143,14 +223,28 @@ struct AuxiliarySidebar: View {
     @ViewBuilder
     private var terminalItems: some View {
         sidebarSection("SESSIONS", icon: "terminal") {
-            navItem("zsh", icon: "terminal.fill", shortcut: nil)
-            navItem("node", icon: "chevron.left.forwardslash.chevron.right", shortcut: nil)
-            navItem("docker", icon: "shippingbox", shortcut: nil)
+            TerminalSessionList(viewModel: appState.terminalViewModel) { id in
+                appState.switchMode(.terminal)
+                appState.terminalViewModel.selectTab(id)
+            }
         }
         sidebarSection("ACTIONS", icon: "bolt") {
-            navItem("New Terminal", icon: "plus", shortcut: "Cmd+Shift+T")
-            navItem("Split Pane", icon: "rectangle.split.1x2", shortcut: "Cmd+D")
-            navItem("Clear Buffer", icon: "xmark.circle", shortcut: "Cmd+K")
+            navItem("New Terminal", icon: "plus", shortcut: "\u{2318}\u{21E7}T") {
+                appState.switchMode(.terminal)
+                _ = appState.terminalViewModel.addTab()
+            }
+            navItem("Split Right", icon: "rectangle.split.2x1", shortcut: "\u{2318}\\") {
+                appState.switchMode(.terminal)
+                appState.triggerSplitVertical = true
+            }
+            navItem("Split Down", icon: "rectangle.split.1x2", shortcut: "\u{2318}\u{21E7}\\") {
+                appState.switchMode(.terminal)
+                appState.triggerSplitHorizontal = true
+            }
+            navItem("Clear Buffer", icon: "xmark.circle", shortcut: nil) {
+                appState.switchMode(.terminal)
+                appState.terminalViewModel.clearBuffer()
+            }
         }
     }
 
@@ -158,14 +252,21 @@ struct AuxiliarySidebar: View {
 
     @ViewBuilder
     private var docsItems: some View {
-        sidebarSection("DOCUMENTS", icon: "book") {
-            navItem("Guide", icon: "folder", shortcut: nil)
-            navItem("Reference", icon: "folder", shortcut: nil)
-            navItem("Changelog.md", icon: "doc.richtext", shortcut: nil)
+        sidebarSection("KNOWLEDGE", icon: "book") {
+            infoItem("Project Notes", icon: "note.text", detail: "Long-form working memory")
+            infoItem("Markdown Workspace", icon: "doc.richtext", detail: "Docs mode editor surface")
+            infoItem("Reference Library", icon: "books.vertical", detail: "Project docs and manuals")
         }
-        sidebarSection("ACTIONS", icon: "bolt") {
-            navItem("New Document", icon: "plus", shortcut: "Cmd+N")
-            navItem("Search Docs", icon: "magnifyingglass", shortcut: "Cmd+Shift+F")
+        sidebarSection("WORKSPACE ACTIONS", icon: "bolt") {
+            navItem("Project Notes", icon: "note.text.badge.plus", shortcut: "\u{2318}\u{21E7}N", isActive: appState.isProjectNotesVisible) {
+                appState.toggleProjectNotes()
+            }
+            navItem("Ask Codebase", icon: "questionmark.bubble", shortcut: "\u{2318}/", isActive: appState.isCodebaseQAVisible) {
+                appState.toggleCodebaseQA()
+            }
+            navItem("Find in Project", icon: "doc.text.magnifyingglass", shortcut: "\u{2318}\u{21E7}F", isActive: appState.isProjectSearchVisible) {
+                appState.toggleProjectSearch()
+            }
         }
     }
 
@@ -173,17 +274,21 @@ struct AuxiliarySidebar: View {
 
     @ViewBuilder
     private var messagingItems: some View {
-        sidebarSection("CHANNELS", icon: "number") {
-            navItem("general", icon: "number", shortcut: nil)
-            navItem("engineering", icon: "number", shortcut: nil)
-            navItem("design-system", icon: "number", shortcut: nil)
-            navItem("ship-it", icon: "number", shortcut: nil)
-            navItem("random", icon: "number", shortcut: nil)
+        sidebarSection("COMMUNICATION", icon: "message") {
+            infoItem("Channels", icon: "number", detail: "Team streams and shared context")
+            infoItem("Direct Messages", icon: "person.2", detail: "Focused 1:1 conversations")
+            infoItem("Threads", icon: "bubble.left.and.bubble.right", detail: "Decision trails and follow-up")
         }
-        sidebarSection("DIRECT MESSAGES", icon: "person.2") {
-            navItem("Sarah Kim", icon: "person.fill", shortcut: nil)
-            navItem("Alex Rivera", icon: "person.fill", shortcut: nil)
-            navItem("Jordan Lee", icon: "person.fill", shortcut: nil)
+        sidebarSection("WORKSPACE ACTIONS", icon: "bolt") {
+            navItem("Quick Capture", icon: "square.and.pencil", shortcut: "\u{2318}\u{21E7}Space", isActive: appState.isQuickCaptureVisible) {
+                appState.toggleQuickCapture()
+            }
+            navItem("Switch Project", icon: "rectangle.2.swap", shortcut: "\u{2318}\u{21E7}O", isActive: appState.isProjectSwitcherVisible) {
+                appState.toggleProjectSwitcher()
+            }
+            navItem("Command Palette", icon: "command", shortcut: "\u{2318}K", isActive: appState.isCommandPaletteVisible) {
+                appState.toggleCommandPalette()
+            }
         }
     }
 
@@ -191,16 +296,21 @@ struct AuxiliarySidebar: View {
 
     @ViewBuilder
     private var notificationsItems: some View {
-        sidebarSection("VIEWS", icon: "bell") {
-            navItem("Inbox", icon: "tray", shortcut: nil)
-            navItem("Activity Feed", icon: "list.bullet", shortcut: nil)
+        sidebarSection("TRIAGE", icon: "bell") {
+            infoItem("Inbox", icon: "tray", detail: "Unread and pending work")
+            infoItem("Activity Feed", icon: "list.bullet", detail: "Cross-tool activity stream")
+            infoItem("Source Filters", icon: "line.3.horizontal.decrease.circle", detail: "PRs, deploys, errors, mentions")
         }
-        sidebarSection("FILTERS", icon: "line.3.horizontal.decrease.circle") {
-            navItem("Unread", icon: "circle.badge.fill", shortcut: nil)
-            navItem("Pull Requests", icon: "arrow.triangle.pull", shortcut: nil)
-            navItem("Deploys", icon: "shippingbox", shortcut: nil)
-            navItem("Errors", icon: "exclamationmark.triangle", shortcut: nil)
-            navItem("Mentions", icon: "at", shortcut: nil)
+        sidebarSection("WORKSPACE ACTIONS", icon: "bolt") {
+            navItem("Project Info", icon: "info.circle", shortcut: nil, isActive: appState.isProjectInfoVisible) {
+                appState.toggleProjectInfo()
+            }
+            navItem("Inspector", icon: "sidebar.right", shortcut: "\u{2318}\u{21E7}I", isActive: appState.isInspectorVisible) {
+                appState.toggleInspector()
+            }
+            navItem("Command Palette", icon: "command", shortcut: "\u{2318}K", isActive: appState.isCommandPaletteVisible) {
+                appState.toggleCommandPalette()
+            }
         }
     }
 
@@ -208,15 +318,22 @@ struct AuxiliarySidebar: View {
 
     @ViewBuilder
     private var testingItems: some View {
-        sidebarSection("TEST SUITES", icon: "testtube.2") {
-            navItem("All Tests", icon: "list.bullet", shortcut: nil)
-            navItem("Failed", icon: "xmark.circle", shortcut: nil)
-            navItem("Recent Runs", icon: "clock.arrow.circlepath", shortcut: nil)
+        sidebarSection("RUNSPACE", icon: "testtube.2") {
+            infoItem("Suite Browser", icon: "list.bullet.rectangle", detail: "Organize by target and status")
+            infoItem("Failed Runs", icon: "xmark.circle", detail: "Fast focus on breakage")
+            infoItem("Coverage", icon: "chart.bar", detail: "Execution and confidence signals")
         }
-        sidebarSection("ACTIONS", icon: "bolt") {
-            navItem("Run All", icon: "play.fill", shortcut: "Cmd+U")
-            navItem("Run Failed", icon: "arrow.counterclockwise", shortcut: nil)
-            navItem("Coverage Report", icon: "chart.bar", shortcut: nil)
+        sidebarSection("WORKSPACE ACTIONS", icon: "bolt") {
+            navItem("New Terminal Session", icon: "plus.rectangle.on.rectangle", shortcut: "\u{2318}\u{21E7}T") {
+                appState.switchMode(.terminal)
+                _ = appState.terminalViewModel.addTab()
+            }
+            navItem("Toggle Terminal Panel", icon: "terminal", shortcut: "\u{2318}J", isActive: appState.isTerminalPanelVisible) {
+                appState.toggleTerminal()
+            }
+            navItem("Find in Project", icon: "doc.text.magnifyingglass", shortcut: "\u{2318}\u{21E7}F", isActive: appState.isProjectSearchVisible) {
+                appState.toggleProjectSearch()
+            }
         }
     }
 
@@ -224,23 +341,21 @@ struct AuxiliarySidebar: View {
 
     @ViewBuilder
     private var extensionsItems: some View {
-        sidebarSection("MARKETPLACE", icon: "puzzlepiece.extension") {
-            navItem("Browse All", icon: "square.grid.2x2", shortcut: nil)
-            navItem("Featured", icon: "star", shortcut: nil)
-            navItem("Trending", icon: "flame", shortcut: nil)
+        sidebarSection("EXTENSION SURFACE", icon: "puzzlepiece.extension") {
+            infoItem("Marketplace", icon: "square.grid.2x2", detail: "Discover installable tools")
+            infoItem("Installed Set", icon: "checkmark.circle", detail: "Enabled and disabled packages")
+            infoItem("Capability Layers", icon: "square.3.layers.3d", detail: "Language, AI, UI, and workflow")
         }
-        sidebarSection("INSTALLED", icon: "checkmark.circle") {
-            navItem("All Installed", icon: "list.bullet", shortcut: nil)
-            navItem("Enabled", icon: "bolt.fill", shortcut: nil)
-            navItem("Disabled", icon: "bolt.slash", shortcut: nil)
-            navItem("Updates Available", icon: "arrow.up.circle", shortcut: nil)
-        }
-        sidebarSection("CATEGORIES", icon: "tag") {
-            navItem("Languages", icon: "chevron.left.forwardslash.chevron.right", shortcut: nil)
-            navItem("AI", icon: "cpu", shortcut: nil)
-            navItem("Themes", icon: "paintpalette", shortcut: nil)
-            navItem("Testing", icon: "testtube.2", shortcut: nil)
-            navItem("Deployment", icon: "shippingbox", shortcut: nil)
+        sidebarSection("WORKSPACE ACTIONS", icon: "bolt") {
+            navItem("Command Palette", icon: "command", shortcut: "\u{2318}K", isActive: appState.isCommandPaletteVisible) {
+                appState.toggleCommandPalette()
+            }
+            navItem("Project Info", icon: "info.circle", shortcut: nil, isActive: appState.isProjectInfoVisible) {
+                appState.toggleProjectInfo()
+            }
+            navItem("Switch Project", icon: "rectangle.2.swap", shortcut: "\u{2318}\u{21E7}O", isActive: appState.isProjectSwitcherVisible) {
+                appState.toggleProjectSwitcher()
+            }
         }
     }
 
@@ -248,47 +363,135 @@ struct AuxiliarySidebar: View {
 
     private func sidebarSection<Content: View>(_ title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(spacing: 0) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.system(size: 10))
-                    .foregroundStyle(AnvilColor.textTertiary)
-                Text(title)
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                    .tracking(0.3)
-                Spacer()
+            Button {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    if collapsedSections.contains(title) {
+                        collapsedSections.remove(title)
+                    } else {
+                        collapsedSections.insert(title)
+                    }
+                }
+            } label: {
+                HStack {
+                    Image(systemName: collapsedSections.contains(title) ? "chevron.right" : "chevron.down")
+                        .font(.system(size: 8, weight: .semibold))
+                        .foregroundStyle(AnvilColor.textTertiary)
+                        .frame(width: 10)
+                    Image(systemName: icon)
+                        .font(.system(size: 10))
+                        .foregroundStyle(AnvilColor.textTertiary)
+                    Text(title)
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textSecondary)
+                        .tracking(0.3)
+                    Spacer()
+                }
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, AnvilSpacing.xs)
+                .background(Color.primary.opacity(0.03))
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.xs)
-            .background(AnvilColor.backgroundSecondary)
+            .buttonStyle(.plain)
 
-            content()
+            if !collapsedSections.contains(title) {
+                content()
+            }
         }
     }
 
-    private func navItem(_ title: String, icon: String, shortcut: String?) -> some View {
+    private func navItem(_ title: String, icon: String, shortcut: String?, isActive: Bool = false, action: @escaping () -> Void = {}) -> some View {
+        Button(action: action) {
+            HStack(spacing: AnvilSpacing.sm) {
+                Image(systemName: icon)
+                    .font(.system(size: 12))
+                    .foregroundStyle(isActive ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                    .frame(width: 16)
+
+                Text(title)
+                    .font(AnvilFont.sidebarItem)
+                    .foregroundStyle(isActive ? AnvilColor.textPrimary : AnvilColor.textSecondary)
+                    .lineLimit(1)
+
+                Spacer()
+
+                if let shortcut {
+                    Text(shortcut)
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                }
+            }
+            .padding(.horizontal, AnvilSpacing.md)
+            .padding(.vertical, AnvilSpacing.xs)
+            .frame(height: AnvilSpacing.listItemHeight)
+            .background(isActive ? Color.accentColor.opacity(0.1) : .clear)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func infoItem(_ title: String, icon: String, detail: String) -> some View {
         HStack(spacing: AnvilSpacing.sm) {
             Image(systemName: icon)
                 .font(.system(size: 12))
-                .foregroundStyle(AnvilColor.textTertiary)
-                .frame(width: 16)
+                .foregroundStyle(AnvilColor.textTertiary.opacity(0.7))
+                .frame(width: 16, alignment: .top)
 
-            Text(title)
-                .font(AnvilFont.sidebarItem)
-                .foregroundStyle(AnvilColor.textPrimary)
-                .lineLimit(1)
-
-            Spacer()
-
-            if let shortcut {
-                Text(shortcut)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(AnvilFont.sidebarItem)
+                    .foregroundStyle(AnvilColor.textSecondary)
+                    .lineLimit(1)
+                Text(detail)
                     .font(AnvilFont.label)
                     .foregroundStyle(AnvilColor.textTertiary)
+                    .lineLimit(2)
             }
+
+            Spacer()
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
-        .frame(height: AnvilSpacing.listItemHeight)
-        .contentShape(Rectangle())
+        .frame(minHeight: AnvilSpacing.listItemHeight, alignment: .top)
+    }
+}
+
+private struct TerminalSessionList: View {
+    @ObservedObject var viewModel: TerminalViewModel
+    let onSelect: (UUID) -> Void
+
+    var body: some View {
+        ForEach(viewModel.sessions) { session in
+            Button {
+                onSelect(session.id)
+            } label: {
+                HStack(spacing: AnvilSpacing.sm) {
+                    Image(systemName: session.isRunning ? "terminal" : "terminal.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(isSelected(session) ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                        .frame(width: 16)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(session.title)
+                            .font(AnvilFont.sidebarItem)
+                            .foregroundStyle(isSelected(session) ? AnvilColor.textPrimary : AnvilColor.textSecondary)
+                            .lineLimit(1)
+                        Text(session.isRunning ? "running" : "exited")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textTertiary)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, AnvilSpacing.xs)
+                .frame(height: AnvilSpacing.listItemHeight)
+                .background(isSelected(session) ? Color.accentColor.opacity(0.1) : .clear)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func isSelected(_ session: TerminalSession) -> Bool {
+        viewModel.selectedSessionId == session.id
     }
 }

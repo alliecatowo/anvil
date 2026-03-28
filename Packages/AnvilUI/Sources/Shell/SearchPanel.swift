@@ -41,6 +41,10 @@ struct SearchPanel: View {
         }
         .background(AnvilColor.backgroundSecondary)
         .frame(width: 320)
+        .onAppear { viewModel.projectPath = appState.currentProjectPath }
+        .onChange(of: appState.currentProjectPath) { _, newPath in
+            viewModel.projectPath = newPath
+        }
     }
 
     // MARK: - Header

@@ -182,46 +182,174 @@ struct DiffReviewView: View {
         }
     }
 
+    @State private var hoveredLineKey: String?
+
     private func unifiedLine(_ line: DiffLine) -> some View {
-        HStack(spacing: 0) {
-            // Blame gutter
-            if viewModel.isBlameVisible, let ln = line.oldLineNumber ?? line.newLineNumber,
-               let blame = viewModel.blameData[ln] {
-                blameGutter(blame)
-            } else if viewModel.isBlameVisible {
-                Color.clear.frame(width: 160)
+        let lineNum = line.newLineNumber ?? line.oldLineNumber ?? 0
+        let lineKey = "\(viewModel.selectedFileID ?? ""):\(lineNum)"
+        let hasComments = viewModel.selectedFileID != nil && !viewModel.inlineCommentsForLine(fileId: viewModel.selectedFileID!, lineNumber: lineNum).isEmpty
+        let isCommentTarget = viewModel.activeCommentLine?.fileId == viewModel.selectedFileID && viewModel.activeCommentLine?.lineNumber == lineNum
+
+        return VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                // Blame gutter
+                if viewModel.isBlameVisible, let ln = line.oldLineNumber ?? line.newLineNumber,
+                   let blame = viewModel.blameData[ln] {
+                    blameGutter(blame)
+                } else if viewModel.isBlameVisible {
+                    Color.clear.frame(width: 160)
+                }
+
+                // Comment button gutter
+                ZStack {
+                    if hoveredLineKey == lineKey || hasComments {
+                        Button {
+                            if let fileId = viewModel.selectedFileID {
+                                viewModel.startInlineComment(fileId: fileId, lineNumber: lineNum, side: .new)
+                            }
+                        } label: {
+                            Image(systemName: hasComments ? "bubble.left.fill" : "plus.bubble")
+                                .font(.system(size: 10))
+                                .foregroundStyle(hasComments ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .frame(width: 20)
+
+                // Old line number
+                Text(line.oldLineNumber.map(String.init) ?? "")
+                    .font(AnvilFont.code)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .frame(width: 50, alignment: .trailing)
+                    .padding(.trailing, AnvilSpacing.xs)
+
+                // New line number
+                Text(line.newLineNumber.map(String.init) ?? "")
+                    .font(AnvilFont.code)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .frame(width: 50, alignment: .trailing)
+                    .padding(.trailing, AnvilSpacing.xs)
+
+                // Prefix
+                Text(prefixFor(line.type))
+                    .font(AnvilFont.code)
+                    .foregroundStyle(textColorFor(line.type))
+                    .frame(width: 16)
+
+                // Content
+                Text(line.content)
+                    .font(AnvilFont.code)
+                    .foregroundStyle(textColorFor(line.type))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Spacer(minLength: 0)
+            }
+            .padding(.vertical, 1)
+            .background(backgroundColorFor(line.type))
+            .contentShape(Rectangle())
+            .onHover { isHovered in
+                hoveredLineKey = isHovered ? lineKey : nil
             }
 
-            // Old line number
-            Text(line.oldLineNumber.map(String.init) ?? "")
-                .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .frame(width: 50, alignment: .trailing)
-                .padding(.trailing, AnvilSpacing.xs)
+            // Existing inline comments for this line
+            if let fileId = viewModel.selectedFileID {
+                let comments = viewModel.inlineCommentsForLine(fileId: fileId, lineNumber: lineNum)
+                if !comments.isEmpty {
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(comments) { comment in
+                            inlineCommentBubble(comment)
+                        }
+                    }
+                    .padding(.leading, 120)
+                    .padding(.vertical, AnvilSpacing.xxs)
+                    .background(AnvilColor.backgroundSecondary.opacity(0.5))
+                }
+            }
 
-            // New line number
-            Text(line.newLineNumber.map(String.init) ?? "")
-                .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .frame(width: 50, alignment: .trailing)
-                .padding(.trailing, AnvilSpacing.xs)
-
-            // Prefix
-            Text(prefixFor(line.type))
-                .font(AnvilFont.code)
-                .foregroundStyle(textColorFor(line.type))
-                .frame(width: 16)
-
-            // Content
-            Text(line.content)
-                .font(AnvilFont.code)
-                .foregroundStyle(textColorFor(line.type))
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            Spacer(minLength: 0)
+            // Inline comment input
+            if isCommentTarget {
+                inlineCommentInput
+                    .padding(.leading, 120)
+                    .padding(.vertical, AnvilSpacing.xs)
+                    .background(AnvilColor.backgroundSecondary)
+            }
         }
-        .padding(.vertical, 1)
-        .background(backgroundColorFor(line.type))
+    }
+
+    private func inlineCommentBubble(_ comment: InlineComment) -> some View {
+        HStack(alignment: .top, spacing: AnvilSpacing.xs) {
+            Circle()
+                .fill(AnvilColor.accentBlue.opacity(0.15))
+                .frame(width: 18, height: 18)
+                .overlay(
+                    Text(String(comment.author.prefix(1)))
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(AnvilColor.accentBlue)
+                )
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: AnvilSpacing.xs) {
+                    Text(comment.author)
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textPrimary)
+                    Text(comment.createdAt, style: .relative)
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                }
+                Text(comment.body)
+                    .font(AnvilFont.body)
+                    .foregroundStyle(AnvilColor.textSecondary)
+                    .textSelection(.enabled)
+            }
+        }
+        .padding(AnvilSpacing.sm)
+        .background(AnvilColor.backgroundPrimary)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    private var inlineCommentInput: some View {
+        VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
+            TextEditor(text: $viewModel.inlineCommentText)
+                .font(AnvilFont.body)
+                .foregroundStyle(AnvilColor.textPrimary)
+                .scrollContentBackground(.hidden)
+                .frame(minHeight: 48, maxHeight: 100)
+                .padding(AnvilSpacing.xs)
+                .background(AnvilColor.backgroundPrimary)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(AnvilColor.accentBlue.opacity(0.4), lineWidth: 1)
+                )
+
+            HStack {
+                Spacer()
+                Button("Cancel") {
+                    viewModel.cancelInlineComment()
+                }
+                .buttonStyle(.plain)
+                .font(AnvilFont.label)
+                .foregroundStyle(AnvilColor.textSecondary)
+
+                Button("Comment") {
+                    viewModel.submitInlineComment()
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.white)
+                .padding(.horizontal, AnvilSpacing.sm)
+                .padding(.vertical, 4)
+                .background(
+                    viewModel.inlineCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        ? AnvilColor.textTertiary
+                        : AnvilColor.accentBlue
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .disabled(viewModel.inlineCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(AnvilSpacing.sm)
     }
 
     // MARK: - Shared Line Components
@@ -344,15 +472,98 @@ struct DiffReviewView: View {
 
             Spacer()
 
+            // Hunk decision summary
+            let summary = viewModel.hunkDecisionSummary
+            if summary.total > 0 {
+                HStack(spacing: AnvilSpacing.sm) {
+                    if summary.approved > 0 {
+                        HStack(spacing: 2) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 10))
+                            Text("\(summary.approved)")
+                                .font(AnvilFont.label)
+                        }
+                        .foregroundStyle(AnvilColor.accentGreen)
+                    }
+                    if summary.rejected > 0 {
+                        HStack(spacing: 2) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 10))
+                            Text("\(summary.rejected)")
+                                .font(AnvilFont.label)
+                        }
+                        .foregroundStyle(AnvilColor.accentRed)
+                    }
+                    if summary.pending > 0 {
+                        HStack(spacing: 2) {
+                            Image(systemName: "circle")
+                                .font(.system(size: 10))
+                            Text("\(summary.pending)")
+                                .font(AnvilFont.label)
+                        }
+                        .foregroundStyle(AnvilColor.textTertiary)
+                    }
+                }
+            }
+
             if let file = viewModel.selectedFile {
                 Text("Hunk \(viewModel.focusedHunkIndex + 1) of \(file.hunks.count)")
                     .font(AnvilFont.label)
                     .foregroundStyle(AnvilColor.textTertiary)
             }
+
+            // Merge button for branch diffs
+            if viewModel.selectedBranchName != nil {
+                mergeButton
+            }
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.xs)
         .background(AnvilColor.backgroundSecondary)
+    }
+
+    // MARK: - Merge Button
+
+    private var mergeButton: some View {
+        HStack(spacing: AnvilSpacing.sm) {
+            if viewModel.isMerging {
+                ProgressView()
+                    .controlSize(.small)
+            }
+
+            if let error = viewModel.mergeError {
+                HStack(spacing: AnvilSpacing.xxs) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 10))
+                    Text(error)
+                        .font(AnvilFont.label)
+                        .lineLimit(1)
+                }
+                .foregroundStyle(AnvilColor.accentRed)
+            }
+
+            if case .alreadyUpToDate = viewModel.mergeResult {
+                Text("Already up to date")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+            }
+
+            if case .success = viewModel.mergeResult {
+                HStack(spacing: AnvilSpacing.xxs) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 11))
+                    Text("Merged")
+                        .font(AnvilFont.label)
+                }
+                .foregroundStyle(AnvilColor.accentGreen)
+            }
+
+            AnvilButton("Merge Branch", icon: "arrow.triangle.merge", style: .primary) {
+                guard let adapter = container.getOrCreateGitAdapter() else { return }
+                viewModel.mergeSelectedBranch(using: adapter)
+            }
+            .disabled(viewModel.isMerging)
+        }
     }
 
     // MARK: - Empty State

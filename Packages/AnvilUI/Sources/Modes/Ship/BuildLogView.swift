@@ -3,32 +3,143 @@ import AnvilDomain
 
 struct BuildLogView: View {
     @ObservedObject var viewModel: ShipViewModel
+    @State private var filterLevel: BuildLogLevel?
+    @State private var searchText: String = ""
+    @State private var autoScroll: Bool = true
 
     private let timeFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.dateFormat = "HH:mm:ss"
+        f.dateFormat = "HH:mm:ss.SSS"
         return f
     }()
+
+    private var filteredLogs: [BuildLog] {
+        var logs = viewModel.buildLogsForSelected
+        if let level = filterLevel {
+            logs = logs.filter { $0.level == level }
+        }
+        if !searchText.isEmpty {
+            logs = logs.filter { $0.message.localizedCaseInsensitiveContains(searchText) }
+        }
+        return logs
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header
-            HStack {
+            HStack(spacing: AnvilSpacing.md) {
                 Text("Build Logs")
                     .font(AnvilFont.heading)
                     .foregroundStyle(AnvilColor.textPrimary)
 
                 Spacer()
 
+                // Streaming toggle
+                if let envID = viewModel.selectedEnvironmentID {
+                    Button {
+                        if viewModel.isStreamingLogs {
+                            viewModel.stopLogStreaming()
+                        } else {
+                            viewModel.startLogStreaming(for: envID)
+                        }
+                    } label: {
+                        HStack(spacing: AnvilSpacing.xxs) {
+                            Circle()
+                                .fill(viewModel.isStreamingLogs ? AnvilColor.accentGreen : AnvilColor.textTertiary)
+                                .frame(width: 6, height: 6)
+                            Text(viewModel.isStreamingLogs ? "Live" : "Stream")
+                                .font(AnvilFont.label)
+                                .foregroundStyle(viewModel.isStreamingLogs ? AnvilColor.accentGreen : AnvilColor.textSecondary)
+                        }
+                        .padding(.horizontal, AnvilSpacing.sm)
+                        .padding(.vertical, AnvilSpacing.xxxs)
+                        .background(viewModel.isStreamingLogs ? AnvilColor.accentGreen.opacity(0.1) : AnvilColor.backgroundTertiary)
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 if let env = viewModel.selectedEnvironment {
                     AnvilBadge(text: env.environment.name, color: AnvilColor.accentBlue)
                 }
 
-                Text("\(viewModel.buildLogs.count) lines")
+                Text("\(filteredLogs.count) lines")
                     .font(AnvilFont.label)
                     .foregroundStyle(AnvilColor.textTertiary)
             }
             .padding(AnvilSpacing.lg)
+
+            // Filter bar
+            HStack(spacing: AnvilSpacing.md) {
+                // Search
+                HStack(spacing: AnvilSpacing.xs) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 11))
+                        .foregroundStyle(AnvilColor.textTertiary)
+                    TextField("Filter logs...", text: $searchText)
+                        .textFieldStyle(.plain)
+                        .font(AnvilFont.code)
+                        .foregroundStyle(AnvilColor.textPrimary)
+                }
+                .padding(.horizontal, AnvilSpacing.sm)
+                .padding(.vertical, AnvilSpacing.xs)
+                .background(Color(hex: 0x0A0A0A))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(AnvilColor.borderSubtle, lineWidth: 1)
+                )
+
+                // Level filters
+                ForEach([BuildLogLevel.info, .warning, .error, .debug], id: \.rawValue) { level in
+                    Button {
+                        if filterLevel == level {
+                            filterLevel = nil
+                        } else {
+                            filterLevel = level
+                        }
+                    } label: {
+                        Text(levelPrefix(level))
+                            .font(AnvilFont.code)
+                            .foregroundStyle(filterLevel == level ? .white : levelColor(level))
+                            .padding(.horizontal, AnvilSpacing.sm)
+                            .padding(.vertical, AnvilSpacing.xxxs)
+                            .background(filterLevel == level ? levelColor(level).opacity(0.6) : levelColor(level).opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Spacer()
+
+                // Auto-scroll toggle
+                Button {
+                    autoScroll.toggle()
+                } label: {
+                    HStack(spacing: AnvilSpacing.xxs) {
+                        Image(systemName: autoScroll ? "arrow.down.to.line" : "arrow.down.to.line")
+                            .font(.system(size: 10))
+                        Text("Auto-scroll")
+                            .font(AnvilFont.label)
+                    }
+                    .foregroundStyle(autoScroll ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                }
+                .buttonStyle(.plain)
+
+                // Clear
+                Button {
+                    searchText = ""
+                    filterLevel = nil
+                } label: {
+                    Text("Clear Filters")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, AnvilSpacing.lg)
+            .padding(.vertical, AnvilSpacing.sm)
+            .background(AnvilColor.backgroundSecondary)
 
             Divider().overlay(AnvilColor.borderSubtle)
 
@@ -36,15 +147,28 @@ struct BuildLogView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(viewModel.buildLogs) { log in
-                            logLine(log)
+                        ForEach(Array(filteredLogs.enumerated()), id: \.element.id) { index, log in
+                            logLine(log, lineNumber: index + 1)
                                 .id(log.id)
+                        }
+
+                        if filteredLogs.isEmpty {
+                            VStack(spacing: AnvilSpacing.sm) {
+                                Image(systemName: "doc.text.magnifyingglass")
+                                    .font(.system(size: 24, weight: .thin))
+                                    .foregroundStyle(AnvilColor.textTertiary)
+                                Text(searchText.isEmpty ? "No logs yet" : "No matching logs")
+                                    .font(AnvilFont.body)
+                                    .foregroundStyle(AnvilColor.textSecondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, AnvilSpacing.xxxl)
                         }
                     }
                     .padding(AnvilSpacing.md)
                 }
                 .onChange(of: viewModel.buildLogs.count) { _, _ in
-                    if let lastLog = viewModel.buildLogs.last {
+                    if autoScroll, let lastLog = filteredLogs.last {
                         withAnimation(AnvilAnimation.standard) {
                             proxy.scrollTo(lastLog.id, anchor: .bottom)
                         }
@@ -54,17 +178,27 @@ struct BuildLogView: View {
             .background(Color(hex: 0x0A0A0A))
         }
         .background(AnvilColor.backgroundPrimary)
+        .onDisappear {
+            viewModel.stopLogStreaming()
+        }
     }
 
     // MARK: - Log Line
 
-    private func logLine(_ log: BuildLog) -> some View {
-        HStack(alignment: .top, spacing: AnvilSpacing.md) {
+    private func logLine(_ log: BuildLog, lineNumber: Int) -> some View {
+        HStack(alignment: .top, spacing: 0) {
+            // Line number
+            Text("\(lineNumber)")
+                .font(AnvilFont.code)
+                .foregroundStyle(AnvilColor.textTertiary.opacity(0.5))
+                .frame(width: 36, alignment: .trailing)
+                .padding(.trailing, AnvilSpacing.sm)
+
             // Timestamp
             Text(timeFormatter.string(from: log.timestamp))
                 .font(AnvilFont.code)
                 .foregroundStyle(AnvilColor.textTertiary)
-                .frame(width: 65, alignment: .leading)
+                .frame(width: 85, alignment: .leading)
 
             // Level indicator
             Text(levelPrefix(log.level))
@@ -80,6 +214,7 @@ struct BuildLogView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.vertical, AnvilSpacing.xxxs)
+        .background(log.level == .error ? AnvilColor.accentRed.opacity(0.05) : Color.clear)
     }
 
     // MARK: - Helpers

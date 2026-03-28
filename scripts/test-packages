@@ -1,0 +1,10 @@
+#!/bin/zsh
+set -euo pipefail
+
+cd "${0:A:h}/.."
+
+for manifest in Packages/*/Package.swift; do
+  package_dir="${manifest:h}"
+  echo "==> swift test --package-path ${package_dir}"
+  swift test --package-path "${package_dir}"
+done

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TestingMode: View {
     @StateObject private var viewModel = TestingViewModel()
+    @EnvironmentObject var appState: AppState
 
     var body: some View {
         if viewModel.suites.isEmpty {
@@ -11,7 +12,10 @@ struct TestingMode: View {
                 message: "Run your test suite or load demo data to get started.",
                 actions: [
                     EmptyStateAction("Run Tests", icon: "play.fill", style: .primary) {
-                        viewModel.loadDemoData()
+                        viewModel.projectPath = appState.currentProjectPath
+                        if viewModel.projectPath == nil {
+                            viewModel.loadDemoData()
+                        }
                         viewModel.runAllTests()
                     },
                     EmptyStateAction("Load Demo Data", icon: "tray.and.arrow.down", style: .secondary) {
@@ -44,7 +48,11 @@ struct TestSuiteList: View {
             // Toolbar
             HStack(spacing: AnvilSpacing.sm) {
                 Button {
-                    viewModel.runAllTests()
+                    if viewModel.isRunning {
+                        viewModel.stopTests()
+                    } else {
+                        viewModel.runAllTests()
+                    }
                 } label: {
                     Image(systemName: viewModel.isRunning ? "stop.fill" : "play.fill")
                         .font(.system(size: 12))

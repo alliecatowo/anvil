@@ -1,5 +1,9 @@
 # Anvil Feature Audit — What We Have vs. What We Need
 
+> [!WARNING]
+> This audit is historical and not authoritative for current execution order, completion state, or merge decisions.
+> Use [`ROADMAP_NATIVE_2026.md`](/Users/allie/Develop/anvil/ROADMAP_NATIVE_2026.md) for the canonical plan, [`TRUTH_MATRIX.md`](/Users/allie/Develop/anvil/TRUTH_MATRIX.md) for interaction truth, and [`UI_IMPLEMENTATION_GOVERNANCE.md`](/Users/allie/Develop/anvil/UI_IMPLEMENTATION_GOVERNANCE.md) for UI rules.
+
 ## Current State: 270 files, 21K LOC, 8 packages, running macOS app
 
 ---

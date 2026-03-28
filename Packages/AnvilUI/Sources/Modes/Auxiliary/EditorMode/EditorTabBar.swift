@@ -21,8 +21,11 @@ struct EditorTabBar: View {
 
     // MARK: - Tab Item
 
+    @State private var hoveredTabId: UUID?
+
     private func tabItem(for file: EditorFile) -> some View {
         let isSelected = viewModel.selectedFileId == file.id
+        let isHovered = hoveredTabId == file.id
 
         let isReadOnly = viewModel.isFileReadOnly(file.id)
 
@@ -49,9 +52,13 @@ struct EditorTabBar: View {
                     .font(.system(size: 8, weight: .bold))
                     .foregroundStyle(AnvilColor.textTertiary)
                     .frame(width: 14, height: 14)
+                    .background(
+                        isHovered ? AnvilColor.backgroundTertiary : Color.clear,
+                        in: RoundedRectangle(cornerRadius: 3)
+                    )
             }
             .buttonStyle(.plain)
-            .opacity(isSelected ? 1 : 0)
+            .opacity(isSelected || isHovered ? 1 : 0)
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
@@ -73,6 +80,9 @@ struct EditorTabBar: View {
             alignment: .trailing
         )
         .contentShape(Rectangle())
+        .onHover { hovering in
+            hoveredTabId = hovering ? file.id : nil
+        }
         .onTapGesture {
             viewModel.selectFile(file.id)
         }

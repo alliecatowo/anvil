@@ -21,8 +21,9 @@ struct CodebaseQAView: View {
 
     var body: some View {
         ZStack {
-            // Dimmed backdrop
-            Color.black.opacity(0.45)
+            // Backdrop — clear so sidebar remains clickable
+            Color.clear
+                .contentShape(Rectangle())
                 .ignoresSafeArea()
                 .onTapGesture { appState.toggleCodebaseQA() }
 

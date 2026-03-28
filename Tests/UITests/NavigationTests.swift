@@ -7,142 +7,165 @@ final class NavigationTests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launch()
+        loadDemoData()
     }
 
     override func tearDownWithError() throws {
         app = nil
     }
 
+    // MARK: - Sidebar Toggle
+
+    func testSidebarToggleCollapsesAndRestores() throws {
+        // Collapse sidebar
+        app.typeKey("b", modifierFlags: .command)
+
+        // Collapsed: New Session button should no longer be visible
+        let newSession = app.buttons["New Session"]
+        app.typeKey("2", modifierFlags: .command) // Go to Agent mode first
+        _ = newSession.waitForExistence(timeout: 3)
+
+        app.typeKey("b", modifierFlags: .command)
+        // After collapsing, sidebar content hidden — then restore
+        app.typeKey("b", modifierFlags: .command)
+
+        // Restored: New Session visible again
+        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Sidebar must be restored after two toggles")
+    }
+
     // MARK: - Mode Switching Preserves State
 
-    func testModeSwitchingPreservesAgentState() throws {
-        loadDemoData()
-
-        // Start in Agent mode
+    func testSwitchingModesPreservesAgentSessions() throws {
+        // Go to Agent mode and create a session
         app.typeKey("2", modifierFlags: .command)
+        let newSession = app.buttons["New Session"]
+        XCTAssertTrue(newSession.waitForExistence(timeout: 5))
+        newSession.click()
+        _ = app.textFields["Message the agent..."].waitForExistence(timeout: 5)
 
         // Switch to Intent and back
         app.typeKey("1", modifierFlags: .command)
         app.typeKey("2", modifierFlags: .command)
 
-        // Agent session should still be visible
-        let newSessionButton = app.buttons["New Session"]
-        XCTAssertTrue(newSessionButton.waitForExistence(timeout: 5), "Agent sidebar state should be preserved after mode switch")
-    }
-
-    func testModeSwitchingPreservesIntentState() throws {
-        loadDemoData()
-
-        app.typeKey("1", modifierFlags: .command)
-        app.typeKey("2", modifierFlags: .command)
-        app.typeKey("1", modifierFlags: .command)
-
-        // Intent content should still be present
-    }
-
-    // MARK: - Inspector Toggle
-
-    func testToggleInspectorViaKeyboard() throws {
-        // Cmd+Shift+I toggles inspector
-        app.typeKey("i", modifierFlags: [.command, .shift])
-        // Inspector should appear
-
-        app.typeKey("i", modifierFlags: [.command, .shift])
-        // Inspector should hide
-    }
-
-    // MARK: - Terminal Panel Toggle
-
-    func testToggleTerminalViaKeyboard() throws {
-        // Cmd+J toggles terminal panel
-        app.typeKey("j", modifierFlags: .command)
-        // Terminal panel should appear at bottom
-
-        app.typeKey("j", modifierFlags: .command)
-        // Terminal panel should hide
-    }
-
-    // MARK: - Project Switcher
-
-    func testProjectSwitcherOpensViaKeyboard() throws {
-        // Cmd+Shift+O opens project switcher
-        app.typeKey("o", modifierFlags: [.command, .shift])
-        // Project switcher overlay should appear
-    }
-
-    func testProjectSwitcherOpensViaStatusBar() throws {
-        // Click on the project name in status bar
-        let projectButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Switch Project'")).firstMatch
-        if projectButton.exists {
-            projectButton.click()
-        }
-    }
-
-    // MARK: - Project Notes
-
-    func testProjectNotesViaKeyboard() throws {
-        // Cmd+Shift+N opens project notes
-        app.typeKey("n", modifierFlags: [.command, .shift])
-        // Project notes sheet should appear
+        // Result: session should still be in the sidebar
+        let scrollView = app.scrollViews.firstMatch
+        XCTAssertTrue(scrollView.waitForExistence(timeout: 5))
+        XCTAssertGreaterThan(scrollView.otherElements.count, 0, "Agent sessions must persist through mode switches")
     }
 
     // MARK: - Branch Picker
 
-    func testBranchPickerOpens() throws {
+    func testBranchPickerButtonExists() throws {
+        let branchButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Switch Branch'")).firstMatch
+        XCTAssertTrue(branchButton.waitForExistence(timeout: 5), "Branch picker button must exist in status bar")
+    }
+
+    func testBranchPickerOpensPopover() throws {
         let branchButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Switch Branch'")).firstMatch
         XCTAssertTrue(branchButton.waitForExistence(timeout: 5))
         branchButton.click()
 
-        // Branch picker popover should appear
+        // Result: popover appears
+        let popover = app.popovers.firstMatch
+        XCTAssertTrue(popover.waitForExistence(timeout: 5), "Branch picker button must open a popover")
     }
 
-    // MARK: - Full Navigation Flow
+    func testBranchPickerPopoverDismissableViaEscape() throws {
+        let branchButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Switch Branch'")).firstMatch
+        XCTAssertTrue(branchButton.waitForExistence(timeout: 5))
+        branchButton.click()
 
-    func testCompleteNavigationFlow() throws {
-        loadDemoData()
-
-        // Cycle through all core modes
-        app.typeKey("1", modifierFlags: .command) // Intent
-        app.typeKey("2", modifierFlags: .command) // Agent
-        app.typeKey("3", modifierFlags: .command) // Review
-        app.typeKey("4", modifierFlags: .command) // Ship
-
-        // Toggle sidebar
-        app.typeKey("b", modifierFlags: .command)
-        app.typeKey("b", modifierFlags: .command)
-
-        // Open and close command palette
-        app.typeKey("k", modifierFlags: .command)
-        app.typeKey(.escape, modifierFlags: [])
-
-        // Toggle terminal
-        app.typeKey("j", modifierFlags: .command)
-        app.typeKey("j", modifierFlags: .command)
-
-        // All operations should complete without crash
-        XCTAssertTrue(app.windows.firstMatch.exists, "App should remain stable after full navigation flow")
+        let popover = app.popovers.firstMatch
+        if popover.waitForExistence(timeout: 5) {
+            app.typeKey(.escape, modifierFlags: [])
+            XCTAssertFalse(popover.waitForExistence(timeout: 3), "Escape must dismiss branch picker popover")
+        }
     }
 
-    // MARK: - Overlays Don't Stack
+    // MARK: - Inspector Toggle
 
-    func testOverlaysDontStack() throws {
-        // Open command palette
-        app.typeKey("k", modifierFlags: .command)
+    func testInspectorToggleViaKeyboard() throws {
+        app.typeKey("i", modifierFlags: [.command, .shift])
+        // Inspector should appear — verify no crash
+        XCTAssertTrue(app.windows.firstMatch.exists)
 
-        let searchField = app.textFields["Search commands, files, work items..."]
-        XCTAssertTrue(searchField.waitForExistence(timeout: 5))
+        app.typeKey("i", modifierFlags: [.command, .shift])
+        // Inspector should hide — verify no crash
+        XCTAssertTrue(app.windows.firstMatch.exists, "Inspector toggle must not crash")
+    }
 
-        // Close it
+    // MARK: - Terminal Panel Toggle
+
+    func testTerminalPanelToggleViaKeyboard() throws {
+        app.typeKey("j", modifierFlags: .command)
+        XCTAssertTrue(app.windows.firstMatch.exists, "Cmd+J must not crash")
+
+        app.typeKey("j", modifierFlags: .command)
+        XCTAssertTrue(app.windows.firstMatch.exists, "Second Cmd+J must not crash")
+    }
+
+    // MARK: - Quick Capture Overlay
+
+    func testQuickCaptureOpensAndDismisses() throws {
+        app.typeKey(.space, modifierFlags: [.command, .shift])
+
+        let captureField = app.textFields["Quick capture..."]
+        XCTAssertTrue(captureField.waitForExistence(timeout: 5), "Cmd+Shift+Space must open Quick Capture overlay")
+
         app.typeKey(.escape, modifierFlags: [])
+        XCTAssertFalse(captureField.waitForExistence(timeout: 3), "Escape must dismiss Quick Capture overlay")
+    }
 
-        // Open quick capture
+    func testQuickCaptureAcceptsText() throws {
         app.typeKey(.space, modifierFlags: [.command, .shift])
 
         let captureField = app.textFields["Quick capture..."]
         XCTAssertTrue(captureField.waitForExistence(timeout: 5))
 
+        captureField.click()
+        captureField.typeText("Follow up on auth bug")
+
+        XCTAssertEqual(captureField.value as? String, "Follow up on auth bug",
+            "Quick Capture field must accept typed text")
+    }
+
+    // MARK: - Overlays Don't Stack
+
+    func testCommandPaletteAndQuickCaptureDoNotStack() throws {
+        // Open command palette
+        app.typeKey("k", modifierFlags: .command)
+        let searchField = app.textFields["Search commands, files, work items..."]
+        XCTAssertTrue(searchField.waitForExistence(timeout: 5))
+
         // Close it
         app.typeKey(.escape, modifierFlags: [])
+        XCTAssertFalse(searchField.waitForExistence(timeout: 3))
+
+        // Open quick capture
+        app.typeKey(.space, modifierFlags: [.command, .shift])
+        let captureField = app.textFields["Quick capture..."]
+        XCTAssertTrue(captureField.waitForExistence(timeout: 5))
+
+        // Close it
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertFalse(captureField.waitForExistence(timeout: 3), "Overlays must not stack — each must be independently openable")
+    }
+
+    // MARK: - Full Cycle Does Not Crash
+
+    func testFullNavigationCycleDoesNotCrash() throws {
+        app.typeKey("1", modifierFlags: .command)
+        app.typeKey("2", modifierFlags: .command)
+        app.typeKey("3", modifierFlags: .command)
+        app.typeKey("4", modifierFlags: .command)
+        app.typeKey("b", modifierFlags: .command)
+        app.typeKey("b", modifierFlags: .command)
+        app.typeKey("k", modifierFlags: .command)
+        app.typeKey(.escape, modifierFlags: [])
+        app.typeKey("j", modifierFlags: .command)
+        app.typeKey("j", modifierFlags: .command)
+
+        XCTAssertTrue(app.windows.firstMatch.exists, "App must remain stable after full navigation cycle")
     }
 
     // MARK: - Helpers

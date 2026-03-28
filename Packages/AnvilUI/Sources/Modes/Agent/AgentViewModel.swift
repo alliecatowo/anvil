@@ -257,6 +257,9 @@ public class AgentViewModel: ObservableObject {
             )
         }
 
+        // Ensure the conversation view is visible so the user sees the session
+        viewMode = .conversation
+
         logger.info("Dispatched agent session \(session.id) for ticket \(ticketId)")
     }
 
@@ -1285,6 +1288,97 @@ public class AgentViewModel: ObservableObject {
         for i in sessions[sessionIndex].plan!.steps.indices {
             sessions[sessionIndex].plan?.steps[i].order = i
         }
+    }
+
+    // MARK: - Slash Command Handling (#agent-commands)
+
+    /// Process a slash command action. Some commands trigger immediate agent work,
+    /// others just insert text for the user to elaborate on.
+    func handleSlashCommand(_ command: SlashCommand, container: DependencyContainer, appState: AppState) {
+        switch command.id {
+        case "review":
+            inputText = "/review"
+            sendMessage(container: container, appState: appState)
+        case "commit":
+            inputText = "/commit"
+            sendMessage(container: container, appState: appState)
+        case "test":
+            inputText = "/test"
+            sendMessage(container: container, appState: appState)
+        case "fix":
+            inputText = "/fix"
+            sendMessage(container: container, appState: appState)
+        case "explain":
+            inputText = "/explain "
+        case "refactor":
+            inputText = "/refactor "
+        case "docs":
+            inputText = "/docs "
+        case "search":
+            inputText = "/search "
+        default:
+            inputText = command.name + " "
+        }
+    }
+
+    // MARK: - Project File Listing (#agent-references)
+
+    /// List source files from a project path (shallow recursive scan).
+    public func loadProjectFiles(projectPath: String? = nil) -> [String] {
+        let root = projectPath ?? FileManager.default.currentDirectoryPath
+        return Self.listSourceFiles(at: root, maxDepth: 3)
+    }
+
+    /// List git branches from a project path.
+    public func loadBranches(projectPath: String? = nil) -> [String] {
+        let root = projectPath ?? FileManager.default.currentDirectoryPath
+        let task = Process()
+        let pipe = Pipe()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        task.arguments = ["branch", "--format=%(refname:short)"]
+        task.currentDirectoryURL = URL(fileURLWithPath: root)
+        task.standardOutput = pipe
+        task.standardError = FileHandle.nullDevice
+        do {
+            try task.run()
+            task.waitUntilExit()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            guard let output = String(data: data, encoding: .utf8) else { return [] }
+            return output.components(separatedBy: .newlines)
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+        } catch {
+            return []
+        }
+    }
+
+    private static let sourceExtensions: Set<String> = [
+        "swift", "ts", "tsx", "js", "jsx", "py", "rs", "go", "java", "kt",
+        "c", "h", "cpp", "hpp", "m", "mm", "rb", "ex", "exs", "yaml", "yml",
+        "json", "toml", "md", "txt", "html", "css", "scss"
+    ]
+
+    private static func listSourceFiles(at path: String, maxDepth: Int, currentDepth: Int = 0) -> [String] {
+        guard currentDepth < maxDepth else { return [] }
+        let fm = FileManager.default
+        guard let items = try? fm.contentsOfDirectory(atPath: path) else { return [] }
+        var results: [String] = []
+        for item in items {
+            if item.hasPrefix(".") || item == "node_modules" || item == ".build" || item == "DerivedData" { continue }
+            let full = (path as NSString).appendingPathComponent(item)
+            var isDir: ObjCBool = false
+            guard fm.fileExists(atPath: full, isDirectory: &isDir) else { continue }
+            if isDir.boolValue {
+                results.append(contentsOf: listSourceFiles(at: full, maxDepth: maxDepth, currentDepth: currentDepth + 1))
+            } else {
+                let ext = (item as NSString).pathExtension.lowercased()
+                if sourceExtensions.contains(ext) {
+                    results.append(full)
+                }
+            }
+            if results.count >= 500 { break }
+        }
+        return results
     }
 
     // MARK: - Sample Data (for previews only)

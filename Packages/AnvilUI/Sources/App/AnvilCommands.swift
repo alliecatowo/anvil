@@ -127,6 +127,12 @@ public struct AnvilCommands: Commands {
 
             Divider()
 
+            Button("New Terminal Session") {
+                appState.switchMode(.terminal)
+                _ = appState.terminalViewModel.addTab()
+            }
+            .keyboardShortcut("t", modifiers: [.command, .shift])
+
             Button("Split Editor Right") {
                 appState.triggerSplitVertical = true
             }

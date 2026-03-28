@@ -63,6 +63,10 @@ enum CommandAction: Sendable {
     case toggleSidebar
     case toggleInspector
     case toggleTerminal
+    case newTerminalSession
+    case splitTerminalVertical
+    case splitTerminalHorizontal
+    case clearTerminalBuffer
     case newAgentSession
     case newItem
     case settings
@@ -99,6 +103,18 @@ enum CommandAction: Sendable {
             appState.toggleInspector()
         case .toggleTerminal:
             appState.toggleTerminal()
+        case .newTerminalSession:
+            appState.switchMode(.terminal)
+            _ = appState.terminalViewModel.addTab()
+        case .splitTerminalVertical:
+            appState.switchMode(.terminal)
+            appState.triggerSplitVertical = true
+        case .splitTerminalHorizontal:
+            appState.switchMode(.terminal)
+            appState.triggerSplitHorizontal = true
+        case .clearTerminalBuffer:
+            appState.switchMode(.terminal)
+            appState.terminalViewModel.clearBuffer()
         case .newAgentSession:
             appState.switchMode(.agent)
             appState.agentViewModel.startNewSession(prompt: "", model: "claude-sonnet-4-6")
@@ -510,11 +526,14 @@ final class CommandPaletteViewModel: ObservableObject {
             ]
         case .database:
             return [
-                CommandItem(id: "ctx-new-query", title: "New Query Tab", icon: "terminal", iconColor: AnvilColor.accentTeal, category: .contextual, action: .switchMode(.database)),
+                CommandItem(id: "ctx-open-database", title: "Open Database Mode", icon: "terminal", iconColor: AnvilColor.accentTeal, category: .contextual, action: .switchMode(.database)),
             ]
         case .terminal:
             return [
-                CommandItem(id: "ctx-new-terminal", title: "New Terminal Tab", icon: "terminal", iconColor: AnvilColor.accentGreen, category: .contextual, action: .toggleTerminal),
+                CommandItem(id: "ctx-new-terminal", title: "New Terminal Session", icon: "plus.square", iconColor: AnvilColor.accentGreen, shortcut: "\u{2318}\u{21E7}T", category: .contextual, group: .terminal, action: .newTerminalSession),
+                CommandItem(id: "ctx-split-terminal-vertical", title: "Split Terminal Right", icon: "rectangle.split.2x1", shortcut: "\u{2318}\\", category: .contextual, group: .terminal, action: .splitTerminalVertical),
+                CommandItem(id: "ctx-split-terminal-horizontal", title: "Split Terminal Down", icon: "rectangle.split.1x2", shortcut: "\u{2318}\u{21E7}\\", category: .contextual, group: .terminal, action: .splitTerminalHorizontal),
+                CommandItem(id: "ctx-clear-terminal", title: "Clear Active Terminal", icon: "eraser", shortcut: "\u{2318}K", category: .contextual, group: .terminal, action: .clearTerminalBuffer),
             ]
         default:
             return []

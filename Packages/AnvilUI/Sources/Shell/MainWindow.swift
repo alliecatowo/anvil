@@ -8,12 +8,6 @@ public struct MainWindow: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            // Mode tab bar
-            ModeTabBar()
-
-            Divider()
-                .overlay(AnvilColor.borderSubtle)
-
             // Show welcome page when no project is open
             if container.currentProjectPath == nil {
                 WelcomePage()
@@ -25,57 +19,68 @@ public struct MainWindow: View {
                     if appState.isSidebarVisible {
                         Sidebar()
                             .frame(width: appState.isSidebarCollapsed ? AnvilSpacing.sidebarCollapsedWidth : AnvilSpacing.sidebarWidth)
-
-                        Divider()
-                            .overlay(AnvilColor.borderSubtle)
                     }
 
                     // Project search panel
                     if appState.isProjectSearchVisible {
                         SearchPanel()
-
-                        Divider()
-                            .overlay(AnvilColor.borderSubtle)
                     }
 
                     // Content
                     ContentArea()
-
-                    // Inspector
-                    if appState.isInspectorVisible {
-                        Divider()
-                            .overlay(AnvilColor.borderSubtle)
-
-                        InspectorPanel()
-                            .frame(width: AnvilSpacing.inspectorWidth)
-                    }
+                        .inspector(isPresented: $appState.isInspectorVisible) {
+                            InspectorPanel()
+                                .inspectorColumnWidth(min: 200, ideal: 260, max: 400)
+                        }
                 }
 
                 // Terminal panel (bottom)
-                if appState.isTerminalPanelVisible {
+                if appState.isTerminalPanelVisible && appState.currentMode != .terminal {
                     TerminalPanel()
                         .frame(height: appState.terminalPanelHeight)
                 }
             }
 
-            Divider()
-                .overlay(AnvilColor.borderSubtle)
-
             // Status bar
             StatusBar()
         }
         .background(AnvilColor.backgroundPrimary)
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Button("Toggle Sidebar", systemImage: "sidebar.left") {
+                    appState.toggleSidebar()
+                }
+                .help("Toggle Sidebar")
+            }
+
+            ToolbarItem(placement: .principal) {
+                ModeTabBar(compact: true)
+                    .frame(maxWidth: 520)
+            }
+
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button("Command Palette", systemImage: "magnifyingglass") {
+                    appState.toggleCommandPalette()
+                }
+                .help("Command Palette (\u{2318}K)")
+                .keyboardShortcut("k", modifiers: .command)
+
+                SettingsLink {
+                    Image(systemName: "gearshape")
+                }
+                .help("Settings")
+            }
+        }
+        .toolbarBackground(.visible, for: .windowToolbar)
+        .toolbarBackground(.bar, for: .windowToolbar)
         .overlay {
             if appState.isCommandPaletteVisible {
                 CommandPalette()
-            }
-            if appState.isQuickCaptureVisible {
+            } else if appState.isQuickCaptureVisible {
                 QuickCapture()
-            }
-            if appState.isProjectSwitcherVisible {
+            } else if appState.isProjectSwitcherVisible {
                 ProjectSwitcher()
-            }
-            if appState.isCodebaseQAVisible {
+            } else if appState.isCodebaseQAVisible {
                 CodebaseQAView()
                     .environmentObject(container)
             }

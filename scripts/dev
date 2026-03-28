@@ -1,0 +1,17 @@
+#!/bin/zsh
+set -euo pipefail
+
+cd "${0:A:h}/.."
+
+if ! command -v xcodegen >/dev/null 2>&1; then
+  echo "xcodegen is required. Install it with: brew install xcodegen" >&2
+  exit 1
+fi
+
+xcodegen generate
+
+if [[ "${1:-}" == "--generate-only" ]]; then
+  exit 0
+fi
+
+open Anvil.xcodeproj

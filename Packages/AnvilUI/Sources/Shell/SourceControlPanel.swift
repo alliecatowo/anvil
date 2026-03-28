@@ -1,5 +1,6 @@
 import SwiftUI
 import AnvilDomain
+import AnvilApplication
 import AnvilGit
 
 // MARK: - ViewModel
@@ -30,6 +31,60 @@ final class SourceControlViewModel: ObservableObject {
     @Published var newBranchName = ""
     @Published var isCreatingBranch = false
     @Published var branchError: String?
+    @Published var isGeneratingCommitMessage = false
+    @Published var generateError: String?
+
+    // MARK: - AI Commit Message
+
+    func generateCommitMessage(using adapter: GitSourceControlAdapter, container: DependencyContainer) {
+        guard !isGeneratingCommitMessage else { return }
+        guard !stagedFiles.isEmpty else {
+            generateError = "Stage changes first"
+            return
+        }
+        isGeneratingCommitMessage = true
+        generateError = nil
+        Task { @MainActor in
+            defer { isGeneratingCommitMessage = false }
+            do {
+                let diff = try await adapter.stagedDiff()
+                guard !diff.isEmpty else {
+                    generateError = "No staged diff to describe"
+                    return
+                }
+                let client = await container.getOrCreateACPClient()
+                guard let provider = await client.provider() else {
+                    generateError = "No AI provider configured"
+                    return
+                }
+                let diffText = Self.renderDiff(diff)
+                let useCase = container.makeGenerateCommitMessageUseCase()
+                let message = try await useCase.execute(diff: diffText, provider: provider)
+                commitMessage = message
+            } catch {
+                generateError = error.localizedDescription
+            }
+        }
+    }
+
+    /// Convert structured FileDiff array into unified diff text for the AI prompt.
+    static func renderDiff(_ diffs: [FileDiff]) -> String {
+        diffs.map { file in
+            let oldPath = file.oldPath ?? file.filePath
+            var lines = ["--- a/\(oldPath)", "+++ b/\(file.filePath)"]
+            for hunk in file.hunks {
+                lines.append("@@ -\(hunk.oldStart),\(hunk.oldCount) +\(hunk.newStart),\(hunk.newCount) @@")
+                lines.append(contentsOf: hunk.lines.map { line in
+                    switch line.type {
+                    case .context: " \(line.content)"
+                    case .added: "+\(line.content)"
+                    case .removed: "-\(line.content)"
+                    }
+                })
+            }
+            return lines.joined(separator: "\n")
+        }.joined(separator: "\n\n")
+    }
 
     // MARK: - Branch Operations
 
@@ -863,6 +918,25 @@ struct SourceControlPanel: View {
                 .buttonStyle(.plain)
                 .help("Amend the previous commit")
 
+                // AI generate commit message
+                Button {
+                    guard let adapter = container.getOrCreateGitAdapter() else { return }
+                    viewModel.generateCommitMessage(using: adapter, container: container)
+                } label: {
+                    if viewModel.isGeneratingCommitMessage {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 12))
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(AnvilColor.textTertiary)
+                .disabled(viewModel.stagedFiles.isEmpty || viewModel.isGeneratingCommitMessage)
+                .opacity(viewModel.stagedFiles.isEmpty || viewModel.isGeneratingCommitMessage ? 0.4 : 1.0)
+                .help("Generate commit message with AI")
+
                 Spacer()
 
                 // Commit button
@@ -876,6 +950,25 @@ struct SourceControlPanel: View {
                 }
                 .disabled(!viewModel.canCommit)
                 .opacity(viewModel.canCommit ? 1.0 : 0.5)
+            }
+
+            // AI generation error
+            if let error = viewModel.generateError {
+                HStack(spacing: AnvilSpacing.xs) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 10))
+                    Text(error)
+                        .font(AnvilFont.label)
+                    Spacer()
+                    Button {
+                        viewModel.generateError = nil
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 9))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .foregroundStyle(AnvilColor.accentAmber)
             }
         }
         .padding(.horizontal, AnvilSpacing.md)

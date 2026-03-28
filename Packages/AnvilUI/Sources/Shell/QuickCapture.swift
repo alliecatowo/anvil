@@ -29,8 +29,9 @@ public struct QuickCapture: View {
 
     public var body: some View {
         ZStack {
-            // Backdrop
-            Color.black.opacity(0.4)
+            // Backdrop — clear so sidebar remains clickable
+            Color.clear
+                .contentShape(Rectangle())
                 .ignoresSafeArea()
                 .onTapGesture {
                     dismiss()
@@ -78,9 +79,9 @@ public struct QuickCapture: View {
                 .padding(.vertical, AnvilSpacing.sm)
             }
             .frame(width: 500)
-            .background(AnvilColor.backgroundElevated)
+            .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.5), radius: 40, y: 10)
+            .shadow(color: .black.opacity(0.3), radius: 20)
         }
         .onAppear {
             isInputFocused = true
@@ -111,9 +112,13 @@ public struct QuickCapture: View {
             return
         }
 
-        // TODO: Persist to PersonalTask / Ticket store via ports
-        // For now, the capture type and text are ready to be dispatched
-        // through the application layer once wired.
+        switch selectedType {
+        case .task, .ticket:
+            appState.intentViewModel.createTicket(title: trimmed, status: "todo")
+        case .note:
+            // Notes are captured as backlog tickets with a note prefix
+            appState.intentViewModel.createTicket(title: "Note: \(trimmed)", status: "backlog")
+        }
 
         dismiss()
     }

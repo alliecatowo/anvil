@@ -26,7 +26,31 @@ struct DocEditor: View {
                     .font(AnvilFont.label)
                     .foregroundStyle(AnvilColor.textTertiary)
                     .tracking(0.3)
+
+                if viewModel.isModified {
+                    Circle()
+                        .fill(AnvilColor.accentAmber)
+                        .frame(width: 6, height: 6)
+                        .help("Unsaved changes")
+                }
+
                 Spacer()
+
+                if viewModel.isModified {
+                    Button {
+                        viewModel.saveCurrentDocument()
+                    } label: {
+                        HStack(spacing: AnvilSpacing.xxs) {
+                            Image(systemName: "square.and.arrow.down")
+                                .font(.system(size: 10))
+                            Text("Save")
+                                .font(AnvilFont.label)
+                        }
+                        .foregroundStyle(AnvilColor.accentBlue)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Save (Cmd+S)")
+                }
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
@@ -39,6 +63,9 @@ struct DocEditor: View {
                 .foregroundStyle(AnvilColor.textPrimary)
                 .scrollContentBackground(.hidden)
                 .padding(AnvilSpacing.sm)
+                .onChange(of: viewModel.editorContent) { _, _ in
+                    viewModel.markModified()
+                }
         }
         .background(AnvilColor.backgroundPrimary)
     }
@@ -53,6 +80,12 @@ struct DocEditor: View {
                     .foregroundStyle(AnvilColor.textTertiary)
                     .tracking(0.3)
                 Spacer()
+
+                if let doc = viewModel.selectedDoc {
+                    Text(doc.name)
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                }
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)

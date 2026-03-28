@@ -47,19 +47,30 @@ struct ChatView: View {
                 .font(.system(size: 12))
                 .foregroundStyle(AnvilColor.textTertiary)
 
-            Text(channel.name)
-                .font(AnvilFont.subheading)
-                .foregroundStyle(AnvilColor.textPrimary)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(channel.name)
+                    .font(AnvilFont.subheading)
+                    .foregroundStyle(AnvilColor.textPrimary)
+
+                if !channel.topic.isEmpty {
+                    Text(channel.topic)
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                        .lineLimit(1)
+                }
+            }
 
             Spacer()
 
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 12))
+            if channel.memberCount > 0 {
+                HStack(spacing: AnvilSpacing.xxs) {
+                    Image(systemName: "person.2")
+                        .font(.system(size: 11))
+                    Text("\(channel.memberCount)")
+                        .font(AnvilFont.label)
+                }
                 .foregroundStyle(AnvilColor.textTertiary)
-
-            Image(systemName: "person.2")
-                .font(.system(size: 12))
-                .foregroundStyle(AnvilColor.textTertiary)
+            }
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.sm)
@@ -72,7 +83,7 @@ struct ChatView: View {
         HStack(alignment: .top, spacing: AnvilSpacing.sm) {
             // Avatar
             Circle()
-                .fill(message.isCurrentUser ? AnvilColor.accentBlue : AnvilColor.accentPurple)
+                .fill(message.avatarColor)
                 .frame(width: 28, height: 28)
                 .overlay(
                     Text(String(message.author.prefix(1)))

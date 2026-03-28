@@ -1,39 +1,41 @@
 import SwiftUI
 
 public enum AnvilColor {
-    // Backgrounds
-    public static let backgroundPrimary = Color(hex: 0x0D0D0D)
-    public static let backgroundSecondary = Color(hex: 0x161616)
-    public static let backgroundTertiary = Color(hex: 0x1E1E1E)
-    public static let backgroundElevated = Color(hex: 0x252525)
+    // Backgrounds — adaptive system colors for light/dark mode
+    public static let backgroundPrimary = Color(nsColor: .windowBackgroundColor)
+    public static let backgroundSecondary = Color(nsColor: .controlBackgroundColor)
+    public static let backgroundTertiary = Color(nsColor: .underPageBackgroundColor)
+    public static let backgroundElevated = Color(nsColor: .textBackgroundColor)
+    public static let backgroundSidebar = Color(nsColor: .controlBackgroundColor)
+    public static let backgroundToolbar = Color(nsColor: .windowBackgroundColor).opacity(0.82)
 
-    // Borders
-    public static let borderSubtle = Color(hex: 0x2A2A2A)
-    public static let borderMedium = Color(hex: 0x3A3A3A)
-    public static let borderStrong = Color(hex: 0x505050)
+    // Borders — adaptive system colors
+    public static let borderSubtle = Color(nsColor: .separatorColor)
+    public static let borderMedium = Color(nsColor: .gridColor)
+    public static let borderStrong = Color(nsColor: .tertiaryLabelColor)
 
-    // Text
-    public static let textPrimary = Color(hex: 0xEDEDED)
-    public static let textSecondary = Color(hex: 0x999999)
-    public static let textTertiary = Color(hex: 0x666666)
+    // Text — adaptive semantic colors
+    public static let textPrimary = Color.primary
+    public static let textSecondary = Color.secondary
+    public static let textTertiary = Color(nsColor: .tertiaryLabelColor)
 
     // Accents
-    public static let accentBlue = Color(hex: 0x3B82F6)
-    public static let accentGreen = Color(hex: 0x22C55E)
-    public static let accentAmber = Color(hex: 0xF59E0B)
-    public static let accentRed = Color(hex: 0xEF4444)
-    public static let accentPurple = Color(hex: 0xA855F7)
-    public static let accentTeal = Color(hex: 0x14B8A6)
+    public static let accentBlue = Color.accentColor
+    public static let accentGreen = Color(nsColor: .systemGreen)
+    public static let accentAmber = Color(nsColor: .systemOrange)
+    public static let accentRed = Color(nsColor: .systemRed)
+    public static let accentPurple = Color(nsColor: .systemPurple)
+    public static let accentTeal = Color(nsColor: .systemTeal)
 
     // Diff
-    public static let diffAddedBackground = Color(hex: 0x22C55E).opacity(0.1)
-    public static let diffRemovedBackground = Color(hex: 0xEF4444).opacity(0.1)
-    public static let diffAddedText = Color(hex: 0x4ADE80)
-    public static let diffRemovedText = Color(hex: 0xF87171)
+    public static let diffAddedBackground = Color(nsColor: .systemGreen).opacity(0.12)
+    public static let diffRemovedBackground = Color(nsColor: .systemRed).opacity(0.12)
+    public static let diffAddedText = Color(nsColor: .systemGreen)
+    public static let diffRemovedText = Color(nsColor: .systemRed)
 
     // Selection
-    public static let selectionBackground = Color(hex: 0x3B82F6).opacity(0.2)
-    public static let selectionBorder = Color(hex: 0x3B82F6).opacity(0.6)
+    public static let selectionBackground = Color.accentColor.opacity(0.15)
+    public static let selectionBorder = Color.accentColor.opacity(0.6)
 }
 
 extension Color {

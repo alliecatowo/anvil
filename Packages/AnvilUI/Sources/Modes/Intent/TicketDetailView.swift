@@ -12,6 +12,7 @@ struct TicketDetailView: View {
     @State private var showingLinkPopover = false
     @State private var linkRelationType: TicketRelationType = .related
     @State private var linkTargetSearch = ""
+    @State private var isEditingDescription = false
 
     var body: some View {
         if let ticket = viewModel.selectedTicket {
@@ -25,10 +26,12 @@ struct TicketDetailView: View {
                     // Content
                     VStack(alignment: .leading, spacing: AnvilSpacing.xxl) {
                         headerSection(ticket)
+                        metadataEditors(ticket)
                         descriptionSection(ticket)
+                        subtaskSection(ticket)
                         labelsSection(ticket)
                         relatedSection(ticket)
-                        activitySection
+                        commentsSection(ticket)
                     }
                     .padding(AnvilSpacing.xxl)
                 }
@@ -56,7 +59,6 @@ struct TicketDetailView: View {
 
             Spacer()
 
-            // Show branch name if already created
             if let created = branchCreated {
                 HStack(spacing: AnvilSpacing.xxs) {
                     Image(systemName: "arrow.triangle.branch")
@@ -68,7 +70,6 @@ struct TicketDetailView: View {
                 }
             }
 
-            // Start Work: creates branch + dispatches agent in one click
             AnvilButton(
                 isDispatching ? "Starting..." : "Start Work",
                 icon: "bolt.fill",
@@ -78,12 +79,23 @@ struct TicketDetailView: View {
             }
             .disabled(isDispatching)
 
-            // Separate actions for finer control
             if branchCreated == nil {
                 AnvilButton("Branch Only", icon: "arrow.triangle.branch", style: .ghost) {
                     createBranchForTicket(ticket)
                 }
             }
+
+            Button(role: .destructive) {
+                withAnimation(AnvilAnimation.standard) {
+                    viewModel.deleteTicket(ticket.id)
+                }
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 12))
+                    .foregroundStyle(AnvilColor.accentRed.opacity(0.7))
+            }
+            .buttonStyle(.plain)
+            .help("Delete ticket")
 
             Text(ticket.id)
                 .font(AnvilFont.code)
@@ -120,29 +132,26 @@ struct TicketDetailView: View {
         isDispatching = true
 
         let branchName = generateBranchName(from: ticket)
-        guard let adapter = container.getOrCreateGitAdapter() else {
-            isDispatching = false
-            return
-        }
 
+        // Create the branch if a git adapter is available, but proceed either way
+        // so that "Start Work" always dispatches an agent session.
         Task {
-            // 1. Create branch if not already done
-            if branchCreated == nil {
+            if branchCreated == nil, let adapter = container.getOrCreateGitAdapter() {
                 await appState.createBranch(branchName, using: adapter)
                 branchCreated = branchName
             }
 
-            // 2. Move ticket to in-progress
+            // Move ticket to "in progress" on the board
             viewModel.moveTicket(ticket.id, toStatus: "in progress")
 
-            // 3. Dispatch to agent with ticket context
+            // Create a new agent session pre-loaded with ticket context
             appState.agentViewModel.dispatchFromTicket(
                 ticketId: ticket.id,
                 title: ticket.title,
                 description: ticket.description
             )
 
-            // 4. Switch to agent mode
+            // Switch to agent mode so the user sees the conversation
             appState.switchMode(.agent)
 
             isDispatching = false
@@ -161,9 +170,8 @@ struct TicketDetailView: View {
             .font(AnvilFont.heading)
             .foregroundStyle(AnvilColor.textPrimary)
 
-            // Metadata row
+            // Metadata row (read-only display)
             HStack(spacing: AnvilSpacing.lg) {
-                // Status
                 HStack(spacing: AnvilSpacing.xxs) {
                     Image(systemName: IntentViewModel.statusIcon(ticket.status))
                         .font(.system(size: 12))
@@ -174,7 +182,6 @@ struct TicketDetailView: View {
                     )
                 }
 
-                // Priority
                 HStack(spacing: AnvilSpacing.xxs) {
                     priorityIndicator(ticket.priority)
                     Text(IntentViewModel.priorityLabel(ticket.priority))
@@ -182,7 +189,6 @@ struct TicketDetailView: View {
                         .foregroundStyle(IntentViewModel.priorityColor(ticket.priority))
                 }
 
-                // Assignee
                 if let assignee = ticket.assignee {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Circle()
@@ -199,7 +205,6 @@ struct TicketDetailView: View {
                     }
                 }
 
-                // Story points
                 if let sp = ticket.storyPoints {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Image(systemName: "diamond")
@@ -211,7 +216,6 @@ struct TicketDetailView: View {
                     }
                 }
 
-                // Due date
                 if let due = ticket.dueDate {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Image(systemName: "calendar")
@@ -228,16 +232,148 @@ struct TicketDetailView: View {
         }
     }
 
-    // MARK: - Description
+    // MARK: - Metadata Editors
 
-    private func descriptionSection(_ ticket: Ticket) -> some View {
-        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-            Text("DESCRIPTION")
+    private func metadataEditors(_ ticket: Ticket) -> some View {
+        VStack(alignment: .leading, spacing: AnvilSpacing.md) {
+            Text("PROPERTIES")
                 .font(AnvilFont.label)
                 .foregroundStyle(AnvilColor.textTertiary)
                 .tracking(0.3)
 
-            if ticket.description.isEmpty {
+            HStack(spacing: AnvilSpacing.xl) {
+                // Status picker
+                VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
+                    Text("Status")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+
+                    Picker("", selection: Binding(
+                        get: { ticket.status },
+                        set: { viewModel.updateStatus(ticket.id, status: $0) }
+                    )) {
+                        ForEach(viewModel.allStatuses, id: \.self) { status in
+                            Text(status.capitalized).tag(status)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 130)
+                }
+
+                // Priority picker
+                VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
+                    Text("Priority")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+
+                    Picker("", selection: Binding(
+                        get: { ticket.priority },
+                        set: { viewModel.updatePriority(ticket.id, priority: $0) }
+                    )) {
+                        ForEach([TicketPriority.critical, .high, .medium, .low, .none], id: \.rawValue) { p in
+                            Text(IntentViewModel.priorityLabel(p)).tag(p)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 140)
+                }
+
+                // Assignee picker
+                VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
+                    Text("Assignee")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+
+                    Picker("", selection: Binding(
+                        get: { ticket.assignee ?? "" },
+                        set: { viewModel.updateAssignee(ticket.id, assignee: $0.isEmpty ? nil : $0) }
+                    )) {
+                        Text("Unassigned").tag("")
+                        ForEach(viewModel.allAssignees, id: \.self) { name in
+                            Text(name).tag(name)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 130)
+                }
+
+                // Due date picker
+                VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
+                    Text("Due Date")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+
+                    HStack(spacing: AnvilSpacing.xs) {
+                        DatePicker("", selection: Binding(
+                            get: { ticket.dueDate ?? Date.now },
+                            set: { viewModel.updateDueDate(ticket.id, dueDate: $0) }
+                        ), displayedComponents: .date)
+                        .labelsHidden()
+
+                        if ticket.dueDate != nil {
+                            Button {
+                                viewModel.updateDueDate(ticket.id, dueDate: nil)
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(AnvilColor.textTertiary)
+                            }
+                            .buttonStyle(.plain)
+                            .help("Clear due date")
+                        }
+                    }
+                }
+
+                Spacer()
+            }
+        }
+        .padding(AnvilSpacing.md)
+        .background(AnvilColor.backgroundSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
+    }
+
+    // MARK: - Description
+
+    private func descriptionSection(_ ticket: Ticket) -> some View {
+        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+            HStack {
+                Text("DESCRIPTION")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .tracking(0.3)
+
+                Spacer()
+
+                Button {
+                    isEditingDescription.toggle()
+                    if isEditingDescription {
+                        viewModel.editingDescription = ticket.description
+                    }
+                } label: {
+                    Text(isEditingDescription ? "Done" : "Edit")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.accentBlue)
+                }
+                .buttonStyle(.plain)
+            }
+
+            if isEditingDescription {
+                TextEditor(text: $viewModel.editingDescription)
+                    .font(AnvilFont.body)
+                    .foregroundStyle(AnvilColor.textSecondary)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: 120)
+                    .padding(AnvilSpacing.sm)
+                    .background(AnvilColor.backgroundSecondary)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(AnvilColor.accentBlue.opacity(0.4), lineWidth: 1)
+                    )
+                    .onChange(of: viewModel.editingDescription) { _, newValue in
+                        viewModel.updateDescription(newValue)
+                    }
+            } else if ticket.description.isEmpty {
                 Text("No description provided.")
                     .font(AnvilFont.body)
                     .foregroundStyle(AnvilColor.textTertiary)
@@ -249,6 +385,88 @@ struct TicketDetailView: View {
                     .textSelection(.enabled)
                     .lineSpacing(4)
             }
+        }
+    }
+
+    // MARK: - Subtasks
+
+    private func subtaskSection(_ ticket: Ticket) -> some View {
+        let items = viewModel.subtasksFor(ticket.id)
+        let progress = viewModel.subtaskProgress(ticket.id)
+
+        return VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+            HStack {
+                Text("SUBTASKS")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .tracking(0.3)
+
+                if progress.total > 0 {
+                    Text("\(progress.completed)/\(progress.total)")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(progress.completed == progress.total ? AnvilColor.accentGreen : AnvilColor.textTertiary)
+                }
+
+                Spacer()
+            }
+
+            // Progress bar
+            if progress.total > 0 {
+                ProgressView(value: Double(progress.completed), total: Double(progress.total))
+                    .progressViewStyle(.linear)
+                    .tint(progress.completed == progress.total ? AnvilColor.accentGreen : AnvilColor.accentBlue)
+            }
+
+            // Subtask items
+            ForEach(items) { subtask in
+                HStack(spacing: AnvilSpacing.sm) {
+                    Button {
+                        withAnimation(AnvilAnimation.standard) {
+                            viewModel.toggleSubtask(ticketId: ticket.id, subtaskId: subtask.id)
+                        }
+                    } label: {
+                        Image(systemName: subtask.isCompleted ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 14))
+                            .foregroundStyle(subtask.isCompleted ? AnvilColor.accentGreen : AnvilColor.textTertiary)
+                    }
+                    .buttonStyle(.plain)
+
+                    Text(subtask.title)
+                        .font(AnvilFont.body)
+                        .foregroundStyle(subtask.isCompleted ? AnvilColor.textTertiary : AnvilColor.textPrimary)
+                        .strikethrough(subtask.isCompleted)
+
+                    Spacer()
+
+                    Button {
+                        viewModel.deleteSubtask(ticketId: ticket.id, subtaskId: subtask.id)
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(AnvilColor.textTertiary)
+                    }
+                    .buttonStyle(.plain)
+                    .opacity(0.5)
+                }
+                .padding(.vertical, AnvilSpacing.xxxs)
+            }
+
+            // Add subtask
+            HStack(spacing: AnvilSpacing.sm) {
+                Image(systemName: "plus.circle")
+                    .font(.system(size: 14))
+                    .foregroundStyle(AnvilColor.textTertiary)
+
+                TextField("Add subtask...", text: $viewModel.newSubtaskTitle)
+                    .textFieldStyle(.plain)
+                    .font(AnvilFont.body)
+                    .foregroundStyle(AnvilColor.textPrimary)
+                    .onSubmit {
+                        viewModel.addSubtask(to: ticket.id, title: viewModel.newSubtaskTitle)
+                        viewModel.newSubtaskTitle = ""
+                    }
+            }
+            .padding(.vertical, AnvilSpacing.xxxs)
         }
     }
 
@@ -307,6 +525,116 @@ struct TicketDetailView: View {
         }
     }
 
+    // MARK: - Comments
+
+    private func commentsSection(_ ticket: Ticket) -> some View {
+        let ticketComments = viewModel.commentsFor(ticket.id)
+
+        return VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+            HStack {
+                Text("COMMENTS")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .tracking(0.3)
+
+                Text("\(ticketComments.count)")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1)
+                    .background(AnvilColor.backgroundElevated)
+                    .clipShape(Capsule())
+            }
+
+            ForEach(ticketComments) { comment in
+                commentRow(comment, ticketId: ticket.id)
+            }
+
+            // New comment input
+            HStack(alignment: .top, spacing: AnvilSpacing.sm) {
+                Circle()
+                    .fill(AnvilColor.accentBlue.opacity(0.2))
+                    .frame(width: 24, height: 24)
+                    .overlay(
+                        Text("Y")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(AnvilColor.accentBlue)
+                    )
+
+                VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
+                    TextField("Add a comment...", text: $viewModel.newCommentText, axis: .vertical)
+                        .textFieldStyle(.plain)
+                        .font(AnvilFont.body)
+                        .foregroundStyle(AnvilColor.textPrimary)
+                        .lineLimit(1...5)
+
+                    if !viewModel.newCommentText.isEmpty {
+                        HStack {
+                            Spacer()
+                            AnvilButton("Comment", icon: "paperplane", style: .primary) {
+                                viewModel.addComment(to: ticket.id, body: viewModel.newCommentText)
+                                viewModel.newCommentText = ""
+                            }
+                        }
+                    }
+                }
+                .padding(AnvilSpacing.sm)
+                .background(AnvilColor.backgroundSecondary)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(AnvilColor.borderSubtle, lineWidth: 1)
+                )
+            }
+        }
+    }
+
+    private func commentRow(_ comment: TicketComment, ticketId: String) -> some View {
+        HStack(alignment: .top, spacing: AnvilSpacing.sm) {
+            Circle()
+                .fill(AnvilColor.backgroundElevated)
+                .frame(width: 24, height: 24)
+                .overlay(
+                    Text(String(comment.author.prefix(1)).uppercased())
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(AnvilColor.textSecondary)
+                )
+
+            VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
+                HStack {
+                    Text(comment.author)
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textPrimary)
+
+                    Text(comment.createdAt, style: .relative)
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+
+                    Spacer()
+
+                    Button {
+                        viewModel.deleteComment(ticketId: ticketId, commentId: comment.id)
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 8, weight: .medium))
+                            .foregroundStyle(AnvilColor.textTertiary)
+                    }
+                    .buttonStyle(.plain)
+                    .opacity(0.5)
+                }
+
+                Text(comment.body)
+                    .font(AnvilFont.body)
+                    .foregroundStyle(AnvilColor.textSecondary)
+                    .textSelection(.enabled)
+                    .lineSpacing(3)
+            }
+            .padding(AnvilSpacing.sm)
+            .background(AnvilColor.backgroundSecondary)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+    }
+
     // MARK: - Link Ticket Popover
 
     private func linkTicketPopover(_ ticket: Ticket) -> some View {
@@ -323,7 +651,6 @@ struct TicketDetailView: View {
                 .font(AnvilFont.subheading)
                 .foregroundStyle(AnvilColor.textPrimary)
 
-            // Relation type picker
             HStack(spacing: AnvilSpacing.xs) {
                 ForEach([TicketRelationType.blocks, .blockedBy, .parent, .child, .related, .duplicate], id: \.rawValue) { type in
                     Button {
@@ -341,7 +668,6 @@ struct TicketDetailView: View {
                 }
             }
 
-            // Search
             TextField("Search tickets...", text: $linkTargetSearch)
                 .textFieldStyle(.plain)
                 .font(AnvilFont.body)
@@ -350,7 +676,6 @@ struct TicketDetailView: View {
                 .background(AnvilColor.backgroundSecondary)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
-            // Results
             ScrollView {
                 LazyVStack(spacing: 0) {
                     ForEach(filtered.prefix(10)) { candidate in
@@ -437,47 +762,6 @@ struct TicketDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
-    // MARK: - Activity Placeholder
-
-    private var activitySection: some View {
-        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
-            Text("ACTIVITY")
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .tracking(0.3)
-
-            ForEach(0..<3, id: \.self) { i in
-                HStack(spacing: AnvilSpacing.sm) {
-                    Circle()
-                        .fill(AnvilColor.backgroundElevated)
-                        .frame(width: 24, height: 24)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack {
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(AnvilColor.backgroundTertiary)
-                                .frame(width: CGFloat(80 + i * 20), height: 10)
-                            Spacer()
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(AnvilColor.backgroundTertiary)
-                                .frame(width: 50, height: 8)
-                        }
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(AnvilColor.backgroundTertiary)
-                            .frame(width: CGFloat(150 + i * 30), height: 8)
-                    }
-                }
-                .padding(.vertical, AnvilSpacing.xxs)
-            }
-
-            Text("Activity log coming soon")
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-                .frame(maxWidth: .infinity)
-                .padding(.top, AnvilSpacing.xs)
-        }
-    }
-
     // MARK: - Helpers
 
     private func priorityIndicator(_ priority: TicketPriority) -> some View {
@@ -494,7 +778,9 @@ struct TicketDetailView: View {
         case "infra", "database":        AnvilColor.accentTeal
         case "testing":                  AnvilColor.accentPurple
         case "refactor", "architecture": AnvilColor.accentAmber
-        case "auth":                     AnvilColor.accentRed
+        case "auth", "security":         AnvilColor.accentRed
+        case "observability":            AnvilColor.accentBlue
+        case "migration":                AnvilColor.accentAmber
         default:                         AnvilColor.accentBlue
         }
     }

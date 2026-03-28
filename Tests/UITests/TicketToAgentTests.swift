@@ -1,8 +1,7 @@
 import XCTest
 
-/// Tests for Task #10 — Ticket-to-agent pipeline.
-/// Verifies the "Dispatch to Agent" button on ticket detail creates a session
-/// and switches to Agent mode, and "Create Branch" works from ticket context.
+/// Tests for the ticket-to-agent pipeline.
+/// Verifies "Start Work" on ticket detail creates an agent session and switches to Agent mode.
 final class TicketToAgentTests: XCTestCase {
     var app: XCUIApplication!
 
@@ -17,57 +16,66 @@ final class TicketToAgentTests: XCTestCase {
         app = nil
     }
 
-    // MARK: - Dispatch to Agent
+    // MARK: - Start Work → Agent Mode
 
-    func testDispatchToAgentButtonExists() throws {
+    func testStartWorkButtonExists() throws {
         navigateToTicketDetail()
 
-        let dispatchButton = app.buttons["Dispatch to Agent"]
-        XCTAssertTrue(dispatchButton.waitForExistence(timeout: 5), "Dispatch to Agent button should appear on ticket detail")
+        let startWork = app.buttons["Start Work"]
+        XCTAssertTrue(startWork.waitForExistence(timeout: 5), "Start Work button must appear on ticket detail")
     }
 
-    func testDispatchToAgentSwitchesToAgentMode() throws {
+    func testStartWorkSwitchesToAgentMode() throws {
         navigateToTicketDetail()
 
-        let dispatchButton = app.buttons["Dispatch to Agent"]
-        XCTAssertTrue(dispatchButton.waitForExistence(timeout: 5))
-        dispatchButton.click()
+        let startWork = app.buttons["Start Work"]
+        XCTAssertTrue(startWork.waitForExistence(timeout: 5))
+        startWork.click()
 
-        // After dispatch, app should switch to Agent mode
-        let agentTab = app.buttons["Agent"]
-        XCTAssertTrue(agentTab.waitForExistence(timeout: 5))
-        // Agent mode should now be active — the "New Session" button should be visible
-        let newSessionButton = app.buttons["New Session"]
-        XCTAssertTrue(newSessionButton.waitForExistence(timeout: 5), "Agent sidebar should appear after dispatch")
+        // Result: Agent mode conversation view must appear
+        let inputField = app.textFields["Message the agent..."]
+        XCTAssertTrue(inputField.waitForExistence(timeout: 8),
+            "Start Work must switch to Agent mode with conversation input field visible")
     }
 
-    // MARK: - Create Branch
-
-    func testCreateBranchButtonExists() throws {
+    func testStartWorkCreatesAgentSession() throws {
         navigateToTicketDetail()
 
-        let createBranchButton = app.buttons["Create Branch"]
-        XCTAssertTrue(createBranchButton.waitForExistence(timeout: 5), "Create Branch button should appear on ticket detail")
+        let startWork = app.buttons["Start Work"]
+        XCTAssertTrue(startWork.waitForExistence(timeout: 5))
+        startWork.click()
+
+        // Result: Agent sidebar must show a session row (not empty state)
+        let scrollView = app.scrollViews.firstMatch
+        XCTAssertTrue(scrollView.waitForExistence(timeout: 8))
+        let sessionRows = scrollView.otherElements.allElementsBoundByIndex
+        XCTAssertGreaterThan(sessionRows.count, 0, "Start Work must create at least one session in Agent sidebar")
     }
 
-    func testCreateBranchShowsConfirmation() throws {
+    // MARK: - Branch Only Button
+
+    func testBranchOnlyButtonExists() throws {
         navigateToTicketDetail()
 
-        let createBranchButton = app.buttons["Create Branch"]
-        XCTAssertTrue(createBranchButton.waitForExistence(timeout: 5))
-        createBranchButton.click()
-
-        // After creating branch, the button area should show a checkmark confirmation
-        // The branch name should appear with a green checkmark
+        let branchButton = app.buttons["Branch Only"]
+        XCTAssertTrue(branchButton.waitForExistence(timeout: 5), "Branch Only button must appear on ticket detail")
     }
 
-    // MARK: - Back Button
+    func testBranchOnlyButtonIsHittable() throws {
+        navigateToTicketDetail()
 
-    func testBackButtonExistsOnTicketDetail() throws {
+        let branchButton = app.buttons["Branch Only"]
+        XCTAssertTrue(branchButton.waitForExistence(timeout: 5))
+        XCTAssertTrue(branchButton.isHittable, "Branch Only button must be hittable")
+    }
+
+    // MARK: - Back Button → Returns to List
+
+    func testBackButtonExists() throws {
         navigateToTicketDetail()
 
         let backButton = app.buttons["Back"]
-        XCTAssertTrue(backButton.waitForExistence(timeout: 5), "Back button should exist on ticket detail")
+        XCTAssertTrue(backButton.waitForExistence(timeout: 5), "Back button must appear on ticket detail")
     }
 
     func testBackButtonReturnsToTicketList() throws {
@@ -77,31 +85,64 @@ final class TicketToAgentTests: XCTestCase {
         XCTAssertTrue(backButton.waitForExistence(timeout: 5))
         backButton.click()
 
-        // Should return to ticket list — Dispatch button should no longer be visible
+        // Result: Detail sections disappear; ticket list scroll view still present
+        let descriptionGone = !app.staticTexts["DESCRIPTION"].waitForExistence(timeout: 3)
+        XCTAssertTrue(descriptionGone, "Clicking Back must hide ticket detail (DESCRIPTION section gone)")
     }
 
     // MARK: - Ticket Detail Sections
 
-    func testTicketDetailShowsDescription() throws {
+    func testTicketDetailShowsDescriptionSection() throws {
         navigateToTicketDetail()
 
         let descriptionLabel = app.staticTexts["DESCRIPTION"]
-        XCTAssertTrue(descriptionLabel.waitForExistence(timeout: 5), "Description section should exist")
+        XCTAssertTrue(descriptionLabel.waitForExistence(timeout: 5), "Ticket detail must show DESCRIPTION section")
     }
 
-    func testTicketDetailShowsActivity() throws {
+    func testTicketDetailShowsActivitySection() throws {
         navigateToTicketDetail()
 
         let activityLabel = app.staticTexts["ACTIVITY"]
-        XCTAssertTrue(activityLabel.waitForExistence(timeout: 5), "Activity section should exist")
+        XCTAssertTrue(activityLabel.waitForExistence(timeout: 5), "Ticket detail must show ACTIVITY section")
     }
 
-    func testTicketDetailShowsLabels() throws {
+    func testTicketDetailShowsRelatedSection() throws {
         navigateToTicketDetail()
 
-        let labelsLabel = app.staticTexts["LABELS"]
-        // Labels section only appears if ticket has labels
-        _ = labelsLabel.waitForExistence(timeout: 3)
+        let relatedLabel = app.staticTexts["RELATED"]
+        XCTAssertTrue(relatedLabel.waitForExistence(timeout: 5), "Ticket detail must show RELATED section")
+    }
+
+    // MARK: - Link Ticket
+
+    func testLinkTicketButtonExists() throws {
+        navigateToTicketDetail()
+
+        let linkButton = app.buttons["Link Ticket"]
+        XCTAssertTrue(linkButton.waitForExistence(timeout: 5), "Link Ticket button must appear in ticket detail")
+    }
+
+    func testLinkTicketButtonOpensSearchPopover() throws {
+        navigateToTicketDetail()
+
+        let linkButton = app.buttons["Link Ticket"]
+        XCTAssertTrue(linkButton.waitForExistence(timeout: 5))
+        linkButton.click()
+
+        // Result: popover with search field appears
+        let searchField = app.textFields["Search tickets..."]
+        XCTAssertTrue(searchField.waitForExistence(timeout: 5), "Link Ticket must open search popover")
+    }
+
+    // MARK: - Editable Title
+
+    func testTicketTitleIsEditable() throws {
+        navigateToTicketDetail()
+
+        let titleField = app.textFields["Title"]
+        if titleField.waitForExistence(timeout: 5) {
+            XCTAssertTrue(titleField.isEnabled, "Ticket title field must be editable")
+        }
     }
 
     // MARK: - Helpers
@@ -114,13 +155,14 @@ final class TicketToAgentTests: XCTestCase {
         // Switch to Intent mode
         app.typeKey("1", modifierFlags: .command)
 
-        // Click on first ticket in the list to open detail
+        // Click first ticket
         let scrollView = app.scrollViews.firstMatch
         if scrollView.waitForExistence(timeout: 5) {
             let firstItem = scrollView.otherElements.firstMatch
-            if firstItem.exists {
+            if firstItem.waitForExistence(timeout: 5) {
                 firstItem.click()
             }
         }
+        _ = app.staticTexts["DESCRIPTION"].waitForExistence(timeout: 5)
     }
 }

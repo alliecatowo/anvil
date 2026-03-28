@@ -33,28 +33,13 @@ public struct AnvilEmptyState: View {
     }
 
     public var body: some View {
-        VStack(spacing: AnvilSpacing.lg) {
-            Image(systemName: icon)
-                .font(.system(size: 48, weight: .thin))
-                .foregroundStyle(AnvilColor.textTertiary)
-
-            Text(title)
-                .font(AnvilFont.heading)
-                .foregroundStyle(AnvilColor.textPrimary)
-
+        ContentUnavailableView {
+            Label(title, systemImage: icon)
+        } description: {
             Text(message)
-                .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textSecondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 360)
-
-            if !actions.isEmpty {
-                HStack(spacing: AnvilSpacing.sm) {
-                    ForEach(actions) { action in
-                        AnvilButton(action.title, icon: action.icon, style: action.style, action: action.action)
-                    }
-                }
-                .padding(.top, AnvilSpacing.sm)
+        } actions: {
+            ForEach(actions) { action in
+                AnvilButton(action.title, icon: action.icon, style: action.style, action: action.action)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
