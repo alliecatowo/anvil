@@ -8,7 +8,7 @@ import AnvilGitHub
 /// Central dependency container that wires all layers together.
 /// ViewModels access ports and services through this container.
 @MainActor
-public class DependencyContainer: ObservableObject {
+public final class DependencyContainer: ObservableObject {
     // MARK: - Services
 
     public let eventBus = EventBus.shared
@@ -144,6 +144,30 @@ public class DependencyContainer: ObservableObject {
     // MARK: - Deployment Management
 
     public let deploymentService: any DeploymentManagementPort = InMemoryDeploymentService()
+
+    // MARK: - Messaging Service
+
+    public let messagingService: any MessagingPort = InMemoryMessagingService()
+
+    // MARK: - Schedule Service
+
+    public let scheduleService: any SchedulePort = InMemoryScheduleService()
+
+    // MARK: - Testing Service
+
+    public let testingService: any TestingPort = InMemoryTestingService()
+
+    // MARK: - Observability In-Memory Service
+
+    public let observabilityInMemoryService: any ObservabilityPort = InMemoryObservabilityService()
+
+    // MARK: - Notification Service
+
+    public let notificationService: any NotificationPort = InMemoryNotificationService()
+
+    // MARK: - Documentation Service
+
+    public let documentationService: any DocumentationPort = InMemoryDocumentationService()
 
     // MARK: - Database Service
 

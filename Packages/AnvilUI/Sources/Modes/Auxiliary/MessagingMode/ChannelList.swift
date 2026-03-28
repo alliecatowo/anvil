@@ -47,7 +47,7 @@ struct ChannelList: View {
         return HStack(spacing: AnvilSpacing.sm) {
             Image(systemName: channel.icon)
                 .font(.system(size: 11))
-                .foregroundStyle(isSelected ? Color.accentColor : AnvilColor.textTertiary)
+                .foregroundStyle(isSelected ? AnvilColor.accentBlue : AnvilColor.textTertiary)
                 .frame(width: 16)
 
             Text(channel.name)
@@ -64,7 +64,7 @@ struct ChannelList: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, AnvilSpacing.xs)
                     .padding(.vertical, AnvilSpacing.xxxs)
-                    .background(Color.accentColor)
+                    .background(AnvilColor.accentBlue)
                     .clipShape(Capsule())
             }
         }

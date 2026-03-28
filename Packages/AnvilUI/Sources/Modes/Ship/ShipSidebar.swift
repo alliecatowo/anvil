@@ -99,7 +99,7 @@ struct ShipSidebar: View {
                     Button("Deploy") {
                         viewModel.deploy(environmentID: card.id)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.bordered)
                     .controlSize(.small)
                     .disabled(viewModel.isDeploying)
 

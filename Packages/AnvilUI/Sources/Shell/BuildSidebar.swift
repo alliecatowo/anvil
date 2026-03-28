@@ -107,7 +107,7 @@ struct DatabaseSidebarView: View {
                     } label: {
                         Label("Connect", systemImage: "bolt.fill")
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.bordered)
                     .controlSize(.small)
                     .disabled(
                         viewModel.selectedProvider?.connectionStyle == .file

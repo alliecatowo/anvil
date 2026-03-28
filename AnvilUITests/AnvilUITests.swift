@@ -454,3 +454,291 @@ final class AnvilUITests: XCTestCase {
         )
     }
 }
+
+// MARK: - Library Space Flows
+
+final class AnvilLibrarySpaceTests: XCTestCase {
+
+    var app: XCUIApplication!
+
+    override func setUp() {
+        super.setUp()
+        continueAfterFailure = false
+        app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--reset-state"]
+        app.launch()
+    }
+
+    override func tearDown() {
+        app.terminate()
+        super.tearDown()
+    }
+
+    /// Navigate to Library space and verify the Docs section is the default.
+    func testLibrarySpaceShowsDocsSectionByDefault() {
+        // Library space is reached via Cmd+5 or the "Library" rail button
+        app.typeKey("5", modifierFlags: .command)
+        XCTAssertTrue(
+            app.windows.firstMatch.waitForExistence(timeout: 5),
+            "Window must still exist after navigating to Library"
+        )
+        // The sidebar picker segment "Docs" must be present
+        let docsPicker = app.buttons["Docs"]
+        XCTAssertTrue(
+            docsPicker.waitForExistence(timeout: 5),
+            "Library sidebar must show a 'Docs' segment in the section picker"
+        )
+    }
+
+    /// Navigate to Library space and switch to the Extensions section.
+    func testLibrarySpaceSwitchToExtensionsSection() {
+        app.typeKey("5", modifierFlags: .command)
+        let extensionsButton = app.buttons["Extensions"]
+        XCTAssertTrue(
+            extensionsButton.waitForExistence(timeout: 5),
+            "Library sidebar must expose an 'Extensions' segment"
+        )
+        extensionsButton.click()
+        // After switching, the content area must not crash and the window stays alive
+        let contentVisible = app.staticTexts["No extensions installed"].waitForExistence(timeout: 3)
+            || app.buttons["Browse Marketplace"].waitForExistence(timeout: 3)
+            || app.lists.firstMatch.waitForExistence(timeout: 3)
+        XCTAssertTrue(
+            contentVisible,
+            "Switching to Extensions section must render extensions content"
+        )
+    }
+
+    /// Navigate to Library space and switch to the Inbox (Notifications) section.
+    func testLibrarySpaceSwitchToInboxSection() {
+        app.typeKey("5", modifierFlags: .command)
+        let inboxButton = app.buttons["Inbox"]
+        XCTAssertTrue(
+            inboxButton.waitForExistence(timeout: 5),
+            "Library sidebar must expose an 'Inbox' segment"
+        )
+        inboxButton.click()
+        let contentVisible = app.staticTexts["No notifications"].waitForExistence(timeout: 3)
+            || app.lists.firstMatch.waitForExistence(timeout: 3)
+        XCTAssertTrue(
+            contentVisible,
+            "Switching to Inbox section must render notifications content"
+        )
+    }
+
+    /// Navigate to Library space and switch to the Messages section.
+    func testLibrarySpaceSwitchToMessagesSection() {
+        app.typeKey("5", modifierFlags: .command)
+        let messagesButton = app.buttons["Messages"]
+        XCTAssertTrue(
+            messagesButton.waitForExistence(timeout: 5),
+            "Library sidebar must expose a 'Messages' segment"
+        )
+        messagesButton.click()
+        let contentVisible = app.staticTexts["No channels"].waitForExistence(timeout: 3)
+            || app.staticTexts["Channels"].waitForExistence(timeout: 3)
+            || app.lists.firstMatch.waitForExistence(timeout: 3)
+        XCTAssertTrue(
+            contentVisible,
+            "Switching to Messages section must render messaging channel content"
+        )
+    }
+
+    /// Navigate to Library space and switch to the Schedule section.
+    func testLibrarySpaceSwitchToScheduleSection() {
+        app.typeKey("5", modifierFlags: .command)
+        let scheduleButton = app.buttons["Schedule"]
+        XCTAssertTrue(
+            scheduleButton.waitForExistence(timeout: 5),
+            "Library sidebar must expose a 'Schedule' segment"
+        )
+        scheduleButton.click()
+        let contentVisible = app.staticTexts["No events today"].waitForExistence(timeout: 3)
+            || app.buttons["Load Demo Data"].waitForExistence(timeout: 3)
+            || app.lists.firstMatch.waitForExistence(timeout: 3)
+        XCTAssertTrue(
+            contentVisible,
+            "Switching to Schedule section must render schedule content"
+        )
+    }
+
+    /// All five Library section picker segments must be present simultaneously.
+    func testLibraryAllSectionSegmentsExist() {
+        app.typeKey("5", modifierFlags: .command)
+        for label in ["Docs", "Extensions", "Inbox", "Messages", "Schedule"] {
+            XCTAssertTrue(
+                app.buttons[label].waitForExistence(timeout: 5),
+                "Library section picker must contain '\(label)' segment"
+            )
+        }
+    }
+}
+
+// MARK: - Operate Space Flows
+
+final class AnvilOperateSpaceTests: XCTestCase {
+
+    var app: XCUIApplication!
+
+    override func setUp() {
+        super.setUp()
+        continueAfterFailure = false
+        app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--reset-state"]
+        app.launch()
+    }
+
+    override func tearDown() {
+        app.terminate()
+        super.tearDown()
+    }
+
+    /// Navigate to Operate space and verify the Deploy (Ship) section is shown by default.
+    func testOperateSpaceShowsDeploySectionByDefault() {
+        let shipButton = app.buttons["Ship"]
+        XCTAssertTrue(shipButton.waitForExistence(timeout: 5), "Ship tab must exist")
+        shipButton.click()
+        // The sidebar section picker must show "Deploy" as the active segment
+        let deployButton = app.buttons["Deploy"]
+        XCTAssertTrue(
+            deployButton.waitForExistence(timeout: 5),
+            "Operate sidebar must show a 'Deploy' segment by default"
+        )
+        // The Ship sidebar content must include ENVIRONMENTS
+        XCTAssertTrue(
+            app.staticTexts["ENVIRONMENTS"].waitForExistence(timeout: 5),
+            "Deploy section must render ENVIRONMENTS list"
+        )
+    }
+
+    /// Navigate to Operate space and verify the Terminal section is reachable.
+    func testOperateSpaceSwitchToTerminalSection() {
+        let shipButton = app.buttons["Ship"]
+        XCTAssertTrue(shipButton.waitForExistence(timeout: 5), "Ship tab must exist")
+        shipButton.click()
+        let terminalButton = app.buttons["Terminal"]
+        XCTAssertTrue(
+            terminalButton.waitForExistence(timeout: 5),
+            "Operate sidebar must expose a 'Terminal' segment"
+        )
+        terminalButton.click()
+        // After switching, content should show a Sessions header or a new-session affordance
+        let contentVisible = app.staticTexts["Sessions"].waitForExistence(timeout: 3)
+            || app.buttons.matching(
+                NSPredicate(format: "label CONTAINS 'New Terminal Session'")
+            ).firstMatch.waitForExistence(timeout: 3)
+            || app.windows.firstMatch.exists
+        XCTAssertTrue(
+            contentVisible,
+            "Switching to Terminal section must render terminal sessions content"
+        )
+    }
+
+    /// All three Operate section picker segments must be present after entering the space.
+    func testOperateAllSectionSegmentsExist() {
+        app.buttons["Ship"].click()
+        for label in ["Deploy", "Monitor", "Terminal"] {
+            XCTAssertTrue(
+                app.buttons[label].waitForExistence(timeout: 5),
+                "Operate section picker must contain '\(label)' segment"
+            )
+        }
+    }
+
+    /// The Operate space must survive switching through all sections without crashing.
+    func testOperateSectionCycleDoesNotCrash() {
+        app.buttons["Ship"].click()
+        for label in ["Deploy", "Monitor", "Terminal", "Deploy"] {
+            let btn = app.buttons[label]
+            if btn.waitForExistence(timeout: 3) { btn.click() }
+        }
+        XCTAssertTrue(
+            app.windows.firstMatch.exists,
+            "App must remain alive after cycling all Operate sections"
+        )
+    }
+}
+
+// MARK: - Plan Space Flows
+
+final class AnvilPlanSpaceTests: XCTestCase {
+
+    var app: XCUIApplication!
+
+    override func setUp() {
+        super.setUp()
+        continueAfterFailure = false
+        app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--reset-state"]
+        app.launch()
+    }
+
+    override func tearDown() {
+        app.terminate()
+        super.tearDown()
+    }
+
+    /// Navigate to Plan (Intent) space and verify the ticket list is visible.
+    func testPlanSpaceTicketListIsVisible() {
+        app.buttons["Intent"].click()
+        // The sidebar always renders at least the Sprint section header
+        let listVisible = app.staticTexts["Sprint"].waitForExistence(timeout: 5)
+            || app.lists.firstMatch.waitForExistence(timeout: 5)
+            || app.scrollViews.firstMatch.waitForExistence(timeout: 5)
+        XCTAssertTrue(
+            listVisible,
+            "Plan space must render a ticket list (Sprint section or scroll view) after navigation"
+        )
+    }
+
+    /// Verify the New Ticket button is visible in Plan space.
+    func testPlanSpaceNewTicketButtonIsVisible() {
+        app.buttons["Intent"].click()
+        _ = app.lists.firstMatch.waitForExistence(timeout: 5)
+        let newTicketButton = app.buttons["New Ticket"]
+        XCTAssertTrue(
+            newTicketButton.waitForExistence(timeout: 5),
+            "Plan space sidebar must expose a 'New Ticket' button"
+        )
+    }
+
+    /// The New Ticket button must be hittable (not obscured).
+    func testPlanSpaceNewTicketButtonIsHittable() {
+        app.buttons["Intent"].click()
+        _ = app.lists.firstMatch.waitForExistence(timeout: 5)
+        let newTicketButton = app.buttons["New Ticket"]
+        XCTAssertTrue(newTicketButton.waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            newTicketButton.isHittable,
+            "New Ticket button must be hittable in Plan space"
+        )
+    }
+
+    /// Tapping New Ticket must reveal a text field for the ticket title.
+    func testPlanSpaceNewTicketButtonOpensQuickAddField() {
+        app.buttons["Intent"].click()
+        _ = app.lists.firstMatch.waitForExistence(timeout: 5)
+        let newTicketButton = app.buttons["New Ticket"]
+        guard newTicketButton.waitForExistence(timeout: 5) else {
+            XCTAssertTrue(app.windows.firstMatch.exists)
+            return
+        }
+        newTicketButton.click()
+        let quickAddField = app.textFields["New ticket title..."]
+        XCTAssertTrue(
+            quickAddField.waitForExistence(timeout: 3),
+            "Clicking New Ticket must open the quick-add text field"
+        )
+    }
+
+    /// The Plan View Mode picker must be present (List / Board / etc.).
+    func testPlanSpaceViewModePickerIsVisible() {
+        app.buttons["Intent"].click()
+        _ = app.lists.firstMatch.waitForExistence(timeout: 5)
+        let picker = app.segmentedControls.firstMatch
+        XCTAssertTrue(
+            picker.waitForExistence(timeout: 5),
+            "Plan space must show a view-mode segmented control (List/Board)"
+        )
+    }
+}

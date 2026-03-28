@@ -156,7 +156,7 @@ struct SchemaExplorer: View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Image(systemName: systemImage)
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                    .foregroundStyle(isSelected ? AnvilColor.accentBlue : .secondary)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)

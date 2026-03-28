@@ -1,4 +1,5 @@
 import SwiftUI
+import AnvilDomain
 
 // MARK: - Models
 
@@ -67,6 +68,36 @@ final class MessagingViewModel: ObservableObject {
         loadDemoMessages()
 
         selectedChannelId = channels.first?.id
+    }
+
+    // MARK: - Port Wiring
+
+    private var messagingPort: (any MessagingPort)?
+
+    /// Configure the messaging port for fetching channels from the domain layer.
+    func configure(messagingPort: any MessagingPort) {
+        self.messagingPort = messagingPort
+        Task { await loadChannels() }
+    }
+
+    private func loadChannels() async {
+        guard let port = messagingPort else { return }
+        do {
+            let fetched = try await port.channels()
+            // Map domain channels to local UI Channel type
+            self.channels = fetched.filter { !$0.isPrivate }.map { domainChannel in
+                Channel(
+                    name: domainChannel.name,
+                    icon: "number",
+                    isDirect: false,
+                    unreadCount: domainChannel.unreadCount,
+                    topic: domainChannel.topic ?? "",
+                    memberCount: domainChannel.memberCount
+                )
+            }
+        } catch {
+            // Keep existing demo data on failure
+        }
     }
 
     // MARK: - Demo Messages

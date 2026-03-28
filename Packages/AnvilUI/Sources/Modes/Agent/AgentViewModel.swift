@@ -169,15 +169,23 @@ public final class AgentViewModel: ObservableObject {
         sessions[index].model = modelId
 
         // Route through SwitchAgentProviderUseCase when a container is available.
-        // The use case handles pausing the session and preparing to resume with the new model.
+        // The use case handles logging the switch and preparing to resume with the new model.
         if let container {
             let useCase = container.makeSwitchAgentProviderUseCase()
+            let previousProvider = sessions[index].providerId
+            let sid = sessions[index].id
             Task {
-                // TODO: resolve an actual AgentPort from the ACP client for the newProvider parameter.
-                // For now the use case body is a no-op stub, so we pass a placeholder call
-                // to establish the wiring. Once AgentPort instances are surfaced through ACPClient
-                // this should pass the real provider.
-                _ = useCase // wired, awaiting AgentPort resolution
+                do {
+                    let result = try await useCase.execute(
+                        sessionId: sid,
+                        previousProviderName: previousProvider,
+                        newProviderName: modelId,
+                        model: modelId
+                    )
+                    logger.info("Provider switch recorded: \(result.previousProvider) -> \(result.newProvider)")
+                } catch {
+                    logger.warning("Provider switch skipped: \(error.localizedDescription)")
+                }
             }
         }
     }

@@ -185,7 +185,7 @@ struct LibrarySidebar: View {
                         Label("Load Demo Data", systemImage: "tray.and.arrow.down")
                             .font(AnvilFont.body)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.bordered)
                     .controlSize(.small)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -265,7 +265,7 @@ struct ExtensionsSidebarView: View {
                         Label("Browse Marketplace", systemImage: "puzzlepiece.extension")
                             .font(AnvilFont.body)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.bordered)
                     .controlSize(.small)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

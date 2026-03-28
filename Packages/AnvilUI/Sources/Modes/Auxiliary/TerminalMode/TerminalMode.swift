@@ -126,7 +126,7 @@ private struct TerminalWorkspace: View {
                     ForEach(viewModel.sessions) { session in
                         HStack(spacing: AnvilSpacing.sm) {
                             Image(systemName: session.isRunning ? "terminal" : "terminal.fill")
-                                .foregroundStyle(session.isRunning ? Color.accentColor : .secondary)
+                                .foregroundStyle(session.isRunning ? AnvilColor.accentBlue : .secondary)
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(session.title)

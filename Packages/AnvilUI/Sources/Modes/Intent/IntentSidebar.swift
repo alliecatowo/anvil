@@ -72,7 +72,7 @@ struct IntentSidebar: View {
         HStack(spacing: AnvilSpacing.sm) {
             Image(systemName: "plus.circle")
                 .font(.system(size: 12))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(AnvilColor.accentBlue)
 
             TextField("New ticket title...", text: $quickAddText)
                 .textFieldStyle(.roundedBorder)

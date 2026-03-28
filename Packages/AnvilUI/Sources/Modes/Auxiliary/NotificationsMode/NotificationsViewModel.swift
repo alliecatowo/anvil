@@ -111,6 +111,48 @@ final class NotificationsViewModel: ObservableObject {
         self.activityEvents = []
     }
 
+    // MARK: - Port Wiring
+
+    private var notificationPort: (any NotificationPort)?
+
+    /// Configure the notification port for fetching notifications from the domain layer.
+    func configure(notificationPort: any NotificationPort) {
+        self.notificationPort = notificationPort
+        Task { await loadNotifications() }
+    }
+
+    private func loadNotifications() async {
+        guard let port = notificationPort else { return }
+        do {
+            let fetched = try await port.notifications(unreadOnly: false)
+            // Map domain Notification entities to local InboxItem display models,
+            // merging with any existing items to avoid losing local state.
+            let existingIds = Set(inboxItems.map(\.id))
+            let newItems: [InboxItem] = fetched.compactMap { notification in
+                guard !existingIds.contains(notification.id) else { return nil }
+                let source: NotificationSource = {
+                    switch notification.source {
+                    case "github": return .pr
+                    case "deploy": return .deploy
+                    case "observability": return .error
+                    case "slack": return .mention
+                    default: return .message
+                    }
+                }()
+                return InboxItem(
+                    id: notification.id,
+                    notification: notification,
+                    source: source
+                )
+            }
+            if !newItems.isEmpty {
+                inboxItems.insert(contentsOf: newItems, at: 0)
+            }
+        } catch {
+            // Keep existing data on failure
+        }
+    }
+
     /// Load sample data for previews and demos.
     func loadSampleData() {
         let (items, events) = Self.makeSampleData()

@@ -102,6 +102,7 @@ final class ObservabilityViewModel: ObservableObject {
     // MARK: Data
 
     @Published var errors: [ErrorItem] = []
+    @Published var alerts: [AnvilDomain.Alert] = []
     @Published var metrics: [MetricCard] = []
     @Published var errorTrend: [ErrorTrendPoint] = []
     @Published var detailedError: ErrorEvent?
@@ -159,6 +160,7 @@ final class ObservabilityViewModel: ObservableObject {
         observabilityService?.disconnect()
         isConnected = false
         errors = []
+        alerts = []
         metrics = []
         errorTrend = []
         detailedError = nil
@@ -242,6 +244,7 @@ final class ObservabilityViewModel: ObservableObject {
         if usingDemoData { return }
         await loadErrors()
         await loadMetrics()
+        await loadAlerts()
     }
 
     func selectError(_ id: String) {
@@ -249,6 +252,29 @@ final class ObservabilityViewModel: ObservableObject {
         if !usingDemoData {
             Task { await loadErrorDetail(errorId: id) }
         }
+    }
+
+    // MARK: - Alerts
+
+    func loadAlerts() async {
+        guard let service = observabilityService, isConnected else { return }
+        let fetched = await service.fetchAlerts()
+        self.alerts = fetched
+    }
+
+    func acknowledgeAlert(alertId: String) {
+        guard let index = alerts.firstIndex(where: { $0.id == alertId }) else { return }
+        alerts[index].status = .acknowledged
+        alerts[index].acknowledgedAt = Date()
+        // Reassign to trigger @Published update
+        alerts = alerts
+    }
+
+    func resolveAlert(alertId: String) {
+        guard let index = alerts.firstIndex(where: { $0.id == alertId }) else { return }
+        alerts[index].status = .resolved
+        // Reassign to trigger @Published update
+        alerts = alerts
     }
 
     // MARK: - Helpers

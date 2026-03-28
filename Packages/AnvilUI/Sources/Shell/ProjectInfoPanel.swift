@@ -127,7 +127,7 @@ public struct ProjectInfoPanel: View {
                     Button("Save") {
                         saveChanges()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.bordered)
                     .controlSize(.regular)
                 }
                 .padding(AnvilSpacing.lg)

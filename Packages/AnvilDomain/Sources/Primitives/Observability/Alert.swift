@@ -5,9 +5,9 @@ public struct Alert: Sendable, Identifiable, Codable {
     public let name: String
     public let query: String
     public let threshold: Double
-    public let status: AlertStatus
+    public var status: AlertStatus
     public let triggeredAt: Date?
-    public let acknowledgedAt: Date?
+    public var acknowledgedAt: Date?
 
     public init(id: String = UUID().uuidString, name: String, query: String, threshold: Double, status: AlertStatus = .ok, triggeredAt: Date? = nil, acknowledgedAt: Date? = nil) {
         self.id = id

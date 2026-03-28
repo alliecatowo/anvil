@@ -39,6 +39,21 @@ public struct AnvilApp: App {
                         deploymentUseCase: container.makeCreateDeploymentUseCase()
                     )
 
+                    // Wire messaging port into messaging view model
+                    appState.messagingViewModel.configure(
+                        messagingPort: container.messagingService
+                    )
+
+                    // Wire schedule port into schedule view model
+                    appState.scheduleViewModel.configure(
+                        schedulePort: container.scheduleService
+                    )
+
+                    // Wire notification port into notifications view model
+                    appState.notificationsViewModel.configure(
+                        notificationPort: container.notificationService
+                    )
+
                     if let adapter = container.getOrCreateGitAdapter() {
                         await appState.loadGitStatus(from: adapter)
                     }

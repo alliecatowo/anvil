@@ -101,6 +101,42 @@ final class ScheduleViewModel: ObservableObject {
         self.selectedEntryID = nil
     }
 
+    // MARK: - Port Wiring
+
+    private var schedulePort: (any SchedulePort)?
+
+    /// Configure the schedule port for fetching events from the domain layer.
+    func configure(schedulePort: any SchedulePort) {
+        self.schedulePort = schedulePort
+        Task { await loadEvents() }
+    }
+
+    private func loadEvents() async {
+        guard let port = schedulePort else { return }
+        do {
+            let today = Date()
+            let fetched = try await port.events(date: today)
+            // Map domain CalendarEvents to local ScheduleEntry type
+            self.entries = fetched.map { event in
+                ScheduleEntry(
+                    id: event.id,
+                    title: event.title,
+                    start: event.start,
+                    end: event.end,
+                    kind: event.attendees.isEmpty ? .focusBlock : .meeting,
+                    subtitle: event.location,
+                    linkedTicket: nil,
+                    attendees: event.attendees
+                )
+            }
+            if selectedEntryID == nil {
+                selectedEntryID = entries.first?.id
+            }
+        } catch {
+            // Keep existing data on failure
+        }
+    }
+
     /// Load sample data for previews and demos.
     func loadSampleData() {
         self.entries = Self.makeSampleData()
