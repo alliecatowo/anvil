@@ -111,6 +111,7 @@ private struct RailButton: View {
     let action: () -> Void
 
     @State private var isHovered = false
+    @GestureState private var isPressed = false
 
     var body: some View {
         Button(action: action) {
@@ -127,6 +128,12 @@ private struct RailButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .scaleEffect(isPressed ? 0.93 : 1.0)
+        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .updating($isPressed) { _, pressed, _ in pressed = true }
+        )
         .accessibilityLabel(title)
         .accessibilityAddTraits(.isButton)
         .help(title)

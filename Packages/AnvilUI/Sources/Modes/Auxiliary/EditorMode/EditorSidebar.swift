@@ -70,34 +70,35 @@ struct EditorSidebar: View {
         let isSelected = node.filePath != nil
             && viewModel.selectedFile?.path == node.filePath
 
-        return HoverableRow(isSelected: isSelected) { HStack(spacing: AnvilSpacing.xxs) {
-            // Disclosure indicator for folders
-            if node.isFolder {
-                Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.tertiary)
-                    .frame(width: 12)
+        return HoverableRow(isSelected: isSelected) {
+            HStack(spacing: AnvilSpacing.xxs) {
+                // Disclosure indicator for folders
+                if node.isFolder {
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(.tertiary)
+                        .frame(width: 12)
+                        .accessibilityHidden(true)
+                } else {
+                    Spacer().frame(width: 12)
+                }
+
+                // Icon
+                Image(systemName: node.isFolder ? (isExpanded ? "folder.fill" : "folder") : fileIcon(for: node.name))
+                    .font(.system(size: 12))
+                    .foregroundStyle(node.isFolder ? AnvilColor.accentAmber : fileColor(for: node.name))
+                    .frame(width: 16)
                     .accessibilityHidden(true)
-            } else {
-                Spacer().frame(width: 12)
+
+                // Name
+                Text(node.name)
+                    .font(AnvilFont.code)
+                    .foregroundStyle(isSelected ? .primary : .secondary)
+                    .lineLimit(1)
+
+                Spacer()
             }
-
-            // Icon
-            Image(systemName: node.isFolder ? (isExpanded ? "folder.fill" : "folder") : fileIcon(for: node.name))
-                .font(.system(size: 12))
-                .foregroundStyle(node.isFolder ? AnvilColor.accentAmber : fileColor(for: node.name))
-                .frame(width: 16)
-                .accessibilityHidden(true)
-
-            // Name
-            Text(node.name)
-                .font(AnvilFont.code)
-                .foregroundStyle(isSelected ? .primary : .secondary)
-                .lineLimit(1)
-
-            Spacer()
-        }
-        .frame(height: 24)
+            .frame(height: 24)
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)

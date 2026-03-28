@@ -206,6 +206,30 @@ struct IntentSidebar: View {
     // MARK: - Ticket Row
 
     private func ticketRow(_ ticket: Ticket) -> some View {
+        TicketRowContent(
+            ticket: ticket,
+            isSelected: viewModel.selectedTicketId == ticket.id,
+            subtaskProgress: viewModel.subtaskProgress(ticket.id),
+            dueDate: ticket.dueDate
+        )
+        .contentShape(Rectangle())
+        .onTapGesture { viewModel.selectTicket(ticket.id) }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(ticket.title), \(ticket.id)")
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
+private struct TicketRowContent: View {
+    let ticket: Ticket
+    let isSelected: Bool
+    let subtaskProgress: (completed: Int, total: Int)
+    let dueDate: Date?
+
+    @State private var isHovered = false
+    @GestureState private var isPressed = false
+
+    var body: some View {
         HStack(spacing: AnvilSpacing.sm) {
             // Priority color strip
             RoundedRectangle(cornerRadius: 2)
@@ -256,19 +280,17 @@ struct IntentSidebar: View {
 
                     Spacer()
 
-                    // Subtask progress
-                    let progress = viewModel.subtaskProgress(ticket.id)
-                    if progress.total > 0 {
+                    if subtaskProgress.total > 0 {
                         HStack(spacing: 2) {
                             Image(systemName: "checklist")
                                 .font(.system(size: 9))
-                            Text("\(progress.completed)/\(progress.total)")
+                            Text("\(subtaskProgress.completed)/\(subtaskProgress.total)")
                                 .font(AnvilFont.label)
                         }
-                        .foregroundStyle(progress.completed == progress.total ? AnvilColor.accentGreen : .secondary)
+                        .foregroundStyle(subtaskProgress.completed == subtaskProgress.total ? AnvilColor.accentGreen : .secondary)
                     }
 
-                    if let due = ticket.dueDate {
+                    if let due = dueDate {
                         dueDateLabel(due)
                     }
                 }
@@ -277,12 +299,19 @@ struct IntentSidebar: View {
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
         .frame(height: AnvilSpacing.richListItemHeight)
-        .background(viewModel.selectedTicketId == ticket.id ? Color.accentColor.opacity(0.14) : Color.clear)
-        .contentShape(Rectangle())
-        .onTapGesture { viewModel.selectTicket(ticket.id) }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(ticket.title), \(ticket.id)")
-        .accessibilityAddTraits(.isButton)
+        .background(
+            isSelected
+                ? Color.accentColor.opacity(0.14)
+                : (isHovered ? Color.primary.opacity(0.06) : .clear)
+        )
+        .scaleEffect(isPressed ? 0.97 : 1.0)
+        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
+        .animation(.easeInOut(duration: 0.15), value: isHovered)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .updating($isPressed) { _, pressed, _ in pressed = true }
+        )
+        .onHover { isHovered = $0 }
     }
 
     // MARK: - Due Date

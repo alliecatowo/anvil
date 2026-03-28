@@ -406,6 +406,8 @@ private struct ModeHintChip: View {
     let isActive: Bool
     let action: () -> Void
 
+    @GestureState private var isPressed = false
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 3) {
@@ -419,6 +421,12 @@ private struct ModeHintChip: View {
         .buttonStyle(.bordered)
         .tint(isActive ? .accentColor : nil)
         .controlSize(.mini)
+        .scaleEffect(isPressed ? 0.93 : 1.0)
+        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .updating($isPressed) { _, pressed, _ in pressed = true }
+        )
         .accessibilityLabel("\(label) mode")
         .accessibilityAddTraits(.isButton)
     }
@@ -459,6 +467,8 @@ struct CommandResultItem: View {
     let isSelected: Bool
     var matchedIndices: Set<Int> = []
 
+    @State private var isHovered = false
+
     var body: some View {
         HStack(spacing: AnvilSpacing.sm) {
             Image(systemName: icon)
@@ -489,7 +499,18 @@ struct CommandResultItem: View {
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, subtitle != nil ? AnvilSpacing.xs : AnvilSpacing.xs)
-        .background(isSelected ? AnvilColor.selectionBackground : .clear)
+        .background(
+            isSelected
+                ? AnvilColor.selectionBackground
+                : (isHovered ? Color.primary.opacity(0.06) : .clear)
+        )
+        .scaleEffect(isSelected ? 1.01 : 1.0)
+        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.12)) {
+                isHovered = hovering
+            }
+        }
     }
 
     private var highlightedTitle: Text {
@@ -521,6 +542,8 @@ private struct FileResultItem: View {
     let isSelected: Bool
     var matchedIndices: Set<Int> = []
 
+    @State private var isHovered = false
+
     var body: some View {
         HStack(spacing: AnvilSpacing.sm) {
             Image(systemName: file.icon)
@@ -543,7 +566,18 @@ private struct FileResultItem: View {
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
-        .background(isSelected ? AnvilColor.selectionBackground : .clear)
+        .background(
+            isSelected
+                ? AnvilColor.selectionBackground
+                : (isHovered ? Color.primary.opacity(0.06) : .clear)
+        )
+        .scaleEffect(isSelected ? 1.01 : 1.0)
+        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.12)) {
+                isHovered = hovering
+            }
+        }
     }
 
     private var highlightedName: Text {
@@ -574,6 +608,8 @@ private struct SymbolResultItem: View {
     let symbol: SymbolResult
     let isSelected: Bool
     var matchedIndices: Set<Int> = []
+
+    @State private var isHovered = false
 
     var body: some View {
         HStack(spacing: AnvilSpacing.sm) {
@@ -610,7 +646,18 @@ private struct SymbolResultItem: View {
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
-        .background(isSelected ? AnvilColor.selectionBackground : .clear)
+        .background(
+            isSelected
+                ? AnvilColor.selectionBackground
+                : (isHovered ? Color.primary.opacity(0.06) : .clear)
+        )
+        .scaleEffect(isSelected ? 1.01 : 1.0)
+        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.12)) {
+                isHovered = hovering
+            }
+        }
     }
 
     private var highlightedName: Text {

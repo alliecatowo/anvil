@@ -37,21 +37,23 @@ struct AgentSidebar: View {
                     Section {
                         ForEach(viewModel.synthesisRooms) { room in
                             let isActive = isSynthesisRoomActive(room.id)
-                            HStack(spacing: AnvilSpacing.sm) {
-                                Image(systemName: "arrow.triangle.merge")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(AnvilColor.accentPurple)
-                                    .accessibilityHidden(true)
+                            HoverableRow(isSelected: isActive) {
+                                HStack(spacing: AnvilSpacing.sm) {
+                                    Image(systemName: "arrow.triangle.merge")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(AnvilColor.accentPurple)
+                                        .accessibilityHidden(true)
 
-                                Text(room.title)
-                                    .lineLimit(1)
+                                    Text(room.title)
+                                        .lineLimit(1)
 
-                                Spacer()
+                                    Spacer()
 
-                                Circle()
-                                    .fill(synthesisStatusColor(room.status))
-                                    .frame(width: 6, height: 6)
-                                    .accessibilityHidden(true)
+                                    Circle()
+                                        .fill(synthesisStatusColor(room.status))
+                                        .frame(width: 6, height: 6)
+                                        .accessibilityHidden(true)
+                                }
                             }
                             .contentShape(Rectangle())
                             .listRowBackground(isActive ? AnvilColor.selectionBackground : Color.clear)

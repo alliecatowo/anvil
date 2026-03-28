@@ -85,45 +85,42 @@ struct ReviewSidebar: View {
     }
 
     private func branchRow(_ branch: Branch) -> some View {
-        HStack(spacing: AnvilSpacing.sm) {
-            Image(systemName: branch.isCurrent ? "checkmark.circle.fill" : "arrow.triangle.branch")
-                .font(.system(size: 11))
-                .foregroundStyle(branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textTertiary)
-                .frame(width: 16)
-                .accessibilityHidden(true)
+        HoverableRow(isSelected: viewModel.selectedBranchName == branch.name) {
+            HStack(spacing: AnvilSpacing.sm) {
+                Image(systemName: branch.isCurrent ? "checkmark.circle.fill" : "arrow.triangle.branch")
+                    .font(.system(size: 11))
+                    .foregroundStyle(branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textTertiary)
+                    .frame(width: 16)
+                    .accessibilityHidden(true)
 
-            Text(branch.name)
-                .font(AnvilFont.code)
-                .foregroundStyle(
-                    viewModel.selectedBranchName == branch.name
-                        ? AnvilColor.accentBlue
-                        : (branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textPrimary)
-                )
-                .lineLimit(1)
+                Text(branch.name)
+                    .font(AnvilFont.code)
+                    .foregroundStyle(
+                        viewModel.selectedBranchName == branch.name
+                            ? AnvilColor.accentBlue
+                            : (branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textPrimary)
+                    )
+                    .lineLimit(1)
 
-            Spacer()
+                Spacer()
 
-            if branch.aheadCount > 0 {
-                Text("+\(branch.aheadCount)")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.accentGreen)
+                if branch.aheadCount > 0 {
+                    Text("+\(branch.aheadCount)")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.accentGreen)
+                }
+                if branch.behindCount > 0 {
+                    Text("-\(branch.behindCount)")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.accentRed)
+                }
             }
-            if branch.behindCount > 0 {
-                Text("-\(branch.behindCount)")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.accentRed)
-            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Branch \(branch.name)\(branch.isCurrent ? ", current" : "")")
+            .padding(.horizontal, AnvilSpacing.md)
+            .padding(.vertical, AnvilSpacing.xs)
+            .frame(height: AnvilSpacing.listItemHeight)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Branch \(branch.name)\(branch.isCurrent ? ", current" : "")")
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.xs)
-        .frame(height: AnvilSpacing.listItemHeight)
-        .background(
-            viewModel.selectedBranchName == branch.name
-                ? AnvilColor.selectionBackground
-                : Color.clear
-        )
         .contentShape(Rectangle())
         .onTapGesture {
             guard !branch.isCurrent else { return }
@@ -240,38 +237,40 @@ struct ReviewSidebar: View {
     }
 
     private func prRow(_ pr: PullRequest) -> some View {
-        HStack(spacing: AnvilSpacing.sm) {
-            Image(systemName: pr.isDraft ? "circle.dashed" : "arrow.triangle.pull")
-                .font(.system(size: 11))
-                .foregroundStyle(prStatusColor(pr.status))
-                .frame(width: 16)
-                .accessibilityHidden(true)
+        HoverableRow {
+            HStack(spacing: AnvilSpacing.sm) {
+                Image(systemName: pr.isDraft ? "circle.dashed" : "arrow.triangle.pull")
+                    .font(.system(size: 11))
+                    .foregroundStyle(prStatusColor(pr.status))
+                    .frame(width: 16)
+                    .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text(pr.title)
-                    .font(AnvilFont.code)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(pr.title)
+                        .font(AnvilFont.code)
+                        .foregroundStyle(AnvilColor.textPrimary)
+                        .lineLimit(1)
 
-                Text("#\(pr.number) by \(pr.author)")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .lineLimit(1)
+                    Text("#\(pr.number) by \(pr.author)")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                if pr.isDraft {
+                    Text("Draft")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                }
             }
-
-            Spacer()
-
-            if pr.isDraft {
-                Text("Draft")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
-            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(pr.title), #\(pr.number) by \(pr.author), \(pr.status.rawValue)\(pr.isDraft ? ", draft" : "")")
+            .padding(.horizontal, AnvilSpacing.md)
+            .padding(.vertical, AnvilSpacing.xs)
+            .frame(minHeight: AnvilSpacing.listItemHeight)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(pr.title), #\(pr.number) by \(pr.author), \(pr.status.rawValue)\(pr.isDraft ? ", draft" : "")")
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.xs)
-        .frame(minHeight: AnvilSpacing.listItemHeight)
         .contentShape(Rectangle())
         .onTapGesture {
             guard let adapter = container.getOrCreateGitHubAdapter() else { return }
@@ -455,41 +454,38 @@ struct ReviewSidebar: View {
     }
 
     private func fileRow(_ file: FileDiff) -> some View {
-        HStack(spacing: AnvilSpacing.sm) {
-            Image(systemName: fileIcon(for: file.status))
-                .font(.system(size: 12))
-                .foregroundStyle(fileColor(for: file.status))
-                .frame(width: 16)
-                .accessibilityHidden(true)
+        HoverableRow(isSelected: viewModel.selectedFileID == file.id) {
+            HStack(spacing: AnvilSpacing.sm) {
+                Image(systemName: fileIcon(for: file.status))
+                    .font(.system(size: 12))
+                    .foregroundStyle(fileColor(for: file.status))
+                    .frame(width: 16)
+                    .accessibilityHidden(true)
 
-            Text(file.filePath.components(separatedBy: "/").last ?? file.filePath)
-                .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.textPrimary)
-                .lineLimit(1)
+                Text(file.filePath.components(separatedBy: "/").last ?? file.filePath)
+                    .font(AnvilFont.code)
+                    .foregroundStyle(AnvilColor.textPrimary)
+                    .lineLimit(1)
 
-            Spacer()
+                Spacer()
 
-            // Hunk decision summary
-            let approved = file.hunks.filter { viewModel.decisionFor($0.id) == .approved }.count
-            let total = file.hunks.count
-            if approved > 0 {
-                Text("\(approved)/\(total)")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(
-                        approved == total ? AnvilColor.accentGreen : AnvilColor.textTertiary
-                    )
+                // Hunk decision summary
+                let approved = file.hunks.filter { viewModel.decisionFor($0.id) == .approved }.count
+                let total = file.hunks.count
+                if approved > 0 {
+                    Text("\(approved)/\(total)")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(
+                            approved == total ? AnvilColor.accentGreen : AnvilColor.textTertiary
+                        )
+                }
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(file.filePath.components(separatedBy: "/").last ?? file.filePath), \(file.status)")
+            .padding(.horizontal, AnvilSpacing.md)
+            .padding(.vertical, AnvilSpacing.xs)
+            .frame(height: AnvilSpacing.listItemHeight)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(file.filePath.components(separatedBy: "/").last ?? file.filePath), \(file.status)")
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.xs)
-        .frame(height: AnvilSpacing.listItemHeight)
-        .background(
-            viewModel.selectedFileID == file.id
-                ? AnvilColor.selectionBackground
-                : Color.clear
-        )
         .contentShape(Rectangle())
         .onTapGesture { viewModel.selectFile(file.id) }
     }
