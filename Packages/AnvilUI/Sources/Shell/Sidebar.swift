@@ -20,7 +20,7 @@ public struct Sidebar: View {
                 case .review:
                     ReviewSidebar(viewModel: appState.reviewViewModel)
                 case .operate:
-                    ShipSidebar(viewModel: appState.shipViewModel)
+                    OperateSidebar()
                 case .library:
                     LibrarySidebar()
                 }
@@ -118,9 +118,9 @@ struct CollapsedSidebar: View {
     }
 }
 
-private struct TerminalSessionList: View {
+struct TerminalSessionList: View {
     @ObservedObject var viewModel: TerminalViewModel
-    let onSelect: (UUID) -> Void
+    var onSelect: ((UUID) -> Void)?
 
     var body: some View {
         ForEach(viewModel.sessions) { session in
@@ -130,7 +130,8 @@ private struct TerminalSessionList: View {
                 subtitle: session.isRunning ? "running" : "exited",
                 isActive: isSelected(session),
                 action: {
-                    onSelect(session.id)
+                    viewModel.selectTab(session.id)
+                    onSelect?(session.id)
                 }
             )
         }

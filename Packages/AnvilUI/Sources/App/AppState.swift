@@ -112,6 +112,18 @@ public class AppState: ObservableObject {
     @Published var databaseViewModel = DatabaseViewModel()
     @Published var gitHubPRViewModel = GitHubPRViewModel()
     @Published var pluginMarketplaceViewModel = PluginMarketplaceViewModel()
+    @Published var messagingViewModel = MessagingViewModel()
+    @Published var scheduleViewModel = ScheduleViewModel()
+
+    // MARK: - Operate Section
+
+    @Published public var operateActiveSection: OperateSection = .deploy
+
+    public enum OperateSection: String, CaseIterable, Sendable {
+        case deploy = "Deploy"
+        case monitor = "Monitor"
+        case terminal = "Terminal"
+    }
 
     // MARK: - Library Section
 
@@ -121,6 +133,8 @@ public class AppState: ObservableObject {
         case docs = "Docs"
         case extensions = "Extensions"
         case notifications = "Inbox"
+        case messages = "Messages"
+        case schedule = "Schedule"
     }
 
     // MARK: - Split Editor

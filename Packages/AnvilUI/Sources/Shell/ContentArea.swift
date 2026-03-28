@@ -15,7 +15,7 @@ public struct ContentArea: View {
             case .review:
                 ReviewModeContent(viewModel: appState.reviewViewModel)
             case .operate:
-                ShipModeContent(viewModel: appState.shipViewModel)
+                OperateContent()
             case .library:
                 LibraryContent()
             }
@@ -251,6 +251,21 @@ struct ShipModeContent: View {
     }
 }
 
+struct OperateContent: View {
+    @EnvironmentObject var appState: AppState
+
+    var body: some View {
+        switch appState.operateActiveSection {
+        case .deploy:
+            ShipModeContent(viewModel: appState.shipViewModel)
+        case .monitor:
+            ObservabilityMode()
+        case .terminal:
+            TerminalMode()
+        }
+    }
+}
+
 struct LibraryContent: View {
     @EnvironmentObject var appState: AppState
 
@@ -262,6 +277,10 @@ struct LibraryContent: View {
             PluginMarketplaceMode(viewModel: appState.pluginMarketplaceViewModel)
         case .notifications:
             NotificationsContentView(viewModel: appState.notificationsViewModel)
+        case .messages:
+            MessagingModeContent(viewModel: appState.messagingViewModel)
+        case .schedule:
+            ScheduleModeContent(viewModel: appState.scheduleViewModel)
         }
     }
 }
@@ -289,6 +308,78 @@ struct NotificationsContentView: View {
                 message: "Select a notification from the sidebar."
             )
         }
+    }
+}
+
+struct MessagingModeContent: View {
+    @ObservedObject var viewModel: MessagingViewModel
+
+    var body: some View {
+        NavigationSplitView {
+            ChannelList(viewModel: viewModel)
+                .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 340)
+        } detail: {
+            ChatView(viewModel: viewModel)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .navigationSplitViewStyle(.balanced)
+        .background(.background)
+    }
+}
+
+struct ScheduleModeContent: View {
+    @ObservedObject var viewModel: ScheduleViewModel
+
+    var body: some View {
+        HStack(spacing: 0) {
+            VStack(spacing: 0) {
+                scheduleTabSelector
+                Divider()
+
+                Group {
+                    switch viewModel.selectedTab {
+                    case .agenda:
+                        AgendaView(viewModel: viewModel)
+                    case .blocks:
+                        TimeBlockView(viewModel: viewModel)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .onAppear {
+            if viewModel.entries.isEmpty {
+                viewModel.loadSampleData()
+            }
+        }
+    }
+
+    private var scheduleTabSelector: some View {
+        HStack(spacing: 0) {
+            ForEach(ScheduleTab.allCases, id: \.rawValue) { tab in
+                Button {
+                    viewModel.selectedTab = tab
+                } label: {
+                    Text(tab.rawValue)
+                        .font(AnvilFont.label)
+                        .foregroundStyle(
+                            viewModel.selectedTab == tab
+                                ? .primary
+                                : .tertiary
+                        )
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AnvilSpacing.sm)
+                        .background(
+                            viewModel.selectedTab == tab
+                                ? Color.accentColor.opacity(0.15)
+                                : Color.clear
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, AnvilSpacing.sm)
+        .padding(.vertical, AnvilSpacing.xs)
     }
 }
 

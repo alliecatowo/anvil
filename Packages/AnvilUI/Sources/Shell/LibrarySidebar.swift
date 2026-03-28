@@ -24,6 +24,10 @@ struct LibrarySidebar: View {
                 ExtensionsSidebarView(viewModel: appState.pluginMarketplaceViewModel)
             case .notifications:
                 notificationsList
+            case .messages:
+                messagingChannelList
+            case .schedule:
+                scheduleSidebarList
             }
         }
     }
@@ -83,6 +87,161 @@ struct LibrarySidebar: View {
                 .listStyle(.sidebar)
             }
         }
+    }
+    // MARK: - Compact Channel List
+
+    private var messagingChannelList: some View {
+        let viewModel = appState.messagingViewModel
+        return Group {
+            if viewModel.channels.isEmpty && viewModel.directMessages.isEmpty {
+                Text("No channels")
+                    .font(AnvilFont.body)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List {
+                    if !viewModel.channels.isEmpty {
+                        Section {
+                            ForEach(viewModel.channels) { channel in
+                                messagingChannelRow(channel, viewModel: viewModel)
+                            }
+                        } header: {
+                            Text("Channels")
+                                .font(AnvilFont.label)
+                        }
+                    }
+
+                    if !viewModel.directMessages.isEmpty {
+                        Section {
+                            ForEach(viewModel.directMessages) { channel in
+                                messagingChannelRow(channel, viewModel: viewModel)
+                            }
+                        } header: {
+                            Text("Direct Messages")
+                                .font(AnvilFont.label)
+                        }
+                    }
+                }
+                .listStyle(.sidebar)
+            }
+        }
+    }
+
+    private func messagingChannelRow(_ channel: Channel, viewModel: MessagingViewModel) -> some View {
+        let isSelected = viewModel.selectedChannelId == channel.id
+        let hasUnread = channel.unreadCount > 0
+
+        return HStack(spacing: AnvilSpacing.sm) {
+            Image(systemName: channel.icon)
+                .font(.system(size: 11))
+                .foregroundStyle(isSelected ? Color.accentColor : AnvilColor.textTertiary)
+                .frame(width: 16)
+
+            Text(channel.name)
+                .font(AnvilFont.sidebarItem)
+                .foregroundStyle(hasUnread ? .primary : .secondary)
+                .fontWeight(hasUnread ? .medium : .regular)
+                .lineLimit(1)
+
+            Spacer()
+
+            if hasUnread {
+                Text("\(channel.unreadCount)")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, AnvilSpacing.xs)
+                    .padding(.vertical, AnvilSpacing.xxxs)
+                    .background(Color.accentColor)
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(.vertical, AnvilSpacing.xxs)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            viewModel.selectChannel(channel.id)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(hasUnread ? "Unread, " : "")\(channel.name)")
+        .accessibilityAddTraits(.isButton)
+        .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 8))
+        .listRowSeparator(.hidden)
+        .listRowBackground(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
+    }
+
+    // MARK: - Compact Schedule List
+
+    private var scheduleSidebarList: some View {
+        let viewModel = appState.scheduleViewModel
+        return Group {
+            if viewModel.entries.isEmpty {
+                VStack(spacing: AnvilSpacing.md) {
+                    Text("No events today")
+                        .font(AnvilFont.body)
+                        .foregroundStyle(AnvilColor.textTertiary)
+
+                    Button {
+                        viewModel.loadSampleData()
+                    } label: {
+                        Label("Load Demo Data", systemImage: "tray.and.arrow.down")
+                            .font(AnvilFont.body)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List {
+                    ForEach(viewModel.entries) { entry in
+                        scheduleEntryRow(entry, viewModel: viewModel)
+                    }
+                }
+                .listStyle(.sidebar)
+            }
+        }
+    }
+
+    private func scheduleEntryRow(_ entry: ScheduleEntry, viewModel: ScheduleViewModel) -> some View {
+        let isSelected = viewModel.selectedEntryID == entry.id
+        let timeFormatter: DateFormatter = {
+            let f = DateFormatter()
+            f.dateFormat = "h:mm a"
+            return f
+        }()
+
+        return HStack(spacing: AnvilSpacing.sm) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(entry.kindColor)
+                .frame(width: 3, height: 28)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(entry.title)
+                    .font(AnvilFont.sidebarItem)
+                    .foregroundStyle(AnvilColor.textPrimary)
+                    .lineLimit(1)
+
+                Text("\(timeFormatter.string(from: entry.start)) - \(entry.duration)")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            Image(systemName: entry.kindIcon)
+                .font(.system(size: 10))
+                .foregroundStyle(entry.kindColor)
+        }
+        .padding(.vertical, AnvilSpacing.xxs)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            viewModel.selectedEntryID = entry.id
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(entry.title), \(timeFormatter.string(from: entry.start))")
+        .accessibilityAddTraits(.isButton)
+        .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 8))
+        .listRowSeparator(.hidden)
+        .listRowBackground(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
     }
 }
 

@@ -419,6 +419,14 @@ public class DependencyContainer: ObservableObject {
         GenerateCommitMessageUseCase()
     }
 
+    public func makeCreateReviewUseCase() -> CreateReviewUseCase {
+        CreateReviewUseCase(reviewPort: reviewService, eventBus: eventBus)
+    }
+
+    public func makeUpdateReviewUseCase() -> UpdateReviewUseCase {
+        UpdateReviewUseCase(reviewPort: reviewService, eventBus: eventBus)
+    }
+
     public func makeCreateProjectUseCase() -> CreateProjectUseCase {
         CreateProjectUseCase()
     }
