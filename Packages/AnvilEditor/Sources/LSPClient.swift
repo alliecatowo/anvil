@@ -5,8 +5,6 @@ import Foundation
 /// A JSON-RPC 2.0 client that communicates with sourcekit-lsp over stdin/stdout.
 public final class LSPClient: Sendable {
 
-    // MARK: - Internal State (actor-isolated)
-
     private let transport: LSPTransport
 
     public init() {
@@ -33,15 +31,18 @@ public final class LSPClient: Sendable {
                 ]
             ] as [String: Any]
         ]
+        let paramsData = try JSONSerialization.data(withJSONObject: initParams)
 
-        _ = try await transport.sendRequest(method: "initialize", params: initParams)
-        try await transport.sendNotification(method: "initialized", params: [:] as [String: Any])
+        _ = try await transport.sendRequest(method: "initialize", paramsData: paramsData)
+
+        let emptyData = Data("{}".utf8)
+        try await transport.sendNotification(method: "initialized", paramsData: emptyData)
     }
 
     /// Shut down the LSP server gracefully.
     public func shutdown() async {
-        _ = try? await transport.sendRequest(method: "shutdown", params: nil)
-        await transport.sendNotificationFireAndForget(method: "exit", params: nil)
+        _ = try? await transport.sendRequest(method: "shutdown", paramsData: nil)
+        await transport.sendNotificationFireAndForget(method: "exit", paramsData: nil)
         await transport.terminate()
     }
 
@@ -57,7 +58,8 @@ public final class LSPClient: Sendable {
                 "text": text
             ]
         ]
-        try? await transport.sendNotification(method: "textDocument/didOpen", params: params)
+        guard let data = try? JSONSerialization.data(withJSONObject: params) else { return }
+        try? await transport.sendNotification(method: "textDocument/didOpen", paramsData: data)
     }
 
     /// Notify the server that a document changed (full-text sync).
@@ -71,17 +73,17 @@ public final class LSPClient: Sendable {
                 ["text": text]
             ]
         ]
-        try? await transport.sendNotification(method: "textDocument/didChange", params: params)
+        guard let data = try? JSONSerialization.data(withJSONObject: params) else { return }
+        try? await transport.sendNotification(method: "textDocument/didChange", paramsData: data)
     }
 
     /// Notify the server that a document was closed.
     public func didClose(uri: String) async {
         let params: [String: Any] = [
-            "textDocument": [
-                "uri": uri
-            ]
+            "textDocument": ["uri": uri]
         ]
-        try? await transport.sendNotification(method: "textDocument/didClose", params: params)
+        guard let data = try? JSONSerialization.data(withJSONObject: params) else { return }
+        try? await transport.sendNotification(method: "textDocument/didClose", paramsData: data)
     }
 
     // MARK: - Completion
@@ -92,8 +94,9 @@ public final class LSPClient: Sendable {
             "textDocument": ["uri": uri],
             "position": ["line": line, "character": character]
         ]
+        guard let paramsData = try? JSONSerialization.data(withJSONObject: params) else { return [] }
         do {
-            let data = try await transport.sendRequest(method: "textDocument/completion", params: params)
+            let data = try await transport.sendRequest(method: "textDocument/completion", paramsData: paramsData)
             return Self.parseCompletionResponse(data)
         } catch {
             return []
@@ -106,8 +109,9 @@ public final class LSPClient: Sendable {
             "textDocument": ["uri": uri],
             "position": ["line": line, "character": character]
         ]
+        guard let paramsData = try? JSONSerialization.data(withJSONObject: params) else { return nil }
         do {
-            let data = try await transport.sendRequest(method: "textDocument/definition", params: params)
+            let data = try await transport.sendRequest(method: "textDocument/definition", paramsData: paramsData)
             return Self.parseDefinitionResponse(data)
         } catch {
             return nil
@@ -193,7 +197,7 @@ public final class LSPClient: Sendable {
 // MARK: - LSP Transport Actor
 
 /// Actor that owns the Process and manages JSON-RPC request/response matching.
-/// Returns `Data` across the actor boundary to satisfy Sendable constraints.
+/// All data crossing the actor boundary is `Data` (Sendable).
 actor LSPTransport {
     private var process: Process?
     private var stdinPipe: Pipe?
@@ -208,7 +212,6 @@ actor LSPTransport {
         case processLaunchFailed(String)
         case invalidResponse
         case serverError(code: Int, message: String)
-        case nullResult
     }
 
     // MARK: - Launch
@@ -262,9 +265,10 @@ actor LSPTransport {
 
     // MARK: - Send Request
 
-    /// Send a JSON-RPC request and return the raw JSON Data of the "result" field.
+    /// Send a JSON-RPC request. `paramsData` is pre-serialized JSON for the "params" field.
+    /// Returns the raw JSON Data of the "result" field.
     @discardableResult
-    func sendRequest(method: String, params: (any Sendable)?) async throws -> Data {
+    func sendRequest(method: String, paramsData: Data?) async throws -> Data {
         guard let pipe = stdinPipe, process?.isRunning == true else {
             throw TransportError.notRunning
         }
@@ -272,22 +276,14 @@ actor LSPTransport {
         let requestId = nextRequestId
         nextRequestId += 1
 
-        var body: [String: Any] = [
-            "jsonrpc": "2.0",
-            "id": requestId,
-            "method": method,
-        ]
-        if let params {
-            body["params"] = params
-        }
+        let messageData = buildRequestMessage(id: requestId, method: method, paramsData: paramsData)
 
-        let jsonData = try JSONSerialization.data(withJSONObject: body)
-        let header = "Content-Length: \(jsonData.count)\r\n\r\n"
+        let header = "Content-Length: \(messageData.count)\r\n\r\n"
         let headerData = Data(header.utf8)
 
         let fileHandle = pipe.fileHandleForWriting
         try fileHandle.write(contentsOf: headerData)
-        try fileHandle.write(contentsOf: jsonData)
+        try fileHandle.write(contentsOf: messageData)
 
         return try await withCheckedThrowingContinuation { continuation in
             pendingRequests[requestId] = continuation
@@ -296,30 +292,45 @@ actor LSPTransport {
 
     // MARK: - Send Notification
 
-    func sendNotification(method: String, params: (any Sendable)?) throws {
+    func sendNotification(method: String, paramsData: Data?) throws {
         guard let pipe = stdinPipe, process?.isRunning == true else {
             throw TransportError.notRunning
         }
 
-        var body: [String: Any] = [
-            "jsonrpc": "2.0",
-            "method": method,
-        ]
-        if let params {
-            body["params"] = params
-        }
+        let messageData = buildNotificationMessage(method: method, paramsData: paramsData)
 
-        let jsonData = try JSONSerialization.data(withJSONObject: body)
-        let header = "Content-Length: \(jsonData.count)\r\n\r\n"
+        let header = "Content-Length: \(messageData.count)\r\n\r\n"
         let headerData = Data(header.utf8)
 
         let fileHandle = pipe.fileHandleForWriting
         try fileHandle.write(contentsOf: headerData)
-        try fileHandle.write(contentsOf: jsonData)
+        try fileHandle.write(contentsOf: messageData)
     }
 
-    func sendNotificationFireAndForget(method: String, params: (any Sendable)?) {
-        try? sendNotification(method: method, params: params)
+    func sendNotificationFireAndForget(method: String, paramsData: Data?) {
+        try? sendNotification(method: method, paramsData: paramsData)
+    }
+
+    // MARK: - Message Building
+
+    /// Build a JSON-RPC request message by embedding pre-serialized params data.
+    private nonisolated func buildRequestMessage(id: Int, method: String, paramsData: Data?) -> Data {
+        var json = "{\"jsonrpc\":\"2.0\",\"id\":\(id),\"method\":\"\(method)\""
+        if let paramsData, let paramsString = String(data: paramsData, encoding: .utf8) {
+            json += ",\"params\":\(paramsString)"
+        }
+        json += "}"
+        return Data(json.utf8)
+    }
+
+    /// Build a JSON-RPC notification message by embedding pre-serialized params data.
+    private nonisolated func buildNotificationMessage(method: String, paramsData: Data?) -> Data {
+        var json = "{\"jsonrpc\":\"2.0\",\"method\":\"\(method)\""
+        if let paramsData, let paramsString = String(data: paramsData, encoding: .utf8) {
+            json += ",\"params\":\(paramsString)"
+        }
+        json += "}"
+        return Data(json.utf8)
     }
 
     // MARK: - Read Loop
@@ -384,7 +395,6 @@ actor LSPTransport {
             if JSONSerialization.isValidJSONObject(resultValue) {
                 resultData = try? JSONSerialization.data(withJSONObject: resultValue)
             } else {
-                // Primitive result (null, number, bool, etc.)
                 resultData = Data("null".utf8)
             }
         }
