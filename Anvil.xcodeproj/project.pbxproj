@@ -48,10 +48,12 @@
 		B11A86314BE683CE3A87D8D2 /* StreamingCodeBlockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D733AC474861365F2B4073E0 /* StreamingCodeBlockTests.swift */; };
 		C4F873ED50655AFE74E60120 /* GitHubPRTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C02AAC219EE66FE4B00EEB1 /* GitHubPRTests.swift */; };
 		D4B14C28544AC9FF1B413B57 /* AppLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9DBFBF97368BA44840EFCC /* AppLaunchTests.swift */; };
+		D9EF25B0E84D0F1307619F65 /* AnvilTerminal in Frameworks */ = {isa = PBXBuildFile; productRef = 1813D1CC76401047F8B9FC00 /* AnvilTerminal */; };
 		DD970FBFF917346C9844DE79 /* ContextInjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13E63D9B3E69B3AF4BFC5560 /* ContextInjectionTests.swift */; };
 		E2FD375E8791CF210C6940F8 /* TestingModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FA6070F257B5DFC0A629B1 /* TestingModeTests.swift */; };
 		E35CE242E58EA17749E67105 /* AIInlineEditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7A583A4F4730C77F6BC83C5 /* AIInlineEditTests.swift */; };
 		E627D97352F00357E76D5227 /* GitBlameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63A0C42179D9E4EBD431DEDC /* GitBlameTests.swift */; };
+		E8E199935064F8063F6BCBF6 /* AnvilEditor in Frameworks */ = {isa = PBXBuildFile; productRef = 6709AB5C9DD55E903BA1CCBB /* AnvilEditor */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,6 +76,7 @@
 		2CAE23C81D7950D976E7065E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3F9551FE95E96F690BBF5E64 /* AgentModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentModeTests.swift; sourceTree = "<group>"; };
 		3F9DBFBF97368BA44840EFCC /* AppLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLaunchTests.swift; sourceTree = "<group>"; };
+		4052646D7B50474DDB3BB6EB /* AnvilTerminal */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AnvilTerminal; path = Packages/AnvilTerminal; sourceTree = SOURCE_ROOT; };
 		465D94CFBBA1049887BDA06C /* SidebarTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarTests.swift; sourceTree = "<group>"; };
 		53FA6070F257B5DFC0A629B1 /* TestingModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestingModeTests.swift; sourceTree = "<group>"; };
 		55F40F2FEF3E69D5EE12C3BC /* TokenUsageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenUsageTests.swift; sourceTree = "<group>"; };
@@ -97,6 +100,7 @@
 		B4D9033C94E685995BC01DDE /* QuickCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureTests.swift; sourceTree = "<group>"; };
 		B635D5B914EC22692BE0CB28 /* TagManagementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagManagementTests.swift; sourceTree = "<group>"; };
 		B8E65C0D4F0B96E958C2C3C4 /* CrossModeFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrossModeFlowTests.swift; sourceTree = "<group>"; };
+		B90A3F8C97E09F5FA7FF3EA6 /* AnvilEditor */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AnvilEditor; path = Packages/AnvilEditor; sourceTree = SOURCE_ROOT; };
 		BB6990D66CCF7442B756F660 /* EditorModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorModeTests.swift; sourceTree = "<group>"; };
 		C6A468039895E6190AA16449 /* ModelPickerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPickerTests.swift; sourceTree = "<group>"; };
 		CA0E25E1FB1FA3CDD65C97A3 /* NavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationTests.swift; sourceTree = "<group>"; };
@@ -127,6 +131,8 @@
 				154A9F07EC5048C2BCE551D1 /* AnvilUI in Frameworks */,
 				7154429CDF2C507C1E3576DA /* AnvilPluginSDK in Frameworks */,
 				075F71762F365B3020772617 /* AnvilGit in Frameworks */,
+				D9EF25B0E84D0F1307619F65 /* AnvilTerminal in Frameworks */,
+				E8E199935064F8063F6BCBF6 /* AnvilEditor in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -148,9 +154,11 @@
 				E6D771021A76C4E847E3740C /* AnvilACP */,
 				85264645E37A974BDB22EE12 /* AnvilApplication */,
 				D4200176DECF1DED2F432E8B /* AnvilDomain */,
+				B90A3F8C97E09F5FA7FF3EA6 /* AnvilEditor */,
 				E7680C81FA64A597F6FBB876 /* AnvilGit */,
 				EF73D13DDBF64DCC3C06EB9C /* AnvilInfrastructure */,
 				93821DD9DB0A0A24BB3A7DF5 /* AnvilPluginSDK */,
+				4052646D7B50474DDB3BB6EB /* AnvilTerminal */,
 				7E01E70D2E8D77660D70A690 /* AnvilUI */,
 			);
 			path = Packages;
@@ -262,6 +270,8 @@
 				28DBB048996F83A2ECCE41B9 /* AnvilUI */,
 				245E4D000FCF68F83BCCAFFC /* AnvilPluginSDK */,
 				941B587BC949491EFAB365AE /* AnvilGit */,
+				1813D1CC76401047F8B9FC00 /* AnvilTerminal */,
+				6709AB5C9DD55E903BA1CCBB /* AnvilEditor */,
 			);
 			productName = Anvil;
 			productReference = 5DC466FC14E977C9A5B0BF36 /* Anvil.app */;
@@ -291,12 +301,15 @@
 			mainGroup = E301512FDC70A2AEF483DFC5;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				8B08C187FA0E65B87CEB3140 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
 				29E2F153E172F0F41D2FE0C0 /* XCLocalSwiftPackageReference "Packages/AnvilACP" */,
 				03C737016ADC3541CE1F7883 /* XCLocalSwiftPackageReference "Packages/AnvilApplication" */,
 				D80326125867B663951172A7 /* XCLocalSwiftPackageReference "Packages/AnvilDomain" */,
+				261A3625609E89A164673935 /* XCLocalSwiftPackageReference "Packages/AnvilEditor" */,
 				0C4A07B11E446F2B6B333FFB /* XCLocalSwiftPackageReference "Packages/AnvilGit" */,
 				78058DF146FE9ECFCA3C2F30 /* XCLocalSwiftPackageReference "Packages/AnvilInfrastructure" */,
 				291C35B06F73D559302A55A1 /* XCLocalSwiftPackageReference "Packages/AnvilPluginSDK" */,
+				B841F0CF75FB0E147F41A9F1 /* XCLocalSwiftPackageReference "Packages/AnvilTerminal" */,
 				E06E848BE195E845F8A68684 /* XCLocalSwiftPackageReference "Packages/AnvilUI" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -614,6 +627,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/AnvilGit;
 		};
+		261A3625609E89A164673935 /* XCLocalSwiftPackageReference "Packages/AnvilEditor" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/AnvilEditor;
+		};
 		291C35B06F73D559302A55A1 /* XCLocalSwiftPackageReference "Packages/AnvilPluginSDK" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/AnvilPluginSDK;
@@ -626,6 +643,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/AnvilInfrastructure;
 		};
+		B841F0CF75FB0E147F41A9F1 /* XCLocalSwiftPackageReference "Packages/AnvilTerminal" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/AnvilTerminal;
+		};
 		D80326125867B663951172A7 /* XCLocalSwiftPackageReference "Packages/AnvilDomain" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/AnvilDomain;
@@ -636,10 +657,25 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		8B08C187FA0E65B87CEB3140 /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		10B98EE1145ECB63327A35D7 /* AnvilACP */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = AnvilACP;
+		};
+		1813D1CC76401047F8B9FC00 /* AnvilTerminal */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnvilTerminal;
 		};
 		245E4D000FCF68F83BCCAFFC /* AnvilPluginSDK */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -648,6 +684,10 @@
 		28DBB048996F83A2ECCE41B9 /* AnvilUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = AnvilUI;
+		};
+		6709AB5C9DD55E903BA1CCBB /* AnvilEditor */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnvilEditor;
 		};
 		8D9F9B183E09F79C6BF90A90 /* AnvilApplication */ = {
 			isa = XCSwiftPackageProductDependency;

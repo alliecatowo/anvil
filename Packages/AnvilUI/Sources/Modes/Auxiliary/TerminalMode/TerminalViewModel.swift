@@ -89,8 +89,6 @@ final class TerminalViewModel: ObservableObject {
     func resize(columns: Int, rows: Int) {
         terminalColumns = columns
         terminalRows = rows
-        for session in sessions {
-            session.resize(columns: columns, rows: rows)
-        }
+        // SwiftTerm handles resize automatically via NSView layout
     }
 }

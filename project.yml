@@ -21,6 +21,13 @@ packages:
     path: Packages/AnvilPluginSDK
   AnvilGit:
     path: Packages/AnvilGit
+  AnvilTerminal:
+    path: Packages/AnvilTerminal
+  AnvilEditor:
+    path: Packages/AnvilEditor
+  SwiftTerm:
+    url: https://github.com/migueldeicaza/SwiftTerm
+    from: 1.2.0
 
 targets:
   Anvil:
@@ -36,6 +43,8 @@ targets:
       - package: AnvilUI
       - package: AnvilPluginSDK
       - package: AnvilGit
+      - package: AnvilTerminal
+      - package: AnvilEditor
     info:
       path: App/Info.plist
     settings:

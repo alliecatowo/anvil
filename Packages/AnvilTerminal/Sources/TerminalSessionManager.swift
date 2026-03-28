@@ -17,7 +17,8 @@ public final class TerminalSessionManager: ObservableObject, Sendable {
 
     // MARK: - Session Management
 
-    /// Creates and starts a new terminal session.
+    /// Creates a new terminal session. The actual PTY process is started
+    /// when SwiftTermView creates the LocalProcessTerminalView in the UI.
     @discardableResult
     public func createSession(
         title: String = "zsh",
@@ -28,21 +29,14 @@ public final class TerminalSessionManager: ObservableObject, Sendable {
     ) -> TerminalSession {
         let session = TerminalSession(
             title: title,
+            shell: shell,
+            workingDirectory: workingDirectory,
             columns: columns,
             rows: rows
         )
 
         sessions.append(session)
         activeSessionId = session.id
-
-        do {
-            try session.start(
-                shell: shell,
-                workingDirectory: workingDirectory
-            )
-        } catch {
-            // Session is created but not running — UI can show error state
-        }
 
         return session
     }

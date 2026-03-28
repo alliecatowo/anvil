@@ -15,11 +15,12 @@ let package = Package(
         .package(path: "../AnvilGit"),
         .package(path: "../AnvilGitHub"),
         .package(path: "../AnvilTerminal"),
+        .package(path: "../AnvilEditor"),
     ],
     targets: [
         .target(
             name: "AnvilUI",
-            dependencies: ["AnvilDomain", "AnvilApplication", "AnvilACP", "AnvilGit", "AnvilGitHub", "AnvilTerminal"],
+            dependencies: ["AnvilDomain", "AnvilApplication", "AnvilACP", "AnvilGit", "AnvilGitHub", "AnvilTerminal", "AnvilEditor"],
             path: "Sources"
         ),
         .testTarget(

@@ -1,110 +1,90 @@
 import Foundation
+import SwiftTerm
+import AppKit
 
 // MARK: - Terminal Session
 
-/// A single terminal session wrapping a PTY process and screen buffer.
+/// A single terminal session backed by SwiftTerm's LocalProcessTerminalView.
+/// Each session corresponds to one real PTY process.
 @MainActor
 public final class TerminalSession: ObservableObject, Identifiable, Sendable {
 
     public let id: UUID
     @Published public var title: String
-    @Published public private(set) var screenBuffer: ScreenBuffer
     @Published public private(set) var isRunning: Bool = false
 
-    private let pty = PTYProcess()
-    private let parser = ANSIParser()
+    /// The shell executable path for this session.
+    public let shell: String
+
+    /// The initial working directory for this session.
+    public let workingDirectory: String?
+
+    /// Reference to the SwiftTerm view backing this session.
+    /// Set when the SwiftTermView's `onViewReady` fires.
+    public private(set) var terminalView: LocalProcessTerminalView?
 
     public init(
         id: UUID = UUID(),
         title: String = "zsh",
+        shell: String? = nil,
+        workingDirectory: String? = nil,
         columns: Int = 80,
         rows: Int = 24
     ) {
         self.id = id
         self.title = title
-        self.screenBuffer = ScreenBuffer(columns: columns, rows: rows)
+        self.shell = shell ?? ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        self.workingDirectory = workingDirectory
+        self.isRunning = true
     }
 
-    // MARK: - Lifecycle
+    // MARK: - View Binding
 
-    /// Starts the terminal session by spawning the shell.
-    public func start(
-        shell: String? = nil,
-        workingDirectory: String? = nil,
-        environment: [String: String]? = nil
-    ) throws {
-        let cols = UInt16(screenBuffer.columns)
-        let rows = UInt16(screenBuffer.rows)
-
-        pty.onOutput = { [weak self] data in
-            Task { @MainActor [weak self] in
-                self?.handleOutput(data)
-            }
-        }
-
-        pty.onExit = { [weak self] exitCode in
-            Task { @MainActor [weak self] in
-                self?.handleExit(exitCode)
-            }
-        }
-
-        try pty.spawn(
-            shell: shell,
-            columns: cols,
-            rows: rows,
-            environment: environment,
-            workingDirectory: workingDirectory
-        )
-
-        isRunning = true
+    /// Called by SwiftTermView.onViewReady to bind the underlying NSView to this session.
+    public func bindTerminalView(_ view: LocalProcessTerminalView) {
+        self.terminalView = view
     }
 
-    /// Sends keyboard input to the PTY.
+    // MARK: - Input
+
+    /// Sends a string to the PTY process.
     public func send(_ string: String) {
-        pty.write(string)
+        guard let view = terminalView, let data = string.data(using: .utf8) else { return }
+        let bytes = [UInt8](data)
+        view.process.send(data: bytes[...])
     }
 
-    /// Sends raw data to the PTY.
+    /// Sends raw data to the PTY process.
     public func send(_ data: Data) {
-        pty.write(data)
+        guard let view = terminalView else { return }
+        let bytes = [UInt8](data)
+        view.process.send(data: bytes[...])
     }
 
     /// Sends a special key to the PTY.
     public func sendKey(_ key: TerminalKey) {
-        pty.write(key.ansiSequence)
+        send(key.ansiSequence)
     }
 
-    /// Resizes the terminal.
+    // MARK: - Lifecycle
+
+    /// Resizes the terminal. SwiftTerm handles TIOCSWINSZ internally when
+    /// the NSView frame changes, so this is typically not needed for SwiftTermView usage.
     public func resize(columns: Int, rows: Int) {
-        screenBuffer.resize(columns: columns, rows: rows)
-        pty.resize(columns: UInt16(columns), rows: UInt16(rows))
+        // SwiftTerm auto-handles resize via the NSView layout system.
+        // This method exists for API compatibility.
+    }
+
+    /// Marks the session as exited.
+    public func markExited() {
+        isRunning = false
     }
 
     /// Terminates the session.
     public func terminate() {
-        pty.terminate()
+        terminalView?.terminate()
         isRunning = false
-    }
-
-    // MARK: - Private
-
-    private func handleOutput(_ data: Data) {
-        let tokens = parser.parse(data)
-
-        // Check for title changes
-        for token in tokens {
-            if case .setTitle(let newTitle) = token {
-                self.title = newTitle
-            }
-        }
-
-        screenBuffer.process(tokens)
-        // Trigger SwiftUI update
-        objectWillChange.send()
-    }
-
-    private func handleExit(_ exitCode: Int32) {
-        isRunning = false
+        terminalView = nil
     }
 }
 

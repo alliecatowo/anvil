@@ -1,5 +1,5 @@
 // swift-tools-version: 6.0
-// AnvilTerminal - Real PTY terminal engine
+// AnvilTerminal - Real PTY terminal engine powered by SwiftTerm
 import PackageDescription
 
 let package = Package(
@@ -8,9 +8,13 @@ let package = Package(
     products: [
         .library(name: "AnvilTerminal", targets: ["AnvilTerminal"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/migueldeicaza/SwiftTerm", from: "1.2.0"),
+    ],
     targets: [
         .target(
             name: "AnvilTerminal",
+            dependencies: ["SwiftTerm"],
             path: "Sources"
         ),
         .testTarget(
