@@ -295,6 +295,30 @@ public final class ReviewViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Merge Conflicts
+
+    @Published var selectedConflictIndex: Int?
+
+    var mergeConflicts: [MergeConflict] {
+        guard let result = mergeResult, case .conflicts(let conflicts) = result else { return [] }
+        return conflicts
+    }
+
+    var selectedConflict: MergeConflict? {
+        guard let index = selectedConflictIndex, mergeConflicts.indices.contains(index) else { return nil }
+        return mergeConflicts[index]
+    }
+
+    func selectConflict(_ index: Int?) {
+        selectedConflictIndex = index
+    }
+
+    func dismissConflicts() {
+        mergeResult = nil
+        mergeError = nil
+        selectedConflictIndex = nil
+    }
+
     // MARK: Batch
 
     func toggleSelection(_ id: String) {

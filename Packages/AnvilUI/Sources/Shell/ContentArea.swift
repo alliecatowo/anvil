@@ -200,7 +200,10 @@ struct ReviewModeContent: View {
     @EnvironmentObject private var container: DependencyContainer
 
     var body: some View {
-        if viewModel.isCommitGraphVisible {
+        if let conflict = viewModel.selectedConflict {
+            MergeConflictView(conflict: conflict)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if viewModel.isCommitGraphVisible {
             GitGraphContainerView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if appState.gitHubPRViewModel.selectedPR != nil {
