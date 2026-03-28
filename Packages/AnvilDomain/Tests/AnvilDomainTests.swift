@@ -1303,3 +1303,378 @@ struct ACPTypesTests {
 // Note: AnvilSpace is defined in AnvilUI (AppState.swift), not AnvilDomain.
 // Full AnvilSpace tests live in Tests/UITests/. The properties are verified
 // in the UI test suite via XCUIApplication element queries.
+
+// MARK: - Channel
+
+@Suite("Channel")
+struct ChannelTests {
+
+    @Test("Default id is a non-empty UUID string")
+    func defaultIdIsNonEmpty() {
+        let channel = Channel(name: "general")
+        #expect(!channel.id.isEmpty)
+    }
+
+    @Test("Two channels created with default ids are unique")
+    func idUniqueness() {
+        let a = Channel(name: "alpha")
+        let b = Channel(name: "beta")
+        #expect(a.id != b.id)
+    }
+
+    @Test("Explicit id is preserved")
+    func explicitId() {
+        let channel = Channel(id: "chan-42", name: "engineering")
+        #expect(channel.id == "chan-42")
+    }
+
+    @Test("Name is stored correctly")
+    func nameStored() {
+        let channel = Channel(name: "announcements")
+        #expect(channel.name == "announcements")
+    }
+
+    @Test("Default unreadCount is zero")
+    func defaultUnreadCount() {
+        let channel = Channel(name: "random")
+        #expect(channel.unreadCount == 0)
+    }
+
+    @Test("Custom unreadCount is stored")
+    func customUnreadCount() {
+        let channel = Channel(name: "alerts", unreadCount: 7)
+        #expect(channel.unreadCount == 7)
+    }
+
+    @Test("isPrivate defaults to false and can be set to true")
+    func isPrivateFlag() {
+        let pub = Channel(name: "public-channel")
+        let priv = Channel(name: "secret", isPrivate: true)
+        #expect(pub.isPrivate == false)
+        #expect(priv.isPrivate == true)
+    }
+
+    @Test("Channel round-trips through Codable")
+    func codable() throws {
+        let original = Channel(id: "c-1", name: "builds", topic: "CI feed", isPrivate: false, memberCount: 12, unreadCount: 3)
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(Channel.self, from: data)
+        #expect(decoded.id == "c-1")
+        #expect(decoded.name == "builds")
+        #expect(decoded.topic == "CI feed")
+        #expect(decoded.memberCount == 12)
+        #expect(decoded.unreadCount == 3)
+    }
+}
+
+// MARK: - Message
+
+@Suite("Message")
+struct MessageTests {
+
+    @Test("Default id is a non-empty UUID string")
+    func defaultIdIsNonEmpty() {
+        let msg = Message(channelId: "chan-1", author: "alice", content: "Hello")
+        #expect(!msg.id.isEmpty)
+    }
+
+    @Test("Two messages with default ids are unique")
+    func idUniqueness() {
+        let a = Message(channelId: "c", author: "alice", content: "Hi")
+        let b = Message(channelId: "c", author: "alice", content: "Hi")
+        #expect(a.id != b.id)
+    }
+
+    @Test("Body (content) is stored correctly")
+    func contentStored() {
+        let msg = Message(channelId: "c", author: "bob", content: "Ship it!")
+        #expect(msg.content == "Ship it!")
+    }
+
+    @Test("Author (senderId) is stored correctly")
+    func authorStored() {
+        let msg = Message(channelId: "c", author: "carol", content: "LGTM")
+        #expect(msg.author == "carol")
+    }
+
+    @Test("channelId is stored correctly")
+    func channelIdStored() {
+        let msg = Message(channelId: "chan-99", author: "dave", content: "Ping")
+        #expect(msg.channelId == "chan-99")
+    }
+
+    @Test("Timestamp defaults to approximately now")
+    func timestampApproxNow() {
+        let before = Date.now
+        let msg = Message(channelId: "c", author: "eve", content: "now")
+        let after = Date.now
+        #expect(msg.timestamp >= before)
+        #expect(msg.timestamp <= after)
+    }
+
+    @Test("Explicit timestamp is preserved")
+    func explicitTimestamp() {
+        let ts = Date(timeIntervalSince1970: 1_700_000_000)
+        let msg = Message(channelId: "c", author: "frank", content: "past", timestamp: ts)
+        #expect(msg.timestamp == ts)
+    }
+
+    @Test("isEdited defaults to false")
+    func isEditedDefault() {
+        let msg = Message(channelId: "c", author: "grace", content: "original")
+        #expect(msg.isEdited == false)
+    }
+
+    @Test("Message round-trips through Codable")
+    func codable() throws {
+        let ts = Date(timeIntervalSince1970: 1_000_000)
+        let original = Message(id: "m-1", channelId: "c-1", author: "heidi", content: "Hello world", timestamp: ts, isEdited: true)
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(Message.self, from: data)
+        #expect(decoded.id == "m-1")
+        #expect(decoded.channelId == "c-1")
+        #expect(decoded.author == "heidi")
+        #expect(decoded.content == "Hello world")
+        #expect(decoded.isEdited == true)
+    }
+}
+
+// MARK: - CalendarEvent
+
+@Suite("CalendarEvent")
+struct CalendarEventTests {
+
+    @Test("Default id is a non-empty UUID string")
+    func defaultIdIsNonEmpty() {
+        let start = Date(timeIntervalSinceNow: 3600)
+        let event = CalendarEvent(title: "Standup", start: start, end: start.addingTimeInterval(1800))
+        #expect(!event.id.isEmpty)
+    }
+
+    @Test("Explicit id is preserved")
+    func explicitId() {
+        let start = Date(timeIntervalSinceNow: 3600)
+        let event = CalendarEvent(id: "evt-7", title: "Demo", start: start, end: start.addingTimeInterval(3600))
+        #expect(event.id == "evt-7")
+    }
+
+    @Test("Start and end times are stored correctly")
+    func startAndEndStored() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let end = start.addingTimeInterval(7200)
+        let event = CalendarEvent(title: "Planning", start: start, end: end)
+        #expect(event.start == start)
+        #expect(event.end == end)
+    }
+
+    @Test("Attendees list is stored correctly")
+    func attendeesStored() {
+        let start = Date.now
+        let event = CalendarEvent(title: "Sync", start: start, end: start.addingTimeInterval(1800), attendees: ["alice", "bob", "carol"])
+        #expect(event.attendees.count == 3)
+        #expect(event.attendees.contains("bob"))
+    }
+
+    @Test("Default attendees list is empty")
+    func defaultAttendeesEmpty() {
+        let start = Date.now
+        let event = CalendarEvent(title: "Solo", start: start, end: start.addingTimeInterval(900))
+        #expect(event.attendees.isEmpty)
+    }
+
+    @Test("isAllDay defaults to false")
+    func isAllDayDefault() {
+        let start = Date.now
+        let event = CalendarEvent(title: "Regular", start: start, end: start.addingTimeInterval(3600))
+        #expect(event.isAllDay == false)
+    }
+
+    @Test("CalendarEvent round-trips through Codable")
+    func codable() throws {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let end = start.addingTimeInterval(3600)
+        let original = CalendarEvent(id: "e-1", title: "All-hands", start: start, end: end, isAllDay: false, location: "Zoom", attendees: ["alice", "bob"])
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(CalendarEvent.self, from: data)
+        #expect(decoded.id == "e-1")
+        #expect(decoded.title == "All-hands")
+        #expect(decoded.location == "Zoom")
+        #expect(decoded.attendees == ["alice", "bob"])
+    }
+}
+
+// MARK: - ErrorEvent
+
+@Suite("ErrorEvent")
+struct ErrorEventTests {
+
+    @Test("Default id is a non-empty UUID string")
+    func defaultIdIsNonEmpty() {
+        let ev = ErrorEvent(title: "NullPointer", message: "Unexpected nil")
+        #expect(!ev.id.isEmpty)
+    }
+
+    @Test("Message is stored correctly")
+    func messageStored() {
+        let ev = ErrorEvent(title: "Crash", message: "Index out of bounds")
+        #expect(ev.message == "Index out of bounds")
+    }
+
+    @Test("Title is stored correctly")
+    func titleStored() {
+        let ev = ErrorEvent(title: "SigFault", message: "Bad memory access")
+        #expect(ev.title == "SigFault")
+    }
+
+    @Test("stackTrace is nil by default")
+    func stackTraceNilByDefault() {
+        let ev = ErrorEvent(title: "T", message: "m")
+        #expect(ev.stackTrace == nil)
+    }
+
+    @Test("stackTrace is stored when provided")
+    func stackTraceStored() {
+        let trace = "frame 0: main.swift:42\nframe 1: app.swift:99"
+        let ev = ErrorEvent(title: "T", message: "m", stackTrace: trace)
+        #expect(ev.stackTrace == trace)
+    }
+
+    @Test("Default occurrences is 1")
+    func defaultOccurrences() {
+        let ev = ErrorEvent(title: "T", message: "m")
+        #expect(ev.occurrences == 1)
+    }
+
+    @Test("isResolved defaults to false")
+    func isResolvedDefault() {
+        let ev = ErrorEvent(title: "T", message: "m")
+        #expect(ev.isResolved == false)
+    }
+
+    @Test("ErrorEvent round-trips through Codable")
+    func codable() throws {
+        let original = ErrorEvent(id: "err-1", title: "NullRef", message: "nil dereference", stackTrace: "frame 0", occurrences: 5, isResolved: true)
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(ErrorEvent.self, from: data)
+        #expect(decoded.id == "err-1")
+        #expect(decoded.title == "NullRef")
+        #expect(decoded.occurrences == 5)
+        #expect(decoded.isResolved == true)
+        #expect(decoded.stackTrace == "frame 0")
+    }
+}
+
+// MARK: - Alert
+
+@Suite("Alert")
+struct AlertTests {
+
+    @Test("Default status is ok")
+    func defaultStatusIsOk() {
+        let alert = Alert(name: "CPU usage", query: "cpu > 90", threshold: 90)
+        #expect(alert.status == .ok)
+    }
+
+    @Test("Explicit initial status is stored")
+    func explicitInitialStatus() {
+        let alert = Alert(name: "Memory", query: "mem > 80", threshold: 80, status: .warning)
+        #expect(alert.status == .warning)
+    }
+
+    @Test("Status transitions to acknowledged")
+    func statusAfterAcknowledge() {
+        var alert = Alert(name: "Disk", query: "disk > 95", threshold: 95, status: .critical)
+        alert.status = .acknowledged
+        #expect(alert.status == .acknowledged)
+    }
+
+    @Test("Status transitions to resolved")
+    func statusAfterResolve() {
+        var alert = Alert(name: "Latency", query: "p99 > 500", threshold: 500, status: .warning)
+        alert.status = .resolved
+        #expect(alert.status == .resolved)
+    }
+
+    @Test("All AlertStatus cases have non-empty raw values")
+    func alertStatusRawValues() {
+        let cases: [AlertStatus] = [.ok, .warning, .critical, .acknowledged, .resolved]
+        for s in cases {
+            #expect(!s.rawValue.isEmpty)
+        }
+    }
+
+    @Test("Alert round-trips through Codable")
+    func codable() throws {
+        let triggeredAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let original = Alert(id: "a-1", name: "Error rate", query: "errors > 5", threshold: 5, status: .critical, triggeredAt: triggeredAt)
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(Alert.self, from: data)
+        #expect(decoded.id == "a-1")
+        #expect(decoded.name == "Error rate")
+        #expect(decoded.status == .critical)
+        #expect(decoded.threshold == 5)
+    }
+}
+
+// MARK: - Document
+
+@Suite("Document")
+struct DocumentTests {
+
+    @Test("Default id is a non-empty UUID string")
+    func defaultIdIsNonEmpty() {
+        let doc = Document(title: "README", content: "# Hello")
+        #expect(!doc.id.isEmpty)
+    }
+
+    @Test("Two documents with default ids are unique")
+    func idUniqueness() {
+        let a = Document(title: "Doc A", content: "Content A")
+        let b = Document(title: "Doc B", content: "Content B")
+        #expect(a.id != b.id)
+    }
+
+    @Test("Title is stored correctly")
+    func titleStored() {
+        let doc = Document(title: "Architecture Overview", content: "...")
+        #expect(doc.title == "Architecture Overview")
+    }
+
+    @Test("Content is stored correctly")
+    func contentStored() {
+        let body = "## Introduction\nAnvil is a native macOS IDE."
+        let doc = Document(title: "Intro", content: body)
+        #expect(doc.content == body)
+    }
+
+    @Test("Optional author is stored when provided")
+    func authorStored() {
+        let doc = Document(title: "Guide", content: "...", author: "allison")
+        #expect(doc.author == "allison")
+    }
+
+    @Test("Author defaults to nil")
+    func authorDefaultNil() {
+        let doc = Document(title: "Guide", content: "...")
+        #expect(doc.author == nil)
+    }
+
+    @Test("parentId is stored when provided")
+    func parentIdStored() {
+        let doc = Document(title: "Child", content: "...", parentId: "parent-doc-1")
+        #expect(doc.parentId == "parent-doc-1")
+    }
+
+    @Test("Document round-trips through Codable")
+    func codable() throws {
+        let createdAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let original = Document(id: "d-1", title: "Spec", content: "Full spec here.", url: "https://example.com", parentId: "root", author: "allison", createdAt: createdAt, updatedAt: createdAt)
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(Document.self, from: data)
+        #expect(decoded.id == "d-1")
+        #expect(decoded.title == "Spec")
+        #expect(decoded.content == "Full spec here.")
+        #expect(decoded.url == "https://example.com")
+        #expect(decoded.author == "allison")
+    }
+}
