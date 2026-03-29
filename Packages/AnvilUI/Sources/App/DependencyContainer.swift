@@ -18,6 +18,7 @@ public final class DependencyContainer: ObservableObject {
     public let notificationAggregator = NotificationAggregator()
     public let searchIndexer = SearchIndexer()
     public let worktreeOrchestrator = WorktreeOrchestrator()
+    public let commandRegistry = CommandRegistry()
 
     // MARK: - Git Adapter
 
@@ -84,7 +85,7 @@ public final class DependencyContainer: ObservableObject {
             case "claude-process":
                 let cliPath = config.baseURL ?? ""
                 await client.registerProcessProvider(id: config.providerId, path: cliPath)
-                if config.isDefault { await client.setDefaultProvider("claude-process") }
+                if config.isDefault { await client.setDefaultProvider(config.providerId) }
             case "anthropic":
                 if let apiKey = config.apiKey {
                     let provider = AnthropicProvider(apiKey: apiKey)
@@ -103,8 +104,14 @@ public final class DependencyContainer: ObservableObject {
                 if config.isDefault { await client.setDefaultProvider(provider.providerId) }
             case "zed-acp":
                 let cmd = config.baseURL ?? "npx"
-                let cmdArgs = config.apiKey.map { [$0] } ?? ["@agentclientprotocol/claude-agent-acp"]
-                let provider = ZedACPProvider(command: cmd, args: cmdArgs)
+                let cmdArgs = Self.splitCommandArgs(config.commandArgs, fallback: ["@agentclientprotocol/claude-agent-acp"])
+                let provider = ZedACPProvider(providerId: config.providerId, providerName: config.providerId, command: cmd, args: cmdArgs)
+                await client.registerProvider(provider)
+                if config.isDefault { await client.setDefaultProvider(provider.providerId) }
+            case "codex-acp":
+                let cmd = config.baseURL ?? "codex"
+                let cmdArgs = Self.splitCommandArgs(config.commandArgs, fallback: ["acp"])
+                let provider = CodexACPProvider(providerId: config.providerId, providerName: config.providerId, command: cmd, args: cmdArgs)
                 await client.registerProvider(provider)
                 if config.isDefault { await client.setDefaultProvider(provider.providerId) }
             default:
@@ -115,7 +122,17 @@ public final class DependencyContainer: ObservableObject {
         // Auto-register Claude CLI if no providers are configured and the binary exists.
         // Prefer Zed ACP adapter when available (bidirectional protocol with streaming).
         if configuredProviders.isEmpty {
-            if ZedACPProvider.isAvailable() {
+            // Prefer direct API when key is available — lowest latency, full streaming + tool use
+            if let anthropicKey = ProcessInfo.processInfo.environment["ANTHROPIC_API_KEY"],
+               !anthropicKey.isEmpty {
+                let provider = AnthropicProvider(apiKey: anthropicKey)
+                await client.registerProvider(provider)
+                await client.setDefaultProvider(provider.providerId)
+            } else if CodexACPProvider.isAvailable() {
+                let provider = CodexACPProvider()
+                await client.registerProvider(provider)
+                await client.setDefaultProvider(provider.providerId)
+            } else if ZedACPProvider.isAvailable() {
                 let provider = ZedACPProvider(
                     command: "npx",
                     args: ["@agentclientprotocol/claude-agent-acp"]
@@ -239,9 +256,17 @@ public final class DependencyContainer: ObservableObject {
     private var _observabilityPort: (any ObservabilityPort)?
     public var observabilityPort: (any ObservabilityPort)? { _observabilityPort }
 
-    /// Messaging port adapter (e.g. Slack). Injected from App target.
+    /// Messaging port adapter(s), keyed by provider id.
+    private var messagingAdapters: [String: any MessagingPort] = [:]
+    @Published public private(set) var availableMessagingProviderIds: [String] = []
+    @Published public var activeMessagingProviderId: String?
     private var _messagingPort: (any MessagingPort)?
-    public var messagingPort: (any MessagingPort)? { _messagingPort }
+    public var messagingPort: (any MessagingPort)? {
+        if let activeMessagingProviderId, let adapter = messagingAdapters[activeMessagingProviderId] {
+            return adapter
+        }
+        return _messagingPort
+    }
 
     public enum IntegrationConnectionStatus: String {
         case connected, disconnected, testing, error
@@ -273,10 +298,31 @@ public final class DependencyContainer: ObservableObject {
         setObservabilityAdapter(adapter)
     }
 
+    /// Register a messaging port adapter and optionally set it active.
+    public func registerMessagingAdapter(_ adapter: any MessagingPort, setActive: Bool = false) {
+        messagingAdapters[adapter.providerId] = adapter
+        availableMessagingProviderIds = messagingAdapters.keys.sorted()
+        if setActive || activeMessagingProviderId == nil {
+            activeMessagingProviderId = adapter.providerId
+        }
+        _messagingPort = messagingPort
+        testIntegration(adapter.providerId) { try await adapter.validateConnection() }
+    }
+
+    public func setActiveMessagingProvider(_ providerId: String) {
+        guard messagingAdapters[providerId] != nil else { return }
+        activeMessagingProviderId = providerId
+        _messagingPort = messagingPort
+    }
+
+    public func messagingAdapter(for providerId: String) -> (any MessagingPort)? {
+        messagingAdapters[providerId]
+    }
+
     /// Set the messaging port adapter and test connection.
+    /// Backward-compatible API that now routes through multi-provider registration.
     public func setMessagingAdapter(_ adapter: any MessagingPort) {
-        _messagingPort = adapter
-        testIntegration("slack") { try await adapter.validateConnection() }
+        registerMessagingAdapter(adapter, setActive: true)
     }
 
     /// Remove an integration adapter and clear its status.
@@ -284,7 +330,13 @@ public final class DependencyContainer: ObservableObject {
         switch id {
         case "vercel", "netlify": _hostingPort = nil
         case "sentry": _observabilityPort = nil
-        case "slack": _messagingPort = nil
+        case "slack", "in-memory-messaging":
+            messagingAdapters.removeValue(forKey: id)
+            availableMessagingProviderIds = messagingAdapters.keys.sorted()
+            if activeMessagingProviderId == id {
+                activeMessagingProviderId = messagingAdapters.keys.sorted().first
+            }
+            _messagingPort = messagingPort
         default: break
         }
         integrationStatus.removeValue(forKey: id)
@@ -308,6 +360,7 @@ public final class DependencyContainer: ObservableObject {
         case "vercel": return ProviderKeychain.vercelToken != nil
         case "sentry": return ProviderKeychain.sentryToken != nil && ProviderKeychain.sentryOrganization != nil
         case "slack": return ProviderKeychain.slackToken != nil
+        case "in-memory-messaging": return true
         case "docker": return ProviderKeychain.dockerSocketPath != nil
         case "github-issues": return ProviderKeychain.githubToken != nil && ProviderKeychain.githubOwner != nil
         case "linear": return ProviderKeychain.linearApiKey != nil
@@ -317,7 +370,14 @@ public final class DependencyContainer: ObservableObject {
 
     // MARK: - Configuration
 
-    @Published public var currentProjectPath: String?
+    @Published public var currentProjectPath: String? {
+        didSet {
+            // Ensure project-scoped git operations don't keep using a stale adapter.
+            if oldValue != currentProjectPath {
+                gitAdapter = nil
+            }
+        }
+    }
     @Published public var configuredProviders: [String: ProviderConfig] = [:]
 
     // MARK: - Ports (resolved lazily from configuration)
@@ -355,6 +415,7 @@ public final class DependencyContainer: ObservableObject {
 
     public init() {
         loadSavedConfiguration()
+        registerMessagingAdapter(messagingService, setActive: true)
         Task { await wireEventHandlers() }
     }
 
@@ -399,16 +460,18 @@ public final class DependencyContainer: ObservableObject {
 
     public struct ProviderConfig: Codable, Sendable {
         public let providerId: String
-        public let providerType: String // "claude-cli", "anthropic", "openai", "ollama"
+        public let providerType: String // e.g. "claude-cli", "anthropic", "openai", "ollama", "zed-acp", "codex-acp"
         public var apiKey: String?
         public var baseURL: String?
+        public var commandArgs: String?
         public var isDefault: Bool
 
-        public init(providerId: String, providerType: String, apiKey: String? = nil, baseURL: String? = nil, isDefault: Bool = false) {
+        public init(providerId: String, providerType: String, apiKey: String? = nil, baseURL: String? = nil, commandArgs: String? = nil, isDefault: Bool = false) {
             self.providerId = providerId
             self.providerType = providerType
             self.apiKey = apiKey
             self.baseURL = baseURL
+            self.commandArgs = commandArgs
             self.isDefault = isDefault
         }
     }
@@ -481,12 +544,21 @@ public final class DependencyContainer: ObservableObject {
     // MARK: - Provider Configuration
 
     public func configureProvider(_ config: ProviderConfig) {
+        if config.isDefault {
+            for id in Array(configuredProviders.keys) {
+                guard var existing = configuredProviders[id] else { continue }
+                existing.isDefault = false
+                configuredProviders[id] = existing
+            }
+        }
         configuredProviders[config.providerId] = config
+        acpClient = nil // force ACP provider rebuild with new routing/defaults
         saveConfiguration()
     }
 
     public func removeProvider(_ providerId: String) {
         configuredProviders.removeValue(forKey: providerId)
+        acpClient = nil
         saveConfiguration()
     }
 
@@ -550,15 +622,45 @@ public final class DependencyContainer: ObservableObject {
         guard FileManager.default.fileExists(atPath: configURL.path) else { return }
         guard let data = try? Data(contentsOf: configURL),
               let configs = try? JSONDecoder().decode([String: ProviderConfig].self, from: data) else { return }
-        configuredProviders = configs
+        // Restore API keys from Keychain (they are stripped from disk JSON)
+        var restored = configs
+        for (id, var config) in restored {
+            if config.apiKey == nil {
+                config.apiKey = ProviderKeychain.get("provider.\(id).apiKey")
+                restored[id] = config
+            }
+        }
+        configuredProviders = restored
     }
 
     private func saveConfiguration() {
         let dir = configURL.deletingLastPathComponent()
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        if let data = try? JSONEncoder().encode(configuredProviders) {
+
+        // Store API keys in Keychain, strip them from the JSON written to disk
+        var sanitized = configuredProviders
+        for (id, var config) in sanitized {
+            if let key = config.apiKey, !key.isEmpty {
+                ProviderKeychain.set("provider.\(id).apiKey", value: key)
+            }
+            config.apiKey = nil
+            sanitized[id] = config
+        }
+
+        if let data = try? JSONEncoder().encode(sanitized) {
             try? data.write(to: configURL)
         }
+    }
+
+    private static func splitCommandArgs(_ raw: String?, fallback: [String]) -> [String] {
+        guard let raw, !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return fallback
+        }
+        let parts = raw
+            .split(whereSeparator: { $0.isWhitespace })
+            .map(String.init)
+            .filter { !$0.isEmpty }
+        return parts.isEmpty ? fallback : parts
     }
 }
 

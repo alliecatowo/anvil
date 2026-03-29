@@ -1,5 +1,47 @@
 import SwiftUI
 
+// MARK: - Sidebar Tab Bar (Xcode-style icon tab switcher)
+
+/// Compact icon-only tab row for switching sidebar sections — no text labels, no segmented control.
+/// Matches the Xcode navigator tab pattern: small SF Symbol buttons, active state via subtle tint background.
+struct SidebarTabBar<S: Hashable & Sendable>: View {
+    let sections: [S]
+    let active: S
+    let icon: (S) -> String
+    let label: (S) -> String
+    let onSelect: (S) -> Void
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(Array(sections.enumerated()), id: \.offset) { _, section in
+                Button {
+                    onSelect(section)
+                } label: {
+                    Image(systemName: icon(section))
+                        .font(.system(size: 12, weight: active == section ? .semibold : .regular))
+                        .foregroundStyle(active == section ? Color.accentColor : Color.secondary)
+                        .frame(width: 26, height: 26)
+                        .background(
+                            active == section
+                                ? Color.accentColor.opacity(0.12)
+                                : Color.clear
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(label(section))
+                .accessibilityAddTraits(active == section ? [.isButton, .isSelected] : .isButton)
+                .help(label(section))
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+    }
+}
+
+// MARK: - Sidebar Section Header
+
 struct AnvilSidebarSectionHeader: View {
     let title: String
     var icon: String? = nil
@@ -92,8 +134,7 @@ struct AnvilSidebarRowButton<Trailing: View>: View {
                 trailing()
             }
             .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.xs)
-            .frame(minHeight: AnvilSpacing.listItemHeight)
+            .padding(.vertical, AnvilSpacing.sm)
             .background(
                 isActive
                     ? AnvilColor.accentBlue.opacity(0.1)
@@ -159,7 +200,6 @@ struct AnvilSidebarInfoRow<Trailing: View>: View {
             trailing()
         }
         .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.xs)
-        .frame(minHeight: AnvilSpacing.listItemHeight, alignment: .top)
+        .padding(.vertical, AnvilSpacing.sm)
     }
 }

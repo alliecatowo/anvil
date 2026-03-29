@@ -37,6 +37,13 @@ struct ConversationView: View {
     var onAddPlanStep: ((String, String?) -> Void)?
     var onRemovePlanStep: ((String) -> Void)?
     var onSendToBackground: (() -> Void)?
+    var onToggleAgentPanel: (() -> Void)?
+    var isAgentPanelVisible: Bool = false
+    var autoContextFiles: [AutoContextChipData] = []
+    var onDismissAutoContext: ((String) -> Void)?
+    var onAcceptAutoContext: ((String) -> Void)?
+    var contextResolver: ContextSlashResolver = .empty
+    var onForkFromMessage: ((Int) -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -53,7 +60,9 @@ struct ConversationView: View {
                 onModelChange: onModelChange,
                 guardrailCount: guardrailCount,
                 onCreatePR: onCreatePR,
-                onSendToBackground: onSendToBackground
+                onSendToBackground: onSendToBackground,
+                onToggleAgentPanel: onToggleAgentPanel,
+                isAgentPanelVisible: isAgentPanelVisible
             )
 
             Divider()
@@ -62,7 +71,7 @@ struct ConversationView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: AnvilSpacing.md) {
-                        ForEach(session.messages) { message in
+                        ForEach(Array(session.messages.enumerated()), id: \.element.id) { index, message in
                             MessageBubble(
                                 message: message,
                                 isStreaming: session.status == .running
@@ -76,6 +85,20 @@ struct ConversationView: View {
                                 insertion: .move(edge: .bottom).combined(with: .opacity),
                                 removal: .opacity
                             ))
+                            .contextMenu {
+                                Button {
+                                    onForkFromMessage?(index)
+                                } label: {
+                                    Label("Fork from here", systemImage: "arrow.triangle.branch")
+                                }
+
+                                Button {
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(message.content, forType: .string)
+                                } label: {
+                                    Label("Copy Message", systemImage: "doc.on.doc")
+                                }
+                            }
                         }
                         .animation(.spring(response: 0.35, dampingFraction: 0.78), value: session.messages.count)
 
@@ -152,7 +175,11 @@ struct ConversationView: View {
                 attachments: attachments,
                 onSend: onSend,
                 onRemoveAttachment: onRemoveAttachment,
-                onAddAttachment: onAddAttachment
+                onAddAttachment: onAddAttachment,
+                autoContextFiles: autoContextFiles,
+                onDismissAutoContext: onDismissAutoContext,
+                onAcceptAutoContext: onAcceptAutoContext,
+                contextResolver: contextResolver
             )
         }
         .background(AnvilColor.backgroundPrimary)
@@ -174,6 +201,8 @@ struct SessionHeader: View {
     let guardrailCount: Int
     var onCreatePR: (() -> Void)?
     var onSendToBackground: (() -> Void)?
+    var onToggleAgentPanel: (() -> Void)?
+    var isAgentPanelVisible: Bool = false
 
     @State private var isEditing = false
     @State private var editName = ""
@@ -295,6 +324,19 @@ struct SessionHeader: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Token usage")
+
+                if let onToggleAgentPanel {
+                    Button {
+                        onToggleAgentPanel()
+                    } label: {
+                        Label("Info", systemImage: isAgentPanelVisible ? "info.circle.fill" : "info.circle")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help(isAgentPanelVisible ? "Hide Agent Sidebar" : "Show Agent Sidebar")
+                    .accessibilityLabel(isAgentPanelVisible ? "Hide Agent Sidebar" : "Show Agent Sidebar")
+                    .accessibilityAddTraits(.isButton)
+                }
 
             // Session actions menu
             Menu {

@@ -39,7 +39,7 @@ struct SearchPanel: View {
                 resultsList
             }
         }
-        .background(.background)
+        .background(.regularMaterial)
         .frame(width: 320)
         .onAppear { viewModel.projectPath = appState.currentProjectPath }
         .onChange(of: appState.currentProjectPath) { _, newPath in
@@ -72,9 +72,9 @@ struct SearchPanel: View {
                 Image(systemName: "xmark")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(AnvilColor.textTertiary)
-                    .frame(width: 20, height: 20)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
+            .help("Close Search Panel")
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
@@ -237,8 +237,7 @@ struct SearchPanel: View {
                     }
                 }
                 .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xs)
-                .frame(height: AnvilSpacing.listItemHeight)
+                .padding(.vertical, AnvilSpacing.sm)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

@@ -9,11 +9,22 @@ public struct AnvilListItem: View {
     let timestamp: String?
     let isSelected: Bool
     let isCompact: Bool
+    let indentLevel: Int
 
     @State private var isHovered = false
     @GestureState private var isPressed = false
 
-    public init(icon: String? = nil, title: String, subtitle: String? = nil, tag: String? = nil, tagColor: Color? = nil, timestamp: String? = nil, isSelected: Bool = false, isCompact: Bool = true) {
+    public init(
+        icon: String? = nil,
+        title: String,
+        subtitle: String? = nil,
+        tag: String? = nil,
+        tagColor: Color? = nil,
+        timestamp: String? = nil,
+        isSelected: Bool = false,
+        isCompact: Bool = true,
+        indentLevel: Int = 0
+    ) {
         self.icon = icon
         self.title = title
         self.subtitle = subtitle
@@ -22,10 +33,17 @@ public struct AnvilListItem: View {
         self.timestamp = timestamp
         self.isSelected = isSelected
         self.isCompact = isCompact
+        self.indentLevel = indentLevel
     }
 
     public var body: some View {
         HStack(spacing: AnvilSpacing.sm) {
+            if indentLevel > 0 {
+                Color.clear
+                    .frame(width: CGFloat(indentLevel) * 12)
+                    .accessibilityHidden(true)
+            }
+
             if isSelected {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(AnvilColor.accentBlue)

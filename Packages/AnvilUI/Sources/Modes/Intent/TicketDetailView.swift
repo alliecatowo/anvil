@@ -31,7 +31,7 @@ struct TicketDetailView: View {
                         subtaskSection(ticket)
                         labelsSection(ticket)
                         relatedSection(ticket)
-                        commentsSection(ticket)
+                        activitySection(ticket)
                     }
                     .padding(AnvilSpacing.xxl)
                 }
@@ -44,6 +44,10 @@ struct TicketDetailView: View {
 
     private func backBar(_ ticket: Ticket) -> some View {
         HStack(spacing: AnvilSpacing.sm) {
+            AnvilButton("Back", icon: "chevron.left", style: .ghost) {
+                viewModel.closeTicketDetailInMainPane()
+            }
+
             Spacer()
 
             if let created = branchCreated {
@@ -466,14 +470,14 @@ struct TicketDetailView: View {
         }
     }
 
-    // MARK: - Comments
+    // MARK: - Activity
 
-    private func commentsSection(_ ticket: Ticket) -> some View {
+    private func activitySection(_ ticket: Ticket) -> some View {
         let ticketComments = viewModel.commentsFor(ticket.id)
 
         return VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
             HStack {
-                Text("Comments")
+                Text("ACTIVITY")
                     .font(.headline)
                     .foregroundStyle(.primary)
 

@@ -19,11 +19,15 @@ struct ReviewSidebar: View {
         appState.stagedChanges.count + appState.unstagedChanges.count + appState.untrackedChanges.count
     }
 
+    private var conflictCount: Int {
+        viewModel.mergeConflicts.count
+    }
+
     // Minimal adapter target for upcoming shared sidebar abstraction.
     private var sidebarSections: [SidebarSectionDescriptor] {
         [
             SidebarSectionDescriptor(id: "branches", title: "Branches", icon: "arrow.triangle.branch", count: appState.branches.count),
-            SidebarSectionDescriptor(id: "changes", title: "Changes", icon: "square.and.pencil", count: totalChangesCount),
+            SidebarSectionDescriptor(id: "changes", title: "Local Changes", icon: "square.and.pencil", count: totalChangesCount),
             SidebarSectionDescriptor(id: "pullRequests", title: "Pull Requests", icon: "arrow.triangle.pull", count: appState.gitHubPRViewModel.pullRequests.count),
             SidebarSectionDescriptor(id: "pending", title: "Pending", icon: "circle", count: viewModel.pendingReviews.count),
             SidebarSectionDescriptor(id: "completed", title: "Completed", icon: "checkmark.circle", count: viewModel.completedReviews.count)
@@ -33,19 +37,39 @@ struct ReviewSidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             if let review = viewModel.selectedReview {
-                reviewFileList(review)
+                reviewDetailPane(review)
             } else if appState.gitHubPRViewModel.selectedPR != nil {
                 prSelectedBar
             } else {
                 gitHubAuthBar
                 Divider()
-                branchSection
+                reviewActionsBar
                 Divider()
-                changesSection
-                Divider()
-                pullRequestsSection
-                Divider()
-                groupedReviewList
+                ScrollView {
+                    VStack(spacing: 0) {
+                        branchSection
+                        Divider()
+                        remotesSection
+                        Divider()
+                        tagsSection
+                        Divider()
+                        stashesSection
+                        Divider()
+                        worktreesSection
+                        Divider()
+                        changesSection
+                        Divider()
+                        pullRequestsSection
+                        Divider()
+                        groupedReviewList
+                    }
+                }
+                .task {
+                    viewModel.loadReviews()
+                    if let adapter = container.getOrCreateGitAdapter() {
+                        viewModel.loadSourceControlData(using: adapter)
+                    }
+                }
             }
         }
     }
@@ -55,7 +79,7 @@ struct ReviewSidebar: View {
     private var branchSection: some View {
         VStack(spacing: 0) {
             HStack(spacing: AnvilSpacing.sm) {
-                sectionHeader(sidebarSections[0])
+                disclosureHeader("Branches", icon: "arrow.triangle.branch", count: localBranches.count, isExpanded: $isBranchesExpanded)
                 Button {
                     viewModel.isCommitGraphVisible.toggle()
                 } label: {
@@ -70,18 +94,20 @@ struct ReviewSidebar: View {
             }
             .padding(.trailing, AnvilSpacing.md)
 
-            if appState.branches.isEmpty {
-                HStack {
-                    Text("No branches loaded")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                    Spacer()
-                }
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xs)
-            } else {
-                ForEach(localBranches) { branch in
-                    branchRow(branch)
+            if isBranchesExpanded {
+                if appState.branches.isEmpty {
+                    HStack {
+                        Text("No branches loaded")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textTertiary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, AnvilSpacing.md)
+                    .padding(.vertical, AnvilSpacing.xs)
+                } else {
+                    ForEach(localBranches) { branch in
+                        branchRow(branch)
+                    }
                 }
             }
         }
@@ -92,57 +118,472 @@ struct ReviewSidebar: View {
     }
 
     private func branchRow(_ branch: Branch) -> some View {
-        HoverableRow(isSelected: viewModel.selectedBranchName == branch.name) {
+        Button {
+            guard !branch.isCurrent else {
+                appState.gitOperationResult = .success("Already on \(branch.name). Choose another branch or use Start Review.")
+                return
+            }
+            guard let adapter = container.getOrCreateGitAdapter() else { return }
+            appState.gitHubPRViewModel.clearSelection()
+            viewModel.isCommitGraphVisible = false
+            viewModel.loadBranchDiff(branch.name, using: adapter)
+        } label: {
+            HoverableRow(isSelected: viewModel.selectedBranchName == branch.name) {
+                HStack(spacing: AnvilSpacing.sm) {
+                    Image(systemName: branch.isCurrent ? "checkmark.circle.fill" : "arrow.triangle.branch")
+                        .font(.system(size: 11))
+                        .foregroundStyle(branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textTertiary)
+                        .frame(width: 16)
+                        .accessibilityHidden(true)
+
+                    Text(branch.name)
+                        .font(AnvilFont.code)
+                        .foregroundStyle(
+                            viewModel.selectedBranchName == branch.name
+                                ? AnvilColor.accentBlue
+                                : (branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textPrimary)
+                        )
+                        .lineLimit(1)
+
+                    Spacer()
+
+                    if branch.aheadCount > 0 {
+                        Text("+\(branch.aheadCount)")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.accentGreen)
+                    }
+                    if branch.behindCount > 0 {
+                        Text("-\(branch.behindCount)")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.accentRed)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Branch \(branch.name)\(branch.isCurrent ? ", current" : "")")
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, AnvilSpacing.xs)
+                .padding(.vertical, 2)
+            }
+        }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+    }
+
+    // MARK: - Remotes Section
+
+    private var remotesSection: some View {
+        VStack(spacing: 0) {
+            disclosureHeader("Remotes", icon: "globe", count: viewModel.remotes.count, isExpanded: $isRemotesExpanded)
+
+            if isRemotesExpanded {
+                if viewModel.remotes.isEmpty {
+                    emptySectionLabel("No remotes")
+                } else {
+                    ForEach(viewModel.remotes, id: \.name) { remote in
+                        remoteRow(remote)
+                    }
+                }
+            }
+        }
+    }
+
+    private func remoteRow(_ remote: GitRemote) -> some View {
+        VStack(spacing: 0) {
             HStack(spacing: AnvilSpacing.sm) {
-                Image(systemName: branch.isCurrent ? "checkmark.circle.fill" : "arrow.triangle.branch")
+                Image(systemName: "globe")
                     .font(.system(size: 11))
-                    .foregroundStyle(branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textTertiary)
+                    .foregroundStyle(AnvilColor.textTertiary)
                     .frame(width: 16)
                     .accessibilityHidden(true)
 
-                Text(branch.name)
+                Text(remote.name)
                     .font(AnvilFont.code)
-                    .foregroundStyle(
-                        viewModel.selectedBranchName == branch.name
-                            ? AnvilColor.accentBlue
-                            : (branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textPrimary)
-                    )
+                    .foregroundStyle(AnvilColor.textPrimary)
                     .lineLimit(1)
 
                 Spacer()
 
-                if branch.aheadCount > 0 {
-                    Text("+\(branch.aheadCount)")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.accentGreen)
+                Text(remote.fetchURL.components(separatedBy: "/").suffix(2).joined(separator: "/").replacingOccurrences(of: ".git", with: ""))
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .lineLimit(1)
+                    .truncationMode(.head)
+            }
+            .padding(.horizontal, AnvilSpacing.md)
+            .padding(.vertical, AnvilSpacing.xs)
+            .padding(.vertical, 2)
+
+            // Show tracking branches for this remote
+            let remoteBranches = appState.branches.filter { $0.name.hasPrefix("\(remote.name)/") }
+            if !remoteBranches.isEmpty {
+                ForEach(remoteBranches) { branch in
+                    HStack(spacing: AnvilSpacing.sm) {
+                        Color.clear.frame(width: 16)
+                        Image(systemName: "arrow.triangle.branch")
+                            .font(.system(size: 10))
+                            .foregroundStyle(AnvilColor.textTertiary)
+                            .frame(width: 14)
+                            .accessibilityHidden(true)
+                        Text(branch.name.replacingOccurrences(of: "\(remote.name)/", with: ""))
+                            .font(AnvilFont.code)
+                            .foregroundStyle(AnvilColor.textSecondary)
+                            .lineLimit(1)
+                        Spacer()
+                    }
+                    .padding(.horizontal, AnvilSpacing.md)
+                    .padding(.vertical, 2)
+                    .padding(.vertical, 2)
                 }
-                if branch.behindCount > 0 {
-                    Text("-\(branch.behindCount)")
+            }
+        }
+    }
+
+    // MARK: - Tags Section
+
+    private var tagsSection: some View {
+        VStack(spacing: 0) {
+            disclosureHeader("Tags", icon: "tag", count: viewModel.tags.count, isExpanded: $isTagsExpanded)
+
+            if isTagsExpanded {
+                if viewModel.tags.isEmpty {
+                    emptySectionLabel("No tags")
+                } else {
+                    ForEach(viewModel.tags, id: \.name) { tag in
+                        tagRow(tag)
+                    }
+                }
+            }
+        }
+    }
+
+    private func tagRow(_ tag: Tag) -> some View {
+        HStack(spacing: AnvilSpacing.sm) {
+            Image(systemName: "tag")
+                .font(.system(size: 11))
+                .foregroundStyle(AnvilColor.accentAmber)
+                .frame(width: 16)
+                .accessibilityHidden(true)
+
+            Text(tag.name)
+                .font(AnvilFont.code)
+                .foregroundStyle(AnvilColor.textPrimary)
+                .lineLimit(1)
+
+            Spacer()
+
+            if let annotation = tag.annotation, !annotation.isEmpty {
+                Text(annotation)
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Tag \(tag.name)\(tag.annotation.map { ", \($0)" } ?? "")")
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, AnvilSpacing.xs)
+        .padding(.vertical, 2)
+    }
+
+    // MARK: - Stashes Section
+
+    private var stashesSection: some View {
+        VStack(spacing: 0) {
+            disclosureHeader("Stashes", icon: "tray.and.arrow.down", count: viewModel.stashes.count, isExpanded: $isStashesExpanded)
+
+            if isStashesExpanded {
+                if viewModel.stashes.isEmpty {
+                    emptySectionLabel("No stashes")
+                } else {
+                    ForEach(viewModel.stashes, id: \.id) { stash in
+                        stashRow(stash)
+                    }
+                }
+            }
+        }
+    }
+
+    private func stashRow(_ stash: Stash) -> some View {
+        HoverableRow {
+            HStack(spacing: AnvilSpacing.sm) {
+                Image(systemName: "tray")
+                    .font(.system(size: 11))
+                    .foregroundStyle(AnvilColor.accentPurple)
+                    .frame(width: 16)
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(stash.message)
+                        .font(AnvilFont.code)
+                        .foregroundStyle(AnvilColor.textPrimary)
+                        .lineLimit(1)
+
+                    Text(Self.relativeStashDate(stash.date))
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.accentRed)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                }
+
+                Spacer()
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Stash: \(stash.message)")
+            .padding(.horizontal, AnvilSpacing.md)
+            .padding(.vertical, AnvilSpacing.xs)
+            .padding(.vertical, 2)
+        }
+        .contentShape(Rectangle())
+        .contextMenu {
+            Button("Apply") {
+                guard let adapter = container.getOrCreateGitAdapter() else { return }
+                viewModel.applyStash(index: stash.index, using: adapter)
+            }
+            Button("Pop") {
+                guard let adapter = container.getOrCreateGitAdapter() else { return }
+                viewModel.popStash(using: adapter)
+            }
+            Divider()
+            Button("Drop", role: .destructive) {
+                guard let adapter = container.getOrCreateGitAdapter() else { return }
+                viewModel.dropStash(index: stash.index, using: adapter)
+            }
+        }
+    }
+
+    private static func relativeStashDate(_ date: Date) -> String {
+        let interval = Date.now.timeIntervalSince(date)
+        if interval < 60 { return "just now" }
+        if interval < 3600 { return "\(Int(interval / 60))m ago" }
+        if interval < 86400 { return "\(Int(interval / 3600))h ago" }
+        if interval < 604800 { return "\(Int(interval / 86400))d ago" }
+        return "\(Int(interval / 604800))w ago"
+    }
+
+    // MARK: - Worktrees Section
+
+    private var worktreesSection: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: AnvilSpacing.sm) {
+                disclosureHeader("Worktrees", icon: "folder.badge.gearshape", count: viewModel.worktrees.count, isExpanded: $isWorktreesExpanded)
+
+                Button {
+                    viewModel.newWorktreeBranch = ""
+                    viewModel.isAddWorktreeSheetPresented = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 11))
+                        .foregroundStyle(AnvilColor.textTertiary)
+                }
+                .buttonStyle(.plain)
+                .help("Add Worktree")
+            }
+            .padding(.trailing, AnvilSpacing.md)
+
+            if isWorktreesExpanded {
+                if viewModel.worktrees.isEmpty {
+                    emptySectionLabel("No worktrees")
+                } else {
+                    ForEach(viewModel.worktrees) { wt in
+                        worktreeRow(wt)
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $viewModel.isAddWorktreeSheetPresented) {
+            addWorktreeSheet
+        }
+    }
+
+    private func worktreeRow(_ wt: Worktree) -> some View {
+        Button {
+            activateWorktree(wt)
+        } label: {
+            HoverableRow(isSelected: appState.currentProjectPath == wt.path) {
+                HStack(spacing: AnvilSpacing.sm) {
+                    Image(systemName: wt.isMain ? "folder.fill" : "folder.badge.gearshape")
+                        .font(.system(size: 11))
+                        .foregroundStyle(wt.isMain ? AnvilColor.accentGreen : AnvilColor.accentBlue)
+                        .frame(width: 16)
+                        .accessibilityHidden(true)
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(wt.branch ?? "detached")
+                            .font(AnvilFont.code)
+                            .foregroundStyle(AnvilColor.textPrimary)
+                            .lineLimit(1)
+
+                        HStack(spacing: AnvilSpacing.xs) {
+                            if let sha = wt.headSHA {
+                                Text(String(sha.prefix(7)))
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .foregroundStyle(AnvilColor.textTertiary)
+                            }
+
+                            Text((wt.path as NSString).lastPathComponent)
+                                .font(AnvilFont.label)
+                                .foregroundStyle(AnvilColor.textTertiary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                    }
+
+                    Spacer()
+
+                    if wt.isMain {
+                        AnvilBadge(text: "main", color: AnvilColor.accentGreen)
+                    }
                 }
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Branch \(branch.name)\(branch.isCurrent ? ", current" : "")")
+            .accessibilityLabel("Worktree \(wt.branch ?? "detached") at \(wt.path)")
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.xs)
-            .frame(height: AnvilSpacing.listItemHeight)
+            .padding(.vertical, 2)
         }
+        .buttonStyle(.plain)
         .contentShape(Rectangle())
-        .onTapGesture {
-            guard !branch.isCurrent else { return }
-            guard let adapter = container.getOrCreateGitAdapter() else { return }
-            viewModel.loadBranchDiff(branch.name, using: adapter)
+        .contextMenu {
+            Button("Open in New Window") {
+                if let url = URL(string: "anvil://open?path=\(wt.path)") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+            Button("Copy Path") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(wt.path, forType: .string)
+            }
+            if !wt.isMain {
+                Divider()
+                Button("Remove Worktree", role: .destructive) {
+                    guard let adapter = container.getOrCreateGitAdapter() else { return }
+                    viewModel.removeWorktree(path: wt.path, using: adapter)
+                }
+            }
         }
+    }
+
+    private func activateWorktree(_ worktree: Worktree) {
+        if appState.currentProjectPath == worktree.path {
+            appState.gitOperationResult = .success("Already using worktree \(worktree.branch ?? "detached").")
+            return
+        }
+
+        // Keep both app and container project scopes aligned before refreshing git/review state.
+        container.currentProjectPath = worktree.path
+        appState.currentProjectPath = worktree.path
+        appState.gitHubPRViewModel.clearSelection()
+        viewModel.clearBranchDiff()
+
+        guard let adapter = container.getOrCreateGitAdapter() else {
+            appState.gitOperationResult = .failure("Could not open git adapter for \(worktree.path).")
+            return
+        }
+
+        Task {
+            await appState.loadGitStatus(from: adapter)
+            await MainActor.run {
+                viewModel.loadSourceControlData(using: adapter)
+                viewModel.loadReviews()
+                appState.gitOperationResult = .success("Switched to worktree \(worktree.branch ?? "detached").")
+            }
+        }
+    }
+
+    private var addWorktreeSheet: some View {
+        VStack(spacing: AnvilSpacing.lg) {
+            Text("Add Worktree")
+                .font(AnvilFont.heading)
+                .foregroundStyle(AnvilColor.textPrimary)
+
+            VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
+                Text("Branch name")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textSecondary)
+
+                Picker("Branch", selection: $viewModel.newWorktreeBranch) {
+                    Text("Select a branch...").tag("")
+                    ForEach(appState.branches.filter({ !$0.isCurrent })) { branch in
+                        Text(branch.name).tag(branch.name)
+                    }
+                }
+                .labelsHidden()
+            }
+
+            HStack {
+                Button("Cancel") {
+                    viewModel.isAddWorktreeSheetPresented = false
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Spacer()
+
+                Button("Create") {
+                    guard !viewModel.newWorktreeBranch.isEmpty else { return }
+                    guard let adapter = container.getOrCreateGitAdapter() else { return }
+                    let branch = viewModel.newWorktreeBranch
+                    let basePath = (appState.currentProjectPath ?? "") as NSString
+                    let worktreePath = basePath.deletingLastPathComponent + "/\(branch)-worktree"
+                    viewModel.addWorktree(branch: branch, path: worktreePath, using: adapter)
+                    viewModel.isAddWorktreeSheetPresented = false
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(viewModel.newWorktreeBranch.isEmpty)
+            }
+        }
+        .padding(AnvilSpacing.xl)
+        .frame(width: 360)
+    }
+
+    // MARK: - Disclosure Header
+
+    private func disclosureHeader(_ title: String, icon: String, count: Int, isExpanded: Binding<Bool>) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isExpanded.wrappedValue.toggle()
+            }
+        } label: {
+            HStack(spacing: AnvilSpacing.xs) {
+                Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .frame(width: 10)
+
+                AnvilSidebarSectionHeader(
+                    title: title,
+                    icon: icon,
+                    count: count
+                )
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func emptySectionLabel(_ text: String) -> some View {
+        HStack {
+            Text(text)
+                .font(AnvilFont.label)
+                .foregroundStyle(AnvilColor.textTertiary)
+            Spacer()
+        }
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, AnvilSpacing.xs)
     }
 
     // MARK: - Changes Section
 
     private var changesSection: some View {
         VStack(spacing: 0) {
-            sectionHeader(sidebarSections[1])
+            HStack(spacing: AnvilSpacing.xs) {
+                disclosureHeader("Local Changes", icon: "square.and.pencil", count: totalChangesCount, isExpanded: $isChangesExpanded)
 
-            if totalChangesCount == 0 {
+                if conflictCount > 0 {
+                    AnvilBadge(text: "\(conflictCount) conflict\(conflictCount == 1 ? "" : "s")", color: AnvilColor.accentRed)
+                }
+            }
+
+            if !isChangesExpanded {
+                EmptyView()
+            } else if totalChangesCount == 0 && conflictCount == 0 {
                 HStack {
                     Text("No changes")
                         .font(AnvilFont.label)
@@ -152,6 +593,12 @@ struct ReviewSidebar: View {
                 .padding(.horizontal, AnvilSpacing.md)
                 .padding(.vertical, AnvilSpacing.xs)
             } else {
+                if conflictCount > 0 {
+                    changeGroupHeader("Conflicts", count: conflictCount)
+                    ForEach(Array(viewModel.mergeConflicts.enumerated()), id: \.element.id) { index, conflict in
+                        conflictRow(conflict, index: index)
+                    }
+                }
                 if !appState.stagedChanges.isEmpty {
                     changeGroupHeader("Staged", count: appState.stagedChanges.count)
                     ForEach(appState.stagedChanges) { change in
@@ -174,6 +621,42 @@ struct ReviewSidebar: View {
         }
     }
 
+    private func conflictRow(_ conflict: MergeConflict, index: Int) -> some View {
+        Button {
+            appState.gitHubPRViewModel.clearSelection()
+            viewModel.isCommitGraphVisible = false
+            viewModel.selectConflict(index)
+        } label: {
+            HoverableRow(isSelected: viewModel.selectedConflictIndex == index) {
+                HStack(spacing: AnvilSpacing.sm) {
+                    Text("U")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundStyle(AnvilColor.accentRed)
+                        .frame(width: 14)
+
+                    Text((conflict.filePath as NSString).lastPathComponent)
+                        .font(AnvilFont.code)
+                        .foregroundStyle(AnvilColor.textPrimary)
+                        .lineLimit(1)
+
+                    Spacer()
+
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(AnvilColor.accentRed)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Merge conflict: \((conflict.filePath as NSString).lastPathComponent)")
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, 2)
+                .padding(.vertical, 2)
+            }
+        }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .accessibilityAddTraits(.isButton)
+    }
+
     private func changeGroupHeader(_ title: String, count: Int) -> some View {
         HStack {
             Text(title)
@@ -189,32 +672,162 @@ struct ReviewSidebar: View {
     }
 
     private func changeRow(_ change: GitFileChange) -> some View {
-        HStack(spacing: AnvilSpacing.sm) {
-            Text(changeStatusLabel(change.status))
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .foregroundStyle(changeStatusColor(change.status))
-                .frame(width: 14)
+        Button {
+            appState.gitHubPRViewModel.clearSelection()
+            viewModel.isCommitGraphVisible = false
+            if change.status == .unmerged {
+                // Show merge conflict view for unmerged files
+                if let idx = viewModel.mergeConflicts.firstIndex(where: { $0.filePath == change.filePath }) {
+                    viewModel.selectConflict(idx)
+                }
+            } else {
+                // Load diff for this changed file
+                guard let adapter = container.getOrCreateGitAdapter() else { return }
+                viewModel.loadLocalFileDiff(change, using: adapter)
+            }
+        } label: {
+            HoverableRow {
+                HStack(spacing: AnvilSpacing.sm) {
+                    Text(changeStatusLabel(change.status))
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundStyle(changeStatusColor(change.status))
+                        .frame(width: 14)
 
-            Text(change.fileName)
-                .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.textPrimary)
-                .lineLimit(1)
+                    Text(change.fileName)
+                        .font(AnvilFont.code)
+                        .foregroundStyle(AnvilColor.textPrimary)
+                        .lineLimit(1)
 
-            Spacer()
+                    Spacer()
 
-            if !change.directory.isEmpty {
-                Text(change.directory)
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .lineLimit(1)
-                    .truncationMode(.head)
+                    if !change.directory.isEmpty {
+                        Text(change.directory)
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textTertiary)
+                            .lineLimit(1)
+                            .truncationMode(.head)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(change.fileName), \(change.status.rawValue)")
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, 2)
+                .padding(.vertical, 2)
             }
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(change.fileName), \(change.status.rawValue)")
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, 2)
-        .frame(height: AnvilSpacing.listItemHeight)
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private func reviewDetailPane(_ review: Review) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: AnvilSpacing.sm) {
+                Button {
+                    viewModel.clearBranchDiff()
+                } label: {
+                    HStack(spacing: AnvilSpacing.xxs) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 10, weight: .bold))
+                        Text("Back")
+                            .font(AnvilFont.label)
+                    }
+                    .foregroundStyle(AnvilColor.textSecondary)
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                statusBadge(review.status)
+            }
+            .padding(.horizontal, AnvilSpacing.md)
+            .padding(.vertical, AnvilSpacing.sm)
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
+                Text(review.title)
+                    .font(AnvilFont.subheading)
+                    .foregroundStyle(AnvilColor.textPrimary)
+                    .lineLimit(2)
+
+                Text("\(review.author) \u{2022} \(review.diff.count) files")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textSecondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, AnvilSpacing.md)
+            .padding(.vertical, AnvilSpacing.sm)
+
+            Divider()
+
+            List {
+                Section {
+                    ForEach(review.diff) { file in
+                        fileRow(file)
+                    }
+                } header: {
+                    sectionHeader(
+                        SidebarSectionDescriptor(
+                            id: "files",
+                            title: "Files",
+                            icon: "doc",
+                            count: review.diff.count
+                        )
+                    )
+                }
+            }
+            .listStyle(.sidebar)
+        }
+    }
+
+    private func reviewRow(_ review: Review) -> some View {
+        Button {
+            appState.gitHubPRViewModel.clearSelection()
+            viewModel.isCommitGraphVisible = false
+            viewModel.selectedBranchName = nil
+            viewModel.selectReview(review.id)
+        } label: {
+            AnvilListItem(
+                icon: reviewIcon(for: review),
+                title: review.title,
+                subtitle: review.author,
+                tag: review.sourceId,
+                tagColor: review.sourceType == .pullRequest
+                    ? AnvilColor.accentBlue
+                    : AnvilColor.accentPurple,
+                timestamp: "\(review.diff.count) files",
+                isSelected: viewModel.selectedReviewID == review.id,
+                isCompact: false
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(review.title), by \(review.author), \(review.sourceId), \(review.diff.count) files, status \(String(describing: review.status))")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private func fileRow(_ file: FileDiff) -> some View {
+        Button {
+            appState.gitHubPRViewModel.clearSelection()
+            viewModel.isCommitGraphVisible = false
+            viewModel.selectFile(file.id)
+        } label: {
+            AnvilListItem(
+                icon: fileIcon(for: file.status),
+                title: file.filePath.components(separatedBy: "/").last ?? file.filePath,
+                subtitle: file.filePath.components(separatedBy: "/").dropLast().joined(separator: "/"),
+                tag: viewModel.commentCountForFile(file.id) > 0 ? "\(viewModel.commentCountForFile(file.id)) comments" : nil,
+                tagColor: AnvilColor.accentBlue,
+                timestamp: {
+                    let approved = file.hunks.filter { viewModel.decisionFor($0.id) == .approved }.count
+                    let total = file.hunks.count
+                    return approved > 0 ? "\(approved)/\(total)" : nil
+                }(),
+                isSelected: viewModel.selectedFileID == file.id,
+                isCompact: false
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(.isButton)
     }
 
     private func changeStatusLabel(_ status: GitFileChangeStatus) -> String {
@@ -242,6 +855,16 @@ struct ReviewSidebar: View {
     }
 
     // MARK: - GitHub Auth Bar
+
+    // MARK: - Disclosure state
+
+    @State private var isBranchesExpanded = true
+    @State private var isRemotesExpanded = false
+    @State private var isTagsExpanded = false
+    @State private var isStashesExpanded = false
+    @State private var isWorktreesExpanded = false
+    @State private var isChangesExpanded = true
+    @State private var isPRsExpanded = true
 
     @State private var isLoginSheetPresented = false
 
@@ -297,14 +920,70 @@ struct ReviewSidebar: View {
         }
     }
 
+    private var reviewActionsBar: some View {
+        HStack(spacing: AnvilSpacing.sm) {
+            Button {
+                startReviewFromCurrentChanges()
+            } label: {
+                Label("Start Review", systemImage: "plus")
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+
+            Button {
+                if let adapter = container.getOrCreateGitAdapter() {
+                    viewModel.loadSourceControlData(using: adapter)
+                    Task { await appState.loadGitStatus(from: adapter) }
+                }
+                loadPRsIfNeeded()
+            } label: {
+                Label("Refresh", systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+
+            Spacer()
+        }
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, AnvilSpacing.xs)
+    }
+
+    private func startReviewFromCurrentChanges() {
+        guard let adapter = container.getOrCreateGitAdapter() else { return }
+
+        appState.gitHubPRViewModel.clearSelection()
+        viewModel.isCommitGraphVisible = false
+        viewModel.selectedBranchName = nil
+
+        if let staged = appState.stagedChanges.first {
+            viewModel.loadLocalFileDiff(staged, using: adapter)
+            return
+        }
+        if let unstaged = appState.unstagedChanges.first {
+            viewModel.loadLocalFileDiff(unstaged, using: adapter)
+            return
+        }
+        if let untracked = appState.untrackedChanges.first {
+            viewModel.loadLocalFileDiff(untracked, using: adapter)
+            return
+        }
+
+        // Fall back to reviewing a non-current branch if available.
+        if let branch = appState.branches.first(where: { !$0.isCurrent && !$0.name.contains("/") }) {
+            viewModel.loadBranchDiff(branch.name, using: adapter)
+        }
+    }
+
     // MARK: - Pull Requests Section
 
     private var pullRequestsSection: some View {
         VStack(spacing: 0) {
             let prVM = appState.gitHubPRViewModel
-            sectionHeader(sidebarSections[2])
+            disclosureHeader("Pull Requests", icon: "arrow.triangle.pull", count: prVM.pullRequests.count, isExpanded: $isPRsExpanded)
 
-            if prVM.isLoading {
+            if !isPRsExpanded {
+                EmptyView()
+            } else if prVM.isLoading {
                 HStack {
                     ProgressView()
                         .controlSize(.small)
@@ -349,45 +1028,22 @@ struct ReviewSidebar: View {
     }
 
     private func prRow(_ pr: PullRequest) -> some View {
-        HoverableRow {
-            HStack(spacing: AnvilSpacing.sm) {
-                Image(systemName: pr.isDraft ? "circle.dashed" : "arrow.triangle.pull")
-                    .font(.system(size: 11))
-                    .foregroundStyle(prStatusColor(pr.status))
-                    .frame(width: 16)
-                    .accessibilityHidden(true)
-
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(pr.title)
-                        .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.textPrimary)
-                        .lineLimit(1)
-
-                    Text("#\(pr.number) by \(pr.author)")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                        .lineLimit(1)
-                }
-
-                Spacer()
-
-                if pr.isDraft {
-                    Text("Draft")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                }
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(pr.title), #\(pr.number) by \(pr.author), \(pr.status.rawValue)\(pr.isDraft ? ", draft" : "")")
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.xs)
-            .frame(minHeight: AnvilSpacing.listItemHeight)
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
+        Button {
             guard let adapter = container.getOrCreateGitHubAdapter() else { return }
             appState.gitHubPRViewModel.selectPR(pr, using: adapter)
+        } label: {
+            AnvilListItem(
+                icon: pr.isDraft ? "circle.dashed" : "arrow.triangle.pull",
+                title: pr.title,
+                subtitle: "#\(pr.number) by \(pr.author)",
+                tag: pr.isDraft ? "Draft" : pr.status.rawValue.capitalized,
+                tagColor: prStatusColor(pr.status),
+                isSelected: appState.gitHubPRViewModel.selectedPR?.id == pr.id,
+                isCompact: false
+            )
         }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(.isButton)
     }
 
     private var prSelectedBar: some View {
@@ -470,7 +1126,7 @@ struct ReviewSidebar: View {
                         reviewRow(review)
                     }
                 } header: {
-                    sectionHeader(sidebarSections[3])
+                    AnvilSidebarSectionHeader(title: "Pending", icon: "circle", count: viewModel.pendingReviews.count)
                 }
             }
 
@@ -480,147 +1136,21 @@ struct ReviewSidebar: View {
                         reviewRow(review)
                     }
                 } header: {
-                    sectionHeader(sidebarSections[4])
+                    AnvilSidebarSectionHeader(title: "Completed", icon: "checkmark.circle", count: viewModel.completedReviews.count)
                 }
             }
         }
         .listStyle(.sidebar)
     }
 
-    private func reviewRow(_ review: Review) -> some View {
-        AnvilListItem(
-            icon: reviewIcon(for: review),
-            title: review.title,
-            subtitle: review.author,
-            tag: review.sourceId,
-            tagColor: review.sourceType == .pullRequest
-                ? AnvilColor.accentBlue
-                : AnvilColor.accentPurple,
-            isSelected: viewModel.selectedReviewID == review.id,
-            isCompact: false
-        )
-        .listRowInsets(EdgeInsets(top: 2, leading: 2, bottom: 2, trailing: 2))
-        .onTapGesture { viewModel.selectReview(review.id) }
-    }
-
-    private func reviewFileList(_ review: Review) -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: AnvilSpacing.sm) {
-                Button {
-                    viewModel.selectedReviewID = nil
-                    viewModel.selectedFileID = nil
-                } label: {
-                    HStack(spacing: AnvilSpacing.xxs) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 10, weight: .bold))
-                        Text("Back")
-                            .font(AnvilFont.label)
-                    }
-                    .foregroundStyle(AnvilColor.textSecondary)
-                }
-                .buttonStyle(.plain)
-
-                Spacer()
-
-                statusBadge(review.status)
-            }
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.sm)
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
-                Text(review.title)
-                    .font(AnvilFont.subheading)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .lineLimit(2)
-
-                Text("\(review.author) \u{2022} \(review.diff.count) files")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textSecondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.sm)
-
-            Divider()
-
-            List {
-                Section {
-                    ForEach(review.diff) { file in
-                        fileRow(file)
-                    }
-                } header: {
-                    sectionHeader(
-                        SidebarSectionDescriptor(
-                            id: "files",
-                            title: "Files",
-                            icon: "doc",
-                            count: review.diff.count
-                        )
-                    )
-                }
-            }
-            .listStyle(.sidebar)
-        }
-    }
-
-    private func fileRow(_ file: FileDiff) -> some View {
-        HoverableRow(isSelected: viewModel.selectedFileID == file.id) {
-            HStack(spacing: AnvilSpacing.sm) {
-                Image(systemName: fileIcon(for: file.status))
-                    .font(.system(size: 12))
-                    .foregroundStyle(fileColor(for: file.status))
-                    .frame(width: 16)
-                    .accessibilityHidden(true)
-
-                Text(file.filePath.components(separatedBy: "/").last ?? file.filePath)
-                    .font(AnvilFont.code)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .lineLimit(1)
-
-                Spacer()
-
-                // Hunk decision summary
-                let approved = file.hunks.filter { viewModel.decisionFor($0.id) == .approved }.count
-                let total = file.hunks.count
-                if approved > 0 {
-                    Text("\(approved)/\(total)")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(
-                            approved == total ? AnvilColor.accentGreen : AnvilColor.textTertiary
-                        )
-                }
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(file.filePath.components(separatedBy: "/").last ?? file.filePath), \(file.status)")
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.xs)
-            .frame(height: AnvilSpacing.listItemHeight)
-        }
-        .contentShape(Rectangle())
-        .onTapGesture { viewModel.selectFile(file.id) }
-    }
-
     // MARK: - Shared Components
 
     private func sectionHeader(_ descriptor: SidebarSectionDescriptor) -> some View {
-        HStack {
-            Image(systemName: descriptor.icon)
-                .font(.system(size: 10))
-                .foregroundStyle(AnvilColor.textTertiary)
-
-            Text(descriptor.title)
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textSecondary)
-
-            Spacer()
-
-            Text("\(descriptor.count)")
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
-        }
-        .textCase(nil)
+        AnvilSidebarSectionHeader(
+            title: descriptor.title,
+            icon: descriptor.icon,
+            count: descriptor.count
+        )
     }
 
     private func statusBadge(_ status: ReviewStatus) -> some View {

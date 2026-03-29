@@ -25,7 +25,7 @@ struct TerminalPanel: View {
             // Terminal content
             terminalContent
         }
-        .background(AnvilColor.backgroundSecondary)
+        .background(.regularMaterial)
     }
 
     // MARK: - Resize Handle
@@ -110,7 +110,6 @@ struct TerminalPanel: View {
             .padding(.trailing, AnvilSpacing.sm)
         }
         .frame(height: 28)
-        .background(AnvilColor.backgroundSecondary)
     }
 
     private func terminalTabView(_ session: TerminalSession) -> some View {

@@ -153,8 +153,8 @@ Governance track: docs, matrix, and automated checks become release gates.
 100. Add weekly architecture review note to keep native direction consistent.
 
 ## Current Tranche (In Progress)
-- Tranche A quick wins:
-- Remove misleading no-op auxiliary sidebar actions.
-- Remove inaccurate shortcut hints.
-- Unify immediate terminal action behavior.
-- Refresh canonical roadmap/docs ownership.
+- Landed: shared sidebar primitives and migration across the native shell, Agent, Intent, Review, Ship, and auxiliary workspace sidebars.
+- Landed: multi-provider plumbing, including Codex ACP provider support and provider-aware messaging/provider selection.
+- Landed: deterministic UI-test launch scenarios and visual regression scaffolding.
+- Current visual finding: 7 of 8 seeded canonical screens still fail because scenario bootstrap/navigation is not yet reliably surfacing the expected headings and labels.
+- Next UI gaps: finish the remaining double-sidebar cleanup, tighten Review and Ship native polish, complete markdown code highlighting coverage, and harden seeded scenario fidelity before expanding the visual suite.

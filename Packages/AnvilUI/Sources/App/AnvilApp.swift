@@ -5,7 +5,14 @@ import AnvilApplication
 public struct AnvilApp: App {
     @StateObject private var appState = AppState()
     @StateObject private var container = DependencyContainer()
-    @State private var showSetupWizard = SetupWizardViewModel.isFirstLaunch
+    @State private var showSetupWizard = Self.shouldShowSetupWizard
+
+    private static let shouldShowSetupWizard: Bool = {
+        if ProcessInfo.processInfo.environment["ANVIL_SKIP_SETUP_WIZARD"] == "1" {
+            return false
+        }
+        return SetupWizardViewModel.isFirstLaunch
+    }()
 
     public init() {}
 
@@ -34,15 +41,20 @@ public struct AnvilApp: App {
                     )
                     appState.intentViewModel.configure(eventBus: container.eventBus)
 
-                    // Wire deployment use case and event bus into ship view model
+                    // Wire deployment use case, event bus, and hosting port into ship view model
                     appState.shipViewModel.configure(
                         deploymentUseCase: container.makeCreateDeploymentUseCase()
                     )
                     appState.shipViewModel.configure(eventBus: container.eventBus)
+                    appState.editorViewModel.configure(eventBus: container.eventBus)
+                    if let hostingPort = container.hostingPort {
+                        appState.shipViewModel.configure(hostingPort: hostingPort)
+                    }
+                    appState.shipViewModel.loadFromProvider()
 
                     // Wire messaging port into messaging view model
                     appState.messagingViewModel.configure(
-                        messagingPort: container.messagingService
+                        messagingPort: container.messagingPort ?? container.messagingService
                     )
 
                     // Wire schedule port into schedule view model
@@ -68,6 +80,13 @@ public struct AnvilApp: App {
                     if let adapter = container.getOrCreateGitAdapter() {
                         await appState.loadGitStatus(from: adapter)
                     }
+
+                    // Keep app-level project scoped features (Rules/Docs/Search/Tests) in sync.
+                    appState.currentProjectPath = container.currentProjectPath
+                    appState.applyUITestScenarioIfNeeded()
+                }
+                .onChange(of: container.currentProjectPath) { _, newPath in
+                    appState.currentProjectPath = newPath
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .anvilDesktopNotificationTapped)) { notification in
                     handleDesktopNotificationTap(notification)

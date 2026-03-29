@@ -4,7 +4,11 @@ import UniformTypeIdentifiers
 
 struct DatabaseMode: View {
     @EnvironmentObject private var container: DependencyContainer
-    @StateObject private var viewModel = DatabaseViewModel()
+    @ObservedObject var viewModel: DatabaseViewModel
+
+    init(viewModel: DatabaseViewModel) {
+        self.viewModel = viewModel
+    }
 
     var body: some View {
         Group {

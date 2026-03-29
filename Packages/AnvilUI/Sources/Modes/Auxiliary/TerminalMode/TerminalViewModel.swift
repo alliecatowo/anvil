@@ -5,11 +5,14 @@ import Combine
 // MARK: - ViewModel
 
 @MainActor
-final class TerminalViewModel: ObservableObject {
+public final class TerminalViewModel: ObservableObject {
     @Published var sessionManager = TerminalSessionManager()
     @Published var terminalColumns: Int = 80
     @Published var terminalRows: Int = 24
     private var cancellables = Set<AnyCancellable>()
+
+    /// The project working directory, used as CWD for new terminal sessions.
+    var projectWorkingDirectory: String?
 
     var sessions: [TerminalSession] {
         sessionManager.sessions
@@ -24,7 +27,7 @@ final class TerminalViewModel: ObservableObject {
         sessionManager.activeSession
     }
 
-    init() {
+    public init() {
         // Forward nested session manager changes so SwiftUI updates when
         // sessions are added/removed/switched.
         sessionManager.objectWillChange
@@ -33,12 +36,14 @@ final class TerminalViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Create an initial terminal session
-        sessionManager.createSession(
-            workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
-            columns: terminalColumns,
-            rows: terminalRows
-        )
+        // Initial session is created lazily when the terminal is first
+        // opened (see AppState.toggleTerminal / addTab) so it picks up
+        // the project working directory configured at startup.
+    }
+
+    /// Configures the terminal to use the project working directory for new sessions.
+    public func configure(projectPath: String?) {
+        projectWorkingDirectory = projectPath
     }
 
     // MARK: - Actions
@@ -49,8 +54,9 @@ final class TerminalViewModel: ObservableObject {
 
     @discardableResult
     func addTab() -> TerminalSession {
-        sessionManager.createSession(
-            workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
+        let cwd = projectWorkingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path
+        return sessionManager.createSession(
+            workingDirectory: cwd,
             columns: terminalColumns,
             rows: terminalRows
         )
@@ -58,6 +64,27 @@ final class TerminalViewModel: ObservableObject {
 
     func closeTab(_ id: UUID) {
         sessionManager.closeSession(id)
+    }
+
+    func renameSession(_ id: UUID, title: String) {
+        guard let session = sessions.first(where: { $0.id == id }),
+              !title.isEmpty else { return }
+        session.title = title
+        objectWillChange.send()
+    }
+
+    func selectNextTab() {
+        guard let current = selectedSessionId,
+              let idx = sessions.firstIndex(where: { $0.id == current }),
+              idx + 1 < sessions.count else { return }
+        sessionManager.selectSession(sessions[idx + 1].id)
+    }
+
+    func selectPreviousTab() {
+        guard let current = selectedSessionId,
+              let idx = sessions.firstIndex(where: { $0.id == current }),
+              idx > 0 else { return }
+        sessionManager.selectSession(sessions[idx - 1].id)
     }
 
     func session(with id: UUID?) -> TerminalSession? {

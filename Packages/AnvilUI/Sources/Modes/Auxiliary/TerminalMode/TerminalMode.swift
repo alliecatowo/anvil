@@ -54,14 +54,18 @@ private struct TerminalWorkspace: View {
     let onSplitCommandHandled: () -> Void
 
     var body: some View {
-        HSplitView {
-            sessionSidebar
-                .frame(minWidth: 220, idealWidth: 240, maxWidth: 280)
+        VStack(spacing: 0) {
+            // Tab bar at the top
+            TerminalTabBar(viewModel: viewModel)
 
-            if let splitSession = viewModel.session(with: splitSessionId), splitSession.id != viewModel.selectedSessionId {
+            Divider()
+
+            // Terminal content area
+            if let splitSession = viewModel.session(with: splitSessionId),
+               splitSession.id != viewModel.selectedSessionId {
                 splitContainer(primarySession: viewModel.selectedSession, secondarySession: splitSession)
             } else {
-                terminalWorkspaceCard(session: viewModel.selectedSession, showsHeaderActions: true)
+                terminalContentCard(session: viewModel.selectedSession, showsHeaderActions: true)
             }
         }
         .background(AnvilColor.backgroundPrimary)
@@ -92,85 +96,24 @@ private struct TerminalWorkspace: View {
         switch splitAxis {
         case .vertical:
             HSplitView {
-                terminalWorkspaceCard(session: primarySession, showsHeaderActions: true)
-                terminalWorkspaceCard(session: secondarySession, showsHeaderActions: false)
+                terminalContentCard(session: primarySession, showsHeaderActions: true)
+                terminalContentCard(session: secondarySession, showsHeaderActions: false)
             }
         case .horizontal:
             VSplitView {
-                terminalWorkspaceCard(session: primarySession, showsHeaderActions: true)
-                terminalWorkspaceCard(session: secondarySession, showsHeaderActions: false)
+                terminalContentCard(session: primarySession, showsHeaderActions: true)
+                terminalContentCard(session: secondarySession, showsHeaderActions: false)
             }
         }
-    }
-
-    private var sessionSidebar: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Terminal")
-                    .font(AnvilFont.subheading)
-                Spacer()
-                Button {
-                    _ = viewModel.addTab()
-                } label: {
-                    Image(systemName: "plus")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .accessibilityLabel("New Terminal Session")
-            }
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.sm)
-            .background(.bar)
-
-            List {
-                Section("Sessions") {
-                    ForEach(viewModel.sessions) { session in
-                        HStack(spacing: AnvilSpacing.sm) {
-                            Image(systemName: session.isRunning ? "terminal" : "terminal.fill")
-                                .foregroundStyle(session.isRunning ? AnvilColor.accentBlue : .secondary)
-                                .accessibilityHidden(true)
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(session.title)
-                                    .font(AnvilFont.sidebarItem)
-                                    .lineLimit(1)
-                                Text(session.isRunning ? "Running" : "Exited")
-                                    .font(AnvilFont.label)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            if viewModel.sessions.count > 1 {
-                                Button {
-                                    viewModel.closeTab(session.id)
-                                } label: {
-                                    Image(systemName: "xmark")
-                                }
-                                .buttonStyle(.borderless)
-                                .accessibilityLabel("Close \(session.title)")
-                            }
-                        }
-                        .contentShape(Rectangle())
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel("\(session.title), \(session.isRunning ? "running" : "exited")")
-                        .accessibilityAddTraits(.isButton)
-                        .onTapGesture {
-                            viewModel.selectTab(session.id)
-                        }
-                        .listRowBackground(viewModel.selectedSessionId == session.id ? Color.accentColor.opacity(0.14) : Color.clear)
-                    }
-                }
-
-            }
-            .listStyle(.sidebar)
-        }
-        .background(.regularMaterial)
     }
 
     @ViewBuilder
-    private func terminalWorkspaceCard(session: TerminalSession?, showsHeaderActions: Bool) -> some View {
+    private func terminalContentCard(session: TerminalSession?, showsHeaderActions: Bool) -> some View {
         VStack(spacing: 0) {
-            workspaceHeader(session: session, showsHeaderActions: showsHeaderActions)
-            Divider()
+            if showsHeaderActions {
+                contentHeader(session: session)
+                Divider()
+            }
             TerminalView(viewModel: viewModel, sessionOverrideId: session?.id)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(AnvilSpacing.md)
@@ -185,7 +128,7 @@ private struct TerminalWorkspace: View {
         }
     }
 
-    private func workspaceHeader(session: TerminalSession?, showsHeaderActions: Bool) -> some View {
+    private func contentHeader(session: TerminalSession?) -> some View {
         HStack(spacing: AnvilSpacing.md) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(session?.title ?? "Terminal")
@@ -198,22 +141,15 @@ private struct TerminalWorkspace: View {
 
             Spacer()
 
-            if showsHeaderActions {
-                Button("New Session", systemImage: "plus") {
-                    _ = viewModel.addTab()
-                }
-                .buttonStyle(.bordered)
-
-                Button(splitSessionTitle, systemImage: splitIcon) {
-                    toggleSplit(axis: .vertical)
-                }
-                .buttonStyle(.bordered)
-
-                Button("Clear", systemImage: "eraser") {
-                    viewModel.clearBuffer()
-                }
-                .buttonStyle(.bordered)
+            Button(splitSessionTitle, systemImage: splitIcon) {
+                toggleSplit(axis: .vertical)
             }
+            .buttonStyle(.bordered)
+
+            Button("Clear", systemImage: "eraser") {
+                viewModel.clearBuffer()
+            }
+            .buttonStyle(.bordered)
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.sm)

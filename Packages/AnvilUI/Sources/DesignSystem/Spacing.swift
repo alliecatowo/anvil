@@ -12,6 +12,7 @@ public enum AnvilSpacing {
     public static let xxxl: CGFloat = 32
 
     // Component-specific
+    public static let iconRailWidth: CGFloat = 44
     public static let sidebarWidth: CGFloat = 260
     public static let sidebarCollapsedWidth: CGFloat = 48
     public static let inspectorWidth: CGFloat = 320

@@ -163,6 +163,16 @@ public final class TestingViewModel: ObservableObject {
         }
     }
 
+    /// Run tests for a specific file path. Derives the test filter from the file name.
+    public func runTestsForFile(_ filePath: String) {
+        let fileName = URL(fileURLWithPath: filePath).deletingPathExtension().lastPathComponent
+        guard let path = projectPath else {
+            runDemoTests()
+            return
+        }
+        executePackageTests(projectPath: path, filter: fileName)
+    }
+
     public func stopTests() {
         runTask?.cancel()
         runTask = nil

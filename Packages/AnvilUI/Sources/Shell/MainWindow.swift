@@ -15,10 +15,14 @@ public struct MainWindow: View {
             } else {
                 // Main content area
                 HStack(spacing: 0) {
-                    // Sidebar
-                    if appState.isSidebarVisible {
-                        Sidebar()
-                            .frame(width: appState.isSidebarCollapsed ? AnvilSpacing.sidebarCollapsedWidth : AnvilSpacing.sidebarWidth)
+                    // Icon rail — always visible (44pt)
+                    IconRail()
+                        .frame(width: AnvilSpacing.iconRailWidth)
+
+                    // Content sidebar — toggleable (260pt)
+                    if !appState.isSidebarCollapsed {
+                        ContentSidebar()
+                            .frame(width: AnvilSpacing.sidebarWidth)
                     }
 
                     // Project search panel
@@ -62,14 +66,6 @@ public struct MainWindow: View {
             }
 
             ToolbarItemGroup(placement: .primaryAction) {
-                Button("Agent", systemImage: "bubble.left.and.text.bubble.right") {
-                    appState.toggleAgentPanel()
-                }
-                .help("Agent Panel (\u{2318}\u{2325}A)")
-                .keyboardShortcut("a", modifiers: [.command, .option])
-                .accessibilityLabel("Toggle Agent Panel")
-                .accessibilityAddTraits(.isButton)
-
                 Button("Command Palette", systemImage: "magnifyingglass") {
                     appState.toggleCommandPalette()
                 }

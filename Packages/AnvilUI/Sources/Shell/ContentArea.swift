@@ -1,4 +1,5 @@
 import SwiftUI
+import AnvilDomain
 
 public struct ContentArea: View {
     @EnvironmentObject var appState: AppState
@@ -51,7 +52,7 @@ struct IntentModeContent: View {
                     }
                 ]
             )
-        } else if viewModel.selectedTicket != nil {
+        } else if viewModel.isShowingTicketDetailInMainPane, viewModel.selectedTicket != nil {
             TicketDetailView(viewModel: viewModel)
         } else if viewModel.viewMode == .board {
             BoardView(viewModel: viewModel)
@@ -67,6 +68,8 @@ struct AgentModeContent: View {
     @EnvironmentObject private var appState: AppState
 
     @State private var showAutoPRSheet = false
+    @State private var cachedProjectFiles: [String] = []
+    @State private var autoContextDebounce: Task<Void, Never>?
 
     var body: some View {
         switch viewModel.viewMode {
@@ -176,8 +179,77 @@ struct AgentModeContent: View {
                     },
                     onSendToBackground: {
                         viewModel.sendToBackground(session.id)
+                    },
+                    onToggleAgentPanel: {
+                        appState.toggleAgentPanel()
+                    },
+                    isAgentPanelVisible: appState.isAgentPanelVisible,
+                    autoContextFiles: appState.autoContextService.suggestions.map { file in
+                        AutoContextChipData(id: file.id, path: file.path, name: file.name, reason: file.reason.rawValue)
+                    },
+                    onDismissAutoContext: { path in
+                        appState.autoContextService.dismiss(path)
+                    },
+                    onAcceptAutoContext: { path in
+                        viewModel.addAttachment(.file(path: path))
+                        appState.autoContextService.dismiss(path)
+                    },
+                    contextResolver: ContextSlashResolver(
+                        resolveTab: { [weak appState] in
+                            guard let file = appState?.editorViewModel.selectedFile else { return nil }
+                            return .file(path: file.path)
+                        },
+                        resolveSelection: { [weak appState] in
+                            guard let vm = appState?.editorViewModel,
+                                  let file = vm.selectedFile else { return nil }
+                            // Use cursor position as a single-line selection if no multi-line selection
+                            let lines = file.content.components(separatedBy: "\n")
+                            let line = vm.cursorLine
+                            guard line > 0, line <= lines.count else { return nil }
+                            let preview = lines[line - 1]
+                            return .codeSelection(filePath: file.path, startLine: line, endLine: line, preview: preview)
+                        },
+                        resolveDiff: {
+                            guard let diffText = InputBarHelpers.loadGitDiff() else { return nil }
+                            let lineCount = diffText.components(separatedBy: "\n").count
+                            let summary = "\(lineCount) lines changed"
+                            // Truncate large diffs to keep context manageable
+                            let truncated = diffText.count > 8000
+                                ? String(diffText.prefix(8000)) + "\n... (truncated)"
+                                : diffText
+                            return .diff(summary: summary, content: truncated)
+                        },
+                        resolveBranch: { [weak appState] in
+                            let branchName = appState?.currentBranch ?? InputBarHelpers.loadCurrentBranch() ?? "unknown"
+                            return .branch(name: branchName)
+                        },
+                        availableTickets: { [weak appState] in
+                            appState?.intentViewModel.tickets.map { ($0.id, $0.title) } ?? []
+                        }
+                    ),
+                    onForkFromMessage: { messageIndex in
+                        forkSession(from: session, atIndex: messageIndex, viewModel: viewModel)
                     }
                 )
+                .onAppear {
+                    if cachedProjectFiles.isEmpty {
+                        cachedProjectFiles = InputBarHelpers.loadProjectFiles()
+                    }
+                }
+                .onChange(of: viewModel.inputText) { _, newText in
+                    autoContextDebounce?.cancel()
+                    autoContextDebounce = Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(300))
+                        guard !Task.isCancelled else { return }
+                        appState.autoContextService.score(
+                            messageText: newText,
+                            recentMessages: session.messages,
+                            recentlyEditedPaths: appState.editorViewModel.recentlyEditedPaths,
+                            focusedFilePath: appState.editorViewModel.selectedFile?.path,
+                            projectFiles: cachedProjectFiles
+                        )
+                    }
+                }
                 .sheet(isPresented: $showAutoPRSheet) {
                     AutoPRSheet(session: session) {
                         showAutoPRSheet = false
@@ -192,6 +264,26 @@ struct AgentModeContent: View {
             }
         }
     }
+
+    /// Create a forked session from the given session, copying messages up to (and including) the given index.
+    private func forkSession(from session: AgentSession, atIndex messageIndex: Int, viewModel: AgentViewModel) {
+        let messagesToCopy = Array(session.messages.prefix(messageIndex + 1))
+        let originalName = session.customName ?? session.displayName
+        let forkedSession = AgentSession(
+            providerId: session.providerId,
+            model: session.model,
+            status: .idle,
+            messages: messagesToCopy,
+            customName: "[fork of \(originalName)]",
+            autonomyLevel: session.autonomyLevel,
+            parentSessionId: session.id,
+            forkFromMessageIndex: messageIndex
+        )
+        viewModel.sessions.insert(forkedSession, at: 0)
+        viewModel.selectedSessionId = forkedSession.id
+        viewModel.showConversation()
+        viewModel.persistSession(forkedSession)
+    }
 }
 
 struct ReviewModeContent: View {
@@ -201,23 +293,35 @@ struct ReviewModeContent: View {
 
     var body: some View {
         if let conflict = viewModel.selectedConflict {
-            MergeConflictView(conflict: conflict)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            MergeConflictView(conflict: conflict) { resolvedContent in
+                if let adapter = container.getOrCreateGitAdapter() {
+                    viewModel.resolveConflict(
+                        filePath: conflict.filePath,
+                        resolvedContent: resolvedContent,
+                        using: adapter
+                    )
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if viewModel.isCommitGraphVisible {
             GitGraphContainerView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if appState.gitHubPRViewModel.selectedPR != nil {
             GitHubPRDetailView(viewModel: appState.gitHubPRViewModel)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if viewModel.selectedBranchName != nil, viewModel.selectedFileID == nil,
+                  let branch = appState.branches.first(where: { $0.name == viewModel.selectedBranchName }) {
+            BranchDetailView(branch: branch, viewModel: viewModel)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if viewModel.selectedReview != nil {
+            DiffReviewView(viewModel: viewModel)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if viewModel.reviews.isEmpty {
             AnvilEmptyState(
                 icon: "checkmark.circle",
                 title: "Review inbox is empty",
-                message: "Nothing to review right now."
+                message: "Select a changed file or branch to review diffs."
             )
-        } else if viewModel.selectedReview != nil {
-            DiffReviewView(viewModel: viewModel)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ReviewInboxView(viewModel: viewModel)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -265,8 +369,14 @@ struct BuildContent: View {
 
     var body: some View {
         switch appState.buildActiveSection {
-        case .sessions, .files, .data:
+        case .sessions:
             AgentModeContent(viewModel: appState.agentViewModel)
+        case .files:
+            EditorMode()
+        case .data:
+            DatabaseMode(viewModel: appState.databaseViewModel)
+        case .terminal:
+            TerminalMode()
         case .tests:
             if appState.testingViewModel.suites.isEmpty {
                 AnvilEmptyState(
@@ -313,6 +423,8 @@ struct LibraryContent: View {
         switch appState.libraryActiveSection {
         case .docs:
             DocsMode()
+        case .rules:
+            RulesEditorView()
         case .extensions:
             PluginMarketplaceMode(viewModel: appState.pluginMarketplaceViewModel)
         case .notifications:
@@ -355,15 +467,28 @@ struct MessagingModeContent: View {
     @ObservedObject var viewModel: MessagingViewModel
 
     var body: some View {
-        NavigationSplitView {
-            ChannelList(viewModel: viewModel)
-                .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 340)
-        } detail: {
+        Group {
+            if viewModel.selectedChannelId == nil {
+                AnvilEmptyState(
+                    icon: "bubble.left.and.bubble.right",
+                    title: "No conversation selected",
+                    message: "Choose a channel from the sidebar to start messaging."
+                )
+            } else {
             ChatView(viewModel: viewModel)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
-        .navigationSplitViewStyle(.balanced)
         .background(.background)
+        .onAppear {
+            if viewModel.selectedChannelId == nil {
+                if let channel = viewModel.channels.first {
+                    viewModel.selectChannel(channel.id)
+                } else if let dm = viewModel.directMessages.first {
+                    viewModel.selectChannel(dm.id)
+                }
+            }
+        }
     }
 }
 

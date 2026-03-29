@@ -4,13 +4,34 @@ import AnvilDomain
 // MARK: - Models
 
 struct Channel: Identifiable {
-    let id = UUID()
+    let id: UUID
+    let providerChannelId: String?
     let name: String
     let icon: String
     let isDirect: Bool
     var unreadCount: Int
     let topic: String
     let memberCount: Int
+
+    init(
+        id: UUID = UUID(),
+        providerChannelId: String? = nil,
+        name: String,
+        icon: String,
+        isDirect: Bool,
+        unreadCount: Int,
+        topic: String,
+        memberCount: Int
+    ) {
+        self.id = id
+        self.providerChannelId = providerChannelId
+        self.name = name
+        self.icon = icon
+        self.isDirect = isDirect
+        self.unreadCount = unreadCount
+        self.topic = topic
+        self.memberCount = memberCount
+    }
 }
 
 struct ChatMessage: Identifiable {
@@ -32,13 +53,23 @@ struct ChatMessage: Identifiable {
 
 @MainActor
 final class MessagingViewModel: ObservableObject {
+    struct ProviderOption: Identifiable {
+        let id: String
+        let title: String
+    }
+
     @Published var channels: [Channel] = []
     @Published var directMessages: [Channel] = []
     @Published var selectedChannelId: UUID?
     @Published var inputText: String = ""
+    @Published var providerOptions: [ProviderOption] = []
+    @Published var selectedProviderId: String?
+    @Published var activeProviderName: String = "In-Memory Messaging"
 
     /// Per-channel message storage
     private var channelMessages: [UUID: [ChatMessage]] = [:]
+    private var providerPorts: [String: any MessagingPort] = [:]
+    private var messagingPort: (any MessagingPort)?
 
     var selectedChannel: Channel? {
         let all = channels + directMessages
@@ -72,11 +103,41 @@ final class MessagingViewModel: ObservableObject {
 
     // MARK: - Port Wiring
 
-    private var messagingPort: (any MessagingPort)?
-
     /// Configure the messaging port for fetching channels from the domain layer.
     func configure(messagingPort: any MessagingPort) {
+        providerPorts[messagingPort.providerId] = messagingPort
         self.messagingPort = messagingPort
+        selectedProviderId = messagingPort.providerId
+        providerOptions = [ProviderOption(id: messagingPort.providerId, title: messagingPort.providerName)]
+        activeProviderName = messagingPort.providerName
+        Task { await loadChannels() }
+    }
+
+    /// Configure all available messaging providers and select an active one.
+    func configure(providers: [any MessagingPort], activeProviderId: String?) {
+        providerPorts = Dictionary(uniqueKeysWithValues: providers.map { ($0.providerId, $0) })
+        providerOptions = providers
+            .map { ProviderOption(id: $0.providerId, title: $0.providerName) }
+            .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+
+        if let activeProviderId, let port = providerPorts[activeProviderId] {
+            self.selectedProviderId = activeProviderId
+            self.messagingPort = port
+            activeProviderName = port.providerName
+        } else if let first = providerOptions.first, let port = providerPorts[first.id] {
+            self.selectedProviderId = first.id
+            self.messagingPort = port
+            activeProviderName = port.providerName
+        }
+
+        Task { await loadChannels() }
+    }
+
+    func selectProvider(_ providerId: String) {
+        guard let port = providerPorts[providerId] else { return }
+        selectedProviderId = providerId
+        messagingPort = port
+        activeProviderName = port.providerName
         Task { await loadChannels() }
     }
 
@@ -87,6 +148,7 @@ final class MessagingViewModel: ObservableObject {
             // Map domain channels to local UI Channel type
             self.channels = fetched.filter { !$0.isPrivate }.map { domainChannel in
                 Channel(
+                    providerChannelId: domainChannel.id,
                     name: domainChannel.name,
                     icon: "number",
                     isDirect: false,
@@ -95,8 +157,31 @@ final class MessagingViewModel: ObservableObject {
                     memberCount: domainChannel.memberCount
                 )
             }
+            self.directMessages = []
+            self.selectedChannelId = self.channels.first?.id
+            await loadMessagesForSelectedChannel()
         } catch {
             // Keep existing demo data on failure
+        }
+    }
+
+    private func loadMessagesForSelectedChannel(limit: Int = 100) async {
+        guard let selected = selectedChannel,
+              let providerChannelId = selected.providerChannelId,
+              let port = messagingPort else { return }
+        do {
+            let domainMessages = try await port.messages(channelId: providerChannelId, limit: limit)
+            channelMessages[selected.id] = domainMessages.map { domainMessage in
+                ChatMessage(
+                    author: domainMessage.author,
+                    avatarColor: domainMessage.author == "local-user" ? AnvilColor.accentBlue : AnvilColor.accentPurple,
+                    content: domainMessage.content,
+                    timestamp: domainMessage.timestamp,
+                    isCurrentUser: domainMessage.author == "local-user"
+                )
+            }
+        } catch {
+            // Keep prior messages if provider fetch fails.
         }
     }
 
@@ -196,20 +281,30 @@ final class MessagingViewModel: ObservableObject {
         } else if let index = directMessages.firstIndex(where: { $0.id == id }) {
             directMessages[index].unreadCount = 0
         }
+
+        Task { await loadMessagesForSelectedChannel() }
     }
 
     func sendMessage() {
         guard !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         guard let channelId = selectedChannelId else { return }
+        let text = inputText
 
         let message = ChatMessage(
             author: "You",
             avatarColor: AnvilColor.accentBlue,
-            content: inputText,
+            content: text,
             timestamp: Date(),
             isCurrentUser: true
         )
         channelMessages[channelId, default: []].append(message)
         inputText = ""
+
+        guard let selected = selectedChannel,
+              let providerChannelId = selected.providerChannelId,
+              let port = messagingPort else { return }
+        Task {
+            _ = try? await port.sendMessage(channelId: providerChannelId, content: text, threadId: nil)
+        }
     }
 }

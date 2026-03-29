@@ -63,3 +63,7 @@ targets:
       - Tests/UITests
     dependencies:
       - target: Anvil
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.anvil.AnvilUITests

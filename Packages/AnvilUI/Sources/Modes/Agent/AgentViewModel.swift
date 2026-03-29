@@ -58,9 +58,16 @@ public final class AgentViewModel: ObservableObject {
     /// Start a new agent session. When no container is available (e.g. tests),
     /// the session is still created and a domain event is published on the shared bus.
     public func startNewSession(prompt: String, model: String, eventBus: EventBus? = nil) {
+        if isAtSessionLimit {
+            sessionLimitMessage = "Session limit reached (\(Self.maxSessions) max). Close an existing session to start a new one."
+            logger.warning("Session limit reached (\(Self.maxSessions))")
+            return
+        }
+        sessionLimitMessage = nil
+
         logger.info("Starting new session with model: \(model)")
-        let session = AgentSession(
-            providerId: "anthropic",
+        var session = AgentSession(
+            providerId: Self.providerId(forModelId: model),
             model: model,
             status: .idle
         )
@@ -69,13 +76,24 @@ public final class AgentViewModel: ObservableObject {
         selectedModelId = model
         logger.info("Session created: \(session.id), total sessions: \(self.sessions.count)")
 
-        // Publish domain event so subscribers (notifications, review queue) are informed
+        // Create an isolated worktree for this session
+        Task { [weak self, sessionId = session.id] in
+            guard let self else { return }
+            if let worktreePath = await self.createWorktreeForSession(sessionId: sessionId) {
+                if let index = self.sessions.firstIndex(where: { $0.id == sessionId }) {
+                    self.sessions[index].worktreePath = worktreePath
+                }
+            }
+        }
+
+        // Publish typed domain event so subscribers (notifications, review queue) are informed
         let bus = eventBus ?? EventBus.shared
         Task {
             await bus.publish(
-                AnyDomainEvent(
-                    sourcePrimitive: "agents",
-                    payload: "Session \(session.id) started"
+                AgentSessionStartedEvent(
+                    sessionId: session.id,
+                    model: model,
+                    workItemId: nil
                 )
             )
         }
@@ -89,9 +107,20 @@ public final class AgentViewModel: ObservableObject {
     }
 
     public func deleteSession(_ sessionId: String) {
+        // Clean up associated worktree before removing the session
+        if let session = sessions.first(where: { $0.id == sessionId }),
+           session.worktreePath != nil {
+            cleanupWorktreeForSession(sessionId: sessionId)
+        }
+
         sessions.removeAll { $0.id == sessionId }
         if selectedSessionId == sessionId {
             selectedSessionId = sessions.first?.id
+        }
+
+        // Clear any session limit message since we now have room
+        if sessionLimitMessage != nil && !isAtSessionLimit {
+            sessionLimitMessage = nil
         }
     }
 
@@ -281,6 +310,9 @@ public final class AgentViewModel: ObservableObject {
     /// Set this from the UI layer so the editor can reload the file.
     public var onFilePersisted: ((String) -> Void)?
 
+    /// Callback invoked when an agent session completes a turn, for auto-memory scanning.
+    public var onSessionCompleted: ((AgentSession) -> Void)?
+
     /// Apply all accepted hunks for a suggestion to the file on disk.
     /// Hunks are applied in reverse line order so earlier hunks don't shift later line numbers.
     private func persistAcceptedHunks(for suggestion: CodeEditSuggestion) {
@@ -326,9 +358,16 @@ public final class AgentViewModel: ObservableObject {
     /// Creates a new agent session pre-loaded with ticket context.
     /// Called from TicketDetailView after branch checkout.
     public func dispatchFromTicket(ticketId: String, title: String, description: String, model: String? = nil, eventBus: EventBus? = nil) {
+        if isAtSessionLimit {
+            sessionLimitMessage = "Session limit reached (\(Self.maxSessions) max). Close an existing session to start a new one."
+            logger.warning("Session limit reached (\(Self.maxSessions)), cannot dispatch for ticket \(ticketId)")
+            return
+        }
+        sessionLimitMessage = nil
+
         let sessionModel = model ?? selectedModelId
         let session = AgentSession(
-            providerId: "anthropic",
+            providerId: Self.providerId(forModelId: sessionModel),
             model: sessionModel,
             status: .idle,
             workItemId: ticketId
@@ -337,13 +376,24 @@ public final class AgentViewModel: ObservableObject {
         selectedSessionId = session.id
         selectedModelId = sessionModel
 
-        // Publish domain event for session creation
+        // Create an isolated worktree for this session
+        Task { [weak self, sessionId = session.id] in
+            guard let self else { return }
+            if let worktreePath = await self.createWorktreeForSession(sessionId: sessionId) {
+                if let index = self.sessions.firstIndex(where: { $0.id == sessionId }) {
+                    self.sessions[index].worktreePath = worktreePath
+                }
+            }
+        }
+
+        // Publish typed domain event for session creation
         let bus = eventBus ?? EventBus.shared
         Task {
             await bus.publish(
-                AnyDomainEvent(
-                    sourcePrimitive: "agents",
-                    payload: "Session \(session.id) started for ticket \(ticketId)"
+                AgentSessionStartedEvent(
+                    sessionId: session.id,
+                    model: sessionModel,
+                    workItemId: ticketId
                 )
             )
         }
@@ -518,6 +568,11 @@ public final class AgentViewModel: ObservableObject {
             // Auto-name the session after its first completed exchange
             autoNameSessionIfNeeded(sessionId: sessionId)
 
+            // Scan the completed session for auto-memories
+            if let completedForMemory = sessions.first(where: { $0.id == sessionId }) {
+                onSessionCompleted?(completedForMemory)
+            }
+
             // Publish AgentCompleted domain event
             let completedSession = sessions.first(where: { $0.id == sessionId })
             let worktreePath = await container.worktreeOrchestrator.worktreePath(for: sessionId)
@@ -535,6 +590,7 @@ public final class AgentViewModel: ObservableObject {
             updateMessageContent(sessionId: sessionId, messageId: assistantMessageId, appendText: "\n\nError: \(error.localizedDescription)")
             setSessionStatus(sessionId: sessionId, status: .failed)
             clearAgentActivity(appState: appState, status: "Failed")
+            await container.eventBus.publish(AgentSessionFailedEvent(sessionId: sessionId, error: error.localizedDescription))
         }
     }
 
@@ -544,6 +600,11 @@ public final class AgentViewModel: ObservableObject {
         guard let session = sessions.first(where: { $0.id == sessionId }) else { return [] }
 
         var result: [ACPMessage] = []
+
+        // Inject project rules (.anvil/rules.md) as system context for every session
+        if let projectPath, let rules = loadProjectRules(projectPath: projectPath) {
+            result.append(ACPMessage(role: .system, content: "Project rules (from .anvil/rules.md):\n\n\(rules)"))
+        }
 
         // Prepend session memory as system context if available
         if let memory = loadSessionMemory(projectPath: projectPath) {
@@ -777,7 +838,7 @@ public final class AgentViewModel: ObservableObject {
         guard let session = sessions.first(where: { $0.id == sessionId }) else { return }
 
         let critiqueSession = AgentSession(
-            providerId: "anthropic",
+            providerId: Self.providerId(forModelId: "claude-opus-4-6"),
             model: "claude-opus-4-6",
             status: .idle,
             workItemId: session.workItemId.map { "REVIEW-\($0)" }
@@ -869,6 +930,17 @@ public final class AgentViewModel: ObservableObject {
         let memoryPath = (projectPath as NSString).appendingPathComponent(".anvil/memory.md")
         guard FileManager.default.fileExists(atPath: memoryPath),
               let data = FileManager.default.contents(atPath: memoryPath),
+              let content = String(data: data, encoding: .utf8),
+              !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return content
+    }
+
+    /// Load project rules from .anvil/rules.md — injected as system context for every agent turn.
+    public func loadProjectRules(projectPath: String?) -> String? {
+        guard let projectPath else { return nil }
+        let rulesPath = (projectPath as NSString).appendingPathComponent(".anvil/rules.md")
+        guard FileManager.default.fileExists(atPath: rulesPath),
+              let data = FileManager.default.contents(atPath: rulesPath),
               let content = String(data: data, encoding: .utf8),
               !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
         return content
@@ -1195,7 +1267,7 @@ public final class AgentViewModel: ObservableObject {
     /// Start a new session directly in the background with a prompt.
     public func startBackgroundSession(prompt: String, model: String, container: DependencyContainer, appState: AppState) {
         let session = AgentSession(
-            providerId: "anthropic",
+            providerId: Self.providerId(forModelId: model),
             model: model,
             status: .idle,
             isBackground: true
@@ -1510,7 +1582,7 @@ public final class AgentViewModel: ObservableObject {
         ]
 
         let session = AgentSession(
-            providerId: "anthropic",
+            providerId: Self.providerId(forModelId: "claude-opus-4-6"),
             model: "claude-opus-4-6",
             status: .completed,
             workItemId: "ANV-42",
@@ -1523,4 +1595,138 @@ public final class AgentViewModel: ObservableObject {
         return vm
     }
     #endif
+
+    private static func providerId(forModelId modelId: String) -> String {
+        let normalized = modelId.lowercased()
+        if normalized.contains("codex") {
+            return "codex-acp"
+        }
+        if normalized.contains("gpt") || normalized.hasPrefix("o1") || normalized.hasPrefix("o3") || normalized.hasPrefix("o4") {
+            return "openai"
+        }
+        if normalized.contains("ollama") || normalized.contains("llama") || normalized.contains("mistral") {
+            return "ollama"
+        }
+        if normalized.contains("claude") {
+            return "anthropic"
+        }
+        return "multi-provider"
+    }
+
+    // MARK: - Session Persistence
+
+    private var sessionPort: (any AgentSessionPort)?
+
+    // MARK: - Worktree Integration
+
+    /// Maximum number of concurrent agent sessions.
+    public static let maxSessions = 8
+
+    private var worktreeOrchestrator: WorktreeOrchestrator?
+    private var sourceControlPort: (any SourceControlPort)?
+
+    /// Non-nil when the user tried to create a session past the cap.
+    @Published public var sessionLimitMessage: String?
+
+    /// Wire the worktree orchestrator and source control port for isolated agent worktrees.
+    public func configure(worktreeOrchestrator: WorktreeOrchestrator, sourceControlPort: (any SourceControlPort)?) {
+        self.worktreeOrchestrator = worktreeOrchestrator
+        self.sourceControlPort = sourceControlPort
+    }
+
+    /// Whether the session cap has been reached.
+    public var isAtSessionLimit: Bool {
+        sessions.count >= Self.maxSessions
+    }
+
+    /// Create an isolated worktree for a session. Returns the worktree path, or nil if
+    /// no git adapter is available.
+    private func createWorktreeForSession(sessionId: String) async -> String? {
+        guard let orchestrator = worktreeOrchestrator,
+              let provider = sourceControlPort else { return nil }
+
+        do {
+            let branch = "anvil/agent/\(sessionId.prefix(8))"
+            let path = try await orchestrator.createForSession(
+                sessionId: sessionId,
+                branch: branch,
+                projectName: "anvil",
+                provider: provider
+            )
+            logger.info("Created worktree for session \(sessionId) at \(path)")
+            return path
+        } catch {
+            logger.error("Failed to create worktree for session \(sessionId): \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    /// Clean up the worktree associated with a session.
+    private func cleanupWorktreeForSession(sessionId: String) {
+        guard let orchestrator = worktreeOrchestrator,
+              let provider = sourceControlPort else { return }
+
+        Task {
+            do {
+                try await orchestrator.cleanupForSession(sessionId: sessionId, provider: provider)
+                logger.info("Cleaned up worktree for session \(sessionId)")
+            } catch {
+                logger.error("Failed to clean up worktree for session \(sessionId): \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Wire a session persistence port. Loads saved sessions immediately
+    /// and auto-saves on every new message or session change.
+    public func configure(sessionPort: any AgentSessionPort) {
+        self.sessionPort = sessionPort
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let saved = try await sessionPort.fetchSessions()
+                if !saved.isEmpty {
+                    self.sessions = saved
+                    self.selectedSessionId = saved.first?.id
+                }
+            } catch {
+                logger.error("Failed to load saved sessions: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Persist the current state of a session. Call after any mutation.
+    public func persistSession(_ session: AgentSession) {
+        guard let sessionPort else { return }
+        Task {
+            do {
+                try await sessionPort.saveSession(session)
+            } catch {
+                logger.error("Failed to persist session: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Persist a single message appended to a session. Lighter than full session save.
+    public func persistMessage(_ message: AgentMessage, sessionId: String) {
+        guard let sessionPort else { return }
+        Task {
+            do {
+                try await sessionPort.saveMessage(message, sessionId: sessionId)
+            } catch {
+                logger.error("Failed to persist message: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Delete a session from persistent storage.
+    public func deletePersistedSession(id: String) {
+        guard let sessionPort else { return }
+        Task {
+            do {
+                try await sessionPort.deleteSession(id: id)
+            } catch {
+                logger.error("Failed to delete persisted session: \(error.localizedDescription)")
+            }
+        }
+    }
 }

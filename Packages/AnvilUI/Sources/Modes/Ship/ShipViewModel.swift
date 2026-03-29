@@ -140,6 +140,14 @@ public final class ShipViewModel: ObservableObject {
 
     private var createDeploymentUseCase: CreateDeploymentUseCase?
     private var eventBus: EventBus?
+    private var hostingPort: (any HostingPort)?
+
+    /// Whether real data has been loaded from the hosting provider.
+    @Published var isLoadingFromProvider: Bool = false
+    @Published var providerError: String?
+    /// The last deploy result message (success or failure), cleared on next deploy.
+    @Published var deployResultMessage: String?
+    @Published var deployResultIsError: Bool = false
 
     public func configure(deploymentUseCase: CreateDeploymentUseCase) {
         self.createDeploymentUseCase = deploymentUseCase
@@ -148,6 +156,13 @@ public final class ShipViewModel: ObservableObject {
     public func configure(eventBus: EventBus) {
         self.eventBus = eventBus
     }
+
+    public func configure(hostingPort: any HostingPort) {
+        self.hostingPort = hostingPort
+    }
+
+    /// True when a real hosting provider is connected.
+    var hasHostingProvider: Bool { hostingPort != nil }
 
     // MARK: Navigation
 
@@ -270,6 +285,137 @@ public final class ShipViewModel: ObservableObject {
         self.selectedEnvironmentID = envs.first?.id
     }
 
+    // MARK: - Real Data Loading (HostingPort)
+
+    /// Load environments, deployments, and build logs from the hosting provider.
+    /// Falls back to sample data when no provider is connected.
+    func loadFromProvider() {
+        guard let port = hostingPort else {
+            if environments.isEmpty { loadSampleData() }
+            return
+        }
+        isLoadingFromProvider = true
+        providerError = nil
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                // Load environments
+                let projectId = self.environments.first?.environment.id ?? "default"
+                let envs = try await port.environments(projectId: projectId)
+                self.environments = envs.map { env in
+                    EnvironmentCard(
+                        id: env.id,
+                        environment: env,
+                        status: .live,
+                        lastDeployTime: nil,
+                        currentURL: env.url,
+                        currentVersion: "--",
+                        currentCommit: "--",
+                        healthChecks: []
+                    )
+                }
+                if self.selectedEnvironmentID == nil {
+                    self.selectedEnvironmentID = envs.first?.id
+                }
+
+                // Load deployments for each environment
+                let allDeploys = try await port.deployments(projectId: projectId)
+                self.deployments = allDeploys
+
+                // Update environment cards with latest deployment data
+                for (idx, card) in self.environments.enumerated() {
+                    if let latestDeploy = allDeploys.first(where: { $0.environmentId == card.id }) {
+                        self.environments[idx].currentCommit = String((latestDeploy.commitHash ?? "--").prefix(7))
+                        self.environments[idx].lastDeployTime = latestDeploy.completedAt ?? latestDeploy.createdAt
+                        self.environments[idx].status = self.mapToUIStatus(latestDeploy.status)
+                        if let url = latestDeploy.url {
+                            self.environments[idx] = EnvironmentCard(
+                                id: card.id,
+                                environment: card.environment,
+                                status: self.environments[idx].status,
+                                lastDeployTime: self.environments[idx].lastDeployTime,
+                                currentURL: url,
+                                currentVersion: card.currentVersion,
+                                currentCommit: self.environments[idx].currentCommit,
+                                healthChecks: card.healthChecks
+                            )
+                        }
+                    }
+                }
+
+                // Build deploy history from deployments
+                self.deployHistory = [:]
+                for deploy in allDeploys {
+                    let entry = DeployHistoryEntry(
+                        id: deploy.id,
+                        deployment: deploy,
+                        triggeredBy: "--",
+                        branch: self.environments.first(where: { $0.id == deploy.environmentId })?.environment.branch ?? "--",
+                        version: "--",
+                        duration: deploy.completedAt.map { Int($0.timeIntervalSince(deploy.createdAt)) } ?? 0
+                    )
+                    self.deployHistory[deploy.environmentId, default: []].append(entry)
+                }
+
+                self.isLoadingFromProvider = false
+            } catch {
+                self.providerError = error.localizedDescription
+                self.isLoadingFromProvider = false
+                // Fall back to sample data on error
+                if self.environments.isEmpty { self.loadSampleData() }
+            }
+        }
+    }
+
+    /// Load build logs for a specific deployment from the hosting provider.
+    func loadBuildLogs(for deploymentId: String) {
+        guard let port = hostingPort else { return }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let logs = try await port.buildLogs(deploymentId: deploymentId)
+                // Replace logs for this deployment
+                self.buildLogs.removeAll { $0.deploymentId == deploymentId }
+                self.buildLogs.append(contentsOf: logs)
+                self.buildLogs.sort { $0.timestamp < $1.timestamp }
+            } catch {
+                self.providerError = "Failed to load build logs: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    /// Poll build logs for the latest deployment of the selected environment.
+    func pollBuildLogs() {
+        guard let port = hostingPort else { return }
+        guard let deploymentId = deploymentsForSelected.first?.id else { return }
+        stopLogStreaming()
+        isStreamingLogs = true
+
+        logStreamTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                guard let self else { return }
+                do {
+                    let logs = try await port.buildLogs(deploymentId: deploymentId)
+                    self.buildLogs.removeAll { $0.deploymentId == deploymentId }
+                    self.buildLogs.append(contentsOf: logs)
+                    self.buildLogs.sort { $0.timestamp < $1.timestamp }
+                } catch {
+                    // Silently retry
+                }
+                try? await Task.sleep(for: .seconds(5))
+            }
+        }
+    }
+
+    private func mapToUIStatus(_ status: DeploymentStatus) -> EnvironmentDeployStatus {
+        switch status {
+        case .ready: .live
+        case .building, .deploying, .queued: .deploying
+        case .failed, .cancelled: .failed
+        }
+    }
+
     // MARK: - Deploy Action
 
     func deploy(environmentID: String) {
@@ -278,12 +424,10 @@ public final class ShipViewModel: ObservableObject {
         isDeploying = true
         deployProgress = 0.0
         deployingEnvironmentID = environmentID
+        deployResultMessage = nil
 
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(
-                sourcePrimitive: "ship",
-                payload: ["action": "deploymentStarted", "environmentId": environmentID]
-            ))
+            await eventBus?.publish(DeploymentStartedEvent(deploymentId: "", environmentId: environmentID, branch: "main"))
         }
 
         // Mark environment as deploying
@@ -291,7 +435,94 @@ public final class ShipViewModel: ObservableObject {
             environments[idx].status = .deploying
         }
 
-        // Simulate deploy progress
+        // Use real hosting port when available
+        if let port = hostingPort {
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let env = self.environments.first(where: { $0.id == environmentID })
+                let hostingEnv = env?.environment ?? HostingEnvironment(id: environmentID, name: "Unknown")
+                let projectPath = env?.currentURL ?? ""
+
+                self.deployProgress = 0.2
+
+                do {
+                    let deployment = try await port.deploy(projectPath: projectPath, environment: hostingEnv)
+                    self.deployProgress = 0.6
+                    self.deployments.insert(deployment, at: 0)
+
+                    // Poll for completion
+                    var finalDeployment = deployment
+                    while finalDeployment.status == .building || finalDeployment.status == .deploying || finalDeployment.status == .queued {
+                        try? await Task.sleep(for: .seconds(3))
+                        self.deployProgress = min(self.deployProgress + 0.05, 0.95)
+                        finalDeployment = try await port.deploymentStatus(deploymentId: deployment.id)
+
+                        // Update the deployment in our list
+                        if let idx = self.deployments.firstIndex(where: { $0.id == deployment.id }) {
+                            self.deployments[idx] = finalDeployment
+                        }
+                    }
+
+                    self.deployProgress = 1.0
+
+                    // Update environment card
+                    if let idx = self.environments.firstIndex(where: { $0.id == environmentID }) {
+                        self.environments[idx].status = self.mapToUIStatus(finalDeployment.status)
+                        self.environments[idx].lastDeployTime = finalDeployment.completedAt ?? Date()
+                        self.environments[idx].currentCommit = String((finalDeployment.commitHash ?? "--").prefix(7))
+                    }
+
+                    // Add to history
+                    let entry = DeployHistoryEntry(
+                        id: finalDeployment.id,
+                        deployment: finalDeployment,
+                        triggeredBy: "You",
+                        branch: hostingEnv.branch ?? "main",
+                        version: "--",
+                        duration: finalDeployment.completedAt.map { Int($0.timeIntervalSince(finalDeployment.createdAt)) } ?? 0
+                    )
+                    self.deployHistory[environmentID, default: []].insert(entry, at: 0)
+
+                    // Load build logs for this deployment
+                    self.loadBuildLogs(for: finalDeployment.id)
+
+                    self.deployResultMessage = "Deployed \(String((finalDeployment.commitHash ?? "").prefix(7))) to \(hostingEnv.name)"
+                    self.deployResultIsError = false
+
+                    Task { [eventBus = self.eventBus] in
+                        await eventBus?.publish(DeploymentCompletedEvent(
+                            deploymentId: finalDeployment.id, environmentId: environmentID, success: true,
+                            message: self.deployResultMessage
+                        ))
+                    }
+                } catch {
+                    self.deployResultMessage = "Deploy failed: \(error.localizedDescription)"
+                    self.deployResultIsError = true
+
+                    if let idx = self.environments.firstIndex(where: { $0.id == environmentID }) {
+                        self.environments[idx].status = .failed
+                    }
+
+                    Task { [eventBus = self.eventBus] in
+                        await eventBus?.publish(DeploymentCompletedEvent(
+                            deploymentId: "", environmentId: environmentID, success: false,
+                            message: "Deploy failed: \(error.localizedDescription)"
+                        ))
+                    }
+                }
+
+                self.isDeploying = false
+                self.deployProgress = 0.0
+                self.deployingEnvironmentID = nil
+            }
+        } else {
+            // Simulated deploy (no hosting provider)
+            simulatedDeploy(environmentID: environmentID)
+        }
+    }
+
+    /// Simulated deploy when no hosting provider is connected.
+    private func simulatedDeploy(environmentID: String) {
         Task { @MainActor [weak self] in
             guard let self else { return }
 
@@ -379,6 +610,8 @@ public final class ShipViewModel: ObservableObject {
             )
             self.deployHistory[environmentID, default: []].insert(historyEntry, at: 0)
 
+            self.deployResultMessage = "Deployed \(newCommit) to \(envName)"
+            self.deployResultIsError = false
             self.isDeploying = false
             self.deployProgress = 0.0
             self.deployingEnvironmentID = nil
@@ -483,10 +716,7 @@ public final class ShipViewModel: ObservableObject {
         newEnvValue = ""
         newEnvIsSecret = false
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(
-                sourcePrimitive: "ship",
-                payload: ["action": "envVarAdded", "environmentId": environmentID, "key": key]
-            ))
+            await eventBus?.publish(EnvVarAddedEvent(environmentId: environmentID, key: key))
         }
     }
 
@@ -507,10 +737,7 @@ public final class ShipViewModel: ObservableObject {
         }
         cancelEditing()
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(
-                sourcePrimitive: "ship",
-                payload: ["action": "envVarUpdated", "environmentId": environmentID, "key": key]
-            ))
+            await eventBus?.publish(EnvVarUpdatedEvent(environmentId: environmentID, key: key))
         }
     }
 
@@ -533,10 +760,7 @@ public final class ShipViewModel: ObservableObject {
         pendingDeleteEnvVarID = nil
         pendingDeleteEnvID = nil
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(
-                sourcePrimitive: "ship",
-                payload: ["action": "envVarDeleted", "environmentId": envID]
-            ))
+            await eventBus?.publish(EnvVarDeletedEvent(environmentId: envID))
         }
     }
 

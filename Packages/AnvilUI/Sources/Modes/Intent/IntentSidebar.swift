@@ -3,29 +3,18 @@ import AnvilDomain
 
 struct IntentSidebar: View {
     @ObservedObject var viewModel: IntentViewModel
+    @EnvironmentObject private var appState: AppState
     @State private var quickAddText = ""
     @State private var isQuickAdding = false
     @FocusState private var isQuickAddFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
-            AnvilSearchField(text: $viewModel.searchText, placeholder: "Search tickets...")
-
-            HStack(spacing: AnvilSpacing.sm) {
-                Picker("View", selection: $viewModel.viewMode) {
-                    ForEach(IntentViewMode.allCases, id: \.rawValue) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .accessibilityLabel("Plan View Mode")
-                .onChange(of: viewModel.viewMode) { _, _ in
-                    viewModel.selectTicket(nil)
-                }
-
-                Spacer()
-
+            AnvilSidebarHeaderRow(
+                title: "Tickets",
+                icon: "checklist",
+                count: viewModel.filteredTickets.count
+            ) {
                 Button {
                     withAnimation(AnvilAnimation.standard) {
                         isQuickAdding = true
@@ -34,13 +23,29 @@ struct IntentSidebar: View {
                 } label: {
                     Image(systemName: "plus")
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.borderless)
                 .controlSize(.small)
                 .accessibilityLabel("New Ticket")
             }
-            .padding(.horizontal, AnvilSpacing.sm)
-            .padding(.vertical, AnvilSpacing.xs)
 
+            AnvilSidebarSegmentedPicker(
+                label: "Plan View Mode",
+                items: IntentViewMode.allCases.map {
+                    AnvilSidebarSegmentedPicker<IntentViewMode>.SidebarPickerItem(
+                        id: $0,
+                        title: $0.rawValue,
+                        icon: nil
+                    )
+                },
+                selection: $viewModel.viewMode
+            )
+            .padding(.horizontal, AnvilSpacing.md)
+            .padding(.bottom, AnvilSpacing.xs)
+            .onChange(of: viewModel.viewMode) { _, _ in
+                viewModel.closeTicketDetailInMainPane()
+            }
+
+            AnvilSidebarSearchBar(text: $viewModel.searchText, placeholder: "Search tickets...")
             Divider()
 
             List {
@@ -48,20 +53,56 @@ struct IntentSidebar: View {
                     quickAddField
                 }
 
-                Section("Sprint") {
-                    cycleHeader
+                AnvilSidebarSection(title: "Sprint", icon: "arrow.triangle.2.circlepath") {
+                    Button {
+                        viewModel.viewMode = .board
+                        viewModel.closeTicketDetailInMainPane()
+                    } label: {
+                        cycleHeader
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                AnvilSidebarSection(title: "Saved Filters", icon: "line.3.horizontal.decrease.circle") {
+                    savedFilterRow(
+                        title: "My Tickets",
+                        icon: "person.fill",
+                        count: viewModel.myTickets.count
+                    ) {
+                        applySavedFilter {
+                            viewModel.applyFilterMine()
+                        }
+                    }
+
+                    savedFilterRow(
+                        title: "Blocked",
+                        icon: "exclamationmark.triangle",
+                        count: viewModel.blockedTickets.count
+                    ) {
+                        applySavedFilter {
+                            viewModel.applyFilterBlocked()
+                        }
+                    }
+
+                    savedFilterRow(
+                        title: "Due Soon",
+                        icon: "clock.badge.exclamationmark",
+                        count: viewModel.dueSoonTickets.count
+                    ) {
+                        applySavedFilter {
+                            viewModel.applyFilterDueSoon()
+                        }
+                    }
                 }
 
                 ForEach(viewModel.groupedTickets, id: \.0) { group, tickets in
-                    Section {
+                    AnvilSidebarSection(title: group, icon: "line.3.horizontal.decrease.circle", count: tickets.count) {
                         ForEach(tickets) { ticket in
                             ticketRow(ticket)
                                 .contextMenu {
                                     ticketContextMenu(ticket)
                                 }
                         }
-                    } header: {
-                        AnvilSidebarSectionHeader(title: group, icon: "line.3.horizontal.decrease.circle", count: tickets.count)
                     }
                 }
             }
@@ -193,33 +234,65 @@ struct IntentSidebar: View {
     // MARK: - Cycle Header
 
     private var cycleHeader: some View {
-        AnvilSidebarInfoRow(
-            title: viewModel.currentCycle.name,
+        AnvilListItem(
             icon: "arrow.triangle.2.circlepath",
-            detail: "Current cycle"
-        ) {
-            if let velocity = viewModel.currentCycle.velocity {
-                Text("\(velocity) pts")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
-            }
+            title: viewModel.currentCycle.name,
+            subtitle: "Current cycle",
+            tag: viewModel.currentCycle.velocity.map { "\($0) pts" },
+            tagColor: AnvilColor.accentBlue,
+            isCompact: false
+        )
+    }
+
+    // MARK: - Saved Filter Row
+
+    private func savedFilterRow(title: String, icon: String, count: Int, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            AnvilListItem(
+                icon: icon,
+                title: title,
+                subtitle: "Saved filter",
+                tag: count > 0 ? "\(count)" : nil,
+                tagColor: AnvilColor.accentBlue,
+                isCompact: false
+            )
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title), \(count) tickets")
+        .accessibilityAddTraits(.isButton)
     }
 
     // MARK: - Ticket Row
 
     private func ticketRow(_ ticket: Ticket) -> some View {
-        TicketRowContent(
-            ticket: ticket,
-            isSelected: viewModel.selectedTicketId == ticket.id,
-            subtaskProgress: viewModel.subtaskProgress(ticket.id),
-            dueDate: ticket.dueDate
-        )
-        .contentShape(Rectangle())
-        .onTapGesture { viewModel.selectTicket(ticket.id) }
+        Button {
+            viewModel.selectTicket(ticket.id, openInMainPane: true)
+        } label: {
+            TicketRowContent(
+                ticket: ticket,
+                isSelected: viewModel.selectedTicketId == ticket.id,
+                subtaskProgress: viewModel.subtaskProgress(ticket.id),
+                dueDate: ticket.dueDate
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(ticket.title), \(ticket.id)")
         .accessibilityAddTraits(.isButton)
+    }
+
+    private func applySavedFilter(_ action: () -> Void) {
+        viewModel.viewMode = .list
+        action()
+        viewModel.closeTicketDetailInMainPane()
+        if let first = viewModel.filteredTickets.first {
+            viewModel.selectTicket(first.id)
+        } else {
+            viewModel.selectTicket(nil)
+        }
     }
 }
 
@@ -300,8 +373,7 @@ private struct TicketRowContent: View {
             }
         }
         .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.xs)
-        .frame(height: AnvilSpacing.richListItemHeight)
+        .padding(.vertical, AnvilSpacing.sm)
         .background(
             isSelected
                 ? Color.accentColor.opacity(0.14)

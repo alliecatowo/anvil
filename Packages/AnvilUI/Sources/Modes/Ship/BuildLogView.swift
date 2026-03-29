@@ -34,32 +34,50 @@ struct BuildLogView: View {
 
                 Spacer()
 
-                // Streaming toggle
+                // Fetch from provider / streaming toggle
                 if let envID = viewModel.selectedEnvironmentID {
-                    Button {
-                        if viewModel.isStreamingLogs {
-                            viewModel.stopLogStreaming()
-                        } else {
-                            viewModel.startLogStreaming(for: envID)
+                    if viewModel.hasHostingProvider {
+                        // Fetch logs from real provider
+                        Button {
+                            if let deployId = viewModel.deploymentsForSelected.first?.id {
+                                viewModel.loadBuildLogs(for: deployId)
+                            }
+                        } label: {
+                            Label("Fetch", systemImage: "arrow.clockwise")
                         }
-                    } label: {
-                        HStack(spacing: AnvilSpacing.xxs) {
-                            Circle()
-                                .fill(viewModel.isStreamingLogs ? AnvilColor.accentGreen : AnvilColor.textTertiary)
-                                .frame(width: 6, height: 6)
-                                .accessibilityHidden(true)
-                            Text(viewModel.isStreamingLogs ? "Live" : "Stream")
-                                .font(AnvilFont.label)
-                                .foregroundStyle(viewModel.isStreamingLogs ? AnvilColor.accentGreen : AnvilColor.textSecondary)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .accessibilityLabel("Fetch build logs from provider")
+
+                        // Poll toggle
+                        Button {
+                            if viewModel.isStreamingLogs {
+                                viewModel.stopLogStreaming()
+                            } else {
+                                viewModel.pollBuildLogs()
+                            }
+                        } label: {
+                            Label(viewModel.isStreamingLogs ? "Polling" : "Poll", systemImage: "dot.radiowaves.left.and.right")
                         }
-                        .padding(.horizontal, AnvilSpacing.sm)
-                        .padding(.vertical, AnvilSpacing.xxxs)
-                        .background(viewModel.isStreamingLogs ? AnvilColor.accentGreen.opacity(0.1) : AnvilColor.backgroundTertiary)
-                        .clipShape(Capsule())
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .accessibilityLabel(viewModel.isStreamingLogs ? "Stop polling logs" : "Start polling logs")
+                    } else {
+                        // Simulated streaming (no provider)
+                        Button {
+                            if viewModel.isStreamingLogs {
+                                viewModel.stopLogStreaming()
+                            } else {
+                                viewModel.startLogStreaming(for: envID)
+                            }
+                        } label: {
+                            Label(viewModel.isStreamingLogs ? "Live" : "Stream", systemImage: "dot.radiowaves.left.and.right")
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .accessibilityLabel(viewModel.isStreamingLogs ? "Stop log streaming" : "Start log streaming")
+                        .accessibilityAddTraits(.isButton)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(viewModel.isStreamingLogs ? "Stop log streaming" : "Start log streaming")
-                    .accessibilityAddTraits(.isButton)
                 }
 
                 if let env = viewModel.selectedEnvironment {

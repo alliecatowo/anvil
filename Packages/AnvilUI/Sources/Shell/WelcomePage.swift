@@ -13,6 +13,8 @@ public struct WelcomePage: View {
     // hoveredProjectId removed: let native button handle hover
     @State private var isLoadingProject = false
     @State private var appeared = false
+    @State private var showingSetupWizard = false
+    @State private var setupWizardProjectOption: ProjectSetupOption = .openExisting
 
     public init() {}
 
@@ -49,6 +51,18 @@ public struct WelcomePage: View {
         }
         .opacity(appeared ? 1 : 0)
         .animation(.easeOut(duration: 0.2), value: appeared)
+        .sheet(isPresented: $showingSetupWizard) {
+            SetupWizard(
+                currentStep: .openProject,
+                projectSetupOption: setupWizardProjectOption
+            ) {
+                showingSetupWizard = false
+            }
+            .environmentObject(appState)
+            .environmentObject(container)
+            .frame(minWidth: 800, minHeight: 600)
+            .interactiveDismissDisabled()
+        }
         .task {
             await loadRecentProjects()
             withAnimation {
@@ -118,7 +132,8 @@ public struct WelcomePage: View {
                 subtitle: "Clone from GitHub or URL",
                 shortcut: nil
             ) {
-                // Future: show clone sheet
+                setupWizardProjectOption = .cloneRepository
+                showingSetupWizard = true
             }
 
             WelcomeActionCard(
@@ -127,7 +142,8 @@ public struct WelcomePage: View {
                 subtitle: "Create from scratch",
                 shortcut: nil
             ) {
-                // Future: show new project sheet
+                setupWizardProjectOption = .startFresh
+                showingSetupWizard = true
             }
         }
         .padding(.horizontal, AnvilSpacing.xl)

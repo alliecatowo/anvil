@@ -116,6 +116,21 @@ final class SidebarTests: XCTestCase {
         XCTAssertTrue(hasContent, "Editor sidebar must render content")
     }
 
+    // MARK: - Rules Sidebar
+
+    func testRulesSidebarShowsProjectRulesOrEmptyState() throws {
+        app.buttons["Library"].click()
+
+        let rulesTab = app.buttons["Rules"]
+        XCTAssertTrue(rulesTab.waitForExistence(timeout: 5), "Library sidebar must show a Rules tab")
+        rulesTab.click()
+
+        let hasRulesContent = app.staticTexts["Project Rules"].waitForExistence(timeout: 5)
+            || app.buttons["Open in Editor"].waitForExistence(timeout: 5)
+            || app.staticTexts.matching(NSPredicate(format: "label CONTAINS '.anvil/rules.md'")).firstMatch.waitForExistence(timeout: 5)
+        XCTAssertTrue(hasRulesContent, "Rules sidebar must render project rules content or a clean empty state")
+    }
+
     // MARK: - Database Sidebar
 
     func testDatabaseSidebarHasContent() throws {

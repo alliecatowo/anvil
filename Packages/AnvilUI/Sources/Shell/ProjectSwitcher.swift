@@ -37,7 +37,7 @@ public struct ProjectSwitcher: View {
             VStack(spacing: 0) {
                 // Search
                 HStack(spacing: AnvilSpacing.sm) {
-                    Image(systemName: "folder.badge.magnifyingglass")
+                    Image(systemName: "folder")
                         .font(.system(size: 15))
                         .foregroundStyle(AnvilColor.textTertiary)
                         .accessibilityHidden(true)

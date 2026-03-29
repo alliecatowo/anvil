@@ -91,6 +91,14 @@ public final class LSPViewModel: ObservableObject, Sendable {
         return await client.definition(uri: uri, line: line, character: character)
     }
 
+    // MARK: - Hover
+
+    /// Request hover documentation at the given position.
+    public func hover(uri: String, line: Int, character: Int) async -> LSPHoverResult? {
+        guard let client else { return nil }
+        return await client.hover(uri: uri, line: line, character: character)
+    }
+
     // MARK: - Diagnostics Listener
 
     private func startDiagnosticsListener() {

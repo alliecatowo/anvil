@@ -1,4 +1,5 @@
 import SwiftUI
+import AnvilApplication
 
 // MARK: - Fuzzy Match
 
@@ -102,6 +103,18 @@ enum CommandAction: Sendable {
     case openReviewSource(sourceId: String)
     case copyReviewURL(sourceId: String)
     case goToLine
+    case registryCommand(id: String)
+    // Entity-aware context commands (Cmd+K)
+    case changeTicketStatus(ticketId: String)
+    case addSubtask(ticketId: String)
+    case deleteTicket(ticketId: String)
+    case renameFile(path: String)
+    case copyFilePath(path: String)
+    case runTestsForFile(path: String)
+    case openAgentSession(sessionId: String)
+    case stopAgentSession(sessionId: String)
+    case exportAgentSession(sessionId: String)
+    case mergePullRequest(prId: String)
 
     @MainActor
     func perform(on appState: AppState) {
@@ -128,7 +141,7 @@ enum CommandAction: Sendable {
             appState.terminalViewModel.clearBuffer()
         case .newAgentSession:
             appState.switchSpace(.build)
-            appState.agentViewModel.startNewSession(prompt: "", model: "claude-sonnet-4-6")
+            appState.agentViewModel.startNewSession(prompt: "", model: appState.agentViewModel.selectedModelId)
         case .newItem:
             appState.switchSpace(.plan)
             appState.intentViewModel.isCreatingTicket = true
@@ -214,6 +227,55 @@ enum CommandAction: Sendable {
             NSPasteboard.general.setString("https://github.com/pulls/\(sourceId)", forType: .string)
         case .goToLine:
             appState.isGoToLineVisible = true
+        case .registryCommand:
+            break // Handled by CommandRegistry.execute() in the view model
+
+        // Entity-aware context commands (Cmd+K)
+        case .changeTicketStatus(let ticketId):
+            appState.switchSpace(.plan)
+            appState.intentViewModel.selectTicket(ticketId)
+            // Cycle status: backlog -> todo -> in progress -> done
+            if let ticket = appState.intentViewModel.selectedTicket {
+                let nextStatus: String = switch ticket.status {
+                case "backlog": "todo"
+                case "todo": "in progress"
+                case "in progress": "done"
+                default: "backlog"
+                }
+                appState.intentViewModel.moveTicket(ticketId, toStatus: nextStatus)
+            }
+        case .addSubtask(let ticketId):
+            appState.switchSpace(.plan)
+            appState.intentViewModel.selectTicket(ticketId)
+            appState.intentViewModel.addSubtask(to: ticketId, title: "New subtask")
+        case .deleteTicket(let ticketId):
+            appState.intentViewModel.deleteTicket(ticketId)
+        case .renameFile(let path):
+            appState.switchSpace(.build)
+            appState.buildActiveSection = .files
+            appState.editorViewModel.pendingRenameFilePath = path
+        case .copyFilePath(let path):
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(path, forType: .string)
+        case .runTestsForFile(let path):
+            appState.switchSpace(.build)
+            appState.buildActiveSection = .tests
+            appState.testingViewModel.runTestsForFile(path)
+        case .openAgentSession(let sessionId):
+            appState.switchSpace(.build)
+            appState.buildActiveSection = .sessions
+            appState.agentViewModel.selectedSessionId = sessionId
+        case .stopAgentSession(let sessionId):
+            if let idx = appState.agentViewModel.sessions.firstIndex(where: { $0.id == sessionId }) {
+                appState.agentViewModel.sessions[idx].status = .cancelled
+            }
+        case .exportAgentSession(let sessionId):
+            appState.agentViewModel.exportSessionToClipboard(sessionId)
+        case .mergePullRequest(let prId):
+            appState.switchSpace(.review)
+            if let pr = appState.gitHubPRViewModel.pullRequests.first(where: { $0.id == prId }) {
+                appState.gitHubPRViewModel.selectedPR = pr
+            }
         }
     }
 }
@@ -352,6 +414,7 @@ final class CommandPaletteViewModel: ObservableObject {
     private var fileSystemService: FileSystemService?
     private var scanTask: Task<Void, Never>?
     private var currentAppSpace: AnvilSpace?
+    private var commandRegistry: CommandRegistry?
 
     // MARK: - Action History
 
@@ -372,13 +435,18 @@ final class CommandPaletteViewModel: ObservableObject {
     // MARK: - Configuration
 
     /// Call when the palette is opened to set project context.
-    func configure(projectPath: String?, fileSystemService: FileSystemService?, initialMode: PaletteMode = .commands, currentSpace: AnvilSpace? = nil, appState: AppState? = nil) {
+    func configure(projectPath: String?, fileSystemService: FileSystemService?, initialMode: PaletteMode = .commands, currentSpace: AnvilSpace? = nil, appState: AppState? = nil, registry: CommandRegistry? = nil) {
         self.projectPath = projectPath
         self.fileSystemService = fileSystemService
         self.currentAppSpace = currentSpace
+        self.commandRegistry = registry
 
-        // Rebuild commands with space context
-        registerAllCommands(for: currentSpace)
+        // Rebuild commands from registry if available, otherwise fall back to inline
+        if let registry {
+            buildItemsFromRegistry(registry, space: currentSpace)
+        } else {
+            registerAllCommands(for: currentSpace)
+        }
 
         // Inject entity-aware context commands from ContextCommandProvider
         if let appState {
@@ -537,6 +605,41 @@ final class CommandPaletteViewModel: ObservableObject {
             group: .terminal,
             action: .toggleTerminal
         ))
+
+        allItems = items
+    }
+
+    // MARK: - Registry-Backed Commands
+
+    /// Build command items from the unified CommandRegistry instead of inline definitions.
+    private func buildItemsFromRegistry(_ registry: CommandRegistry, space: AnvilSpace?) {
+        let spaceRawValue = space?.rawValue
+        let registryCommands = registry.commands(forSpace: spaceRawValue)
+
+        let items: [CommandItem] = registryCommands.map { cmd in
+            // Map domain CommandCategory to palette CommandCategory
+            let paletteCategory: CommandCategory = switch cmd.category {
+            case .navigation: .navigation
+            case .agent, .actions: .actions
+            case .plan, .review, .operate, .editor, .terminal: .contextual
+            case .view: .navigation
+            case .spaces: .modes
+            }
+
+            // Map group string to PaletteGroup
+            let paletteGroup: PaletteGroup? = cmd.group.flatMap { PaletteGroup(rawValue: $0.lowercased().capitalized) }
+
+            return CommandItem(
+                id: cmd.id,
+                title: cmd.title,
+                subtitle: cmd.subtitle,
+                icon: cmd.icon,
+                shortcut: cmd.keyboardShortcut,
+                category: paletteCategory,
+                group: paletteGroup,
+                action: .registryCommand(id: cmd.id)
+            )
+        }
 
         allItems = items
     }
@@ -923,7 +1026,12 @@ final class CommandPaletteViewModel: ObservableObject {
                 return
             }
 
-            item.action.perform(on: appState)
+            // Execute via registry if this is a registry command, otherwise fall back
+            if case .registryCommand(let id) = item.action {
+                commandRegistry?.execute(id: id)
+            } else {
+                item.action.perform(on: appState)
+            }
             // Record the original command ID (strip "recent-" prefix if present)
             let originalId = item.id.hasPrefix("recent-") ? String(item.id.dropFirst(7)) : item.id
             recordCommand(originalId)

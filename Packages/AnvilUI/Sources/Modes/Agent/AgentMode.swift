@@ -39,6 +39,7 @@ struct AgentEmptyState: View {
                 .buttonStyle(.bordered)
                 .controlSize(.regular)
                 .accessibilityLabel("New Session")
+                .accessibilityIdentifier("agent.empty.new-session")
                 .accessibilityAddTraits(.isButton)
 
                 SettingsLink {

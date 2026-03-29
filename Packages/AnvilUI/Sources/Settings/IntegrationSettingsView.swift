@@ -23,15 +23,27 @@ struct IntegrationSettingsView: View {
     @State private var linearTeamId: String = ""
     @State private var linearStatus: IntegrationConnectionStatus = .disconnected
 
-    // Slack
+    // Slack (external messaging provider)
     @State private var slackBotToken: String = ""
     @State private var slackStatus: IntegrationConnectionStatus = .disconnected
+
+    // Vercel
+    @State private var vercelToken: String = ""
+    @State private var vercelTeamId: String = ""
+    @State private var vercelStatus: IntegrationConnectionStatus = .disconnected
+
+    // Netlify
+    @State private var netlifyToken: String = ""
+    @State private var netlifySiteId: String = ""
+    @State private var netlifyStatus: IntegrationConnectionStatus = .disconnected
 
     var body: some View {
         Form {
             githubSection
             linearSection
             slackSection
+            vercelSection
+            netlifySection
         }
         .formStyle(.grouped)
         .onAppear { loadCredentials() }
@@ -89,8 +101,11 @@ struct IntegrationSettingsView: View {
     // MARK: - Slack
 
     private var slackSection: some View {
-        Section("Slack") {
+        Section("Messaging — Slack") {
             SecureField("Bot Token", text: $slackBotToken)
+            Text("Anvil supports multiple messaging providers. Slack is one external provider option; local in-memory messaging remains available as a fallback.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
             HStack {
                 Button("Connect") {
                     connectSlack()
@@ -105,6 +120,54 @@ struct IntegrationSettingsView: View {
 
                 Spacer()
                 statusLabel(slackStatus)
+            }
+        }
+    }
+
+    // MARK: - Vercel
+
+    private var vercelSection: some View {
+        Section("Vercel") {
+            SecureField("API Token", text: $vercelToken)
+            TextField("Team ID (optional)", text: $vercelTeamId)
+            HStack {
+                Button("Connect") {
+                    connectVercel()
+                }
+                .buttonStyle(.bordered)
+                .disabled(vercelToken.isEmpty)
+
+                if case .connecting = vercelStatus {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+
+                Spacer()
+                statusLabel(vercelStatus)
+            }
+        }
+    }
+
+    // MARK: - Netlify
+
+    private var netlifySection: some View {
+        Section("Netlify") {
+            SecureField("Personal Access Token", text: $netlifyToken)
+            TextField("Site ID (optional)", text: $netlifySiteId)
+            HStack {
+                Button("Connect") {
+                    connectNetlify()
+                }
+                .buttonStyle(.bordered)
+                .disabled(netlifyToken.isEmpty)
+
+                if case .connecting = netlifyStatus {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+
+                Spacer()
+                statusLabel(netlifyStatus)
             }
         }
     }
@@ -148,6 +211,18 @@ struct IntegrationSettingsView: View {
         slackBotToken = ProviderKeychain.slackToken ?? ""
         if !slackBotToken.isEmpty {
             slackStatus = .connected("Connected")
+        }
+
+        vercelToken = ProviderKeychain.vercelToken ?? ""
+        vercelTeamId = ProviderKeychain.vercelTeamId ?? ""
+        if !vercelToken.isEmpty {
+            vercelStatus = .connected("Connected")
+        }
+
+        netlifyToken = ProviderKeychain.netlifyToken ?? ""
+        netlifySiteId = ProviderKeychain.netlifySiteId ?? ""
+        if !netlifyToken.isEmpty {
+            netlifyStatus = .connected("Connected")
         }
     }
 
@@ -289,6 +364,94 @@ struct IntegrationSettingsView: View {
                 }
             } catch {
                 slackStatus = .failed(error.localizedDescription)
+            }
+        }
+    }
+    // MARK: - Connect Vercel
+
+    private func connectVercel() {
+        vercelStatus = .connecting
+
+        ProviderKeychain.vercelToken = vercelToken
+        ProviderKeychain.vercelTeamId = vercelTeamId.isEmpty ? nil : vercelTeamId
+
+        guard let url = URL(string: "https://api.vercel.com/v2/user") else {
+            vercelStatus = .failed("Invalid URL")
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(vercelToken)", forHTTPHeaderField: "Authorization")
+
+        Task {
+            do {
+                let (data, response) = try await URLSession.shared.data(for: request)
+                if let httpResponse = response as? HTTPURLResponse {
+                    if httpResponse.statusCode == 200 {
+                        var detail = "Connected"
+                        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                           let user = json["user"] as? [String: Any],
+                           let username = user["username"] as? String {
+                            detail = "Connected as \(username)"
+                        }
+                        vercelStatus = .connected(detail)
+                        NotificationCenter.default.post(
+                            name: .anvilIntegrationCredentialsChanged,
+                            object: nil,
+                            userInfo: ["provider": "vercel"]
+                        )
+                    } else if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+                        vercelStatus = .failed("Invalid token")
+                    } else {
+                        vercelStatus = .failed("HTTP \(httpResponse.statusCode)")
+                    }
+                }
+            } catch {
+                vercelStatus = .failed(error.localizedDescription)
+            }
+        }
+    }
+
+    // MARK: - Connect Netlify
+
+    private func connectNetlify() {
+        netlifyStatus = .connecting
+
+        ProviderKeychain.netlifyToken = netlifyToken
+        ProviderKeychain.netlifySiteId = netlifySiteId.isEmpty ? nil : netlifySiteId
+
+        guard let url = URL(string: "https://api.netlify.com/api/v1/user") else {
+            netlifyStatus = .failed("Invalid URL")
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(netlifyToken)", forHTTPHeaderField: "Authorization")
+
+        Task {
+            do {
+                let (data, response) = try await URLSession.shared.data(for: request)
+                if let httpResponse = response as? HTTPURLResponse {
+                    if httpResponse.statusCode == 200 {
+                        var detail = "Connected"
+                        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                           let fullName = json["full_name"] as? String, !fullName.isEmpty {
+                            detail = "Connected as \(fullName)"
+                        }
+                        netlifyStatus = .connected(detail)
+                        NotificationCenter.default.post(
+                            name: .anvilIntegrationCredentialsChanged,
+                            object: nil,
+                            userInfo: ["provider": "netlify"]
+                        )
+                    } else if httpResponse.statusCode == 401 {
+                        netlifyStatus = .failed("Invalid token")
+                    } else {
+                        netlifyStatus = .failed("HTTP \(httpResponse.statusCode)")
+                    }
+                }
+            } catch {
+                netlifyStatus = .failed(error.localizedDescription)
             }
         }
     }

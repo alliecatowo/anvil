@@ -61,12 +61,14 @@ public struct Worktree: Sendable, Identifiable, Codable {
     public var id: String { path }
     public let path: String
     public let branch: String?
+    public let headSHA: String?
     public let isClean: Bool
     public let isMain: Bool
 
-    public init(path: String, branch: String? = nil, isClean: Bool = true, isMain: Bool = false) {
+    public init(path: String, branch: String? = nil, headSHA: String? = nil, isClean: Bool = true, isMain: Bool = false) {
         self.path = path
         self.branch = branch
+        self.headSHA = headSHA
         self.isClean = isClean
         self.isMain = isMain
     }

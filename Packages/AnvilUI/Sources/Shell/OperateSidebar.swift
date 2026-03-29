@@ -5,20 +5,13 @@ struct OperateSidebar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Picker("Section", selection: $appState.operateActiveSection) {
-                    ForEach(AppState.OperateSection.allCases, id: \.self) { s in
-                        Text(s.rawValue).tag(s)
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .accessibilityLabel("Operate Sidebar Section")
-
-                Spacer()
-            }
-            .padding(.horizontal, AnvilSpacing.sm)
-            .padding(.vertical, AnvilSpacing.xs)
+            SidebarTabBar(
+                sections: Array(AppState.OperateSection.allCases),
+                active: appState.operateActiveSection,
+                icon: { $0.icon },
+                label: { $0.rawValue },
+                onSelect: { appState.operateActiveSection = $0 }
+            )
 
             Divider()
 
@@ -26,11 +19,16 @@ struct OperateSidebar: View {
             case .deploy:
                 ShipSidebar(viewModel: appState.shipViewModel)
             case .monitor:
-                Text("No monitors configured")
-                    .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                monitorEmptyState
             }
         }
+    }
+
+    private var monitorEmptyState: some View {
+        AnvilSidebarEmptyState(
+            icon: "chart.line.uptrend.xyaxis",
+            title: "No monitors configured",
+            message: "Observability monitors will appear here when configured."
+        )
     }
 }

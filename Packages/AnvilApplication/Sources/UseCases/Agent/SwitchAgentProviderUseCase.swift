@@ -42,9 +42,10 @@ public struct SwitchAgentProviderUseCase: Sendable {
         )
 
         await EventBus.shared.publish(
-            AnyDomainEvent(
-                sourcePrimitive: "agents",
-                payload: "Provider switch: \(result.previousProvider) -> \(result.newProvider) for session \(sessionId)"
+            AgentProviderSwitchedEvent(
+                sessionId: sessionId,
+                previousProvider: result.previousProvider,
+                newProvider: result.newProvider
             )
         )
 

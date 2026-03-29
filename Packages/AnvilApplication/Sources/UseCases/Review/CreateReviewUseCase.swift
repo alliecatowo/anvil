@@ -30,10 +30,7 @@ public struct CreateReviewUseCase: Sendable {
             comments: comments
         )
         let created = try await reviewPort.createReview(review)
-        await eventBus.publish(AnyDomainEvent(
-            sourcePrimitive: "review",
-            payload: ["action": "created", "reviewId": created.id]
-        ))
+        await eventBus.publish(ReviewCreatedEvent(reviewId: created.id))
         return created
     }
 }

@@ -32,9 +32,8 @@ public struct CreateTicketUseCase: Sendable {
             storyPoints: storyPoints
         )
         let created = try await ticketPort.createTicket(ticket)
-        await eventBus.publish(AnyDomainEvent(
-            sourcePrimitive: "tickets",
-            payload: ["action": "created", "ticketId": created.id]
+        await eventBus.publish(TicketCreatedEvent(
+            ticketId: created.id, title: created.title
         ))
         return created
     }

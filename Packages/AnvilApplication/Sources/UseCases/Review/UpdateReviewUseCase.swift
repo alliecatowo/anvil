@@ -13,10 +13,7 @@ public struct UpdateReviewUseCase: Sendable {
 
     public func execute(review: Review) async throws -> Review {
         let updated = try await reviewPort.updateReview(review)
-        await eventBus.publish(AnyDomainEvent(
-            sourcePrimitive: "review",
-            payload: ["action": "updated", "reviewId": updated.id, "status": updated.status.rawValue]
-        ))
+        await eventBus.publish(ReviewUpdatedEvent(reviewId: updated.id, status: updated.status.rawValue))
         return updated
     }
 }

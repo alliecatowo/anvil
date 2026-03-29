@@ -12,7 +12,7 @@ Anvil is a native macOS development environment built for the post-IDE era. It i
 
 **The core premise:** AI is ambient infrastructure, not a bolted-on feature. Every surface in Anvil is AI-capable via the Agent Communication Protocol (ACP). Plugins inherit AI for free. There is no per-feature API key setup.
 
-**The opinionated workflow:** Intent (plan) → Agent (build) → Review (check) → Ship (deploy). Four phases, four workspaces, keyboard-navigable throughout.
+**The opinionated workflow:** Plan → Build → Review → Operate, expressed as five shell spaces with Library as the durable reference area. See [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md) for the canonical shell language.
 
 **The native moat:** None of the AI-first competitors — Cursor, Windsurf, Zed — are native macOS apps. Anvil is Swift 6, SwiftUI, AppKit interop, targeting macOS 15+ (Sequoia). The native shell is the product differentiator.
 

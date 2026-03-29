@@ -1,28 +1,22 @@
 import SwiftUI
 
+/// The Docs content area — just the detail/editor pane.
+/// Navigation (DocBrowser) lives in LibrarySidebar, using appState.libraryDocsViewModel.
 struct DocsMode: View {
-    @StateObject private var viewModel = DocsViewModel()
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        NavigationSplitView {
-            DocBrowser(viewModel: viewModel)
-                .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 340)
-        } detail: {
-            DocEditor(viewModel: viewModel)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .navigationSplitViewStyle(.balanced)
-        .background(.background)
-        .onAppear {
-            if let path = appState.currentProjectPath {
-                viewModel.loadFromProject(path)
+        DocEditor(viewModel: appState.libraryDocsViewModel)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onAppear {
+                if let path = appState.currentProjectPath {
+                    appState.libraryDocsViewModel.loadFromProject(path)
+                }
             }
-        }
-        .onChange(of: appState.currentProjectPath) { _, newPath in
-            if let path = newPath {
-                viewModel.loadFromProject(path)
+            .onChange(of: appState.currentProjectPath) { _, newPath in
+                if let path = newPath {
+                    appState.libraryDocsViewModel.loadFromProject(path)
+                }
             }
-        }
     }
 }

@@ -34,7 +34,14 @@ struct AnvilMain: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var appState = AppState()
     @StateObject private var container = DependencyContainer()
-    @State private var showSetupWizard = SetupWizardViewModel.isFirstLaunch
+    @State private var showSetupWizard = Self.shouldShowSetupWizard
+
+    private static let shouldShowSetupWizard: Bool = {
+        if ProcessInfo.processInfo.environment["ANVIL_SKIP_SETUP_WIZARD"] == "1" {
+            return false
+        }
+        return SetupWizardViewModel.isFirstLaunch
+    }()
 
     var body: some Scene {
         WindowGroup {
@@ -42,15 +49,28 @@ struct AnvilMain: App {
                 .environmentObject(appState)
                 .environmentObject(container)
                 .task {
+                    // Fast deterministic bootstrap for visual/UI-test scenarios.
+                    let launchEnvironment = ProcessInfo.processInfo.environment
+                    if launchEnvironment["ANVIL_UITEST_SCENARIO"] != nil {
+                        appState.applyUITestScenarioIfNeeded(launchEnvironment)
+                        return
+                    }
+
                     // Restore last-opened project from disk
                     if let project = await container.projectManager.currentProject() {
                         appState.currentProject = project
                         appState.currentProjectPath = project.primaryRepoPath
                         container.currentProjectPath = project.primaryRepoPath
                     }
+                    // Wire terminal sessions to use the project working directory
+                    appState.terminalViewModel.configure(projectPath: appState.currentProjectPath)
+
                     if let adapter = container.getOrCreateGitAdapter() {
                         await appState.loadGitStatus(from: adapter)
                     }
+
+                    // Register all commands into the unified registry
+                    registerBuiltInCommands(registry: container.commandRegistry, appState: appState)
 
                     // Wire persistent ticket storage (SQLite)
                     let ticketRepo = SQLiteTicketRepository()
@@ -69,6 +89,12 @@ struct AnvilMain: App {
                     container.setAgentSessionPort(sessionRepo)
                     appState.agentViewModel.configure(sessionPort: sessionRepo)
 
+                    // Wire worktree orchestrator for isolated agent sessions
+                    appState.agentViewModel.configure(
+                        worktreeOrchestrator: container.worktreeOrchestrator,
+                        sourceControlPort: container.getOrCreateGitAdapter()
+                    )
+
                     // Wire SQLite database adapter
                     let sqliteAdapter = SQLiteDatabaseAdapter()
                     container.databaseService.setAdapter(sqliteAdapter)
@@ -84,12 +110,20 @@ struct AnvilMain: App {
                     // Wire hosting provider (Vercel or Netlify) based on credentials
                     wireHostingProvider(container: container)
 
-                    // Wire Slack messaging adapter if bot token is available
-                    wireMessagingProvider(container: container)
+                    // Wire hosting port into ship view model for real deploy pipeline
+                    if let hostingPort = container.hostingPort {
+                        appState.shipViewModel.configure(hostingPort: hostingPort)
+                    }
+
+                    // Wire messaging providers (in-memory baseline + external adapters if configured)
+                    wireMessagingProviders(container: container)
 
                     // Request macOS notification authorization and subscribe to domain events
                     await MacNotificationService.shared.requestAuthorization()
                     await wireNotificationEvents(eventBus: container.eventBus)
+
+                    // Wire auto-PR on agent session completion
+                    await wireAutoPR(eventBus: container.eventBus, appState: appState, container: container)
                 }
                 .sheet(isPresented: $showSetupWizard) {
                     SetupWizard {
@@ -168,10 +202,14 @@ struct AnvilMain: App {
         }
     }
 
-    /// Detect a stored Slack bot token and wire the SlackMessagingAdapter.
+    /// Wire messaging providers with a provider-agnostic baseline.
+    /// Always registers in-memory messaging, then overlays external providers when configured.
     /// Reads from the same Keychain service as ProviderKeychain in AnvilUI.
     @MainActor
-    private func wireMessagingProvider(container: DependencyContainer) {
+    private func wireMessagingProviders(container: DependencyContainer) {
+        // Always keep a local provider available.
+        container.registerMessagingAdapter(InMemoryMessagingService(), setActive: true)
+
         let keychain = KeychainStore(service: "com.anvil.providers")
 
         guard let botToken = try? keychain.get("slack.botToken"), !botToken.isEmpty else {
@@ -179,7 +217,8 @@ struct AnvilMain: App {
         }
 
         let adapter = SlackMessagingAdapter(botToken: botToken)
-        container.setMessagingAdapter(adapter)
+        // External provider becomes active when available, while keeping the local provider registered.
+        container.registerMessagingAdapter(adapter, setActive: true)
     }
 
     /// Subscribe to domain events and fire macOS notifications for key moments.
@@ -216,6 +255,71 @@ struct AnvilMain: App {
                 name: "\(e.pipelineName) [\(e.branch)]: \(reason)",
                 succeeded: false
             )
+        }
+    }
+
+    @MainActor
+    private func wireAutoPR(eventBus: EventBus, appState: AppState, container: DependencyContainer) async {
+        let useCase = CreateDraftPRUseCase(eventBus: eventBus)
+
+        await eventBus.subscribe(to: String(describing: AgentCompletedEvent.self)) { [weak appState, weak container] event in
+            guard let appState, let container else { return }
+            guard let e = event as? AgentCompletedEvent else { return }
+
+            await MainActor.run {
+                guard appState.isAutoPREnabled else { return }
+
+                // Find the completed session
+                guard let session = appState.agentViewModel.sessions.first(where: { $0.id == e.sessionId }),
+                      session.worktreePath != nil,
+                      let branchName = e.branchName, !branchName.isEmpty else { return }
+
+                // Need GitHub adapter and repo name
+                guard let ghAdapter = container.getOrCreateGitHubAdapter(),
+                      let gitAdapter = container.getOrCreateGitAdapter() else { return }
+
+                Task {
+                    // Derive repo name from git remote
+                    guard let remoteURL = try? await gitAdapter.remoteURL() else { return }
+                    let repo: String
+                    if remoteURL.contains("github.com:") {
+                        repo = (remoteURL.components(separatedBy: "github.com:").last ?? "").replacingOccurrences(of: ".git", with: "")
+                    } else if remoteURL.contains("github.com/") {
+                        repo = (remoteURL.components(separatedBy: "github.com/").last ?? "").replacingOccurrences(of: ".git", with: "")
+                    } else {
+                        return
+                    }
+                    guard !repo.isEmpty else { return }
+
+                    // Determine target branch
+                    let allBranches = (try? await gitAdapter.branches()) ?? []
+                    let targetBranch = allBranches.contains(where: { $0.name == "main" }) ? "main" : "master"
+
+                    do {
+                        let result = try await useCase.execute(
+                            session: session,
+                            repo: repo,
+                            sourceBranch: branchName,
+                            targetBranch: targetBranch,
+                            cloudPort: ghAdapter
+                        )
+
+                        await MainActor.run {
+                            appState.lastAutoPRURL = result.url
+                        }
+
+                        // Post a macOS notification
+                        MacNotificationService.shared.send(
+                            title: "Draft PR Created",
+                            body: result.title,
+                            category: MacNotificationService.Category.prReviewRequested,
+                            userInfo: ["url": result.url]
+                        )
+                    } catch {
+                        // Silently fail — user can always create PR manually
+                    }
+                }
+            }
         }
     }
 }

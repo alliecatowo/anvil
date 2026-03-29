@@ -4,24 +4,12 @@ struct ChannelList: View {
     @ObservedObject var viewModel: MessagingViewModel
 
     var body: some View {
-        List {
-            Section("Channels") {
-                ForEach(viewModel.channels) { channel in
-                    channelRow(channel)
-                }
-            }
-            Section("Direct Messages") {
-                ForEach(viewModel.directMessages) { channel in
-                    channelRow(channel)
-                }
-            }
-        }
-        .listStyle(.sidebar)
-        .safeAreaInset(edge: .top) {
-            HStack {
-                Text("Channels")
-                    .font(AnvilFont.subheading)
-                Spacer()
+        VStack(spacing: 0) {
+            AnvilSidebarHeaderRow(
+                title: "Messaging",
+                icon: "bubble.left.and.bubble.right",
+                count: viewModel.channels.count + viewModel.directMessages.count
+            ) {
                 Button {
                     // Channel creation is intentionally unavailable until backend support exists.
                 } label: {
@@ -32,9 +20,23 @@ struct ChannelList: View {
                 .disabled(true)
                 .help("Create Channel (coming when provider API supports channel creation)")
             }
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.xs)
-            .background(.bar)
+
+            Divider()
+
+            List {
+                AnvilSidebarSection(title: "Channels", icon: "number", count: viewModel.channels.count) {
+                    ForEach(viewModel.channels) { channel in
+                        channelRow(channel)
+                    }
+                }
+
+                AnvilSidebarSection(title: "Direct Messages", icon: "person.2", count: viewModel.directMessages.count) {
+                    ForEach(viewModel.directMessages) { channel in
+                        channelRow(channel)
+                    }
+                }
+            }
+            .listStyle(.sidebar)
         }
     }
 
@@ -44,30 +46,15 @@ struct ChannelList: View {
         let isSelected = viewModel.selectedChannelId == channel.id
         let hasUnread = channel.unreadCount > 0
 
-        return HStack(spacing: AnvilSpacing.sm) {
-            Image(systemName: channel.icon)
-                .font(.system(size: 11))
-                .foregroundStyle(isSelected ? AnvilColor.accentBlue : AnvilColor.textTertiary)
-                .frame(width: 16)
-
-            Text(channel.name)
-                .font(AnvilFont.sidebarItem)
-                .foregroundStyle(hasUnread ? .primary : .secondary)
-                .fontWeight(hasUnread ? .medium : .regular)
-                .lineLimit(1)
-
-            Spacer()
-
-            if hasUnread {
-                Text("\(channel.unreadCount)")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, AnvilSpacing.xs)
-                    .padding(.vertical, AnvilSpacing.xxxs)
-                    .background(AnvilColor.accentBlue)
-                    .clipShape(Capsule())
-            }
-        }
+        return AnvilListItem(
+            icon: channel.icon,
+            title: channel.name,
+            subtitle: hasUnread ? "\(channel.unreadCount) unread messages" : nil,
+            tag: hasUnread ? "\(channel.unreadCount)" : nil,
+            tagColor: AnvilColor.accentBlue,
+            isSelected: isSelected,
+            isCompact: false
+        )
         .contentShape(Rectangle())
         .onTapGesture {
             viewModel.selectChannel(channel.id)
@@ -75,6 +62,5 @@ struct ChannelList: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(hasUnread ? "Unread, " : "")\(channel.name)\(hasUnread ? ", \(channel.unreadCount) unread messages" : "")")
         .accessibilityAddTraits(.isButton)
-        .listRowBackground(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
     }
 }

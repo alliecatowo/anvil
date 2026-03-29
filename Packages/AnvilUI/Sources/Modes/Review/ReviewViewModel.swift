@@ -12,15 +12,44 @@ enum HunkDecision: String {
     case pending, approved, rejected
 }
 
-// MARK: - Inline Comment
+// MARK: - Comment Thread Model
 
-struct InlineComment: Identifiable {
+struct CommentEntry: Identifiable {
     let id: String
     let author: String
     let body: String
-    let lineNumber: Int
-    let createdAt: Date
+    let timestamp: Date
+    var isResolved: Bool
+
+    init(id: String = UUID().uuidString, author: String, body: String, timestamp: Date = .now, isResolved: Bool = false) {
+        self.id = id
+        self.author = author
+        self.body = body
+        self.timestamp = timestamp
+        self.isResolved = isResolved
+    }
 }
+
+struct CommentThread: Identifiable {
+    let id: String
+    let fileId: String
+    let lineNumber: Int
+    var entries: [CommentEntry]
+    var isResolved: Bool
+
+    init(id: String = UUID().uuidString, fileId: String, lineNumber: Int, entries: [CommentEntry] = [], isResolved: Bool = false) {
+        self.id = id
+        self.fileId = fileId
+        self.lineNumber = lineNumber
+        self.entries = entries
+        self.isResolved = isResolved
+    }
+
+    var commentCount: Int { entries.count }
+}
+
+// Keep backward-compat type alias for any remaining references
+typealias InlineComment = CommentEntry
 
 // MARK: - Review View Model
 
@@ -55,11 +84,14 @@ public final class ReviewViewModel: ObservableObject {
     @Published var blameData: [Int: BlameLine] = [:]  // lineNumber -> BlameLine
     @Published var isLoadingBlame: Bool = false
 
-    // MARK: Inline comments
+    // MARK: Inline comment threads
 
-    @Published var inlineComments: [String: [InlineComment]] = [:] // "fileId:lineNumber" -> comments
+    /// All comment threads, keyed by "fileId:lineNumber".
+    @Published var commentThreads: [String: CommentThread] = [:]
     @Published var activeCommentLine: InlineCommentTarget?
     @Published var inlineCommentText: String = ""
+    /// When non-nil, the user is replying to this specific thread rather than starting a new one.
+    @Published var replyingToThreadId: String?
 
     struct InlineCommentTarget: Equatable {
         let fileId: String
@@ -138,7 +170,14 @@ public final class ReviewViewModel: ObservableObject {
         guard let port = reviewPort else { return }
         Task { @MainActor in
             if let fetched = try? await port.fetchReviews() {
-                self.reviews = fetched
+                let localEphemeral = self.reviews.filter {
+                    $0.id.hasPrefix("branch-diff-") || $0.id.hasPrefix("local-change-")
+                }
+                var merged = fetched
+                for review in localEphemeral where !merged.contains(where: { $0.id == review.id }) {
+                    merged.insert(review, at: 0)
+                }
+                self.reviews = merged
             }
         }
     }
@@ -161,11 +200,14 @@ public final class ReviewViewModel: ObservableObject {
 
     // MARK: Navigation
 
-    func selectReview(_ id: String) {
+    func selectReview(_ id: String, selectFirstFile: Bool = true) {
         selectedReviewID = id
-        if let review = reviews.first(where: { $0.id == id }),
-           let firstFile = review.diff.first {
-            selectedFileID = firstFile.id
+        if let review = reviews.first(where: { $0.id == id }) {
+            if selectFirstFile, let firstFile = review.diff.first {
+                selectedFileID = firstFile.id
+            } else {
+                selectedFileID = nil
+            }
             focusedHunkIndex = 0
         }
     }
@@ -319,6 +361,62 @@ public final class ReviewViewModel: ObservableObject {
         selectedConflictIndex = nil
     }
 
+    /// Resolve a single conflict file by writing resolved content and staging it.
+    func resolveConflict(filePath: String, resolvedContent: String, using adapter: GitSourceControlAdapter) {
+        Task { @MainActor in
+            do {
+                try await adapter.resolveConflictFile(filePath: filePath, resolvedContent: resolvedContent)
+
+                // Update the merge result to mark this conflict as resolved
+                if case .conflicts(var conflicts) = mergeResult {
+                    if let idx = conflicts.firstIndex(where: { $0.filePath == filePath }) {
+                        conflicts[idx] = MergeConflict(
+                            filePath: filePath,
+                            oursContent: conflicts[idx].oursContent,
+                            theirsContent: conflicts[idx].theirsContent,
+                            baseContent: conflicts[idx].baseContent,
+                            isResolved: true
+                        )
+                        mergeResult = .conflicts(conflicts)
+                    }
+
+                    // If all resolved, dismiss conflicts
+                    if conflicts.allSatisfy(\.isResolved) {
+                        dismissConflicts()
+                    }
+                }
+            } catch {
+                mergeError = "Failed to resolve \(filePath): \(error.localizedDescription)"
+            }
+        }
+    }
+
+    /// Abort the in-progress merge.
+    func abortMerge(using adapter: GitSourceControlAdapter) {
+        Task { @MainActor in
+            do {
+                try await adapter.abortMerge()
+                dismissConflicts()
+            } catch {
+                mergeError = "Failed to abort merge: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    /// Detect conflicted files in a repo that's already mid-merge.
+    func detectExistingConflicts(using adapter: GitSourceControlAdapter) {
+        Task { @MainActor in
+            do {
+                let conflicts = try await adapter.detectConflicts()
+                if !conflicts.isEmpty {
+                    mergeResult = .conflicts(conflicts)
+                }
+            } catch {
+                // Silently ignore — repo may not be mid-merge
+            }
+        }
+    }
+
     // MARK: Batch
 
     func toggleSelection(_ id: String) {
@@ -338,10 +436,7 @@ public final class ReviewViewModel: ObservableObject {
         selectedReviewIDs.removeAll()
         Task { [eventBus] in
             for reviewId in approvedIds {
-                await eventBus?.publish(AnyDomainEvent(
-                    sourcePrimitive: "review",
-                    payload: ["action": "approved", "reviewId": reviewId]
-                ))
+                await eventBus?.publish(ReviewApprovedEvent(reviewId: reviewId))
             }
         }
     }
@@ -350,11 +445,23 @@ public final class ReviewViewModel: ObservableObject {
 
     func startInlineComment(fileId: String, lineNumber: Int, side: InlineCommentSide) {
         activeCommentLine = InlineCommentTarget(fileId: fileId, lineNumber: lineNumber, side: side)
+        replyingToThreadId = nil
         inlineCommentText = ""
+    }
+
+    /// Start replying to an existing thread.
+    func startReply(threadId: String) {
+        replyingToThreadId = threadId
+        inlineCommentText = ""
+        // Set activeCommentLine from the thread so the input shows in the right place
+        if let thread = commentThreads.values.first(where: { $0.id == threadId }) {
+            activeCommentLine = InlineCommentTarget(fileId: thread.fileId, lineNumber: thread.lineNumber, side: .new)
+        }
     }
 
     func cancelInlineComment() {
         activeCommentLine = nil
+        replyingToThreadId = nil
         inlineCommentText = ""
     }
 
@@ -363,30 +470,73 @@ public final class ReviewViewModel: ObservableObject {
               !inlineCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
         let key = "\(target.fileId):\(target.lineNumber)"
-        let comment = InlineComment(
-            id: UUID().uuidString,
+        let entry = CommentEntry(
             author: "You",
-            body: inlineCommentText,
-            lineNumber: target.lineNumber,
-            createdAt: .now
+            body: inlineCommentText
         )
-        inlineComments[key, default: []].append(comment)
+
+        if var thread = commentThreads[key] {
+            // Append to existing thread
+            thread.entries.append(entry)
+            // Unresolve on new comment
+            if thread.isResolved {
+                thread.isResolved = false
+            }
+            commentThreads[key] = thread
+        } else {
+            // Create new thread
+            let thread = CommentThread(
+                fileId: target.fileId,
+                lineNumber: target.lineNumber,
+                entries: [entry]
+            )
+            commentThreads[key] = thread
+        }
+
         let fileId = target.fileId
         let lineNumber = target.lineNumber
         let reviewId = selectedReviewID
         activeCommentLine = nil
+        replyingToThreadId = nil
         inlineCommentText = ""
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(
-                sourcePrimitive: "review",
-                payload: ["action": "inlineCommentAdded", "reviewId": reviewId ?? "", "fileId": fileId, "lineNumber": "\(lineNumber)"]
+            await eventBus?.publish(InlineCommentAddedEvent(
+                reviewId: reviewId ?? "", fileId: fileId, lineNumber: lineNumber
             ))
         }
     }
 
-    func inlineCommentsForLine(fileId: String, lineNumber: Int) -> [InlineComment] {
+    /// Resolve or unresolve a thread.
+    func toggleResolveThread(at key: String) {
+        guard var thread = commentThreads[key] else { return }
+        thread.isResolved.toggle()
+        commentThreads[key] = thread
+    }
+
+    /// Get the thread for a specific line, if one exists.
+    func threadForLine(fileId: String, lineNumber: Int) -> CommentThread? {
         let key = "\(fileId):\(lineNumber)"
-        return inlineComments[key] ?? []
+        return commentThreads[key]
+    }
+
+    /// Backward-compatible: get comments for a line as flat list.
+    func inlineCommentsForLine(fileId: String, lineNumber: Int) -> [CommentEntry] {
+        let key = "\(fileId):\(lineNumber)"
+        return commentThreads[key]?.entries ?? []
+    }
+
+    /// Total comment count for a file (across all threads).
+    func commentCountForFile(_ fileId: String) -> Int {
+        commentThreads.values
+            .filter { $0.fileId == fileId }
+            .reduce(0) { $0 + $1.commentCount }
+    }
+
+    /// Number of unresolved threads for a file.
+    func unresolvedThreadCountForFile(_ fileId: String) -> Int {
+        commentThreads.values
+            .filter { $0.fileId == fileId && !$0.isResolved }
+            .count
     }
 
     // MARK: - Branch Diff (real git)
@@ -453,7 +603,46 @@ public final class ReviewViewModel: ObservableObject {
                 // Replace any existing branch-diff review
                 reviews.removeAll { $0.id.hasPrefix("branch-diff-") }
                 reviews.insert(review, at: 0)
-                selectReview(review.id)
+                selectReview(review.id, selectFirstFile: false)
+            }
+        }
+    }
+
+    /// Load a diff for a single locally changed file (from git status).
+    func loadLocalFileDiff(_ change: GitFileChange, using adapter: GitSourceControlAdapter) {
+        isLoadingBranchDiff = true
+
+        Task { @MainActor in
+            defer { isLoadingBranchDiff = false }
+
+            let diffs: [FileDiff]
+            if change.staged {
+                guard let staged = try? await adapter.stagedDiff() else { return }
+                diffs = staged
+            } else {
+                guard let unstaged = try? await adapter.unstagedDiff() else { return }
+                diffs = unstaged
+            }
+            let matchingDiffs = diffs.filter { $0.filePath == change.filePath || $0.filePath.hasSuffix(change.fileName) }
+            guard !matchingDiffs.isEmpty else { return }
+
+            let reviewId = "local-change-\(change.filePath)"
+            let review = Review(
+                id: reviewId,
+                title: "Local Changes: \(change.fileName)",
+                sourceType: .agentSession,
+                sourceId: change.filePath,
+                status: .pending,
+                author: "local",
+                diff: matchingDiffs,
+                comments: []
+            )
+
+            reviews.removeAll { $0.id.hasPrefix("local-change-") }
+            reviews.insert(review, at: 0)
+            selectReview(review.id)
+            if let firstFile = matchingDiffs.first {
+                selectFile(firstFile.id)
             }
         }
     }
@@ -492,6 +681,95 @@ public final class ReviewViewModel: ObservableObject {
                     map[line.lineNumber] = line
                 }
                 blameData = map
+            }
+        }
+    }
+
+    // MARK: - Source Control Navigator (tags, stashes, remotes)
+
+    @Published var tags: [Tag] = []
+    @Published var stashes: [Stash] = []
+    @Published var remotes: [GitRemote] = []
+    @Published var worktrees: [Worktree] = []
+    @Published var isLoadingSourceControl: Bool = false
+
+    // Worktree creation sheet state
+    @Published var isAddWorktreeSheetPresented: Bool = false
+    @Published var newWorktreeBranch: String = ""
+
+    /// Fetch tags, stashes, remotes, and worktrees from the git adapter.
+    func loadSourceControlData(using adapter: GitSourceControlAdapter) {
+        isLoadingSourceControl = true
+        Task { @MainActor in
+            defer { isLoadingSourceControl = false }
+            if let fetchedTags = try? await adapter.tags() {
+                tags = fetchedTags
+            }
+            if let fetchedStashes = try? await adapter.stashList() {
+                stashes = fetchedStashes
+            }
+            if let fetchedRemotes = try? await adapter.listRemotes() {
+                remotes = fetchedRemotes
+            }
+            if let fetchedWorktrees = try? await adapter.worktrees() {
+                worktrees = fetchedWorktrees
+            }
+        }
+    }
+
+    func applyStash(index: Int, using adapter: GitSourceControlAdapter) {
+        Task { @MainActor in
+            _ = try? await adapter.stashApply(index: index)
+            // Refresh stash list
+            if let refreshed = try? await adapter.stashList() {
+                stashes = refreshed
+            }
+        }
+    }
+
+    func popStash(using adapter: GitSourceControlAdapter) {
+        Task { @MainActor in
+            _ = try? await adapter.stashPop()
+            if let refreshed = try? await adapter.stashList() {
+                stashes = refreshed
+            }
+        }
+    }
+
+    func dropStash(index: Int, using adapter: GitSourceControlAdapter) {
+        Task { @MainActor in
+            _ = try? await adapter.stashDrop(index: index)
+            if let refreshed = try? await adapter.stashList() {
+                stashes = refreshed
+            }
+        }
+    }
+
+    func createStash(message: String, using adapter: GitSourceControlAdapter) {
+        Task { @MainActor in
+            _ = try? await adapter.stash(message: message)
+            if let refreshed = try? await adapter.stashList() {
+                stashes = refreshed
+            }
+        }
+    }
+
+    // MARK: - Worktrees
+
+    func addWorktree(branch: String, path: String, using adapter: GitSourceControlAdapter) {
+        Task { @MainActor in
+            _ = try? await adapter.createWorktree(branch: branch, path: path)
+            if let refreshed = try? await adapter.worktrees() {
+                worktrees = refreshed
+            }
+        }
+    }
+
+    func removeWorktree(path: String, using adapter: GitSourceControlAdapter) {
+        Task { @MainActor in
+            _ = try? await adapter.removeWorktree(path: path)
+            if let refreshed = try? await adapter.worktrees() {
+                worktrees = refreshed
             }
         }
     }

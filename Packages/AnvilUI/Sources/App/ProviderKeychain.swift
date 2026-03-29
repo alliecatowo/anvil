@@ -66,6 +66,22 @@ enum ProviderKeychain {
         }
     }
 
+    static var netlifyToken: String? {
+        get { get("netlify.token") }
+        set {
+            if let newValue { set("netlify.token", value: newValue) }
+            else { delete("netlify.token") }
+        }
+    }
+
+    static var netlifySiteId: String? {
+        get { get("netlify.siteId") }
+        set {
+            if let newValue, !newValue.isEmpty { set("netlify.siteId", value: newValue) }
+            else { delete("netlify.siteId") }
+        }
+    }
+
     static var sentryToken: String? {
         get { get("sentry.authToken") }
         set {

@@ -1,5 +1,7 @@
 # UX Shell
 
+Canonical shell vocabulary lives in [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md). This document defines the shell contract that implements that vocabulary.
+
 This document defines the shell contract for the entire app.
 The shell is the outer structure that holds workspaces, sources, detail panes, utilities, and provider setup.
 
@@ -16,8 +18,11 @@ The shell is the outer structure that holds workspaces, sources, detail panes, u
 
 Use these layers consistently:
 
-1. `Workspaces`
-- Top-level modes such as Intent, Agent, Review, Ship, Editor, Database, Terminal, Docs, Messaging, Notifications, Testing, Extensions.
+1. `Spaces`
+- Top-level destinations such as Plan, Build, Review, Operate, and Library.
+
+Note:
+- `Intent`, `Agent`, `Review`, `Ship`, and the auxiliary labels are current implementation names and transitional labels, not the canonical user-facing shell vocabulary.
 
 2. `Sources`
 - Collections inside a workspace, such as projects, sessions, tickets, PRs, channels, environments, tables, runs, docs, or plugins.

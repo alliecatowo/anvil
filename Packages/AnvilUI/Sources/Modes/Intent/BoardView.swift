@@ -172,12 +172,24 @@ struct BoardView: View {
     // MARK: - Board Card
 
     private func boardCard(_ ticket: Ticket) -> some View {
-        KanbanCard(ticket: ticket, viewModel: viewModel)
-            .onTapGesture { viewModel.selectTicket(ticket.id) }
+        Button {
+            viewModel.selectTicket(ticket.id)
+        } label: {
+            KanbanCard(ticket: ticket, viewModel: viewModel)
+        }
+        .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(ticket.title), \(IntentViewModel.priorityLabel(ticket.priority)) priority, \(ticket.id)")
         .accessibilityAddTraits(.isButton)
         .contextMenu {
+            Button {
+                viewModel.selectTicket(ticket.id, openInMainPane: true)
+            } label: {
+                Label("Open in Main Pane", systemImage: "arrow.right.square")
+            }
+
+            Divider()
+
             Menu("Status") {
                 ForEach(viewModel.allStatuses, id: \.self) { status in
                     Button {

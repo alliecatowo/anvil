@@ -6,7 +6,7 @@ public struct AgentSession: Sendable, Identifiable, Codable {
     public var model: String
     public var status: AgentSessionStatus
     public let workItemId: String?
-    public let worktreePath: String?
+    public var worktreePath: String?
     public var tokenUsage: TokenUsage
     public var cost: Decimal
     public let startedAt: Date
@@ -18,6 +18,14 @@ public struct AgentSession: Sendable, Identifiable, Codable {
     public var autonomyLevel: AutonomyLevel
     public var plan: AgentPlan?
     public var isBackground: Bool
+
+    /// If this session was forked from another, the ID of the parent session.
+    public var parentSessionId: String?
+    /// The message index in the parent session from which this fork was created.
+    public var forkFromMessageIndex: Int?
+
+    /// Whether this session is a fork of another session.
+    public var isForked: Bool { parentSessionId != nil }
 
     /// Budget usage ratio (0.0 to 1.0+). Returns nil if no budget is set.
     public var budgetUsage: Double? {
@@ -36,7 +44,7 @@ public struct AgentSession: Sendable, Identifiable, Codable {
         return "Session"
     }
 
-    public init(id: String = UUID().uuidString, providerId: String, model: String, status: AgentSessionStatus = .idle, workItemId: String? = nil, worktreePath: String? = nil, tokenUsage: TokenUsage = .zero, cost: Decimal = 0, startedAt: Date = .now, lastActivityAt: Date = .now, messages: [AgentMessage] = [], customName: String? = nil, costBudget: Decimal? = nil, hardStopOnBudget: Bool = false, autonomyLevel: AutonomyLevel = .ask, plan: AgentPlan? = nil, isBackground: Bool = false) {
+    public init(id: String = UUID().uuidString, providerId: String, model: String, status: AgentSessionStatus = .idle, workItemId: String? = nil, worktreePath: String? = nil, tokenUsage: TokenUsage = .zero, cost: Decimal = 0, startedAt: Date = .now, lastActivityAt: Date = .now, messages: [AgentMessage] = [], customName: String? = nil, costBudget: Decimal? = nil, hardStopOnBudget: Bool = false, autonomyLevel: AutonomyLevel = .ask, plan: AgentPlan? = nil, isBackground: Bool = false, parentSessionId: String? = nil, forkFromMessageIndex: Int? = nil) {
         self.id = id
         self.providerId = providerId
         self.model = model
@@ -54,6 +62,8 @@ public struct AgentSession: Sendable, Identifiable, Codable {
         self.autonomyLevel = autonomyLevel
         self.plan = plan
         self.isBackground = isBackground
+        self.parentSessionId = parentSessionId
+        self.forkFromMessageIndex = forkFromMessageIndex
     }
 }
 

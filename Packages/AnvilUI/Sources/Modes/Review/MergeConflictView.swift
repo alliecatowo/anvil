@@ -20,6 +20,7 @@ enum ConflictResolution: String {
 
 struct MergeConflictView: View {
     let conflict: MergeConflict
+    var onResolve: ((String) -> Void)?
     @State private var hunks: [ConflictHunk] = []
     @State private var resolvedContent: String = ""
     @State private var allResolved = false
@@ -103,6 +104,16 @@ struct MergeConflictView: View {
             Text(allResolved ? "All hunks resolved" : "Resolve all hunks to continue")
                 .font(AnvilFont.label)
                 .foregroundStyle(allResolved ? AnvilColor.accentGreen : AnvilColor.textTertiary)
+
+            if allResolved, onResolve != nil {
+                Button("Mark as Resolved") {
+                    let content = buildResolvedContent()
+                    onResolve?(content)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AnvilColor.accentGreen)
+                .accessibilityLabel("Mark file as resolved")
+            }
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.sm)
@@ -313,6 +324,45 @@ struct MergeConflictView: View {
             }
             allResolved = true
         }
+    }
+
+    /// Builds the final file content from resolved hunks.
+    private func buildResolvedContent() -> String {
+        // Re-read the original file content and replace conflict regions with resolved content
+        let originalLines = (conflict.oursContent.isEmpty && conflict.theirsContent.isEmpty)
+            ? [] : conflict.oursContent.components(separatedBy: "\n") // Fallback
+
+        // For the simple case (single hunk from pre-split content), just return the chosen side
+        if hunks.count == 1 {
+            let hunk = hunks[0]
+            switch hunk.resolution {
+            case .ours:
+                return hunk.oursLines.joined(separator: "\n")
+            case .theirs:
+                return hunk.theirsLines.joined(separator: "\n")
+            case .both:
+                return (hunk.oursLines + hunk.theirsLines).joined(separator: "\n")
+            case .pending:
+                return originalLines.joined(separator: "\n")
+            }
+        }
+
+        // Multiple hunks: concatenate each resolved hunk
+        var result: [String] = []
+        for hunk in hunks {
+            switch hunk.resolution {
+            case .ours:
+                result.append(contentsOf: hunk.oursLines)
+            case .theirs:
+                result.append(contentsOf: hunk.theirsLines)
+            case .both:
+                result.append(contentsOf: hunk.oursLines)
+                result.append(contentsOf: hunk.theirsLines)
+            case .pending:
+                result.append(contentsOf: hunk.oursLines)
+            }
+        }
+        return result.joined(separator: "\n")
     }
 
     // MARK: - Parsing

@@ -51,6 +51,14 @@ public struct AnvilCommands: Commands {
             .help("Load a sample project for demonstration")
         }
 
+        CommandGroup(after: .saveItem) {
+            Button("Save") {
+                appState.triggerSaveFile = true
+            }
+            .keyboardShortcut("s", modifiers: .command)
+            .help("Save the current file")
+        }
+
         CommandMenu("Space") {
             ForEach(AnvilSpace.allCases) { space in
                 if let num = space.shortcutNumber {
@@ -93,6 +101,12 @@ public struct AnvilCommands: Commands {
             }
             .keyboardShortcut("k", modifiers: .command)
             .help("Open the command palette or trigger inline edit")
+
+            Button("Show All Commands") {
+                appState.toggleCommandPalette()
+            }
+            .keyboardShortcut("p", modifiers: [.command, .shift])
+            .help("Open the command palette with all commands")
 
             Button("Find in File") {
                 if appState.currentSpace == .build {
@@ -138,12 +152,6 @@ public struct AnvilCommands: Commands {
             .keyboardShortcut("n", modifiers: [.command, .shift])
             .help("Open project notes")
 
-            Button("Ask Codebase (Q&A)") {
-                appState.toggleCodebaseQA()
-            }
-            .keyboardShortcut("/", modifiers: .command)
-            .help("Ask questions about your codebase")
-
             Divider()
 
             Button("New Terminal Session") {
@@ -164,6 +172,26 @@ public struct AnvilCommands: Commands {
             }
             .keyboardShortcut("\\", modifiers: [.command, .shift])
             .help("Split the editor horizontally")
+        }
+
+        CommandMenu("Editor") {
+            Button("Close Tab") {
+                appState.triggerCloseTab = true
+            }
+            .keyboardShortcut("w", modifiers: .command)
+            .help("Close the active editor tab or terminal tab")
+
+            Button("Toggle Line Comment") {
+                appState.triggerToggleComment = true
+            }
+            .keyboardShortcut("/", modifiers: .command)
+            .help("Comment or uncomment the current line")
+
+            Button("Go to Definition") {
+                appState.triggerGoToDefinition = true
+            }
+            .keyboardShortcut(KeyEquivalent(Character(UnicodeScalar(NSF12FunctionKey)!)))
+            .help("Jump to the definition of the symbol under the cursor")
         }
     }
 

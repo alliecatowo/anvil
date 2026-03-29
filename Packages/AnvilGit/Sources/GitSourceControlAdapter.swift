@@ -462,11 +462,16 @@ public actor GitSourceControlAdapter: SourceControlPort {
     }
 
     public func createWorktree(branch: String, path: String) async throws {
-        _ = try await shell.run(["worktree", "add", path, branch])
+        // Try using existing branch first; fall back to creating a new branch with -b
+        do {
+            _ = try await shell.run(["worktree", "add", path, branch])
+        } catch {
+            _ = try await shell.run(["worktree", "add", "-b", branch, path])
+        }
     }
 
     public func removeWorktree(path: String) async throws {
-        _ = try await shell.run(["worktree", "remove", path])
+        _ = try await shell.run(["worktree", "remove", "--force", path])
     }
 
     // MARK: - Merge / Rebase / Cherry-pick / Revert
@@ -609,11 +614,14 @@ public actor GitSourceControlAdapter: SourceControlPort {
             let lines = block.components(separatedBy: "\n")
             var path = ""
             var branch: String?
+            var headSHA: String?
             var isMain = false
 
             for line in lines {
                 if line.hasPrefix("worktree ") {
                     path = String(line.dropFirst("worktree ".count))
+                } else if line.hasPrefix("HEAD ") {
+                    headSHA = String(line.dropFirst("HEAD ".count))
                 } else if line.hasPrefix("branch ") {
                     let ref = String(line.dropFirst("branch ".count))
                     branch = ref.replacingOccurrences(of: "refs/heads/", with: "")
@@ -628,6 +636,7 @@ public actor GitSourceControlAdapter: SourceControlPort {
             worktrees.append(Worktree(
                 path: path,
                 branch: branch,
+                headSHA: headSHA,
                 isClean: true,
                 isMain: isMain
             ))
@@ -640,13 +649,89 @@ public actor GitSourceControlAdapter: SourceControlPort {
         let output = try await shell.run(["diff", "--name-only", "--diff-filter=U"])
         guard !output.isEmpty else { return [] }
 
-        return output.components(separatedBy: "\n").map { file in
-            MergeConflict(
-                filePath: file,
-                oursContent: "",
-                theirsContent: "",
-                baseContent: nil
-            )
+        let files = output.components(separatedBy: "\n").filter { !$0.isEmpty }
+        var conflicts: [MergeConflict] = []
+
+        for file in files {
+            let conflict = try await parseConflictFile(file)
+            conflicts.append(conflict)
         }
+
+        return conflicts
+    }
+
+    /// Reads a conflicted file and parses conflict markers into ours/base/theirs content.
+    private func parseConflictFile(_ filePath: String) async throws -> MergeConflict {
+        let fullPath = shell.workingDirectory + "/" + filePath
+        let url = URL(fileURLWithPath: fullPath)
+
+        guard let data = try? Data(contentsOf: url),
+              let content = String(data: data, encoding: .utf8) else {
+            return MergeConflict(filePath: filePath, oursContent: "", theirsContent: "", baseContent: nil)
+        }
+
+        var oursLines: [String] = []
+        var baseLines: [String] = []
+        var theirsLines: [String] = []
+        var hasBase = false
+
+        enum Region { case outside, ours, base, theirs }
+        var region = Region.outside
+
+        for line in content.components(separatedBy: "\n") {
+            if line.hasPrefix("<<<<<<<") {
+                region = .ours
+            } else if line.hasPrefix("|||||||") {
+                region = .base
+                hasBase = true
+            } else if line.hasPrefix("=======") {
+                region = .theirs
+            } else if line.hasPrefix(">>>>>>>") {
+                region = .outside
+            } else {
+                switch region {
+                case .outside:
+                    break
+                case .ours:
+                    oursLines.append(line)
+                case .base:
+                    baseLines.append(line)
+                case .theirs:
+                    theirsLines.append(line)
+                }
+            }
+        }
+
+        return MergeConflict(
+            filePath: filePath,
+            oursContent: oursLines.joined(separator: "\n"),
+            theirsContent: theirsLines.joined(separator: "\n"),
+            baseContent: hasBase ? baseLines.joined(separator: "\n") : nil
+        )
+    }
+
+    // MARK: - Conflict Resolution
+
+    /// Detects conflicted files in the working tree (for repos already mid-merge).
+    public func detectConflicts() async throws -> [MergeConflict] {
+        try await parseMergeConflicts()
+    }
+
+    /// Marks a conflicted file as resolved by staging it (`git add`).
+    public func markConflictResolved(filePath: String) async throws {
+        _ = try await shell.run(["add", filePath])
+    }
+
+    /// Writes resolved content back to the file and stages it.
+    public func resolveConflictFile(filePath: String, resolvedContent: String) async throws {
+        let fullPath = shell.workingDirectory + "/" + filePath
+        let url = URL(fileURLWithPath: fullPath)
+        try resolvedContent.write(to: url, atomically: true, encoding: .utf8)
+        try await markConflictResolved(filePath: filePath)
+    }
+
+    /// Aborts an in-progress merge.
+    public func abortMerge() async throws {
+        _ = try await shell.run(["merge", "--abort"])
     }
 }

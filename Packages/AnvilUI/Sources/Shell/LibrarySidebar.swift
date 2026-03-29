@@ -1,36 +1,32 @@
 import SwiftUI
+import AnvilApplication
 
 struct LibrarySidebar: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Picker("Section", selection: $appState.libraryActiveSection) {
-                    ForEach(AppState.LibrarySection.allCases, id: \.self) { s in
-                        Text(s.rawValue).tag(s)
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .accessibilityLabel("Library Sidebar Section")
-
-                Spacer()
-            }
-            .padding(.horizontal, AnvilSpacing.sm)
-            .padding(.vertical, AnvilSpacing.xs)
+            SidebarTabBar(
+                sections: Array(AppState.LibrarySection.allCases),
+                active: appState.libraryActiveSection,
+                icon: { $0.icon },
+                label: { $0.rawValue },
+                onSelect: { appState.libraryActiveSection = $0 }
+            )
 
             Divider()
 
             switch appState.libraryActiveSection {
             case .docs:
                 DocBrowser(viewModel: appState.libraryDocsViewModel)
+            case .rules:
+                rulesSidebar
             case .extensions:
                 ExtensionsSidebarView(viewModel: appState.pluginMarketplaceViewModel)
             case .notifications:
                 notificationsList
             case .messages:
-                messagingChannelList
+                ChannelList(viewModel: appState.messagingViewModel)
             case .schedule:
                 scheduleSidebarList
             }
@@ -50,42 +46,17 @@ struct LibrarySidebar: View {
             } else {
                 List {
                     ForEach(viewModel.inboxItems) { item in
-                        HStack(spacing: AnvilSpacing.sm) {
-                            Circle()
-                                .fill(item.notification.isRead ? Color.clear : AnvilColor.accentBlue)
-                                .frame(width: 6, height: 6)
-                                .accessibilityHidden(true)
-
-                            Image(systemName: item.source.icon)
-                                .font(.system(size: 11))
-                                .foregroundStyle(item.source.color)
-                                .frame(width: 16)
-                                .accessibilityHidden(true)
-
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(item.notification.title)
-                                    .font(AnvilFont.sidebarItem)
-                                    .foregroundStyle(AnvilColor.textPrimary)
-                                    .lineLimit(1)
-
-                                Text(item.notification.body)
-                                    .font(AnvilFont.label)
-                                    .foregroundStyle(AnvilColor.textTertiary)
-                                    .lineLimit(1)
-                            }
-
-                            Spacer()
-                        }
-                        .padding(.vertical, AnvilSpacing.xxs)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
+                        Button {
                             viewModel.selectedItemID = item.id
                             viewModel.markAsRead(item.id)
+                        } label: {
+                            notificationRow(item, viewModel: viewModel)
                         }
+                        .buttonStyle(.plain)
                         .accessibilityElement(children: .combine)
                         .accessibilityLabel("\(item.notification.isRead ? "" : "Unread, ")\(item.notification.title), \(item.notification.body)")
                         .accessibilityAddTraits(.isButton)
-                        .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 8))
+                        .listRowInsets(EdgeInsets(top: 2, leading: 4, bottom: 2, trailing: 4))
                         .listRowSeparator(.hidden)
                     }
                 }
@@ -93,86 +64,54 @@ struct LibrarySidebar: View {
             }
         }
     }
-    // MARK: - Compact Channel List
 
-    private var messagingChannelList: some View {
-        let viewModel = appState.messagingViewModel
-        return Group {
-            if viewModel.channels.isEmpty && viewModel.directMessages.isEmpty {
-                Text("No channels")
-                    .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                List {
-                    if !viewModel.channels.isEmpty {
-                        Section {
-                            ForEach(viewModel.channels) { channel in
-                                messagingChannelRow(channel, viewModel: viewModel)
-                            }
-                        } header: {
-                            Text("Channels")
-                                .font(AnvilFont.label)
-                        }
-                    }
-
-                    if !viewModel.directMessages.isEmpty {
-                        Section {
-                            ForEach(viewModel.directMessages) { channel in
-                                messagingChannelRow(channel, viewModel: viewModel)
-                            }
-                        } header: {
-                            Text("Direct Messages")
-                                .font(AnvilFont.label)
-                        }
-                    }
-                }
-                .listStyle(.sidebar)
-            }
-        }
+    private func notificationRow(_ item: InboxItem, viewModel: NotificationsViewModel) -> some View {
+        AnvilListItem(
+            icon: item.source.icon,
+            title: item.notification.title,
+            subtitle: item.notification.body,
+            tag: item.notification.isRead ? nil : "Unread",
+            tagColor: AnvilColor.accentBlue,
+            isSelected: viewModel.selectedItemID == item.id,
+            isCompact: false
+        )
     }
 
-    private func messagingChannelRow(_ channel: Channel, viewModel: MessagingViewModel) -> some View {
-        let isSelected = viewModel.selectedChannelId == channel.id
-        let hasUnread = channel.unreadCount > 0
+    // MARK: - Rules Sidebar
 
-        return HStack(spacing: AnvilSpacing.sm) {
-            Image(systemName: channel.icon)
-                .font(.system(size: 11))
-                .foregroundStyle(isSelected ? Color.accentColor : AnvilColor.textTertiary)
-                .frame(width: 16)
+    private var rulesSidebar: some View {
+        VStack(alignment: .leading, spacing: AnvilSpacing.md) {
+            Text("Project Rules")
+                .font(AnvilFont.subheading)
+                .foregroundStyle(AnvilColor.textPrimary)
 
-            Text(channel.name)
-                .font(AnvilFont.sidebarItem)
-                .foregroundStyle(hasUnread ? .primary : .secondary)
-                .fontWeight(hasUnread ? .medium : .regular)
-                .lineLimit(1)
+            if let projectPath = appState.currentProjectPath {
+                let rulesPath = ProjectRulesService().rulesPath(projectPath: projectPath)
+                Text(rulesPath)
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .lineLimit(2)
+                    .truncationMode(.middle)
+
+                Button {
+                    appState.switchSpace(.build)
+                    appState.buildActiveSection = .files
+                    appState.pendingFileToOpen = rulesPath
+                } label: {
+                    Label("Open in Editor", systemImage: "doc.text")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            } else {
+                Text("Open a project to edit and apply rules.")
+                    .font(AnvilFont.body)
+                    .foregroundStyle(AnvilColor.textSecondary)
+            }
 
             Spacer()
-
-            if hasUnread {
-                Text("\(channel.unreadCount)")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, AnvilSpacing.xs)
-                    .padding(.vertical, AnvilSpacing.xxxs)
-                    .background(Color.accentColor)
-                    .clipShape(Capsule())
-            }
         }
-        .padding(.vertical, AnvilSpacing.xxs)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            viewModel.selectChannel(channel.id)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(hasUnread ? "Unread, " : "")\(channel.name)")
-        .accessibilityAddTraits(.isButton)
-        .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 8))
-        .listRowSeparator(.hidden)
-        .listRowBackground(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
+        .padding(AnvilSpacing.md)
     }
-
     // MARK: - Compact Schedule List
 
     private var scheduleSidebarList: some View {
@@ -196,8 +135,10 @@ struct LibrarySidebar: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
-                    ForEach(viewModel.entries) { entry in
-                        scheduleEntryRow(entry, viewModel: viewModel)
+                    AnvilSidebarSection(title: "Schedule", icon: "calendar", count: viewModel.entries.count) {
+                        ForEach(viewModel.entries) { entry in
+                            scheduleEntryRow(entry, viewModel: viewModel)
+                        }
                     }
                 }
                 .listStyle(.sidebar)
@@ -213,40 +154,26 @@ struct LibrarySidebar: View {
             return f
         }()
 
-        return HStack(spacing: AnvilSpacing.sm) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(entry.kindColor)
-                .frame(width: 3, height: 28)
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(entry.title)
-                    .font(AnvilFont.sidebarItem)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .lineLimit(1)
-
-                Text("\(timeFormatter.string(from: entry.start)) - \(entry.duration)")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .lineLimit(1)
-            }
-
-            Spacer()
-
-            Image(systemName: entry.kindIcon)
-                .font(.system(size: 10))
-                .foregroundStyle(entry.kindColor)
-        }
-        .padding(.vertical, AnvilSpacing.xxs)
-        .contentShape(Rectangle())
-        .onTapGesture {
+        return Button {
             viewModel.selectedEntryID = entry.id
+        } label: {
+            AnvilListItem(
+                icon: entry.kindIcon,
+                title: entry.title,
+                subtitle: entry.duration,
+                tag: entry.kindLabel,
+                tagColor: entry.kindColor,
+                timestamp: timeFormatter.string(from: entry.start),
+                isSelected: isSelected,
+                isCompact: false
+            )
         }
+        .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(entry.title), \(timeFormatter.string(from: entry.start))")
         .accessibilityAddTraits(.isButton)
-        .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 8))
+        .listRowInsets(EdgeInsets(top: 2, leading: 4, bottom: 2, trailing: 4))
         .listRowSeparator(.hidden)
-        .listRowBackground(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
     }
 }
 
@@ -277,17 +204,14 @@ struct ExtensionsSidebarView: View {
             } else {
                 List {
                     if !viewModel.installedPlugins.isEmpty {
-                        Section {
+                        AnvilSidebarSection(title: "Installed", icon: "puzzlepiece.extension", count: viewModel.installedPlugins.count) {
                             ForEach(viewModel.installedPlugins) { plugin in
                                 extensionRow(plugin)
                             }
-                        } header: {
-                            Text("Installed")
-                                .font(AnvilFont.label)
                         }
                     }
 
-                    Section {
+                    AnvilSidebarSection(title: "Browse", icon: "square.grid.2x2", count: nil) {
                         Button {
                             viewModel.viewMode = .browse
                         } label: {
@@ -296,7 +220,6 @@ struct ExtensionsSidebarView: View {
                                 .foregroundStyle(AnvilColor.accentBlue)
                         }
                         .buttonStyle(.plain)
-                        .listRowInsets(EdgeInsets(top: 4, leading: 10, bottom: 4, trailing: 8))
                     }
                 }
                 .listStyle(.sidebar)
@@ -310,42 +233,20 @@ struct ExtensionsSidebarView: View {
     }
 
     private func extensionRow(_ plugin: MarketplacePlugin) -> some View {
-        HStack(spacing: AnvilSpacing.sm) {
-            Image(systemName: plugin.icon)
-                .font(.system(size: 13, weight: .light))
-                .foregroundStyle(AnvilColor.accentPurple)
-                .frame(width: 22, height: 22)
-                .background(AnvilColor.accentPurple.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(plugin.name)
-                    .font(AnvilFont.sidebarItem)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .lineLimit(1)
-
-                Text(plugin.author)
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .lineLimit(1)
-            }
-
-            Spacer()
-
-            Circle()
-                .fill(plugin.isEnabled ? AnvilColor.accentGreen : AnvilColor.textTertiary)
-                .frame(width: 6, height: 6)
-                .accessibilityLabel(plugin.isEnabled ? "Enabled" : "Disabled")
-        }
-        .padding(.vertical, AnvilSpacing.xxs)
-        .contentShape(Rectangle())
-        .onTapGesture {
+        Button {
             viewModel.selectPlugin(plugin.id)
+        } label: {
+            AnvilListItem(
+                icon: plugin.icon,
+                title: plugin.name,
+                subtitle: plugin.author,
+                tag: plugin.isEnabled ? "Enabled" : "Disabled",
+                tagColor: plugin.isEnabled ? AnvilColor.accentGreen : AnvilColor.textTertiary
+            )
         }
+        .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(plugin.name), \(plugin.isEnabled ? "Enabled" : "Disabled")")
         .accessibilityAddTraits(.isButton)
-        .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 8))
-        .listRowSeparator(.hidden)
     }
 }

@@ -1,5 +1,7 @@
 import SwiftUI
 import AppKit
+import AnvilDomain
+import AnvilEditor
 
 private struct Triangle: Shape {
     func path(in rect: CGRect) -> Path {
@@ -17,13 +19,12 @@ struct EditorView: View {
 
     @State private var selectionAnchor: Int?
 
-    private let swiftKeywords: Set<String> = [
-        "func", "let", "var", "class", "struct", "import", "if", "else",
-        "return", "for", "in", "switch", "case", "public", "private",
-        "protocol", "enum", "static", "async", "await", "throws", "throw",
-        "try", "guard", "defer", "nil", "self", "true", "false", "init",
-        "override", "mutating", "some", "any", "where", "extension",
-    ]
+    /// Language-aware syntax highlighter derived from the open file's extension.
+    private var syntaxHighlighter: SyntaxHighlighter {
+        let ext = viewModel.selectedFile?.name.components(separatedBy: ".").last ?? ""
+        let lang = SyntaxHighlighter.language(forExtension: ext)
+        return SyntaxHighlighter(language: lang)
+    }
 
     var body: some View {
         Group {
@@ -75,6 +76,11 @@ struct EditorView: View {
                     // Line numbers gutter
                     lineNumberGutter(lines: lines, selectedRange: selectedRange, foldRegions: foldRegions)
 
+                    // Blame annotations gutter (shown when enabled)
+                    if viewModel.isBlameVisible {
+                        blameGutter(lines: lines, foldRegions: foldRegions)
+                    }
+
                     // Divider between gutter and code
                     Rectangle()
                         .fill(AnvilColor.borderSubtle)
@@ -87,24 +93,124 @@ struct EditorView: View {
 
             // Inline edit overlay (positioned over the selected lines)
             InlineEditOverlay(viewModel: viewModel)
+
+            // "No definition found" toast
+            if let message = viewModel.definitionNotFoundMessage {
+                VStack {
+                    Spacer()
+                    Text(message)
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textSecondary)
+                        .padding(.horizontal, AnvilSpacing.md)
+                        .padding(.vertical, AnvilSpacing.xs)
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+                        .padding(.bottom, AnvilSpacing.lg)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        .animation(.easeInOut(duration: 0.2), value: viewModel.definitionNotFoundMessage)
+                        .accessibilityLabel(message)
+                }
+                .frame(maxWidth: .infinity)
+                .allowsHitTesting(false)
+            }
+
+            // LSP Hover documentation popover
+            if let hover = viewModel.hoverResult {
+                HoverPopover(result: hover)
+                    .offset(
+                        x: hoverPopoverX(lines: lines),
+                        y: hoverPopoverY
+                    )
+                    .transition(.opacity)
+                    .animation(.easeOut(duration: 0.15), value: viewModel.hoverResult)
+            }
+
+            // LSP Completion popup (positioned below cursor)
+            if viewModel.isCompletionPopupVisible, !viewModel.completionItems.isEmpty {
+                CompletionPopup(viewModel: viewModel)
+                    .offset(
+                        x: completionPopupX(lines: lines),
+                        y: completionPopupY
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
+                    .animation(.easeOut(duration: 0.12), value: viewModel.isCompletionPopupVisible)
+            }
         }
         .background(AnvilColor.backgroundPrimary)
+        .onKeyPress(.upArrow) {
+            if viewModel.isCompletionPopupVisible {
+                viewModel.completionMoveUp()
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.downArrow) {
+            if viewModel.isCompletionPopupVisible {
+                viewModel.completionMoveDown()
+                return .handled
+            }
+            return .ignored
+        }
         .onKeyPress(.tab) {
+            if viewModel.isCompletionPopupVisible, let text = viewModel.acceptCompletion() {
+                insertCompletionText(text, lines: lines)
+                return .handled
+            }
             if let completion = viewModel.acceptGhostCompletion() {
                 insertGhostText(completion, lines: lines)
                 return .handled
             }
             return .ignored
         }
+        .onKeyPress(.return) {
+            if viewModel.isCompletionPopupVisible, let text = viewModel.acceptCompletion() {
+                insertCompletionText(text, lines: lines)
+                return .handled
+            }
+            return .ignored
+        }
         .onKeyPress(.escape) {
+            if viewModel.isCompletionPopupVisible {
+                viewModel.dismissCompletionPopup()
+                return .handled
+            }
             if viewModel.ghostCompletion != nil {
                 viewModel.dismissGhostCompletion()
                 return .handled
             }
             return .ignored
         }
+        .onKeyPress(KeyEquivalent(Character(UnicodeScalar(0xF70F)!))) {
+            // F12 — go to definition
+            viewModel.goToDefinition(line: viewModel.cursorLine, column: viewModel.cursorColumn)
+            return .handled
+        }
+        .onKeyPress(characters: .init(charactersIn: "([{\"'")) { press in
+            // Auto-close brackets and quotes
+            guard let char = press.characters.first else { return .ignored }
+            let selectedText = currentSelectionText(lines: lines)
+            if viewModel.insertWithAutoClose(char: char, selectedText: selectedText) {
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.delete) {
+            // Backspace: delete empty bracket/quote pair
+            if viewModel.deleteEmptyPairAtCursor() {
+                return .handled
+            }
+            return .ignored
+        }
         .onChange(of: viewModel.cursorLine) { _, _ in
+            viewModel.dismissCompletionPopup()
             triggerGhostCompletion(fileContent: file.content)
+        }
+        .onChange(of: viewModel.cursorColumn) { _, _ in
+            viewModel.triggerCompletionPopup(fileContent: file.content)
+        }
+        .onChange(of: viewModel.selectedFileId) { _, _ in
+            viewModel.loadBlameForSelectedFile()
         }
     }
 
@@ -127,6 +233,81 @@ struct EditorView: View {
         )
         viewModel.openFiles[fileIndex] = updated
         viewModel.selectedFileId = updated.id
+    }
+
+    // MARK: - Completion Popup Positioning
+
+    /// Approximate X offset for the completion popup (below cursor column).
+    private func completionPopupX(lines: [String]) -> CGFloat {
+        let charWidth: CGFloat = 7.7
+        let gutterWidth = gutterWidth(for: lines.count)
+        let gutterExtra: CGFloat = AnvilSpacing.sm + (viewModel.codeFoldingEnabled ? 14 : 0) + 1 + AnvilSpacing.md + 3
+        return gutterWidth + gutterExtra + CGFloat(viewModel.cursorColumn - 1) * charWidth
+    }
+
+    /// Y offset for the completion popup (below cursor line).
+    private var completionPopupY: CGFloat {
+        let lineHeight: CGFloat = 20
+        return CGFloat(viewModel.cursorLine) * lineHeight + 2
+    }
+
+    // MARK: - Hover Popover Positioning
+
+    /// X offset for hover popover (above hovered column).
+    private func hoverPopoverX(lines: [String]) -> CGFloat {
+        let charWidth: CGFloat = 7.7
+        let gutterWidth = gutterWidth(for: lines.count)
+        let gutterExtra: CGFloat = AnvilSpacing.sm + (viewModel.codeFoldingEnabled ? 14 : 0) + 1 + AnvilSpacing.md + 3
+        return gutterWidth + gutterExtra + CGFloat(viewModel.hoverColumn - 1) * charWidth
+    }
+
+    /// Y offset for hover popover (above the hovered line).
+    private var hoverPopoverY: CGFloat {
+        let lineHeight: CGFloat = 20
+        // Position above the line
+        return CGFloat(viewModel.hoverLine - 1) * lineHeight - 4
+    }
+
+    /// Insert completion text at the cursor, replacing the word prefix.
+    private func insertCompletionText(_ text: String, lines: [String]) {
+        guard let file = viewModel.selectedFile,
+              let fileIndex = viewModel.openFiles.firstIndex(where: { $0.id == file.id }) else { return }
+
+        var mutableLines = lines
+        let lineIdx = viewModel.cursorLine - 1
+        guard lineIdx >= 0, lineIdx < mutableLines.count else { return }
+
+        let line = mutableLines[lineIdx]
+        let col = min(viewModel.cursorColumn - 1, line.count)
+
+        // Find the word prefix at cursor to replace
+        let prefixEnd = line.index(line.startIndex, offsetBy: col)
+        var wordStart = prefixEnd
+        while wordStart > line.startIndex {
+            let prev = line.index(before: wordStart)
+            let c = line[prev]
+            if c.isLetter || c.isNumber || c == "_" {
+                wordStart = prev
+            } else {
+                break
+            }
+        }
+
+        let before = String(line[line.startIndex..<wordStart])
+        let after = String(line[prefixEnd...])
+        mutableLines[lineIdx] = before + text + after
+
+        let newContent = mutableLines.joined(separator: "\n")
+        let updated = EditorFile(
+            name: file.name,
+            path: file.path,
+            content: newContent,
+            language: file.language,
+            relativePath: file.relativePath
+        )
+        viewModel.openFiles[fileIndex] = updated
+        viewModel.selectedFileId = updated.id
+        viewModel.cursorColumn = (before.count + text.count) + 1
     }
 
     /// Trigger ghost completion fetch after cursor moves.
@@ -227,6 +408,75 @@ struct EditorView: View {
         .background(AnvilColor.backgroundSecondary.opacity(0.5))
     }
 
+    // MARK: - Blame Gutter
+
+    @State private var blamePopoverLine: Int?
+
+    private func blameGutter(lines: [String], foldRegions: [EditorViewModel.FoldRegion]) -> some View {
+        LazyVStack(alignment: .leading, spacing: 0) {
+            ForEach(1...max(lines.count, 1), id: \.self) { lineNumber in
+                if !viewModel.isLineHidden(lineNumber, regions: foldRegions) {
+                    if let blame = viewModel.blameLines[lineNumber] {
+                        let compact = EditorViewModel.compactBlame(blame)
+                        Text(compact)
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundStyle(AnvilColor.textTertiary)
+                            .lineLimit(1)
+                            .frame(width: 120, height: 20, alignment: .leading)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                blamePopoverLine = lineNumber
+                            }
+                            .popover(isPresented: Binding(
+                                get: { blamePopoverLine == lineNumber },
+                                set: { if !$0 { blamePopoverLine = nil } }
+                            )) {
+                                blamePopoverContent(blame)
+                            }
+                            .accessibilityLabel("Blame: \(blame.author), \(blame.commitHash.prefix(7))")
+                    } else {
+                        Color.clear
+                            .frame(width: 120, height: 20)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, AnvilSpacing.xs)
+        .background(AnvilColor.backgroundSecondary.opacity(0.3))
+    }
+
+    private func blamePopoverContent(_ blame: BlameLine) -> some View {
+        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+            HStack(spacing: AnvilSpacing.xs) {
+                Image(systemName: "person.circle")
+                    .font(.system(size: 12))
+                    .foregroundStyle(AnvilColor.accentBlue)
+                Text(blame.author)
+                    .font(AnvilFont.subheading)
+                    .foregroundStyle(AnvilColor.textPrimary)
+            }
+
+            HStack(spacing: AnvilSpacing.xs) {
+                Text(String(blame.commitHash.prefix(7)))
+                    .font(AnvilFont.code)
+                    .foregroundStyle(AnvilColor.accentPurple)
+                Text(blame.date, style: .date)
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textSecondary)
+                Text(blame.date, style: .time)
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+            }
+
+            Text(blame.content)
+                .font(AnvilFont.body)
+                .foregroundStyle(AnvilColor.textSecondary)
+                .lineLimit(3)
+        }
+        .padding(AnvilSpacing.md)
+        .frame(minWidth: 280, maxWidth: 400)
+    }
+
     // MARK: - Git Change Indicator
 
     @ViewBuilder
@@ -298,6 +548,13 @@ struct EditorView: View {
                                     .padding(.leading, AnvilSpacing.md)
                             }
                         }
+                        .overlay(alignment: .bottomLeading) {
+                            let diags = viewModel.diagnosticsOnLine(lineNumber)
+                            if !diags.isEmpty {
+                                diagnosticUnderline(diags)
+                                    .padding(.leading, AnvilSpacing.md)
+                            }
+                        }
                         .background(
                             lineBackground(
                                 lineNumber: lineNumber,
@@ -309,9 +566,20 @@ struct EditorView: View {
                         .gesture(
                             TapGesture()
                                 .onEnded {
-                                    handleLineClick(lineNumber: lineNumber)
+                                    if NSEvent.modifierFlags.contains(.command) {
+                                        handleCmdClick(lineNumber: lineNumber, line: line)
+                                    } else {
+                                        handleLineClick(lineNumber: lineNumber)
+                                    }
                                 }
                         )
+                        .onHover { hovering in
+                            if hovering {
+                                viewModel.triggerHover(line: lineNumber, column: viewModel.cursorColumn)
+                            } else {
+                                viewModel.dismissHover()
+                            }
+                        }
                         .accessibilityLabel("Line \(lineNumber)")
                         .accessibilityAddTraits(.isButton)
 
@@ -418,6 +686,43 @@ struct EditorView: View {
         .allowsHitTesting(false)
     }
 
+    // MARK: - Diagnostic Underline
+
+    private func diagnosticUnderline(_ diagnostics: [LSPDiagnostic]) -> some View {
+        let worstSeverity = diagnostics.map(\.severity).min(by: { $0.rawValue < $1.rawValue }) ?? .hint
+        let color: Color = switch worstSeverity {
+        case .error:       AnvilColor.accentRed
+        case .warning:     AnvilColor.accentAmber
+        case .information: AnvilColor.accentBlue
+        case .hint:        AnvilColor.textTertiary
+        }
+
+        return ZStack(alignment: .bottomLeading) {
+            // Squiggly underline approximated with a dashed line
+            Path { path in
+                let charWidth: CGFloat = 7.7
+                // Underline from first diagnostic's character to end of word
+                let startCol = diagnostics.map(\.character).min() ?? 0
+                let endCol = diagnostics.map(\.endCharacter).max() ?? (startCol + 10)
+                let x0 = CGFloat(startCol) * charWidth
+                let x1 = max(CGFloat(endCol) * charWidth, x0 + charWidth * 3)
+
+                var x = x0
+                var up = true
+                path.move(to: CGPoint(x: x, y: up ? 0 : 2))
+                while x < x1 {
+                    x += 3
+                    up.toggle()
+                    path.addLine(to: CGPoint(x: min(x, x1), y: up ? 0 : 2))
+                }
+            }
+            .stroke(color, lineWidth: 1.2)
+            .frame(height: 3)
+        }
+        .allowsHitTesting(false)
+        .accessibilityLabel(diagnostics.map(\.message).joined(separator: "; "))
+    }
+
     // MARK: - Line Click Handling
 
     private func handleLineClick(lineNumber: Int) {
@@ -444,190 +749,108 @@ struct EditorView: View {
         }
     }
 
-    // MARK: - Syntax Highlighting
+    // MARK: - Selection Text Helper
+
+    /// Returns the currently selected text (from inline edit range), or nil if no multi-char selection.
+    private func currentSelectionText(lines: [String]) -> String? {
+        let range = viewModel.inlineEditSelectedRange
+        guard range.count > 1 || (range.count == 1 && range.lowerBound != range.upperBound) else { return nil }
+        let startIdx = max(range.lowerBound - 1, 0)
+        let endIdx = min(range.upperBound - 1, lines.count - 1)
+        guard startIdx <= endIdx, startIdx < lines.count else { return nil }
+        let selectedLines = lines[startIdx...endIdx]
+        return selectedLines.joined(separator: "\n")
+    }
+
+    // MARK: - Cmd+Click Go-to-Definition
+
+    /// Handle Cmd+Click on a code line to trigger go-to-definition.
+    /// Uses the clicked line and approximates column from cursor position.
+    private func handleCmdClick(lineNumber: Int, line: String) {
+        // Move cursor to the clicked line first
+        viewModel.cursorLine = lineNumber
+        // Use the current cursor column (best approximation for click position)
+        let col = min(viewModel.cursorColumn, line.count + 1)
+        viewModel.goToDefinition(line: lineNumber, column: col)
+    }
+
+    // MARK: - Syntax Highlighting (powered by SyntaxHighlighter)
 
     private func highlightedLine(_ line: String) -> Text {
         let wsMode = viewModel.whitespaceMode
-        let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-        // Comment line
-        if trimmed.hasPrefix("//") || trimmed.hasPrefix("///") {
-            if wsMode != .none {
-                return tokenizeLineWithWhitespace(line, wsMode: wsMode, isComment: true)
-            }
-            return Text(line)
-                .font(AnvilFont.code)
-                .foregroundColor(AnvilColor.textTertiary)
-        }
 
         if wsMode != .none {
-            return tokenizeLineWithWhitespace(line, wsMode: wsMode, isComment: false)
+            return tokenizeLineWithWhitespace(line, wsMode: wsMode)
         }
 
-        // Tokenize and color
         return tokenizeLine(line)
     }
 
     private func tokenizeLine(_ line: String) -> Text {
+        let tokens = syntaxHighlighter.tokenize(line)
         var result = Text("")
-        var current = line.startIndex
-        let end = line.endIndex
-
-        while current < end {
-            let char = line[current]
-
-            // String literals
-            if char == "\"" {
-                let stringResult = consumeString(line, from: current)
-                result = result + Text(stringResult.text)
-                    .font(AnvilFont.code)
-                    .foregroundColor(AnvilColor.accentGreen)
-                current = stringResult.end
-            }
-            // Numbers
-            else if char.isNumber && (current == line.startIndex || !line[line.index(before: current)].isLetter) {
-                let numResult = consumeNumber(line, from: current)
-                result = result + Text(numResult.text)
-                    .font(AnvilFont.code)
-                    .foregroundColor(AnvilColor.accentAmber)
-                current = numResult.end
-            }
-            // Words (keywords or identifiers)
-            else if char.isLetter || char == "_" || char == "@" {
-                let wordResult = consumeWord(line, from: current)
-                let color: Color = swiftKeywords.contains(wordResult.text)
-                    ? AnvilColor.accentPurple
-                    : AnvilColor.textPrimary
-                result = result + Text(wordResult.text)
-                    .font(AnvilFont.code)
-                    .foregroundColor(color)
-                current = wordResult.end
-            }
-            // Inline comment
-            else if char == "/" && line.index(after: current) < end && line[line.index(after: current)] == "/" {
-                let remaining = String(line[current...])
-                result = result + Text(remaining)
-                    .font(AnvilFont.code)
-                    .foregroundColor(AnvilColor.textTertiary)
-                current = end
-            }
-            // Whitespace and punctuation
-            else {
-                result = result + Text(String(char))
-                    .font(AnvilFont.code)
-                    .foregroundColor(AnvilColor.textPrimary)
-                current = line.index(after: current)
-            }
+        for token in tokens {
+            result = result + Text(token.text)
+                .font(AnvilFont.code)
+                .foregroundColor(colorForTokenKind(token.kind))
         }
-
         return result
+    }
+
+    private func colorForTokenKind(_ kind: SyntaxTokenKind) -> Color {
+        switch kind {
+        case .keyword:      AnvilColor.accentPurple
+        case .type:         AnvilColor.accentTeal
+        case .string:       AnvilColor.accentGreen
+        case .number:       AnvilColor.accentAmber
+        case .comment:      AnvilColor.textTertiary
+        case .function:     AnvilColor.accentBlue
+        case .property:     AnvilColor.accentBlue.opacity(0.85)
+        case .operator:     AnvilColor.textSecondary
+        case .preprocessor: AnvilColor.accentAmber
+        case .attribute:    AnvilColor.accentPurple.opacity(0.8)
+        case .plain:        AnvilColor.textPrimary
+        }
     }
 
     // MARK: - Whitespace Visualization
 
-    /// Tokenizes a line with whitespace characters rendered as visible symbols.
-    private func tokenizeLineWithWhitespace(_ line: String, wsMode: WhitespaceMode, isComment: Bool) -> Text {
+    /// Tokenizes a line using SyntaxHighlighter, with whitespace characters rendered as visible symbols.
+    private func tokenizeLineWithWhitespace(_ line: String, wsMode: WhitespaceMode) -> Text {
         let leadingCount = line.prefix(while: { $0 == " " || $0 == "\t" }).count
         let trailingCount = line.reversed().prefix(while: { $0 == " " || $0 == "\t" }).count
         let trailingStart = line.count - trailingCount
 
+        // Get syntax tokens first
+        let tokens = syntaxHighlighter.tokenize(line)
         var result = Text("")
-        var current = line.startIndex
-        let end = line.endIndex
+        var charOffset = 0
 
-        while current < end {
-            let i = line.distance(from: line.startIndex, to: current)
-            let char = line[current]
-            let isWS = char == " " || char == "\t"
+        for token in tokens {
+            for char in token.text {
+                let isWS = char == " " || char == "\t"
+                let shouldVisualize: Bool
+                if wsMode == .all {
+                    shouldVisualize = isWS
+                } else {
+                    shouldVisualize = isWS && (charOffset < leadingCount || charOffset >= trailingStart)
+                }
 
-            let shouldVisualize: Bool
-            if wsMode == .all {
-                shouldVisualize = isWS
-            } else {
-                shouldVisualize = isWS && (i < leadingCount || i >= trailingStart)
-            }
-
-            if shouldVisualize {
-                let symbol: String = char == "\t" ? "\u{2192}" : "\u{00B7}"
-                result = result + Text(symbol)
-                    .font(AnvilFont.code)
-                    .foregroundColor(AnvilColor.textTertiary.opacity(0.4))
-                current = line.index(after: current)
-            } else if isComment {
-                result = result + Text(String(char))
-                    .font(AnvilFont.code)
-                    .foregroundColor(AnvilColor.textTertiary)
-                current = line.index(after: current)
-            } else if char == "\"" {
-                let stringResult = consumeString(line, from: current)
-                result = result + Text(stringResult.text)
-                    .font(AnvilFont.code)
-                    .foregroundColor(AnvilColor.accentGreen)
-                current = stringResult.end
-            } else if char.isNumber && (current == line.startIndex || !line[line.index(before: current)].isLetter) {
-                let numResult = consumeNumber(line, from: current)
-                result = result + Text(numResult.text)
-                    .font(AnvilFont.code)
-                    .foregroundColor(AnvilColor.accentAmber)
-                current = numResult.end
-            } else if char.isLetter || char == "_" || char == "@" {
-                let wordResult = consumeWord(line, from: current)
-                let color: Color = swiftKeywords.contains(wordResult.text)
-                    ? AnvilColor.accentPurple
-                    : AnvilColor.textPrimary
-                result = result + Text(wordResult.text)
-                    .font(AnvilFont.code)
-                    .foregroundColor(color)
-                current = wordResult.end
-            } else if char == "/" && line.index(after: current) < end && line[line.index(after: current)] == "/" {
-                let remaining = String(line[current...])
-                result = result + Text(remaining)
-                    .font(AnvilFont.code)
-                    .foregroundColor(AnvilColor.textTertiary)
-                current = end
-            } else {
-                result = result + Text(String(char))
-                    .font(AnvilFont.code)
-                    .foregroundColor(AnvilColor.textPrimary)
-                current = line.index(after: current)
+                if shouldVisualize {
+                    let symbol: String = char == "\t" ? "\u{2192}" : "\u{00B7}"
+                    result = result + Text(symbol)
+                        .font(AnvilFont.code)
+                        .foregroundColor(AnvilColor.textTertiary.opacity(0.4))
+                } else {
+                    result = result + Text(String(char))
+                        .font(AnvilFont.code)
+                        .foregroundColor(colorForTokenKind(token.kind))
+                }
+                charOffset += 1
             }
         }
 
         return result
-    }
-
-    // MARK: - Tokenizer Helpers
-
-    private func consumeString(_ line: String, from start: String.Index) -> (text: String, end: String.Index) {
-        var pos = line.index(after: start)
-        while pos < line.endIndex {
-            if line[pos] == "\\" && line.index(after: pos) < line.endIndex {
-                pos = line.index(pos, offsetBy: 2)
-                continue
-            }
-            if line[pos] == "\"" {
-                pos = line.index(after: pos)
-                return (String(line[start..<pos]), pos)
-            }
-            pos = line.index(after: pos)
-        }
-        return (String(line[start..<line.endIndex]), line.endIndex)
-    }
-
-    private func consumeNumber(_ line: String, from start: String.Index) -> (text: String, end: String.Index) {
-        var pos = start
-        while pos < line.endIndex && (line[pos].isNumber || line[pos] == ".") {
-            pos = line.index(after: pos)
-        }
-        return (String(line[start..<pos]), pos)
-    }
-
-    private func consumeWord(_ line: String, from start: String.Index) -> (text: String, end: String.Index) {
-        var pos = start
-        while pos < line.endIndex && (line[pos].isLetter || line[pos].isNumber || line[pos] == "_" || line[pos] == "@") {
-            pos = line.index(after: pos)
-        }
-        return (String(line[start..<pos]), pos)
     }
 
     // MARK: - Find Match Highlighting
@@ -655,5 +878,39 @@ struct EditorView: View {
     private func gutterWidth(for lineCount: Int) -> CGFloat {
         let digits = String(lineCount).count
         return CGFloat(max(digits, 2)) * 8 + 4
+    }
+}
+
+// MARK: - Hover Popover
+
+struct HoverPopover: View {
+    let result: LSPHoverResult
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
+            // Type signature in code font
+            Text(result.typeSignature)
+                .font(AnvilFont.code)
+                .foregroundStyle(AnvilColor.textPrimary)
+                .textSelection(.enabled)
+
+            // Documentation in body font
+            if let doc = result.documentation {
+                Divider()
+
+                Text(doc)
+                    .font(AnvilFont.body)
+                    .foregroundStyle(AnvilColor.textSecondary)
+                    .lineLimit(8)
+            }
+        }
+        .padding(AnvilSpacing.sm)
+        .frame(maxWidth: 400, alignment: .leading)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .shadow(color: .black.opacity(0.2), radius: 6, y: 3)
+        .allowsHitTesting(true)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Hover documentation: \(result.typeSignature)")
     }
 }

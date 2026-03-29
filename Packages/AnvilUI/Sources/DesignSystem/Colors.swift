@@ -7,7 +7,8 @@ public enum AnvilColor {
     public static let backgroundTertiary = Color(nsColor: .underPageBackgroundColor)
     public static let backgroundElevated = Color(nsColor: .textBackgroundColor)
     public static let backgroundSidebar = Color(nsColor: .controlBackgroundColor)
-    public static let backgroundToolbar = Color(nsColor: .windowBackgroundColor).opacity(0.82)
+    /// Deprecated: prefer `.regularMaterial` or `.bar` on toolbar surfaces.
+    public static let backgroundToolbar = Color(nsColor: .windowBackgroundColor)
 
     // Borders — adaptive system colors
     public static let borderSubtle = Color(nsColor: .separatorColor)

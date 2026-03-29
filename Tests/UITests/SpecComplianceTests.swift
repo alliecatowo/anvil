@@ -655,7 +655,8 @@ final class SpecComplianceTests: XCTestCase {
         // Type then clear
         paletteSearchField.typeText("ticket")
         Thread.sleep(forTimeInterval: 0.2)
-        paletteSearchField.selectText()
+        paletteSearchField.click()
+        app.typeKey("a", modifierFlags: .command)
         app.typeKey(.delete, modifierFlags: [])
         Thread.sleep(forTimeInterval: 0.2)
 

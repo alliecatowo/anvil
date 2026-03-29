@@ -1,5 +1,6 @@
 import SwiftUI
 import AnvilACP
+import AnvilApplication
 import AnvilDomain
 import AnvilEditor
 import AnvilGit
@@ -49,6 +50,7 @@ struct FileTreeNode: Identifiable {
     let name: String
     let isFolder: Bool
     let children: [FileTreeNode]
+    /// Absolute path on disk — set for both files and folders.
     let filePath: String?
 
     init(name: String, isFolder: Bool = false, children: [FileTreeNode] = [], filePath: String? = nil) {
@@ -135,6 +137,10 @@ struct InlineEditDiff {
 final class EditorViewModel: ObservableObject {
     @Published var openFiles: [EditorFile] = []
     @Published var selectedFileId: UUID?
+    /// Tracks which files have been modified since last save.
+    @Published var dirtyFileIds: Set<UUID> = []
+    /// Recently edited file paths (most recent first), used by auto-context scoring.
+    @Published var recentlyEditedPaths: [String] = []
     @Published var cursorLine: Int = 12
     @Published var cursorColumn: Int = 1
     @Published var isSymbolOutlineVisible: Bool = true
@@ -149,6 +155,7 @@ final class EditorViewModel: ObservableObject {
     @Published var gitLineChanges: [Int: GitLineChange] = [:]
     @Published var showBracketMatching: Bool = true
     @Published var codeFoldingEnabled: Bool = true
+    @Published var isMinimapVisible: Bool = false
     /// Line numbers (1-based) that are currently collapsed.
     @Published var collapsedLines: Set<Int> = []
 
@@ -165,6 +172,156 @@ final class EditorViewModel: ObservableObject {
     // MARK: Ghost Text (AI inline completions)
     @Published var ghostCompletion: String? = nil
     private var ghostDebounceTask: Task<Void, Never>? = nil
+
+    // MARK: LSP Completion Popup
+    @Published var isCompletionPopupVisible: Bool = false
+    @Published var completionItems: [CompletionItem] = []
+    @Published var completionSelectedIndex: Int = 0
+    private var completionDebounceTask: Task<Void, Never>? = nil
+
+    // MARK: Go-to-Definition
+    @Published var definitionNotFoundMessage: String? = nil
+    private var definitionNotFoundDismissTask: Task<Void, Never>? = nil
+
+    // MARK: LSP Hover
+    @Published var hoverResult: LSPHoverResult? = nil
+    @Published var hoverLine: Int = 0
+    @Published var hoverColumn: Int = 0
+    private var hoverDebounceTask: Task<Void, Never>? = nil
+
+    // MARK: - Command Palette Integration
+    /// Set by the command palette to trigger a rename dialog for a specific file path.
+    @Published var pendingRenameFilePath: String? = nil
+
+    // MARK: LSP Diagnostics
+    @Published var isProblemsVisible: Bool = false
+
+    /// Diagnostics for the currently open file (1-based line numbers).
+    var currentFileDiagnostics: [LSPDiagnostic] {
+        guard let file = selectedFile else { return [] }
+        let uri = "file://\(file.path)"
+        return lspViewModel.diagnostics.filter { $0.uri == uri }
+    }
+
+    /// All diagnostics grouped by file URI.
+    var diagnosticsByFile: [(uri: String, items: [LSPDiagnostic])] {
+        let grouped = Dictionary(grouping: lspViewModel.diagnostics, by: \.uri)
+        return grouped.map { (uri: $0.key, items: $0.value) }
+            .sorted { $0.uri < $1.uri }
+    }
+
+    /// Error count for a given file path.
+    func diagnosticCount(forPath path: String) -> (errors: Int, warnings: Int) {
+        let uri = "file://\(path)"
+        let items = lspViewModel.diagnostics.filter { $0.uri == uri }
+        let errors = items.filter { $0.severity == .error }.count
+        let warnings = items.filter { $0.severity == .warning }.count
+        return (errors, warnings)
+    }
+
+    /// Diagnostics on a specific line (1-based).
+    func diagnosticsOnLine(_ line: Int) -> [LSPDiagnostic] {
+        currentFileDiagnostics.filter { $0.line + 1 == line }
+    }
+
+    /// Navigate to a diagnostic's location.
+    func navigateToDiagnostic(_ diagnostic: LSPDiagnostic) {
+        // Extract file path from URI
+        let path = diagnostic.uri.hasPrefix("file://")
+            ? String(diagnostic.uri.dropFirst(7))
+            : diagnostic.uri
+
+        // Open file if not already open
+        if selectedFile?.path != path {
+            openFileFromTree(path)
+        }
+
+        // Move cursor to diagnostic location (convert 0-based to 1-based)
+        cursorLine = diagnostic.line + 1
+        cursorColumn = diagnostic.character + 1
+    }
+
+    // MARK: Go-to-Definition (Cmd+Click / F12)
+
+    /// Request go-to-definition from LSP and navigate to the result.
+    func goToDefinition(line: Int, column: Int) {
+        guard let file = selectedFile else { return }
+        let uri = "file://\(file.path)"
+
+        Task { @MainActor in
+            let location = await lspViewModel.definition(
+                uri: uri,
+                line: line - 1,      // convert 1-based to 0-based
+                character: column - 1
+            )
+
+            if let location {
+                navigateToDefinitionLocation(location)
+            } else {
+                showDefinitionNotFound()
+            }
+        }
+    }
+
+    /// Navigate to an LSP location, opening the file if needed.
+    private func navigateToDefinitionLocation(_ location: LSPLocation) {
+        let path = location.uri.hasPrefix("file://")
+            ? String(location.uri.dropFirst(7))
+            : location.uri
+
+        if selectedFile?.path != path {
+            openFileFromTree(path)
+        }
+
+        cursorLine = location.line + 1       // 0-based → 1-based
+        cursorColumn = location.character + 1
+    }
+
+    /// Show a brief "No definition found" message that auto-dismisses.
+    private func showDefinitionNotFound() {
+        definitionNotFoundMessage = "No definition found"
+        definitionNotFoundDismissTask?.cancel()
+        definitionNotFoundDismissTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
+            definitionNotFoundMessage = nil
+        }
+    }
+
+    // MARK: LSP Hover Documentation
+
+    /// Trigger a hover request after a 500ms debounce.
+    func triggerHover(line: Int, column: Int) {
+        hoverDebounceTask?.cancel()
+        hoverDebounceTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            await requestHover(line: line, column: column)
+        }
+    }
+
+    /// Cancel any pending hover.
+    func dismissHover() {
+        hoverDebounceTask?.cancel()
+        hoverResult = nil
+    }
+
+    private func requestHover(line: Int, column: Int) async {
+        guard let file = selectedFile else { return }
+        let uri = "file://\(file.path)"
+        let result = await lspViewModel.hover(
+            uri: uri,
+            line: line - 1,      // 1-based → 0-based
+            character: column - 1
+        )
+        if let result, !result.contents.isEmpty {
+            hoverResult = result
+            hoverLine = line
+            hoverColumn = column
+        } else {
+            hoverResult = nil
+        }
+    }
 
     // MARK: Inline Edit (⌘K)
     @Published var inlineEditPhase: InlineEditPhase = .hidden
@@ -230,6 +387,14 @@ final class EditorViewModel: ObservableObject {
 
     /// The project root path, if loaded from a real directory.
     private var projectPath: String?
+
+    // MARK: - EventBus
+
+    private var eventBus: EventBus?
+
+    func configure(eventBus: EventBus) {
+        self.eventBus = eventBus
+    }
 
     init() {
         // Default empty state — call loadFileTree(from:) to populate from a real directory.
@@ -299,6 +464,10 @@ final class EditorViewModel: ObservableObject {
 
         loadGitGutterForSelectedFile()
 
+        Task { [eventBus] in
+            await eventBus?.publish(FileOpenedEvent(filePath: path))
+        }
+
         // Notify LSP about the newly opened document
         let fileUri = "file://\(path)"
         Task {
@@ -319,7 +488,7 @@ final class EditorViewModel: ObservableObject {
     private func convertToTreeNode(_ node: FileSystemService.FileNode) -> FileTreeNode {
         if node.isDirectory {
             let children = (node.children ?? []).map { convertToTreeNode($0) }
-            return FileTreeNode(name: node.name, isFolder: true, children: children, filePath: nil)
+            return FileTreeNode(name: node.name, isFolder: true, children: children, filePath: node.path)
         } else {
             return FileTreeNode(name: node.name, isFolder: false, children: [], filePath: node.path)
         }
@@ -369,6 +538,7 @@ final class EditorViewModel: ObservableObject {
 
     func closeFile(_ id: UUID) {
         openFiles.removeAll { $0.id == id }
+        dirtyFileIds.remove(id)
         if selectedFileId == id {
             selectedFileId = openFiles.first?.id
         }
@@ -386,7 +556,132 @@ final class EditorViewModel: ObservableObject {
     /// Save the currently selected file's content to disk.
     func saveCurrentFile() {
         guard let file = selectedFile else { return }
-        saveFile(atPath: file.path, content: file.content)
+        if saveFile(atPath: file.path, content: file.content) {
+            dirtyFileIds.remove(file.id)
+            invalidateBlameCache(for: file.path)
+            Task { [eventBus] in
+                await eventBus?.publish(FileSavedEvent(filePath: file.path))
+            }
+        }
+    }
+
+    /// Mark a file as dirty (unsaved changes).
+    func markDirty(_ fileId: UUID) {
+        dirtyFileIds.insert(fileId)
+        // Track recently edited paths for auto-context scoring
+        if let file = openFiles.first(where: { $0.id == fileId }) {
+            recentlyEditedPaths.removeAll { $0 == file.path }
+            recentlyEditedPaths.insert(file.path, at: 0)
+            if recentlyEditedPaths.count > 20 {
+                recentlyEditedPaths = Array(recentlyEditedPaths.prefix(20))
+            }
+        }
+    }
+
+    /// Whether the given file has unsaved changes.
+    func isFileDirty(_ fileId: UUID) -> Bool {
+        dirtyFileIds.contains(fileId)
+    }
+
+    // MARK: - File Tree Operations
+
+    /// Create a new empty file at the given directory path and refresh the tree.
+    func createNewFile(inDirectory dirPath: String, name: String, using service: FileSystemService) {
+        let filePath = (dirPath as NSString).appendingPathComponent(name)
+        let created = FileManager.default.createFile(atPath: filePath, contents: Data(), attributes: nil)
+        if created, let root = projectPath {
+            loadFileTree(from: root, using: service)
+            openFileFromTree(filePath)
+        }
+    }
+
+    /// Delete a file or folder at the given path and refresh the tree.
+    func deleteFileOrFolder(atPath path: String, using service: FileSystemService) {
+        // Close the file if it's open
+        if let openFile = openFiles.first(where: { $0.path == path }) {
+            closeFile(openFile.id)
+        }
+        try? FileManager.default.removeItem(atPath: path)
+        if let root = projectPath {
+            loadFileTree(from: root, using: service)
+        }
+    }
+
+    /// Rename a file or folder and refresh the tree.
+    func renameFileOrFolder(atPath oldPath: String, to newName: String, using service: FileSystemService) {
+        let parentDir = (oldPath as NSString).deletingLastPathComponent
+        let newPath = (parentDir as NSString).appendingPathComponent(newName)
+        try? FileManager.default.moveItem(atPath: oldPath, toPath: newPath)
+
+        // Update any open file that was at the old path
+        if let idx = openFiles.firstIndex(where: { $0.path == oldPath }) {
+            let old = openFiles[idx]
+            let relPath: String
+            if let root = projectPath, newPath.hasPrefix(root) {
+                var rel = String(newPath.dropFirst(root.count))
+                if rel.hasPrefix("/") { rel = String(rel.dropFirst()) }
+                relPath = rel
+            } else {
+                relPath = newPath
+            }
+            let updated = EditorFile(name: newName, path: newPath, content: old.content, language: old.language, relativePath: relPath)
+            openFiles[idx] = updated
+            if selectedFileId == old.id {
+                selectedFileId = updated.id
+            }
+        }
+
+        if let root = projectPath {
+            loadFileTree(from: root, using: service)
+        }
+    }
+
+    // MARK: - File Watching
+
+    private var fileWatcherSource: DispatchSourceFileSystemObject?
+    private var watchedDirectoryFD: Int32 = -1
+
+    /// Start watching the project directory for external changes.
+    func startFileWatching() {
+        guard let root = projectPath else { return }
+        stopFileWatching()
+
+        let fd = open(root, O_EVTONLY)
+        guard fd >= 0 else { return }
+        watchedDirectoryFD = fd
+
+        let source = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: fd,
+            eventMask: [.write, .rename, .delete],
+            queue: .global(qos: .utility)
+        )
+        source.setEventHandler { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.handleExternalFileChange()
+            }
+        }
+        source.setCancelHandler {
+            close(fd)
+        }
+        source.resume()
+        fileWatcherSource = source
+    }
+
+    /// Stop watching for external file changes.
+    func stopFileWatching() {
+        fileWatcherSource?.cancel()
+        fileWatcherSource = nil
+        watchedDirectoryFD = -1
+    }
+
+    private func handleExternalFileChange() {
+        guard let root = projectPath, let service = container?.fileSystemService else { return }
+        // Reload tree
+        loadFileTree(from: root, using: service)
+        // Reload any open files that aren't dirty
+        for file in openFiles where !dirtyFileIds.contains(file.id) {
+            reloadFile(atPath: file.path)
+        }
     }
 
     /// Reload an open file from disk, refreshing its in-memory content.
@@ -554,6 +849,95 @@ final class EditorViewModel: ObservableObject {
         gitLineChanges = changes
     }
 
+    // MARK: - Git Blame
+
+    @Published var isBlameVisible: Bool = false
+    /// Maps 1-based line number to blame info for the currently open file.
+    @Published var blameLines: [Int: BlameLine] = [:]
+    /// Cache of blame data keyed by absolute file path. Invalidated on save.
+    private var blameCache: [String: [BlameLine]] = [:]
+    /// The currently loading blame task, for cancellation.
+    private var blameTask: Task<Void, Never>?
+
+    func toggleBlame() {
+        isBlameVisible.toggle()
+        if isBlameVisible {
+            loadBlameForSelectedFile()
+        } else {
+            blameLines = [:]
+        }
+    }
+
+    /// Fetch blame data for the currently selected file via the git adapter.
+    func loadBlameForSelectedFile() {
+        guard isBlameVisible, let file = selectedFile, let container else {
+            blameLines = [:]
+            return
+        }
+
+        // Use cache if available
+        if let cached = blameCache[file.path] {
+            blameLines = Dictionary(uniqueKeysWithValues: cached.map { ($0.lineNumber, $0) })
+            return
+        }
+
+        guard let adapter = container.getOrCreateGitAdapter() else { return }
+
+        // Compute relative path from project root
+        let relativePath: String
+        if let pp = projectPath, file.path.hasPrefix(pp) {
+            var rel = String(file.path.dropFirst(pp.count))
+            if rel.hasPrefix("/") { rel = String(rel.dropFirst()) }
+            relativePath = rel
+        } else {
+            relativePath = file.path
+        }
+
+        blameTask?.cancel()
+        blameTask = Task { @MainActor in
+            do {
+                let lines = try await adapter.blame(file: relativePath, ref: nil)
+                guard !Task.isCancelled else { return }
+                blameCache[file.path] = lines
+                blameLines = Dictionary(uniqueKeysWithValues: lines.map { ($0.lineNumber, $0) })
+            } catch {
+                blameLines = [:]
+            }
+        }
+    }
+
+    /// Invalidate blame cache for a specific file (call on save).
+    func invalidateBlameCache(for path: String) {
+        blameCache.removeValue(forKey: path)
+        if isBlameVisible, selectedFile?.path == path {
+            loadBlameForSelectedFile()
+        }
+    }
+
+    /// Format a blame line for compact gutter display.
+    static func compactBlame(_ blame: BlameLine) -> String {
+        let author = blame.author.components(separatedBy: " ").first ?? blame.author
+        let truncated = String(author.prefix(10))
+        let relative = Self.relativeDate(blame.date)
+        return "\(truncated) \(relative)"
+    }
+
+    /// Returns a human-readable relative date string.
+    private static func relativeDate(_ date: Date) -> String {
+        let interval = Date.now.timeIntervalSince(date)
+        let minutes = Int(interval / 60)
+        if minutes < 1 { return "now" }
+        if minutes < 60 { return "\(minutes)m" }
+        let hours = minutes / 60
+        if hours < 24 { return "\(hours)h" }
+        let days = hours / 24
+        if days < 30 { return "\(days)d" }
+        let months = days / 30
+        if months < 12 { return "\(months)mo" }
+        let years = days / 365
+        return "\(years)y"
+    }
+
     // MARK: - Bracket Matching
 
     struct BracketPosition: Equatable {
@@ -647,6 +1031,134 @@ final class EditorViewModel: ObservableObject {
         if pair.0.line == lineNumber { cols.insert(pair.0.column) }
         if pair.1.line == lineNumber { cols.insert(pair.1.column) }
         return cols
+    }
+
+    // MARK: - Bracket Auto-Close
+
+    /// Pairs that auto-close when the opening character is typed.
+    static let autoClosePairs: [(open: Character, close: Character)] = [
+        ("(", ")"), ("[", "]"), ("{", "}"), ("\"", "\""), ("'", "'")
+    ]
+
+    /// Returns the closing character for an auto-close pair, or nil.
+    func closingCharacter(for char: Character) -> Character? {
+        Self.autoClosePairs.first(where: { $0.open == char })?.close
+    }
+
+    /// Insert a character at the cursor, auto-closing brackets/quotes.
+    /// If `selectedText` is non-empty, wraps the selection instead.
+    /// Returns true if handled (caller should not insert the character normally).
+    func insertWithAutoClose(char: Character, selectedText: String?) -> Bool {
+        guard let file = selectedFile,
+              let fileIndex = openFiles.firstIndex(where: { $0.id == file.id }) else { return false }
+
+        var lines = file.content.components(separatedBy: "\n")
+        let lineIdx = cursorLine - 1
+        guard lineIdx >= 0, lineIdx < lines.count else { return false }
+
+        let line = lines[lineIdx]
+        let col = min(cursorColumn - 1, line.count)
+
+        guard let close = closingCharacter(for: char) else { return false }
+
+        // For quotes, skip auto-close if cursor is right before the same quote (overtype)
+        if char == close {
+            let colIdx = line.index(line.startIndex, offsetBy: col, limitedBy: line.endIndex) ?? line.endIndex
+            if colIdx < line.endIndex && line[colIdx] == char {
+                // Overtype: just move cursor past the existing quote
+                cursorColumn = col + 2
+                return true
+            }
+        }
+
+        // Wrap selection if text is selected
+        if let sel = selectedText, !sel.isEmpty {
+            let range = inlineEditSelectedRange
+            let startLineIdx = range.lowerBound - 1
+            let endLineIdx = range.upperBound - 1
+            guard startLineIdx >= 0, endLineIdx < lines.count else { return false }
+
+            // Insert open before first selected line content, close after last
+            let openStr = String(char)
+            let closeStr = String(close)
+
+            if startLineIdx == endLineIdx {
+                // Single line selection — wrap inline
+                let sLine = lines[startLineIdx]
+                let insertCol = min(col, sLine.count)
+                let insertIdx = sLine.index(sLine.startIndex, offsetBy: insertCol)
+                var newLine = sLine
+                // Find end of selection (approximate: use the selection text length)
+                let endCol = insertCol + sel.count
+                let endIdx = newLine.index(newLine.startIndex, offsetBy: min(endCol, newLine.count))
+                newLine.insert(contentsOf: closeStr, at: endIdx)
+                newLine.insert(contentsOf: openStr, at: insertIdx)
+                lines[startLineIdx] = newLine
+            } else {
+                // Multi-line: insert open at start of first line's content, close at end of last
+                lines[startLineIdx] = openStr + lines[startLineIdx]
+                lines[endLineIdx] = lines[endLineIdx] + closeStr
+            }
+
+            let newContent = lines.joined(separator: "\n")
+            let updated = EditorFile(name: file.name, path: file.path, content: newContent, language: file.language, relativePath: file.relativePath)
+            openFiles[fileIndex] = updated
+            selectedFileId = updated.id
+            markDirty(updated.id)
+            return true
+        }
+
+        // Normal auto-close: insert both open and close at cursor
+        let insertIdx = line.index(line.startIndex, offsetBy: col)
+        var newLine = line
+        newLine.insert(close, at: insertIdx)
+        newLine.insert(char, at: insertIdx)
+        lines[lineIdx] = newLine
+        cursorColumn = col + 2 // cursor between the pair
+
+        let newContent = lines.joined(separator: "\n")
+        let updated = EditorFile(name: file.name, path: file.path, content: newContent, language: file.language, relativePath: file.relativePath)
+        openFiles[fileIndex] = updated
+        selectedFileId = updated.id
+        markDirty(updated.id)
+        return true
+    }
+
+    /// Delete an empty bracket/quote pair when backspace is pressed.
+    /// Returns true if an empty pair was deleted.
+    func deleteEmptyPairAtCursor() -> Bool {
+        guard let file = selectedFile,
+              let fileIndex = openFiles.firstIndex(where: { $0.id == file.id }) else { return false }
+
+        var lines = file.content.components(separatedBy: "\n")
+        let lineIdx = cursorLine - 1
+        guard lineIdx >= 0, lineIdx < lines.count else { return false }
+
+        let line = lines[lineIdx]
+        let col = cursorColumn - 1
+        guard col > 0, col < line.count else { return false }
+
+        let prevIdx = line.index(line.startIndex, offsetBy: col - 1)
+        let nextIdx = line.index(line.startIndex, offsetBy: col)
+        let prevChar = line[prevIdx]
+        let nextChar = line[nextIdx]
+
+        // Check if prev and next form an auto-close pair
+        let isPair = Self.autoClosePairs.contains(where: { $0.open == prevChar && $0.close == nextChar })
+        guard isPair else { return false }
+
+        var newLine = line
+        newLine.remove(at: newLine.index(newLine.startIndex, offsetBy: col))
+        newLine.remove(at: newLine.index(newLine.startIndex, offsetBy: col - 1))
+        lines[lineIdx] = newLine
+        cursorColumn = col // move back one
+
+        let newContent = lines.joined(separator: "\n")
+        let updated = EditorFile(name: file.name, path: file.path, content: newContent, language: file.language, relativePath: file.relativePath)
+        openFiles[fileIndex] = updated
+        selectedFileId = updated.id
+        markDirty(updated.id)
+        return true
     }
 
     // MARK: - Code Folding
@@ -787,6 +1299,7 @@ final class EditorViewModel: ObservableObject {
         let updated = EditorFile(name: file.name, path: file.path, content: lines.joined(separator: "\n"), language: file.language, relativePath: file.relativePath)
         openFiles[fileIndex] = updated
         selectedFileId = updated.id
+        markDirty(updated.id)
         updateFindMatches()
 
         if currentMatchIndex >= findMatches.count && !findMatches.isEmpty {
@@ -817,6 +1330,7 @@ final class EditorViewModel: ObservableObject {
         let updated = EditorFile(name: file.name, path: file.path, content: content, language: file.language, relativePath: file.relativePath)
         openFiles[fileIndex] = updated
         selectedFileId = updated.id
+        markDirty(updated.id)
         updateFindMatches()
     }
 
@@ -965,6 +1479,72 @@ final class EditorViewModel: ObservableObject {
         ghostCompletion = nil
     }
 
+    // MARK: - LSP Completion Popup
+
+    /// Trigger LSP completion request after cursor moves (debounced 150ms).
+    func triggerCompletionPopup(fileContent: String) {
+        completionDebounceTask?.cancel()
+
+        // Don't show popup if ghost text is active
+        if ghostCompletion != nil {
+            dismissCompletionPopup()
+            return
+        }
+
+        guard let file = selectedFile else { return }
+
+        completionDebounceTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 150_000_000)
+            guard !Task.isCancelled else { return }
+
+            let uri = "file://\(file.path)"
+            // LSP uses 0-based line/character
+            await lspViewModel.requestCompletion(
+                uri: uri,
+                line: cursorLine - 1,
+                character: cursorColumn - 1
+            )
+
+            let items = lspViewModel.completions
+            if items.isEmpty {
+                dismissCompletionPopup()
+            } else {
+                completionItems = items
+                completionSelectedIndex = 0
+                isCompletionPopupVisible = true
+            }
+        }
+    }
+
+    /// Move selection up in the completion popup.
+    func completionMoveUp() {
+        guard isCompletionPopupVisible, !completionItems.isEmpty else { return }
+        completionSelectedIndex = (completionSelectedIndex - 1 + completionItems.count) % completionItems.count
+    }
+
+    /// Move selection down in the completion popup.
+    func completionMoveDown() {
+        guard isCompletionPopupVisible, !completionItems.isEmpty else { return }
+        completionSelectedIndex = (completionSelectedIndex + 1) % completionItems.count
+    }
+
+    /// Accept the currently selected completion item. Returns the text to insert.
+    func acceptCompletion() -> String? {
+        guard isCompletionPopupVisible,
+              completionSelectedIndex < completionItems.count else { return nil }
+        let item = completionItems[completionSelectedIndex]
+        dismissCompletionPopup()
+        return item.insertText ?? item.label
+    }
+
+    /// Dismiss the completion popup.
+    func dismissCompletionPopup() {
+        completionDebounceTask?.cancel()
+        isCompletionPopupVisible = false
+        completionItems = []
+        completionSelectedIndex = 0
+    }
+
     // MARK: - Inline Edit (⌘K)
 
     /// Open the inline edit prompt bar for the given line range.
@@ -1045,6 +1625,7 @@ final class EditorViewModel: ObservableObject {
         )
         openFiles[fileIndex] = updated
         selectedFileId = updated.id
+        markDirty(updated.id)
 
         // Move cursor to end of edited region
         cursorLine = diff.startLine + diff.proposedLines.count - 1

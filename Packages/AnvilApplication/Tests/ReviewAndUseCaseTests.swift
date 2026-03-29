@@ -656,9 +656,18 @@ private actor SpySourceControlPort: SourceControlPort {
     func diff(from: String?, to: String?) async throws -> [FileDiff] { [] }
     func stagedDiff() async throws -> [FileDiff] { [] }
     func unstagedDiff() async throws -> [FileDiff] { [] }
+    func workingTreeStatus() async throws -> [GitFileChange] { [] }
+    func workingTreeChanges() async throws -> (staged: [GitFileChange], unstaged: [GitFileChange], untracked: [GitFileChange]) { ([], [], []) }
     func createBranch(name: String, from: String?) async throws -> Branch { fatalError("not exercised") }
     func deleteBranch(name: String, force: Bool) async throws {}
     func switchBranch(name: String) async throws {}
+    func fetch(remote: String) async throws {}
+    func pull(remote: String, rebase: Bool) async throws {}
+    func push(remote: String, setUpstream: Bool, force: Bool) async throws {}
+    func listRemotes() async throws -> [GitRemote] { [] }
+    func addRemote(name: String, url: String) async throws {}
+    func removeRemote(name: String) async throws {}
+    func renameRemote(oldName: String, newName: String) async throws {}
     func merge(source: String, into: String, strategy: MergeStrategy) async throws -> MergeResult { fatalError("not exercised") }
     func rebase(branch: String, onto: String) async throws {}
     func cherryPick(commit: String) async throws {}
@@ -667,12 +676,16 @@ private actor SpySourceControlPort: SourceControlPort {
     func fileHistory(file: String) async throws -> [Commit] { [] }
     func stash(message: String?) async throws {}
     func stashPop() async throws {}
+    func stashApply(index: Int) async throws {}
+    func stashDrop(index: Int) async throws {}
     func stashList() async throws -> [Stash] { [] }
     func unstage(paths: [String]) async throws {}
     func createWorktree(branch: String, path: String) async throws {}
     func removeWorktree(path: String) async throws {}
     func worktrees() async throws -> [Worktree] { [] }
     func tags() async throws -> [AnvilDomain.Tag] { [] }
+    func createTag(name: String, message: String?, commit: String?) async throws -> AnvilDomain.Tag { fatalError("not exercised") }
+    func deleteTag(name: String) async throws {}
 }
 
 @Suite("AutoCommitUseCase")
@@ -768,9 +781,18 @@ private actor SpyWorktreePort: SourceControlPort {
     func diff(from: String?, to: String?) async throws -> [FileDiff] { [] }
     func stagedDiff() async throws -> [FileDiff] { [] }
     func unstagedDiff() async throws -> [FileDiff] { [] }
+    func workingTreeStatus() async throws -> [GitFileChange] { [] }
+    func workingTreeChanges() async throws -> (staged: [GitFileChange], unstaged: [GitFileChange], untracked: [GitFileChange]) { ([], [], []) }
     func createBranch(name: String, from: String?) async throws -> Branch { fatalError("not exercised") }
     func deleteBranch(name: String, force: Bool) async throws {}
     func switchBranch(name: String) async throws {}
+    func fetch(remote: String) async throws {}
+    func pull(remote: String, rebase: Bool) async throws {}
+    func push(remote: String, setUpstream: Bool, force: Bool) async throws {}
+    func listRemotes() async throws -> [GitRemote] { [] }
+    func addRemote(name: String, url: String) async throws {}
+    func removeRemote(name: String) async throws {}
+    func renameRemote(oldName: String, newName: String) async throws {}
     func merge(source: String, into: String, strategy: MergeStrategy) async throws -> MergeResult { fatalError("not exercised") }
     func rebase(branch: String, onto: String) async throws {}
     func cherryPick(commit: String) async throws {}
@@ -779,11 +801,15 @@ private actor SpyWorktreePort: SourceControlPort {
     func fileHistory(file: String) async throws -> [Commit] { [] }
     func stash(message: String?) async throws {}
     func stashPop() async throws {}
+    func stashApply(index: Int) async throws {}
+    func stashDrop(index: Int) async throws {}
     func stashList() async throws -> [Stash] { [] }
     func unstage(paths: [String]) async throws {}
     func removeWorktree(path: String) async throws {}
     func worktrees() async throws -> [Worktree] { [] }
     func tags() async throws -> [AnvilDomain.Tag] { [] }
+    func createTag(name: String, message: String?, commit: String?) async throws -> AnvilDomain.Tag { fatalError("not exercised") }
+    func deleteTag(name: String) async throws {}
 }
 
 @Suite("CreateWorktreeUseCase")

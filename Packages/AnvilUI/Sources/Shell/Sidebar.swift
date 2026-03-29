@@ -1,41 +1,8 @@
 import SwiftUI
-import AnvilTerminal
 
-public struct Sidebar: View {
-    @EnvironmentObject var appState: AppState
-
-    public init() {}
-
-    public var body: some View {
-        VStack(spacing: 0) {
-            if appState.isSidebarCollapsed {
-                CollapsedSidebar()
-            } else {
-                // Delegate to space-specific sidebar
-                switch appState.currentSpace {
-                case .plan:
-                    IntentSidebar(viewModel: appState.intentViewModel)
-                case .build:
-                    BuildSidebar()
-                case .review:
-                    ReviewSidebar(viewModel: appState.reviewViewModel)
-                case .operate:
-                    OperateSidebar()
-                case .library:
-                    LibrarySidebar()
-                }
-            }
-        }
-        .background(.regularMaterial)
-        .overlay(alignment: .trailing) {
-            Rectangle()
-                .fill(AnvilColor.borderSubtle)
-                .frame(width: 1)
-        }
-    }
-}
-
-struct CollapsedSidebar: View {
+/// Icon rail — always visible 44pt strip with space icons.
+/// Matches Xcode Activity Bar behavior: never collapses.
+public struct IconRail: View {
     @EnvironmentObject var appState: AppState
 
     private struct SpaceEntry: Identifiable {
@@ -53,17 +20,10 @@ struct CollapsedSidebar: View {
         SpaceEntry(space: .library, icon: "books.vertical", label: "Library"),
     ]
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         VStack(spacing: 0) {
-            RailButton(
-                icon: "sidebar.leading",
-                title: "Expand Navigation",
-                isActive: false,
-                action: { appState.isSidebarCollapsed = false }
-            )
-
-            railDivider
-
             VStack(spacing: 4) {
                 ForEach(spaces) { entry in
                     RailButton(
@@ -92,6 +52,12 @@ struct CollapsedSidebar: View {
             )
         }
         .padding(.vertical, AnvilSpacing.sm)
+        .background(.regularMaterial)
+        .overlay(alignment: .trailing) {
+            Rectangle()
+                .fill(AnvilColor.borderSubtle)
+                .frame(width: 1)
+        }
     }
 
     private var railDivider: some View {
@@ -101,6 +67,54 @@ struct CollapsedSidebar: View {
             .padding(.horizontal, AnvilSpacing.sm)
             .padding(.vertical, AnvilSpacing.xs)
             .accessibilityHidden(true)
+    }
+}
+
+/// Content sidebar — the 260pt space-specific panel that collapses with the sidebar toggle.
+public struct ContentSidebar: View {
+    @EnvironmentObject var appState: AppState
+
+    public init() {}
+
+    public var body: some View {
+        VStack(spacing: 0) {
+            switch appState.currentSpace {
+            case .plan:
+                IntentSidebar(viewModel: appState.intentViewModel)
+            case .build:
+                BuildSidebar()
+            case .review:
+                ReviewSidebar(viewModel: appState.reviewViewModel)
+            case .operate:
+                OperateSidebar()
+            case .library:
+                LibrarySidebar()
+            }
+        }
+        .background(.regularMaterial)
+        .overlay(alignment: .trailing) {
+            Rectangle()
+                .fill(AnvilColor.borderSubtle)
+                .frame(width: 1)
+        }
+    }
+}
+
+/// Legacy Sidebar wrapper — kept for any remaining references.
+/// New code should use IconRail + ContentSidebar directly.
+public struct Sidebar: View {
+    @EnvironmentObject var appState: AppState
+
+    public init() {}
+
+    public var body: some View {
+        HStack(spacing: 0) {
+            IconRail()
+                .frame(width: AnvilSpacing.iconRailWidth)
+            if !appState.isSidebarCollapsed {
+                ContentSidebar()
+            }
+        }
     }
 }
 
@@ -142,29 +156,5 @@ private struct RailButton: View {
                 isHovered = hovering
             }
         }
-    }
-}
-
-struct TerminalSessionList: View {
-    @ObservedObject var viewModel: TerminalViewModel
-    var onSelect: ((UUID) -> Void)?
-
-    var body: some View {
-        ForEach(viewModel.sessions) { session in
-            AnvilSidebarRowButton(
-                title: session.title,
-                icon: session.isRunning ? "terminal" : "terminal.fill",
-                subtitle: session.isRunning ? "running" : "exited",
-                isActive: isSelected(session),
-                action: {
-                    viewModel.selectTab(session.id)
-                    onSelect?(session.id)
-                }
-            )
-        }
-    }
-
-    private func isSelected(_ session: TerminalSession) -> Bool {
-        viewModel.selectedSessionId == session.id
     }
 }

@@ -118,6 +118,23 @@ public final class LSPClient: Sendable {
         }
     }
 
+    // MARK: - Hover
+
+    /// Request hover documentation at a given position.
+    public func hover(uri: String, line: Int, character: Int) async -> LSPHoverResult? {
+        let params: [String: Any] = [
+            "textDocument": ["uri": uri],
+            "position": ["line": line, "character": character]
+        ]
+        guard let paramsData = try? JSONSerialization.data(withJSONObject: params) else { return nil }
+        do {
+            let data = try await transport.sendRequest(method: "textDocument/hover", paramsData: paramsData)
+            return Self.parseHoverResponse(data)
+        } catch {
+            return nil
+        }
+    }
+
     // MARK: - Diagnostics Stream
 
     /// Returns an `AsyncStream` of diagnostic batches published by the server.
@@ -191,6 +208,35 @@ public final class LSPClient: Sendable {
               let line = start["line"] as? Int,
               let character = start["character"] as? Int else { return nil }
         return LSPLocation(uri: uri, line: line, character: character)
+    }
+
+    private static func parseHoverResponse(_ data: Data) -> LSPHoverResult? {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let contents = json["contents"] else { return nil }
+
+        // contents can be: MarkedString (string), MarkupContent ({kind, value}), or array
+        if let markup = contents as? [String: Any],
+           let value = markup["value"] as? String {
+            let kind = markup["kind"] as? String ?? "plaintext"
+            return LSPHoverResult(contents: value, isMarkdown: kind == "markdown")
+        }
+
+        if let str = contents as? String {
+            return LSPHoverResult(contents: str, isMarkdown: false)
+        }
+
+        // Array of MarkedString
+        if let arr = contents as? [Any] {
+            let parts: [String] = arr.compactMap { item in
+                if let s = item as? String { return s }
+                if let dict = item as? [String: Any], let v = dict["value"] as? String { return v }
+                return nil
+            }
+            guard !parts.isEmpty else { return nil }
+            return LSPHoverResult(contents: parts.joined(separator: "\n\n"), isMarkdown: true)
+        }
+
+        return nil
     }
 }
 

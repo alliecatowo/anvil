@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 public struct Keybinding: Identifiable, Sendable {
     public let id: String
@@ -60,6 +61,8 @@ public enum AnvilKeybindings {
         Keybinding(id: "ctrl-g", key: "g", modifiers: .control, action: "goToLine", label: "Go to Line"),
         Keybinding(id: "cmd-backslash", key: "\\", modifiers: .command, action: "splitVertical", context: .editor, label: "Split Editor Right"),
         Keybinding(id: "cmd-shift-backslash", key: "\\", modifiers: [.command, .shift], action: "splitHorizontal", context: .editor, label: "Split Editor Down"),
+        Keybinding(id: "cmd-slash", key: "/", modifiers: .command, action: "toggleComment", context: .editor, label: "Toggle Line Comment"),
+        Keybinding(id: "f12", key: KeyEquivalent(Character(UnicodeScalar(NSF12FunctionKey)!)), action: "goToDefinition", context: .editor, label: "Go to Definition"),
 
         // MARK: - List Navigation
 

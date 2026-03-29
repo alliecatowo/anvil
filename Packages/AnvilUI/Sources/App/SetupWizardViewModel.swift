@@ -25,6 +25,7 @@ public struct DetectedTool: Identifiable, Sendable {
 
 public enum ACPProviderOption: String, CaseIterable, Identifiable, Sendable {
     case claudeCLI = "claude-cli"
+    case codexACP = "codex-acp"
     case anthropic = "anthropic"
     case openai = "openai"
     case ollama = "ollama"
@@ -34,6 +35,7 @@ public enum ACPProviderOption: String, CaseIterable, Identifiable, Sendable {
     public var displayName: String {
         switch self {
         case .claudeCLI: "Claude CLI"
+        case .codexACP: "Codex ACP"
         case .anthropic: "Anthropic API"
         case .openai: "OpenAI"
         case .ollama: "Ollama"
@@ -43,6 +45,7 @@ public enum ACPProviderOption: String, CaseIterable, Identifiable, Sendable {
     public var subtitle: String {
         switch self {
         case .claudeCLI: "Use your existing Claude connection. No API key needed."
+        case .codexACP: "Use local Codex ACP if installed. No API key required."
         case .anthropic: "Direct API access. Requires API key."
         case .openai: "Use GPT models. Requires API key."
         case .ollama: "Local models. Free, private, no internet."
@@ -52,6 +55,7 @@ public enum ACPProviderOption: String, CaseIterable, Identifiable, Sendable {
     public var icon: String {
         switch self {
         case .claudeCLI: "terminal"
+        case .codexACP: "sparkles.rectangle.stack"
         case .anthropic: "bolt.horizontal"
         case .openai: "brain"
         case .ollama: "desktopcomputer"
@@ -93,6 +97,7 @@ public final class SetupWizardViewModel: ObservableObject {
 
     @Published public var detectedTools: [DetectedTool] = [
         DetectedTool(id: "claude", name: "Claude CLI", icon: "terminal", isRequired: true),
+        DetectedTool(id: "codex", name: "Codex CLI", icon: "sparkles.rectangle.stack", isRequired: false),
         DetectedTool(id: "git", name: "Git", icon: "arrow.triangle.branch", isRequired: true),
         DetectedTool(id: "docker", name: "Docker", icon: "shippingbox", isRequired: false),
         DetectedTool(id: "node", name: "Node.js", icon: "server.rack", isRequired: false),
@@ -147,6 +152,8 @@ public final class SetupWizardViewModel: ObservableObject {
         switch selectedProvider {
         case .claudeCLI:
             return detectedTools.first(where: { $0.id == "claude" })?.isInstalled == true
+        case .codexACP:
+            return detectedTools.first(where: { $0.id == "codex" })?.isInstalled == true
         case .anthropic, .openai:
             return !apiKey.isEmpty
         case .ollama:
@@ -167,7 +174,13 @@ public final class SetupWizardViewModel: ObservableObject {
 
     // MARK: - Init
 
-    public init() {}
+    public init(
+        currentStep: SetupStep = .welcome,
+        projectSetupOption: ProjectSetupOption = .openExisting
+    ) {
+        self.currentStep = currentStep
+        self.projectSetupOption = projectSetupOption
+    }
 
     // MARK: - Navigation
 
@@ -190,6 +203,7 @@ public final class SetupWizardViewModel: ObservableObject {
         await withTaskGroup(of: (String, String?, String?, Bool).self) { group in
             let toolSpecs: [(id: String, binary: String, versionFlag: String)] = [
                 ("claude", "claude", "--version"),
+                ("codex", "codex", "--version"),
                 ("git", "git", "--version"),
                 ("docker", "docker", "--version"),
                 ("node", "node", "--version"),
@@ -215,9 +229,11 @@ public final class SetupWizardViewModel: ObservableObject {
             }
         }
 
-        // Auto-select Claude CLI if detected
+        // Auto-select a local ACP CLI when detected.
         if detectedTools.first(where: { $0.id == "claude" })?.isInstalled == true {
             selectedProvider = .claudeCLI
+        } else if detectedTools.first(where: { $0.id == "codex" })?.isInstalled == true {
+            selectedProvider = .codexACP
         }
     }
 
@@ -279,6 +295,9 @@ public final class SetupWizardViewModel: ObservableObject {
         case .claudeCLI:
             let available = detectedTools.first(where: { $0.id == "claude" })?.isInstalled == true
             connectionTestResult = available ? .success : .failure("Claude CLI not found")
+        case .codexACP:
+            let available = detectedTools.first(where: { $0.id == "codex" })?.isInstalled == true
+            connectionTestResult = available ? .success : .failure("Codex CLI not found")
         case .anthropic:
             // Simple validation — real test would hit the API
             connectionTestResult = apiKey.hasPrefix("sk-ant-") ? .success : .failure("API key should start with sk-ant-")
@@ -356,6 +375,9 @@ public final class SetupWizardViewModel: ObservableObject {
         case .claudeCLI:
             let path = detectedTools.first(where: { $0.id == "claude" })?.path
             return .init(providerId: "claude-cli", providerType: "claude-cli", baseURL: path, isDefault: true)
+        case .codexACP:
+            let path = detectedTools.first(where: { $0.id == "codex" })?.path
+            return .init(providerId: "codex-acp", providerType: "codex-acp", baseURL: path, commandArgs: "acp", isDefault: true)
         case .anthropic:
             return .init(providerId: "anthropic", providerType: "anthropic", apiKey: apiKey, isDefault: true)
         case .openai:

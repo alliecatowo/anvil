@@ -65,3 +65,98 @@ final class AppLaunchTests: XCTestCase {
         XCTAssertTrue(branchButton.waitForExistence(timeout: 5), "Branch button should be visible in status bar")
     }
 }
+
+final class DefaultJourneySmokeTests: AnvilUITestCase {
+    override var launchEnvironment: [String: String] {
+        ["ANVIL_SKIP_SETUP_WIZARD": "1"]
+    }
+
+    override var shouldCaptureLaunchScreenshot: Bool { false }
+    override var shouldCaptureTearDownScreenshot: Bool { false }
+
+    func testDefaultLaunchExposesCoreSpacesAndUtilities() throws {
+        for label in ["Plan", "Build", "Review", "Operate", "Library"] {
+            XCTAssertTrue(app.buttons[label].waitForExistence(timeout: 5), "\(label) space must be visible on default launch")
+        }
+
+        XCTAssertTrue(app.buttons["Find in Project"].waitForExistence(timeout: 5), "Global project search should stay reachable")
+        XCTAssertTrue(app.buttons["Toggle Inspector"].waitForExistence(timeout: 5), "Inspector toggle should stay reachable")
+    }
+
+    func testDefaultIntentJourneyCanOpenTicketDetailInMainPane() throws {
+        switchToSpace("Plan")
+
+        let newTicket = app.buttons["New Ticket"]
+        XCTAssertTrue(newTicket.waitForExistence(timeout: 5), "Plan space must expose New Ticket")
+        newTicket.click()
+
+        let titleField = app.textFields["New ticket title..."]
+        XCTAssertTrue(titleField.waitForExistence(timeout: 5), "Ticket quick-add must appear")
+
+        let title = "Smoke ticket \(Int.random(in: 1000...9999))"
+        titleField.typeText(title)
+        app.typeKey(.return, modifierFlags: [])
+
+        let ticket = app.cells.matching(NSPredicate(format: "label CONTAINS[c] %@", title)).firstMatch
+        XCTAssertTrue(ticket.waitForExistence(timeout: 5), "Created ticket must appear in the raw journey")
+
+        ticket.click()
+
+        let openInMainPane = app.buttons["intent.open-main-pane"]
+        XCTAssertTrue(openInMainPane.waitForExistence(timeout: 5), "Intent list should expose explicit open-in-main-pane action")
+        openInMainPane.click()
+
+        let detailTitle = app.textFields["Ticket title"]
+        XCTAssertTrue(detailTitle.waitForExistence(timeout: 5), "Ticket must open into the main-pane detail view")
+        XCTAssertTrue(app.buttons["Back"].waitForExistence(timeout: 5), "Ticket detail must expose a Back action")
+    }
+
+    func testDefaultBuildJourneyExposesEditorAndAgentConversation() throws {
+        switchToSpace("Build")
+
+        for label in ["Sessions", "Files", "Data", "Tests", "Terminal"] {
+            XCTAssertTrue(app.buttons[label].waitForExistence(timeout: 5), "Build space must expose \(label)")
+        }
+
+        app.buttons["Files"].click()
+        XCTAssertTrue(app.staticTexts["Explorer"].waitForExistence(timeout: 5), "Files must route into the editor surface")
+
+        app.buttons["Sessions"].click()
+        let sidebarNewSession = app.buttons["agent.sidebar.new-session"]
+        let emptyNewSession = app.buttons["agent.empty.new-session"]
+        let newSession = emptyNewSession.waitForExistence(timeout: 2) ? emptyNewSession : sidebarNewSession
+        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Agent sessions must remain discoverable in default launch")
+        newSession.click()
+
+        let messageField = app.descendants(matching: .any).matching(identifier: "agent.conversation.input").firstMatch
+        XCTAssertTrue(messageField.waitForExistence(timeout: 8), "New Session must open the agent conversation surface")
+
+        let infoButton = app.buttons.matching(NSPredicate(format: "label == 'Info'")).firstMatch
+        XCTAssertTrue(infoButton.waitForExistence(timeout: 5), "Agent conversation must expose the info/secondary-pane control")
+    }
+
+    func testDefaultReviewAndRulesJourneysStayReachable() throws {
+        switchToSpace("Review")
+
+        let branchesHeader = app.buttons.matching(NSPredicate(format: "label == 'Branches'")).firstMatch
+        XCTAssertTrue(branchesHeader.waitForExistence(timeout: 5), "Review space must expose branches")
+        branchesHeader.click()
+        let reviewAnchor = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'No branches loaded' OR label CONTAINS[c] 'Branch ' OR label CONTAINS[c] 'Pull Requests'")).firstMatch
+        XCTAssertTrue(reviewAnchor.waitForExistence(timeout: 5), "Review space must expose branches, pull requests, or a clean empty state")
+
+        switchToSpace("Library")
+        let rulesTab = app.buttons["Rules"]
+        XCTAssertTrue(rulesTab.waitForExistence(timeout: 5), "Library space must expose Rules")
+        rulesTab.click()
+
+        let rulesAnchor = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'Project Rules' OR label CONTAINS[c] 'Open a project'")).firstMatch
+        XCTAssertTrue(rulesAnchor.waitForExistence(timeout: 5), "Rules panel must remain discoverable without seeded data")
+    }
+
+    private func switchToSpace(_ label: String) {
+        let button = app.buttons[label]
+        XCTAssertTrue(button.waitForExistence(timeout: 5), "Space button \(label) must exist")
+        button.click()
+        _ = app.windows.firstMatch.waitForExistence(timeout: 2)
+    }
+}

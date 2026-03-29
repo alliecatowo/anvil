@@ -7,6 +7,7 @@ Anvil is a macOS app built with SwiftUI and modular local Swift packages. This r
 - Canonical execution roadmap: [`ROADMAP_NATIVE_2026.md`](/Users/allie/Develop/anvil/ROADMAP_NATIVE_2026.md)
 - UI implementation governance: [`UI_IMPLEMENTATION_GOVERNANCE.md`](/Users/allie/Develop/anvil/UI_IMPLEMENTATION_GOVERNANCE.md)
 - Mac UI direction: [`MAC_UI_DIRECTION.md`](/Users/allie/Develop/anvil/MAC_UI_DIRECTION.md)
+- Shell vocabulary north star: [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md)
 - Whole-app truth matrix: [`TRUTH_MATRIX.md`](/Users/allie/Develop/anvil/TRUTH_MATRIX.md)
 - Shell model: [`ARCHITECTURE/UX_SHELL.md`](/Users/allie/Develop/anvil/ARCHITECTURE/UX_SHELL.md)
 - Provider model: [`ARCHITECTURE/PROVIDER_MODEL.md`](/Users/allie/Develop/anvil/ARCHITECTURE/PROVIDER_MODEL.md)
@@ -65,6 +66,14 @@ Build the app from the command line:
 ```bash
 xcodebuild -project Anvil.xcodeproj -scheme Anvil -derivedDataPath /tmp/anvil-derived build
 ```
+
+Run deterministic UI-test scenarios and visual screenshots with:
+
+```bash
+ANVIL_UITEST_SCENARIO=review-diff xcodebuild -project Anvil.xcodeproj -scheme Anvil -derivedDataPath /tmp/anvil-derived build
+```
+
+Supported seed scenarios live in [`Packages/AnvilUI/Sources/App/UITestScenario.swift`](/Users/allie/Develop/anvil/Packages/AnvilUI/Sources/App/UITestScenario.swift).
 
 Run package tests across all local packages:
 

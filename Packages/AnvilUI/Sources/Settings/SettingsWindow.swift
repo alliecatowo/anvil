@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Combine
+import AnvilACP
 
 // MARK: - Settings Model
 
@@ -73,6 +74,11 @@ public struct SettingsWindow: View {
             KeybindingSettingsView()
                 .tabItem {
                     Label("Keybindings", systemImage: "keyboard")
+                }
+
+            AdvancedSettingsView()
+                .tabItem {
+                    Label("Advanced", systemImage: "gearshape.2")
                 }
         }
         .frame(width: 640, height: 500)
@@ -272,16 +278,19 @@ struct ProviderFormSheet: View {
     @State private var providerType: String = "anthropic"
     @State private var apiKey: String = ""
     @State private var baseURL: String = ""
+    @State private var commandArgs: String = ""
     @State private var isDefault: Bool = false
     @State private var connectionTestResult: String?
 
-    private let providerTypes = ["claude-cli", "anthropic", "openai", "ollama"]
+    private let providerTypes = ["claude-cli", "anthropic", "openai", "ollama", "zed-acp", "codex-acp"]
 
     private let defaultURLs: [String: String] = [
         "claude-cli": "",
         "anthropic": "https://api.anthropic.com",
         "openai": "https://api.openai.com/v1",
         "ollama": "http://localhost:11434",
+        "zed-acp": "npx",
+        "codex-acp": "codex",
     ]
 
     var isEditing: Bool { existing != nil }
@@ -318,6 +327,12 @@ struct ProviderFormSheet: View {
                             .foregroundStyle(.primary)
                     }
                     Text("Uses your existing Claude Code CLI authentication. No API key needed.")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                } else if providerType == "zed-acp" || providerType == "codex-acp" {
+                    TextField("Command", text: $baseURL)
+                    TextField("Command Args (space-separated)", text: $commandArgs)
+                    Text("ACP command-based provider. Use this for external agent protocols.")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 } else {
@@ -367,6 +382,7 @@ struct ProviderFormSheet: View {
                 providerType = existing.providerType
                 apiKey = existing.apiKey ?? ""
                 baseURL = existing.baseURL ?? defaultURLs[existing.providerType] ?? ""
+                commandArgs = existing.commandArgs ?? ""
                 isDefault = existing.isDefault
             } else {
                 baseURL = defaultURLs["anthropic"] ?? ""
@@ -394,6 +410,8 @@ struct ProviderFormSheet: View {
         case "anthropic": return "Anthropic"
         case "openai": return "OpenAI"
         case "ollama": return "Ollama"
+        case "zed-acp": return "ACP Agent Command"
+        case "codex-acp": return "Codex ACP"
         default: return type.capitalized
         }
     }
@@ -426,6 +444,16 @@ struct ProviderFormSheet: View {
             }
         } else if providerType == "ollama" {
             connectionTestResult = !baseURL.isEmpty ? "Connection looks valid" : "Base URL required"
+        } else if providerType == "zed-acp" {
+            let command = baseURL.isEmpty ? "npx" : baseURL
+            let args = splitArgs(commandArgs, fallback: ["@agentclientprotocol/claude-agent-acp", "--help"])
+            let available = ZedACPProvider.isAvailable(command: command, args: args)
+            connectionTestResult = available ? "Connection valid — ACP command reachable" : "ACP command not available"
+        } else if providerType == "codex-acp" {
+            let command = baseURL.isEmpty ? "codex" : baseURL
+            let args = splitArgs(commandArgs, fallback: ["acp", "--help"])
+            let available = CodexACPProvider.isAvailable(command: command, args: args)
+            connectionTestResult = available ? "Connection valid — Codex ACP reachable" : "Codex ACP command not available"
         } else {
             connectionTestResult = !apiKey.isEmpty && !baseURL.isEmpty ? "Credentials look valid" : "API key and base URL required"
         }
@@ -438,9 +466,18 @@ struct ProviderFormSheet: View {
             providerType: providerType,
             apiKey: apiKey.isEmpty ? nil : apiKey,
             baseURL: baseURL.isEmpty ? nil : baseURL,
+            commandArgs: commandArgs.isEmpty ? nil : commandArgs,
             isDefault: isDefault
         )
         container.configureProvider(config)
+    }
+
+    private func splitArgs(_ raw: String, fallback: [String]) -> [String] {
+        let pieces = raw
+            .split(whereSeparator: { $0.isWhitespace })
+            .map(String.init)
+            .filter { !$0.isEmpty }
+        return pieces.isEmpty ? fallback : pieces
     }
 }
 
@@ -579,6 +616,50 @@ struct KeybindingRow: View {
         case .leftArrow: return "\u{2190}"
         case .rightArrow: return "\u{2192}"
         default: return String(key.character).uppercased()
+        }
+    }
+}
+
+// MARK: - Advanced Tab
+
+struct AdvancedSettingsView: View {
+    @EnvironmentObject private var appState: AppState
+
+    var body: some View {
+        Form {
+            Section("Worktrees") {
+                HStack {
+                    Text(appState.defaultWorktreePath.isEmpty ? "Default (sibling directory)" : appState.defaultWorktreePath)
+                        .foregroundStyle(appState.defaultWorktreePath.isEmpty ? .tertiary : .primary)
+                        .lineLimit(1)
+                        .truncationMode(.head)
+                    Spacer()
+                    Button("Choose...") {
+                        chooseWorktreePath()
+                    }
+                }
+                .help("Directory where agent worktrees are created. Leave empty to use a sibling directory of the project.")
+            }
+
+            Section("Agent Automation") {
+                Toggle("Auto-create draft PR on session completion", isOn: $appState.isAutoPREnabled)
+                    .help("Automatically creates a draft GitHub PR when an agent session completes with file changes in an isolated worktree.")
+
+                Toggle("Auto-scan sessions for memories", isOn: $appState.isMemoryScanEnabled)
+                    .help("Automatically scans completed agent sessions to extract reusable memories and project context.")
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private func chooseWorktreePath() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.message = "Choose default worktree directory"
+        if panel.runModal() == .OK, let url = panel.url {
+            appState.defaultWorktreePath = url.path
         }
     }
 }

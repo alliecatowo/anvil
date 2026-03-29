@@ -88,6 +88,29 @@ final class ReviewModeTests: XCTestCase {
         }
     }
 
+    func testBranchClickExposesStartReviewFlow() throws {
+        let branchRows = app.scrollViews.firstMatch.otherElements.allElementsBoundByIndex
+        var openedBranch = false
+
+        for row in branchRows {
+            if row.isHittable && row.label != "" {
+                row.click()
+                openedBranch = true
+                break
+            }
+        }
+
+        XCTAssertTrue(openedBranch, "A branch row must be clickable in Review sidebar")
+
+        let startReview = app.buttons["Start Review"]
+        XCTAssertTrue(startReview.waitForExistence(timeout: 5), "Branch detail must expose a Start Review action")
+
+        startReview.click()
+
+        let approveButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Approve'")).firstMatch
+        XCTAssertTrue(approveButton.waitForExistence(timeout: 5), "Starting a review must open the diff view")
+    }
+
     // MARK: - Commit Graph Toggle
 
     func testCommitGraphToggleButtonExists() throws {

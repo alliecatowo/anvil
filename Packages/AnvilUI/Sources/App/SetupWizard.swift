@@ -1,12 +1,22 @@
 import SwiftUI
 
 public struct SetupWizard: View {
-    @StateObject private var viewModel = SetupWizardViewModel()
+    @StateObject private var viewModel: SetupWizardViewModel
     @EnvironmentObject private var container: DependencyContainer
     @EnvironmentObject private var appState: AppState
     let onComplete: () -> Void
 
-    public init(onComplete: @escaping () -> Void) {
+    public init(
+        currentStep: SetupStep = .welcome,
+        projectSetupOption: ProjectSetupOption = .openExisting,
+        onComplete: @escaping () -> Void
+    ) {
+        _viewModel = StateObject(
+            wrappedValue: SetupWizardViewModel(
+                currentStep: currentStep,
+                projectSetupOption: projectSetupOption
+            )
+        )
         self.onComplete = onComplete
     }
 
@@ -292,6 +302,7 @@ public struct SetupWizard: View {
     private func providerCard(_ option: ACPProviderOption) -> some View {
         let isSelected = viewModel.selectedProvider == option
         let claudeDetected = viewModel.detectedTools.first(where: { $0.id == "claude" })?.isInstalled == true
+        let codexDetected = viewModel.detectedTools.first(where: { $0.id == "codex" })?.isInstalled == true
 
         return Button(action: {
             viewModel.selectedProvider = option
@@ -315,6 +326,14 @@ public struct SetupWizard: View {
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 1)
                                 .background(AnvilColor.accentGreen.opacity(0.15))
+                                .clipShape(RoundedRectangle(cornerRadius: 3))
+                        } else if option == .codexACP && codexDetected {
+                            Text("installed")
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(AnvilColor.accentBlue)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(AnvilColor.accentBlue.opacity(0.15))
                                 .clipShape(RoundedRectangle(cornerRadius: 3))
                         }
                     }

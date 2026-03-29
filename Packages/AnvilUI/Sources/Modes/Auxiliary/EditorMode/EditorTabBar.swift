@@ -28,6 +28,7 @@ struct EditorTabBar: View {
         let isHovered = hoveredTabId == file.id
 
         let isReadOnly = viewModel.isFileReadOnly(file.id)
+        let isDirty = viewModel.isFileDirty(file.id)
 
         return HStack(spacing: AnvilSpacing.xs) {
             Image(systemName: fileIcon(for: file.name))
@@ -39,6 +40,13 @@ struct EditorTabBar: View {
                 .font(AnvilFont.label)
                 .foregroundStyle(isSelected ? AnvilColor.textPrimary : AnvilColor.textSecondary)
                 .lineLimit(1)
+
+            if isDirty {
+                Circle()
+                    .fill(AnvilColor.textTertiary)
+                    .frame(width: 6, height: 6)
+                    .accessibilityLabel("Unsaved changes")
+            }
 
             if isReadOnly {
                 Image(systemName: "lock.fill")
@@ -91,7 +99,7 @@ struct EditorTabBar: View {
             viewModel.selectFile(file.id)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(file.name)\(isReadOnly ? ", read-only" : "")\(isSelected ? ", selected" : "")")
+        .accessibilityLabel("\(file.name)\(isDirty ? ", unsaved changes" : "")\(isReadOnly ? ", read-only" : "")\(isSelected ? ", selected" : "")")
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 

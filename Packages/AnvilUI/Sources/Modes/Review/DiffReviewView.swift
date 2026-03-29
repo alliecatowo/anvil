@@ -253,22 +253,18 @@ struct DiffReviewView: View {
                 hoveredLineKey = isHovered ? lineKey : nil
             }
 
-            // Existing inline comments for this line
-            if let fileId = viewModel.selectedFileID {
-                let comments = viewModel.inlineCommentsForLine(fileId: fileId, lineNumber: lineNum)
-                if !comments.isEmpty {
-                    VStack(alignment: .leading, spacing: 2) {
-                        ForEach(comments) { comment in
-                            inlineCommentBubble(comment)
-                        }
-                    }
+            // Comment thread for this line
+            if let fileId = viewModel.selectedFileID,
+               let thread = viewModel.threadForLine(fileId: fileId, lineNumber: lineNum) {
+                commentThreadView(thread, lineKey: lineKey)
                     .padding(.leading, 120)
                     .padding(.vertical, AnvilSpacing.xxs)
-                    .background(AnvilColor.backgroundSecondary.opacity(0.5))
-                }
+                    .background(thread.isResolved
+                        ? AnvilColor.backgroundSecondary.opacity(0.3)
+                        : AnvilColor.backgroundSecondary.opacity(0.5))
             }
 
-            // Inline comment input
+            // Inline comment input (new thread or reply)
             if isCommentTarget {
                 inlineCommentInput
                     .padding(.leading, 120)
@@ -278,13 +274,82 @@ struct DiffReviewView: View {
         }
     }
 
-    private func inlineCommentBubble(_ comment: InlineComment) -> some View {
+    // MARK: - Comment Thread View
+
+    private func commentThreadView(_ thread: CommentThread, lineKey: String) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Thread header with resolve button
+            HStack(spacing: AnvilSpacing.xs) {
+                Image(systemName: "bubble.left.and.bubble.right")
+                    .font(.system(size: 10))
+                    .foregroundStyle(thread.isResolved ? AnvilColor.accentGreen : AnvilColor.accentBlue)
+
+                Text("\(thread.entries.count) comment\(thread.entries.count == 1 ? "" : "s")")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+
+                if thread.isResolved {
+                    Text("Resolved")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(AnvilColor.accentGreen)
+                        .padding(.horizontal, AnvilSpacing.xs)
+                        .padding(.vertical, 1)
+                        .background(AnvilColor.accentGreen.opacity(0.12))
+                        .clipShape(Capsule())
+                }
+
+                Spacer()
+
+                Button {
+                    viewModel.toggleResolveThread(at: lineKey)
+                } label: {
+                    Text(thread.isResolved ? "Unresolve" : "Resolve")
+                        .font(AnvilFont.label)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(thread.isResolved ? AnvilColor.textTertiary : AnvilColor.accentGreen)
+                .accessibilityLabel(thread.isResolved ? "Unresolve thread" : "Resolve thread")
+
+                Button {
+                    viewModel.startReply(threadId: thread.id)
+                } label: {
+                    Image(systemName: "arrowshape.turn.up.left")
+                        .font(.system(size: 10))
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(AnvilColor.textTertiary)
+                .accessibilityLabel("Reply to thread")
+            }
+            .padding(.horizontal, AnvilSpacing.sm)
+            .padding(.vertical, AnvilSpacing.xs)
+
+            Divider()
+                .padding(.horizontal, AnvilSpacing.sm)
+
+            // Comment entries
+            ForEach(thread.entries) { entry in
+                commentEntryBubble(entry, isResolved: thread.isResolved)
+            }
+        }
+        .background(AnvilColor.backgroundPrimary)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(
+                    thread.isResolved ? AnvilColor.accentGreen.opacity(0.2) : AnvilColor.borderSubtle,
+                    lineWidth: 1
+                )
+        )
+        .opacity(thread.isResolved ? 0.7 : 1.0)
+    }
+
+    private func commentEntryBubble(_ entry: CommentEntry, isResolved: Bool) -> some View {
         HStack(alignment: .top, spacing: AnvilSpacing.xs) {
             Circle()
                 .fill(AnvilColor.accentBlue.opacity(0.15))
                 .frame(width: 18, height: 18)
                 .overlay(
-                    Text(String(comment.author.prefix(1)))
+                    Text(String(entry.author.prefix(1)))
                         .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(AnvilColor.accentBlue)
                 )
@@ -292,22 +357,22 @@ struct DiffReviewView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: AnvilSpacing.xs) {
-                    Text(comment.author)
+                    Text(entry.author)
                         .font(AnvilFont.label)
                         .foregroundStyle(AnvilColor.textPrimary)
-                    Text(comment.createdAt, style: .relative)
+                    Text(entry.timestamp, style: .relative)
                         .font(AnvilFont.label)
                         .foregroundStyle(AnvilColor.textTertiary)
                 }
-                Text(comment.body)
+                Text(entry.body)
                     .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textSecondary)
+                    .foregroundStyle(isResolved ? AnvilColor.textTertiary : AnvilColor.textSecondary)
                     .textSelection(.enabled)
             }
         }
         .padding(AnvilSpacing.sm)
-        .background(AnvilColor.backgroundPrimary)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(entry.author): \(entry.body)")
     }
 
     private var inlineCommentInput: some View {

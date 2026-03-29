@@ -14,6 +14,7 @@ If a change touches a visible control, a keyboard shortcut, a sidebar row, a com
 - No visible control without a real handler.
 - No shortcut label without a real command.
 - No workspace sidebar that collapses into a single ambiguous icon.
+- No shared sidebar surface may depend on one-off per-mode chrome when a reusable section/row primitive can express the same concept.
 
 ## Required Layering
 
@@ -47,6 +48,7 @@ This policy covers every user-facing surface:
 - Feature work may not add a new custom top bar, fake segmented header, or embedded navigation surface to avoid dealing with shell structure.
 - If the app needs a new concept in a sidebar, the concept model must be defined before the pixels.
 - If the shell cannot represent the concept cleanly, the concept needs a shell design pass before feature work continues.
+- New shell concepts must match [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md) before they are implemented or renamed in UI.
 
 ## Interaction Truth
 
@@ -92,6 +94,7 @@ Custom UI is allowed only when the native primitive cannot express the interacti
 - If the app needs a new affordance, the affordance must be added to `TRUTH_MATRIX.md` in the same change.
 - If the app needs a new shell concept, `ARCHITECTURE/UX_SHELL.md` must be updated in the same change.
 - If the app needs a new provider capability, `ARCHITECTURE/PROVIDER_MODEL.md` must be updated in the same change.
+- If the app adds or changes deterministic visual regression scenarios, they must be driven by `ANVIL_UITEST_SCENARIO` and the scenario names must stay aligned with the seeded screen model.
 
 ## Review Gate
 
@@ -102,3 +105,4 @@ Before merge, verify:
 - `ARCHITECTURE/PROVIDER_MODEL.md` was updated for any provider or capability change.
 - `docs/pr-checklists/native-ui.md` was completed for any UI change.
 - `docs/pr-checklists/feature-completeness.md` was completed for any feature change.
+- Visual regression coverage must seed the app through `ANVIL_UITEST_SCENARIO` or an equivalent deterministic launch contract; it may not depend on manual menu-click setup.

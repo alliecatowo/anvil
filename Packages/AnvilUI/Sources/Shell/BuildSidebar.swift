@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import AnvilDomain
+import AnvilTerminal
 import UniformTypeIdentifiers
 
 struct BuildSidebar: View {
@@ -8,20 +9,13 @@ struct BuildSidebar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Picker("Section", selection: $appState.buildActiveSection) {
-                    ForEach(AppState.BuildSection.allCases, id: \.self) { s in
-                        Text(s.rawValue).tag(s)
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .accessibilityLabel("Build Sidebar Section")
-
-                Spacer()
-            }
-            .padding(.horizontal, AnvilSpacing.sm)
-            .padding(.vertical, AnvilSpacing.xs)
+            SidebarTabBar(
+                sections: Array(AppState.BuildSection.allCases),
+                active: appState.buildActiveSection,
+                icon: { $0.icon },
+                label: { $0.rawValue },
+                onSelect: { appState.buildActiveSection = $0 }
+            )
 
             Divider()
 
@@ -30,6 +24,8 @@ struct BuildSidebar: View {
                 AgentSidebar(viewModel: appState.agentViewModel)
             case .files:
                 EditorSidebar(viewModel: appState.editorViewModel)
+            case .terminal:
+                TerminalSidebarSection(viewModel: appState.terminalViewModel)
             case .data:
                 DatabaseSidebarView(viewModel: appState.databaseViewModel)
             case .tests:

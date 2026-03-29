@@ -41,6 +41,7 @@ public final class IntentViewModel: ObservableObject {
 
     @Published var tickets: [Ticket] = []
     @Published var selectedTicketId: String?
+    @Published var selectedTicketIds: Set<String> = []
     @Published var board: Board
     @Published var currentCycle: Cycle
     @Published var relations: [TicketRelation] = []
@@ -51,11 +52,15 @@ public final class IntentViewModel: ObservableObject {
 
     @Published var searchText = ""
     @Published var viewMode: IntentViewMode = .list
+    @Published var isShowingTicketDetailInMainPane: Bool = false
     @Published var grouping: TicketGrouping = .status
     @Published var sortField: TicketSortField = .priority
     @Published var filterPriority: TicketPriority?
     @Published var filterStatus: String?
     @Published var filterAssignee: String?
+    @Published var filterBlocked: Bool = false
+    @Published var filterDueSoon: Bool = false
+    @Published var tableSortOrder: [KeyPathComparator<Ticket>] = [KeyPathComparator(\Ticket.priority)]
 
     // MARK: Editing
 
@@ -91,6 +96,14 @@ public final class IntentViewModel: ObservableObject {
         }
         if let a = filterAssignee {
             result = result.filter { $0.assignee == a }
+        }
+        if filterBlocked {
+            let blockedIds = Set(blockedTickets.map(\.id))
+            result = result.filter { blockedIds.contains($0.id) }
+        }
+        if filterDueSoon {
+            let dueSoonIds = Set(dueSoonTickets.map(\.id))
+            result = result.filter { dueSoonIds.contains($0.id) }
         }
 
         switch sortField {
@@ -179,13 +192,11 @@ public final class IntentViewModel: ObservableObject {
     /// Move a ticket to a new status (used by kanban drag-and-drop).
     func moveTicket(_ ticketId: String, toStatus newStatus: String) {
         guard let idx = tickets.firstIndex(where: { $0.id == ticketId }) else { return }
-        let oldStatus = tickets[idx].status
         tickets[idx].status = newStatus
         tickets[idx].updatedAt = .now
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(
-                sourcePrimitive: "tickets",
-                payload: ["action": "statusChanged", "ticketId": ticketId, "oldStatus": oldStatus, "newStatus": newStatus]
+            await eventBus?.publish(TicketUpdatedEvent(
+                ticketId: ticketId, field: "status", newValue: newStatus
             ))
         }
     }
@@ -199,15 +210,16 @@ public final class IntentViewModel: ObservableObject {
             Task { @MainActor in
                 if let created = try? await useCase.execute(title: trimmed, status: status) {
                     tickets.append(created)
+                    selectTicket(created.id)
                 }
             }
         } else {
             let ticket = Ticket(title: trimmed, status: status)
             tickets.append(ticket)
+            selectTicket(ticket.id)
             Task { [eventBus] in
-                await eventBus?.publish(AnyDomainEvent(
-                    sourcePrimitive: "tickets",
-                    payload: ["action": "created", "ticketId": ticket.id, "title": trimmed]
+                await eventBus?.publish(TicketCreatedEvent(
+                    ticketId: ticket.id, title: trimmed
                 ))
             }
         }
@@ -230,17 +242,13 @@ public final class IntentViewModel: ObservableObject {
                     storyPoints: storyPoints
                 ) {
                     tickets.append(created)
-                    selectedTicketId = created.id
-                    editingTitle = created.title
-                    editingDescription = created.description
+                    selectTicket(created.id)
                 }
             }
         } else {
             let ticket = Ticket(title: trimmed, description: description, status: status, priority: priority, assignee: assignee, dueDate: dueDate, storyPoints: storyPoints)
             tickets.append(ticket)
-            selectedTicketId = ticket.id
-            editingTitle = ticket.title
-            editingDescription = ticket.description
+            selectTicket(ticket.id)
         }
     }
 
@@ -250,18 +258,26 @@ public final class IntentViewModel: ObservableObject {
         comments.removeValue(forKey: ticketId)
         relations.removeAll { $0.sourceId == ticketId || $0.targetId == ticketId }
         if selectedTicketId == ticketId {
-            selectedTicketId = nil
+            selectTicket(nil)
+        } else {
+            selectedTicketIds.remove(ticketId)
         }
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(
-                sourcePrimitive: "tickets",
-                payload: ["action": "deleted", "ticketId": ticketId]
-            ))
+            await eventBus?.publish(TicketDeletedEvent(ticketId: ticketId))
         }
     }
 
-    func selectTicket(_ id: String?) {
+    func selectTicket(_ id: String?, openInMainPane: Bool = false) {
         selectedTicketId = id
+        if let id {
+            selectedTicketIds = [id]
+            if openInMainPane {
+                isShowingTicketDetailInMainPane = true
+            }
+        } else {
+            selectedTicketIds.removeAll()
+            isShowingTicketDetailInMainPane = false
+        }
         if let ticket = tickets.first(where: { $0.id == id }) {
             editingTitle = ticket.title
             editingDescription = ticket.description
@@ -270,13 +286,22 @@ public final class IntentViewModel: ObservableObject {
         newSubtaskTitle = ""
     }
 
+    func openSelectedTicketInMainPane() {
+        guard selectedTicketId != nil else { return }
+        isShowingTicketDetailInMainPane = true
+    }
+
+    func closeTicketDetailInMainPane() {
+        isShowingTicketDetailInMainPane = false
+    }
+
     func updateTitle(_ newTitle: String) {
         guard let id = selectedTicketId,
               let idx = tickets.firstIndex(where: { $0.id == id }) else { return }
         tickets[idx].title = newTitle
         tickets[idx].updatedAt = .now
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "updated", "field": "title", "ticketId": id]))
+            await eventBus?.publish(TicketUpdatedEvent(ticketId: id, field: "title", newValue: newTitle))
         }
     }
 
@@ -286,7 +311,7 @@ public final class IntentViewModel: ObservableObject {
         tickets[idx].description = newDescription
         tickets[idx].updatedAt = .now
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "updated", "field": "description", "ticketId": id]))
+            await eventBus?.publish(TicketUpdatedEvent(ticketId: id, field: "description", newValue: newDescription))
         }
     }
 
@@ -294,6 +319,9 @@ public final class IntentViewModel: ObservableObject {
         guard let idx = tickets.firstIndex(where: { $0.id == ticketId }) else { return }
         tickets[idx].status = status
         tickets[idx].updatedAt = .now
+        Task { [eventBus] in
+            await eventBus?.publish(TicketUpdatedEvent(ticketId: ticketId, field: "status", newValue: status))
+        }
     }
 
     func updatePriority(_ ticketId: String, priority: TicketPriority) {
@@ -301,7 +329,7 @@ public final class IntentViewModel: ObservableObject {
         tickets[idx].priority = priority
         tickets[idx].updatedAt = .now
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "updated", "field": "priority", "ticketId": ticketId]))
+            await eventBus?.publish(TicketUpdatedEvent(ticketId: ticketId, field: "priority", newValue: String(priority.rawValue)))
         }
     }
 
@@ -310,7 +338,7 @@ public final class IntentViewModel: ObservableObject {
         tickets[idx].assignee = assignee
         tickets[idx].updatedAt = .now
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "updated", "field": "assignee", "ticketId": ticketId]))
+            await eventBus?.publish(TicketUpdatedEvent(ticketId: ticketId, field: "assignee", newValue: assignee ?? ""))
         }
     }
 
@@ -319,7 +347,7 @@ public final class IntentViewModel: ObservableObject {
         tickets[idx].dueDate = dueDate
         tickets[idx].updatedAt = .now
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "updated", "field": "dueDate", "ticketId": ticketId]))
+            await eventBus?.publish(TicketUpdatedEvent(ticketId: ticketId, field: "dueDate", newValue: dueDate?.description ?? ""))
         }
     }
 
@@ -328,7 +356,7 @@ public final class IntentViewModel: ObservableObject {
         tickets[idx].storyPoints = storyPoints
         tickets[idx].updatedAt = .now
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "updated", "field": "storyPoints", "ticketId": ticketId]))
+            await eventBus?.publish(TicketUpdatedEvent(ticketId: ticketId, field: "storyPoints", newValue: storyPoints.map(String.init) ?? ""))
         }
     }
 
@@ -340,7 +368,7 @@ public final class IntentViewModel: ObservableObject {
         let subtask = Subtask(ticketId: ticketId, title: trimmed)
         subtasks[ticketId, default: []].append(subtask)
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "subtaskAdded", "ticketId": ticketId]))
+            await eventBus?.publish(TicketUpdatedEvent(ticketId: ticketId, field: "subtasks", newValue: "added"))
         }
     }
 
@@ -352,7 +380,7 @@ public final class IntentViewModel: ObservableObject {
     func deleteSubtask(ticketId: String, subtaskId: String) {
         subtasks[ticketId]?.removeAll { $0.id == subtaskId }
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "subtaskDeleted", "ticketId": ticketId]))
+            await eventBus?.publish(TicketUpdatedEvent(ticketId: ticketId, field: "subtasks", newValue: "deleted"))
         }
     }
 
@@ -364,7 +392,7 @@ public final class IntentViewModel: ObservableObject {
         let comment = TicketComment(ticketId: ticketId, author: author, body: trimmed)
         comments[ticketId, default: []].append(comment)
         Task { [eventBus] in
-            await eventBus?.publish(AnyDomainEvent(sourcePrimitive: "tickets", payload: ["action": "commentAdded", "ticketId": ticketId]))
+            await eventBus?.publish(TicketUpdatedEvent(ticketId: ticketId, field: "comments", newValue: "added"))
         }
     }
 
@@ -378,7 +406,77 @@ public final class IntentViewModel: ObservableObject {
         filterPriority = nil
         filterStatus = nil
         filterAssignee = nil
+        filterBlocked = false
+        filterDueSoon = false
         searchText = ""
+    }
+
+    // MARK: - Saved Filters
+
+    /// Tickets assigned to "allie.c" (current user).
+    var myTickets: [Ticket] {
+        tickets.filter { $0.assignee == "allie.c" }
+    }
+
+    /// Tickets that are blocked by another ticket.
+    var blockedTickets: [Ticket] {
+        let blockedIds = Set(relations.filter { $0.type == .blockedBy }.map(\.sourceId)
+            + relations.filter { $0.type == .blocks }.map(\.targetId))
+        return tickets.filter { blockedIds.contains($0.id) }
+    }
+
+    /// Tickets due within the next 3 days.
+    var dueSoonTickets: [Ticket] {
+        let horizon = Calendar.current.date(byAdding: .day, value: 3, to: .now) ?? .now
+        return tickets.filter { ticket in
+            guard let due = ticket.dueDate else { return false }
+            return due <= horizon
+        }
+    }
+
+    func applyFilterMine() {
+        clearFilters()
+        filterAssignee = "allie.c"
+        closeTicketDetailInMainPane()
+    }
+
+    func applyFilterDueSoon() {
+        clearFilters()
+        filterDueSoon = true
+        closeTicketDetailInMainPane()
+    }
+
+    func applyFilterBlocked() {
+        clearFilters()
+        filterBlocked = true
+        closeTicketDetailInMainPane()
+    }
+
+    // MARK: - Multi-Select Actions
+
+    func deleteSelectedTickets() {
+        for id in selectedTicketIds {
+            deleteTicket(id)
+        }
+        selectedTicketIds.removeAll()
+    }
+
+    func bulkUpdateStatus(_ status: String) {
+        for id in selectedTicketIds {
+            updateStatus(id, status: status)
+        }
+    }
+
+    func bulkUpdatePriority(_ priority: TicketPriority) {
+        for id in selectedTicketIds {
+            updatePriority(id, priority: priority)
+        }
+    }
+
+    func bulkUpdateAssignee(_ assignee: String?) {
+        for id in selectedTicketIds {
+            updateAssignee(id, assignee: assignee)
+        }
     }
 
     // MARK: Helpers

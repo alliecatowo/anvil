@@ -2,6 +2,32 @@ import SwiftUI
 import AnvilDomain
 import UniformTypeIdentifiers
 
+// MARK: - Context Resolver
+
+/// Data needed to resolve immediate context slash commands (/tab, /selection, /diff, /branch).
+/// Passed into InputBar so it can inject context chips without needing AppState directly.
+@MainActor
+struct ContextSlashResolver {
+    /// Returns the currently focused editor tab as a ContextAttachment, or nil if none.
+    var resolveTab: () -> ContextAttachment?
+    /// Returns the current editor selection as a ContextAttachment, or nil if none.
+    var resolveSelection: () -> ContextAttachment?
+    /// Returns the current git diff as a ContextAttachment, or nil if no changes.
+    var resolveDiff: () -> ContextAttachment?
+    /// Returns the current branch info as a ContextAttachment, or nil.
+    var resolveBranch: () -> ContextAttachment?
+    /// Returns available tickets as (id, title) tuples for the ticket picker.
+    var availableTickets: () -> [(id: String, title: String)]
+
+    static let empty = ContextSlashResolver(
+        resolveTab: { nil },
+        resolveSelection: { nil },
+        resolveDiff: { nil },
+        resolveBranch: { nil },
+        availableTickets: { [] }
+    )
+}
+
 // MARK: - Input Bar
 
 struct InputBar: View {
@@ -12,10 +38,18 @@ struct InputBar: View {
     let onSend: () -> Void
     let onRemoveAttachment: (String) -> Void
     let onAddAttachment: (ContextAttachment) -> Void
+    var autoContextFiles: [AutoContextChipData] = []
+    var onDismissAutoContext: ((String) -> Void)?
+    var onAcceptAutoContext: ((String) -> Void)?
+    var contextResolver: ContextSlashResolver = .empty
 
     @State private var showSlashMenu = false
     @State private var showAtPopup = false
     @State private var isDropTargeted = false
+    @State private var isAutoContextExpanded = false
+    @State private var showFilePicker = false
+    @State private var showTicketPicker = false
+    @State private var pickerFilter = ""
     @State private var projectFiles: [String] = []
     @State private var branches: [String] = []
     @State private var ticketIds: [String] = []
@@ -25,18 +59,52 @@ struct InputBar: View {
             // Context attachment bar
             ContextAttachmentBar(attachments: attachments, onRemove: onRemoveAttachment)
 
+            // Auto-context section (collapsed by default)
+            if !autoContextFiles.isEmpty {
+                AutoContextBar(
+                    files: autoContextFiles,
+                    isExpanded: $isAutoContextExpanded,
+                    onDismiss: { path in onDismissAutoContext?(path) },
+                    onAccept: { path in onAcceptAutoContext?(path) }
+                )
+            }
+
             // Slash command popup
             if showSlashMenu {
                 HStack {
                     SlashCommandMenu(filter: text) { command in
-                        if command.autoSend {
-                            text = command.promptTemplate
-                            showSlashMenu = false
-                            onSend()
-                        } else {
-                            text = command.promptTemplate
-                            showSlashMenu = false
-                        }
+                        handleSlashCommand(command)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.bottom, AnvilSpacing.xs)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+
+            // File picker (shown after /file)
+            if showFilePicker {
+                HStack {
+                    SlashFilePickerMenu(files: projectFiles, filter: pickerFilter) { path in
+                        onAddAttachment(.file(path: path))
+                        dismissPicker()
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.bottom, AnvilSpacing.xs)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+
+            // Ticket picker (shown after /ticket)
+            if showTicketPicker {
+                HStack {
+                    SlashTicketPickerMenu(
+                        tickets: contextResolver.availableTickets(),
+                        filter: pickerFilter
+                    ) { id, title in
+                        onAddAttachment(.ticket(id: id, title: title))
+                        dismissPicker()
                     }
                     Spacer()
                 }
@@ -76,11 +144,30 @@ struct InputBar: View {
                     .onSubmit(onSend)
                     .onChange(of: text) { _, newValue in
                         withAnimation(AnvilAnimation.standard) {
-                            showSlashMenu = newValue.hasPrefix("/") && !newValue.contains(" ")
+                            // Only show slash menu when not in a picker sub-mode
+                            if !showFilePicker && !showTicketPicker {
+                                showSlashMenu = newValue.hasPrefix("/") && !newValue.contains(" ")
+                            } else {
+                                // Update picker filter text
+                                pickerFilter = newValue
+                            }
                             showAtPopup = detectAtToken(in: newValue)
                         }
                     }
+                    .onKeyPress(.escape) {
+                        if showFilePicker || showTicketPicker {
+                            dismissPicker()
+                            return .handled
+                        }
+                        if showSlashMenu {
+                            showSlashMenu = false
+                            text = ""
+                            return .handled
+                        }
+                        return .ignored
+                    }
                     .accessibilityLabel("Message input")
+                    .accessibilityIdentifier("agent.conversation.input")
 
                 if queuedCount > 0 {
                     Text("\(queuedCount) queued")
@@ -125,6 +212,63 @@ struct InputBar: View {
         .onAppear {
             projectFiles = InputBarHelpers.loadProjectFiles()
             branches = InputBarHelpers.loadBranches()
+        }
+    }
+
+    // MARK: - Slash Command Handling
+
+    private func handleSlashCommand(_ command: SlashCommand) {
+        switch command.type {
+        case .prompt(let template, let autoSend):
+            text = template
+            showSlashMenu = false
+            if autoSend { onSend() }
+
+        case .injectContext:
+            showSlashMenu = false
+            text = ""
+            resolveImmediateContext(command.id)
+
+        case .picker(let kind):
+            showSlashMenu = false
+            text = ""
+            pickerFilter = ""
+            withAnimation(AnvilAnimation.standard) {
+                switch kind {
+                case .file:
+                    showFilePicker = true
+                case .ticket:
+                    showTicketPicker = true
+                }
+            }
+        }
+    }
+
+    private func resolveImmediateContext(_ commandId: String) {
+        let attachment: ContextAttachment?
+        switch commandId {
+        case "ctx-tab":
+            attachment = contextResolver.resolveTab()
+        case "ctx-selection":
+            attachment = contextResolver.resolveSelection()
+        case "ctx-diff":
+            attachment = contextResolver.resolveDiff()
+        case "ctx-branch":
+            attachment = contextResolver.resolveBranch()
+        default:
+            attachment = nil
+        }
+        if let attachment {
+            onAddAttachment(attachment)
+        }
+    }
+
+    private func dismissPicker() {
+        withAnimation(AnvilAnimation.standard) {
+            showFilePicker = false
+            showTicketPicker = false
+            pickerFilter = ""
+            text = ""
         }
     }
 
@@ -176,6 +320,64 @@ enum InputBarHelpers {
                 .filter { !$0.isEmpty }
         } catch {
             return []
+        }
+    }
+
+    /// Load the current git diff (staged + unstaged).
+    static func loadGitDiff() -> String? {
+        let task = Process()
+        let pipe = Pipe()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        task.arguments = ["diff", "HEAD"]
+        task.standardOutput = pipe
+        task.standardError = FileHandle.nullDevice
+        do {
+            try task.run()
+            task.waitUntilExit()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            guard let output = String(data: data, encoding: .utf8), !output.isEmpty else { return nil }
+            return output
+        } catch {
+            return nil
+        }
+    }
+
+    /// Load the current branch name.
+    static func loadCurrentBranch() -> String? {
+        let task = Process()
+        let pipe = Pipe()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        task.arguments = ["rev-parse", "--abbrev-ref", "HEAD"]
+        task.standardOutput = pipe
+        task.standardError = FileHandle.nullDevice
+        do {
+            try task.run()
+            task.waitUntilExit()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            guard let output = String(data: data, encoding: .utf8) else { return nil }
+            let trimmed = output.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        } catch {
+            return nil
+        }
+    }
+
+    /// Load recent commits for the current branch (last 5).
+    static func loadRecentCommits(count: Int = 5) -> String? {
+        let task = Process()
+        let pipe = Pipe()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        task.arguments = ["log", "--oneline", "-\(count)"]
+        task.standardOutput = pipe
+        task.standardError = FileHandle.nullDevice
+        do {
+            try task.run()
+            task.waitUntilExit()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            guard let output = String(data: data, encoding: .utf8), !output.isEmpty else { return nil }
+            return output.trimmingCharacters(in: .whitespacesAndNewlines)
+        } catch {
+            return nil
         }
     }
 

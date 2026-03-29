@@ -32,6 +32,8 @@ struct EditorMode: View {
             }
             // Load git diff data for gutter decorations
             viewModel.refreshGitDiffs()
+            // Start watching for external file changes
+            viewModel.startFileWatching()
             // Handle file open request from command palette
             if let filePath = appState.pendingFileToOpen {
                 openPendingFile(filePath)
@@ -40,6 +42,12 @@ struct EditorMode: View {
         .onChange(of: appState.pendingFileToOpen) { _, newPath in
             if let filePath = newPath {
                 openPendingFile(filePath)
+            }
+        }
+        .onChange(of: appState.triggerSaveFile) { _, trigger in
+            if trigger {
+                appState.triggerSaveFile = false
+                splitState.activePane.viewModel.saveCurrentFile()
             }
         }
         .onChange(of: appState.triggerInlineEdit) { _, trigger in
@@ -104,6 +112,56 @@ struct EditorMode: View {
                 .accessibilityAddTraits(.isToggle)
                 .help("Toggle Symbol Outline")
             }
+
+            ToolbarItem(placement: .automatic) {
+                Button {
+                    viewModel.isProblemsVisible.toggle()
+                } label: {
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundStyle(
+                            viewModel.isProblemsVisible
+                                ? AnvilColor.accentBlue
+                                : viewModel.lspViewModel.diagnostics.isEmpty
+                                    ? AnvilColor.textTertiary
+                                    : AnvilColor.accentAmber
+                        )
+                }
+                .accessibilityLabel("Toggle Problems Panel")
+                .accessibilityAddTraits(.isToggle)
+                .help("Toggle Problems Panel")
+            }
+
+            ToolbarItem(placement: .automatic) {
+                Button {
+                    splitState.activePane.viewModel.isMinimapVisible.toggle()
+                } label: {
+                    Image(systemName: "rectangle.split.3x1")
+                        .foregroundStyle(
+                            splitState.activePane.viewModel.isMinimapVisible
+                                ? AnvilColor.accentBlue
+                                : AnvilColor.textTertiary
+                        )
+                }
+                .accessibilityLabel("Toggle Minimap")
+                .accessibilityAddTraits(.isToggle)
+                .help("Toggle Minimap")
+            }
+
+            ToolbarItem(placement: .automatic) {
+                Button {
+                    splitState.activePane.viewModel.toggleBlame()
+                } label: {
+                    Image(systemName: "person.text.rectangle")
+                        .foregroundStyle(
+                            splitState.activePane.viewModel.isBlameVisible
+                                ? AnvilColor.accentBlue
+                                : AnvilColor.textTertiary
+                        )
+                }
+                .accessibilityLabel("Toggle Git Blame")
+                .accessibilityAddTraits(.isToggle)
+                .help("Toggle Git Blame Annotations")
+            }
         }
     }
 
@@ -124,8 +182,16 @@ struct EditorMode: View {
 
             Divider()
 
-            // Center: Editor pane(s)
-            editorPaneArea
+            // Center: Editor pane(s) with optional Problems panel below
+            VStack(spacing: 0) {
+                editorPaneArea
+
+                if viewModel.isProblemsVisible {
+                    Divider()
+                    ProblemsPanel(viewModel: viewModel)
+                        .frame(height: 200)
+                }
+            }
 
             // Right: Symbol outline for active pane
             if splitState.activePane.viewModel.isSymbolOutlineVisible {

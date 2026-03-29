@@ -23,7 +23,7 @@ Hexagonal architecture (ports and adapters) with DDD:
 - **Primitives** = Ports (abstract contracts). 25 total defined in SPEC.md.
 - **Providers** = Adapters (concrete implementations). Swappable at runtime.
 - **ACP** = Agent Communication Protocol. Every AI feature flows through ACP. Plugins get AI for free.
-- **Workspaces** = Intent, Agent, Review, Ship (core) + Editor, Database, Terminal, Docs, Messaging, Notifications, Testing, Schedule, Observability (auxiliary).
+- **Spaces** = Plan, Build, Review, Operate, Library. `Workspace` means the current project/root context, not a top-level shell destination. See [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md).
 
 ## Build
 
@@ -35,6 +35,117 @@ xcodebuild -project Anvil.xcodeproj -scheme Anvil -derivedDataPath /tmp/anvil-de
 
 Open `Anvil.xcodeproj` for normal development. Do not open the repo root as a Swift package workspace.
 
+## Visual Verification — REQUIRED for all UI agents
+
+**Every UI agent MUST visually verify their work before marking a task complete.**
+
+### Build and launch
+
+```bash
+# Build
+xcodebuild -project Anvil.xcodeproj -scheme Anvil -derivedDataPath /tmp/anvil-derived build
+
+# Launch (non-interactive)
+open /tmp/anvil-derived/Build/Products/Debug/Anvil.app
+sleep 3  # wait for launch
+```
+
+### Screenshot a window
+
+```bash
+# Get Anvil's window ID
+WINDOW_ID=$(osascript -e 'tell application "System Events" to get id of first window of process "Anvil"')
+screencapture -l $WINDOW_ID -x /tmp/anvil-screenshot.png
+# Then Read /tmp/anvil-screenshot.png to view it
+```
+
+### Click through the UI (use accessibility tree, not coordinates)
+
+```bash
+# AppleScript — click a named button
+osascript -e 'tell application "System Events" to tell process "Anvil" to click button "Settings" of window 1'
+
+# JXA — more powerful, use for navigation
+osascript -l JavaScript -e '
+  const app = Application("Anvil");
+  app.activate();
+'
+```
+
+### XCUITest with screenshots (preferred for structured traversal)
+
+All UI tests MUST attach screenshots at key states:
+
+```swift
+func addScreenshot(_ name: String) {
+    let attachment = XCTAttachment(screenshot: XCUIApplication().screenshot())
+    attachment.name = name
+    attachment.lifetime = .keepAlways
+    add(attachment)
+}
+```
+
+Run tests and extract screenshots:
+
+```bash
+xcodebuild test -project Anvil.xcodeproj -scheme Anvil \
+  -destination 'platform=macOS' \
+  -resultBundlePath /tmp/anvil-test-results.xcresult
+
+xcrun xcresulttool get --path /tmp/anvil-test-results.xcresult --format json
+```
+
+### Agent workflow
+
+1. Build the feature
+2. Build the app (`xcodebuild ... build`)
+3. Launch app and take a screenshot
+4. Read the screenshot to visually verify the feature looks correct
+5. If it looks wrong, fix it and repeat from step 2
+6. Only mark task complete after visual confirmation
+
+## macOS Tahoe Aesthetic — MANDATORY for all UI
+
+Every pixel of user-facing UI must look like Apple built it for macOS Tahoe (macOS 26). No exceptions.
+
+### Materials and surfaces
+- `.ultraThinMaterial` or `.regularMaterial` for all panels, popovers, sidebars
+- `.glassEffect(.regular)` for the new Tahoe liquid glass (macOS 26 API) on cards, overlays, inspector panels
+- No custom opaque backgrounds where a material would be appropriate
+- Window chrome: `NSVisualEffectView` vibrancy — use `.sidebar` for sidebars, `.underWindowBackground` for content
+
+### Typography
+- System fonts only: `.system`, `.headline`, `.subheadline`, `.caption`, `.footnote`
+- `AnvilFont` wrappers must map to system semantic sizes
+- No custom font files unless brand-critical
+- Use `.monospacedDigit` for numbers (cost, token counts, line numbers)
+
+### Controls and interactions
+- Buttons: `.bordered` / `.borderedProminent` / `.plain` — never custom background+border combos
+- Pickers: `.segmented` for 2-4 choices in toolbars, `.menu` in forms
+- Lists: `.sidebar` style in sidebars, `.inset` in content areas — never `alternatesRowBackgrounds: true`
+- Tables: native `Table` with `TableColumn` — no alternating stripes via custom code
+- Toolbars: `ToolbarItem` in `.toolbar` modifier — no floating HStacks posing as toolbars
+- Empty states: centered icon (SF Symbol, `.thin` weight, 28pt) + label + optional action button
+
+### Color
+- `Color.accentColor` for interactive elements — respect the user's accent color setting
+- `.primary` / `.secondary` / `.tertiary` for text hierarchy
+- `.red` / `.orange` / `.green` for semantic states (error/warning/success)
+- No hardcoded hex colors in UI code
+
+### Animation
+- `withAnimation(.spring(response: 0.3, dampingFraction: 0.8))` for state transitions
+- Pulsing indicators: `scaleEffect` + `opacity` loop, never spinning custom shapes
+- Sheet/popover presentations: use native `.sheet`, `.popover`, `.inspector` modifiers
+
+### What NOT to do
+- No `ZStack` + `RoundedRectangle` + `.fill` custom buttons
+- No `VStack` tab bars — use `SidebarTabBar` (already in AnvilSidebarKit)
+- No web-style card grids in sidebars
+- No fixed-height rows that create phantom empty stripes
+- No `frame(minHeight:)` on Lists or Tables
+
 ## Critical Rules
 
 - AnvilUI NEVER imports AnvilInfrastructure. All communication goes through Application layer protocols.
@@ -45,6 +156,7 @@ Open `Anvil.xcodeproj` for normal development. Do not open the repo root as a Sw
 - No visible affordance ships unless it is in `TRUTH_MATRIX.md` with a real handler.
 - No shortcut label appears in UI unless the command exists and is wired.
 - Shell work (rail, sidebar, inspector, utility deck) lands before or with feature breadth.
+- **UI agents MUST visually verify their work via screenshot before marking complete.** See Visual Verification above.
 
 ## Governance Documents
 
@@ -52,6 +164,7 @@ Open `Anvil.xcodeproj` for normal development. Do not open the repo root as a Sw
 |---|---|
 | `ARCHITECTURE/OVERVIEW.md` | Full architecture, feature status, build instructions |
 | `ARCHITECTURE/TASK_REGISTRY.md` | Master task list: 338 tasks with priorities |
+| `ARCHITECTURE/SHELL_VOCABULARY.md` | Canonical shell names, hierarchy, and grouping model |
 | `ARCHITECTURE/UX_SHELL.md` | Shell contract: ownership rules for every window region |
 | `ARCHITECTURE/PROVIDER_MODEL.md` | Multi-provider rules and capability sets |
 | `ARCHITECTURE/COMPETITOR_GAP.md` | Gap analysis vs Cursor, Windsurf, Zed, Xcode, Linear, GitHub, Raycast |

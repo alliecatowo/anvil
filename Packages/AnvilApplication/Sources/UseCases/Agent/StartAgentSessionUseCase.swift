@@ -25,10 +25,7 @@ public struct StartAgentSessionUseCase: Sendable {
         )
 
         await EventBus.shared.publish(
-            AnyDomainEvent(
-                sourcePrimitive: "agents",
-                payload: "Session \(session.id) started"
-            )
+            AgentSessionStartedEvent(sessionId: session.id, model: model ?? session.model, workItemId: workItemId)
         )
 
         return session

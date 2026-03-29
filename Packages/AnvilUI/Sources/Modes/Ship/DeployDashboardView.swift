@@ -21,12 +21,49 @@ struct DeployDashboardView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AnvilSpacing.xl) {
+                // Provider loading state
+                if viewModel.isLoadingFromProvider {
+                    HStack {
+                        Spacer()
+                        ProgressView("Loading from provider...")
+                            .font(AnvilFont.label)
+                            .controlSize(.small)
+                        Spacer()
+                    }
+                }
+
                 // Deploy progress (if active)
                 if viewModel.isDeploying, let envID = viewModel.deployingEnvironmentID {
                     HStack {
                         Spacer()
                         deployProgressIndicator(envID: envID)
                     }
+                }
+
+                // Deploy result message
+                if let result = viewModel.deployResultMessage {
+                    HStack(spacing: AnvilSpacing.sm) {
+                        Image(systemName: viewModel.deployResultIsError ? "xmark.circle.fill" : "checkmark.circle.fill")
+                            .foregroundStyle(viewModel.deployResultIsError ? AnvilColor.accentRed : AnvilColor.accentGreen)
+                        Text(result)
+                            .font(AnvilFont.label)
+                            .foregroundStyle(viewModel.deployResultIsError ? AnvilColor.accentRed : AnvilColor.accentGreen)
+                        Spacer()
+                        Button {
+                            viewModel.deployResultMessage = nil
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, AnvilSpacing.md)
+                    .padding(.vertical, AnvilSpacing.sm)
+                    .background(
+                        (viewModel.deployResultIsError ? AnvilColor.accentRed : AnvilColor.accentGreen).opacity(0.1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius))
                 }
 
                 // Environment cards grid
@@ -218,12 +255,25 @@ struct DeployDashboardView: View {
             AnvilCard {
                 VStack(spacing: AnvilSpacing.sm) {
                     LabeledContent("Version", value: card.currentVersion)
-                    LabeledContent("Commit", value: card.currentCommit)
+                    LabeledContent("SHA") {
+                        Text(String(card.currentCommit.prefix(7)))
+                            .font(AnvilFont.code)
+                            .foregroundStyle(AnvilColor.accentPurple)
+                            .textSelection(.enabled)
+                    }
                     LabeledContent("Branch", value: card.environment.branch ?? "--")
-                    LabeledContent("Deployed", value: card.lastDeployTime.map(dateTimeFormatter.string(from:)) ?? "--")
+                    LabeledContent("Deployed At", value: card.lastDeployTime.map(dateTimeFormatter.string(from:)) ?? "--")
+                    if let latestEntry = viewModel.deployHistoryForSelected.first {
+                        LabeledContent("Deployer", value: latestEntry.triggeredBy)
+                    }
                     LabeledContent("Status") {
-                        Label(card.status.label, systemImage: "circle.fill")
-                            .foregroundStyle(card.status.color)
+                        HStack(spacing: AnvilSpacing.xxs) {
+                            Circle()
+                                .fill(card.status.color)
+                                .frame(width: 8, height: 8)
+                            Text(card.status.label)
+                        }
+                        .foregroundStyle(card.status.color)
                     }
                     LabeledContent("Health") {
                         Label(card.overallHealth.label, systemImage: card.overallHealth.icon)
@@ -299,39 +349,46 @@ struct DeployDashboardView: View {
                 .foregroundStyle(AnvilColor.textPrimary)
 
             Table(viewModel.deployHistoryForSelected) {
-                TableColumn("Version") { entry in
-                    Text(entry.version)
+                TableColumn("Status") { entry in
+                    HStack(spacing: AnvilSpacing.xxs) {
+                        Circle()
+                            .fill(statusColor(entry.deployment.status))
+                            .frame(width: 8, height: 8)
+                        Text(entry.deployment.status.rawValue.capitalized)
+                            .font(AnvilFont.label)
+                            .foregroundStyle(statusColor(entry.deployment.status))
+                    }
+                }
+                .width(min: 80, ideal: 100)
+                TableColumn("SHA") { entry in
+                    Text(String((entry.deployment.commitHash ?? "--").prefix(7)))
                         .font(AnvilFont.code)
                         .foregroundStyle(AnvilColor.accentPurple)
                 }
-                TableColumn("Commit") { entry in
-                    Text(entry.deployment.commitHash ?? "--")
-                        .font(AnvilFont.code)
-                }
-                TableColumn("Status") { entry in
-                    Label(entry.deployment.status.rawValue.capitalized, systemImage: "circle.fill")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(statusColor(entry.deployment.status))
-                }
-                TableColumn("Triggered By") { entry in
+                .width(min: 60, ideal: 70)
+                TableColumn("Deployer") { entry in
                     Text(entry.triggeredBy)
                         .font(AnvilFont.label)
                 }
-                TableColumn("Branch") { entry in
-                    Text(entry.branch)
-                        .font(AnvilFont.code)
-                        .lineLimit(1)
+                .width(min: 80, ideal: 120)
+                TableColumn("Date") { entry in
+                    Text(dateTimeFormatter.string(from: entry.deployment.createdAt))
+                        .font(AnvilFont.label)
+                        .foregroundStyle(.secondary)
                 }
+                .width(min: 120, ideal: 160)
                 TableColumn("Duration") { entry in
                     Text(entry.duration > 0 ? entry.durationString : "--")
                         .font(AnvilFont.label)
                         .foregroundStyle(.secondary)
                 }
-                TableColumn("Time") { entry in
-                    Text(dateTimeFormatter.string(from: entry.deployment.createdAt))
-                        .font(AnvilFont.label)
-                        .foregroundStyle(.secondary)
+                .width(min: 60, ideal: 80)
+                TableColumn("Branch") { entry in
+                    Text(entry.branch)
+                        .font(AnvilFont.code)
+                        .lineLimit(1)
                 }
+                .width(min: 80, ideal: 120)
                 TableColumn("Action") { entry in
                     if entry.deployment.status == .ready,
                        entry.id != viewModel.deployHistoryForSelected.first?.id {
@@ -344,6 +401,7 @@ struct DeployDashboardView: View {
                         .foregroundStyle(.orange)
                     }
                 }
+                .width(min: 60, ideal: 80)
             }
         }
     }
@@ -357,14 +415,19 @@ struct DeployDashboardView: View {
                 .foregroundStyle(AnvilColor.textPrimary)
 
             Table(Array(viewModel.deployments.prefix(10))) {
-                TableColumn("Commit") { deployment in
-                    Text(deployment.commitHash ?? "--")
-                        .font(AnvilFont.code)
-                }
                 TableColumn("Status") { deployment in
-                    Label(deployment.status.rawValue.capitalized, systemImage: "circle.fill")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(statusColor(deployment.status))
+                    HStack(spacing: AnvilSpacing.xxs) {
+                        Circle()
+                            .fill(statusColor(deployment.status))
+                            .frame(width: 8, height: 8)
+                        Text(deployment.status.rawValue.capitalized)
+                            .font(AnvilFont.label)
+                            .foregroundStyle(statusColor(deployment.status))
+                    }
+                }
+                TableColumn("SHA") { deployment in
+                    Text(String((deployment.commitHash ?? "--").prefix(7)))
+                        .font(AnvilFont.code)
                 }
                 TableColumn("Environment") { deployment in
                     Text(environmentName(for: deployment.environmentId))

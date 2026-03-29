@@ -95,6 +95,69 @@ public struct CompletionItem: Identifiable, Sendable, Equatable {
     }
 }
 
+/// Hover information returned by textDocument/hover.
+public struct LSPHoverResult: Sendable, Equatable {
+    /// The full hover content (may contain markdown).
+    public let contents: String
+    /// Whether the content is markdown.
+    public let isMarkdown: Bool
+
+    public init(contents: String, isMarkdown: Bool = false) {
+        self.contents = contents
+        self.isMarkdown = isMarkdown
+    }
+
+    /// Extract the type signature (first code block or first line).
+    public var typeSignature: String {
+        let lines = contents.components(separatedBy: "\n")
+        var inCode = false
+        var codeLines: [String] = []
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("```") {
+                if inCode { break } // end of first code block
+                inCode = true
+                continue
+            }
+            if inCode {
+                codeLines.append(line)
+            }
+        }
+
+        if !codeLines.isEmpty {
+            return codeLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        // Fallback: first non-empty line
+        return lines.first(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty })
+            ?? contents
+    }
+
+    /// Extract documentation (everything after the first code block).
+    public var documentation: String? {
+        let lines = contents.components(separatedBy: "\n")
+        var inCode = false
+        var pastFirstBlock = false
+        var docLines: [String] = []
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("```") {
+                if inCode { pastFirstBlock = true }
+                inCode.toggle()
+                continue
+            }
+            if pastFirstBlock && !inCode {
+                docLines.append(line)
+            }
+        }
+
+        let result = docLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        return result.isEmpty ? nil : result
+    }
+}
+
 /// A source location returned by go-to-definition.
 public struct LSPLocation: Sendable, Equatable {
     public let uri: String

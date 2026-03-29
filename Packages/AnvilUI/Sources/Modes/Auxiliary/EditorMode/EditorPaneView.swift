@@ -55,8 +55,15 @@ struct EditorPaneView: View {
                 ReadOnlyBanner(viewModel: viewModel)
             }
 
-            EditorView(viewModel: viewModel)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            HStack(spacing: 0) {
+                EditorView(viewModel: viewModel)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                if viewModel.isMinimapVisible, viewModel.selectedFile != nil {
+                    Divider()
+                    EditorMinimap(viewModel: viewModel)
+                }
+            }
         }
         .background(.background)
         .overlay(
