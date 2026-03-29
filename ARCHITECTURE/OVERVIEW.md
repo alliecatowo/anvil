@@ -12,7 +12,7 @@ Anvil is a native macOS development environment built for the post-IDE era. It i
 
 **The core premise:** AI is ambient infrastructure, not a bolted-on feature. Every surface in Anvil is AI-capable via the Agent Communication Protocol (ACP). Plugins inherit AI for free. There is no per-feature API key setup.
 
-**The opinionated workflow:** Plan → Build → Review → Ship. Four phases, four first-class workspaces, keyboard-navigable throughout. `Intent` and `Agent` remain internal identifiers during migration, not the north-star shell vocabulary. See [`ARCHITECTURE/NORTH_STAR_SHELL.md`](/Users/allie/Develop/anvil/ARCHITECTURE/NORTH_STAR_SHELL.md) for the canonical shell language.
+**The opinionated workflow:** Plan → Build → Review → Operate → Library. Five first-class spaces, keyboard-navigable throughout. `Intent` and `Agent` remain transitional identifiers during migration, not the canonical shell vocabulary. See [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md) for the canonical shell language and grouping model.
 
 **The native moat:** None of the AI-first competitors — Cursor, Windsurf, Zed — are native macOS apps. Anvil is Swift 6, SwiftUI, AppKit interop, targeting macOS 15+ (Sequoia). The native shell is the product differentiator.
 
@@ -156,7 +156,7 @@ Every provider integration must expose: `connect`, `disconnect`, `discover`, `li
 
 ### UX Shell Ownership
 
-Defined in `ARCHITECTURE/NORTH_STAR_SHELL.md` and summarized in `ARCHITECTURE/UX_SHELL.md`. Key contract:
+Defined in `ARCHITECTURE/SHELL_VOCABULARY.md` and summarized in `ARCHITECTURE/UX_SHELL.md`. Key contract:
 - Workspace rail owns workspace switching and global badges
 - Sidebar owns navigation (entities, views, collections)
 - Canvas owns the active artifact or workflow
@@ -324,7 +324,7 @@ These documents govern what ships and how:
 | Document | Purpose |
 |---|---|
 | `ARCHITECTURE/OVERVIEW.md` (this file) | Single authoritative architecture and status summary |
-| `ARCHITECTURE/NORTH_STAR_SHELL.md` | Canonical shell vocabulary and workspace hierarchy |
+| `ARCHITECTURE/SHELL_VOCABULARY.md` | Canonical shell vocabulary and workspace hierarchy |
 | `ARCHITECTURE/UX_SHELL.md` | Shell contract: rail, sidebar, canvas, inspector, utility deck ownership |
 | `ARCHITECTURE/PROVIDER_MODEL.md` | Rules for multi-provider UI, capability sets, provider states |
 | `ARCHITECTURE/COMPETITIVE_IA_RESEARCH_2026.md` | IA patterns synthesized from Xcode, VS Code, JetBrains, Cursor, Claude Code, Codex, Raycast |

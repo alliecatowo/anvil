@@ -1,9 +1,9 @@
 # UX Shell
 
-Canonical shell vocabulary lives in [`ARCHITECTURE/NORTH_STAR_SHELL.md`](/Users/allie/Develop/anvil/ARCHITECTURE/NORTH_STAR_SHELL.md). This document defines the shell contract that implements that vocabulary.
+Canonical shell vocabulary lives in [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md). This document defines the shell contract that implements that vocabulary.
 
 This document defines the shell contract for the entire app.
-The shell is the outer structure that holds workspaces, sources, detail panes, utilities, and provider setup.
+The shell is the outer structure that holds spaces, sources, detail panes, utilities, and provider setup.
 
 ## Core Pattern
 
@@ -18,8 +18,8 @@ The shell is the outer structure that holds workspaces, sources, detail panes, u
 
 Use these layers consistently:
 
-1. `Workspaces`
-- User-facing task domains such as Plan, Build, Review, Ship.
+1. `Spaces`
+- User-facing destinations such as Plan, Build, Review, Operate, and Library.
 
 Note:
 - `Intent` and `Agent` are current implementation names and transitional labels, not the canonical user-facing shell vocabulary.
@@ -42,7 +42,7 @@ Note:
 7. `Providers`
 - Setup, connection, and capability configuration.
 
-## Workspace Sidebar Templates
+## Space Sidebar Templates
 
 Every workspace should expose useful sidebar sections, even when collapsed. The exact sections vary by workspace, but the pattern should stay legible.
 
@@ -51,12 +51,13 @@ Recommended templates:
 - `Plan`: `Projects`, `Boards`, `Sprints`, `Tickets`, `Filters`, `History`, `Utilities`
 - `Build`: `Sessions`, `Plans`, `Runs`, `Memory`, `Tools`, `History`, `Utilities`
 - `Review`: `Repositories`, `Pull Requests`, `Files`, `Checks`, `Comments`, `History`, `Utilities`
-- `Ship`: `Environments`, `Deployments`, `Services`, `Variables`, `Logs`, `History`, `Providers`
+- `Operate`: `Environments`, `Deployments`, `Services`, `Variables`, `Logs`, `History`, `Providers`
+- `Library`: `Libraries`, `Documents`, `Outline`, `Rules`, `History`, `Utilities`
 - `Editor`: `Files`, `Symbols`, `Problems`, `Search`, `History`, `Utilities`
 - `Database`: `Connections`, `Schemas`, `Tables`, `Queries`, `History`, `Export`, `Providers`
 - `Terminal`: `Sessions`, `Splits`, `Profiles`, `History`, `Actions`
 - `Docs`: `Libraries`, `Documents`, `Outline`, `History`, `Utilities`
-- `Messaging`: `Workspaces`, `Channels`, `Threads`, `DMs`, `History`, `Utilities`
+- `Messaging`: `Spaces`, `Channels`, `Threads`, `DMs`, `History`, `Utilities`
 - `Notifications`: `Sources`, `Filters`, `Inbox`, `History`, `Utilities`
 - `Extensions`: `Categories`, `Installed`, `Updates`, `History`, `Utilities`
 
@@ -85,7 +86,7 @@ Do not force every workspace to use every section. Do require the sections that 
 
 Good section names:
 
-- `Workspaces`
+- `Spaces`
 - `Projects`
 - `Sources`
 - `Objects`

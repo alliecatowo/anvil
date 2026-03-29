@@ -48,7 +48,7 @@ This policy covers every user-facing surface:
 - Feature work may not add a new custom top bar, fake segmented header, or embedded navigation surface to avoid dealing with shell structure.
 - If the app needs a new concept in a sidebar, the concept model must be defined before the pixels.
 - If the shell cannot represent the concept cleanly, the concept needs a shell design pass before feature work continues.
-- If the app changes the shell vocabulary or workspace hierarchy, [`ARCHITECTURE/NORTH_STAR_SHELL.md`](/Users/allie/Develop/anvil/ARCHITECTURE/NORTH_STAR_SHELL.md) must be updated in the same change.
+- If the app changes the shell vocabulary or workspace hierarchy, [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md) must be updated in the same change.
 - New shell concepts must match [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md) before they are implemented or renamed in UI.
 
 ## Interaction Truth
@@ -93,7 +93,7 @@ Custom UI is allowed only when the native primitive cannot express the interacti
 - If a surface says something can happen, it must be possible right now in code.
 - If a surface cannot be made real yet, the surface must not be presented as available.
 - If the app needs a new affordance, the affordance must be added to `TRUTH_MATRIX.md` in the same change.
-- If the app needs a new shell concept, `ARCHITECTURE/NORTH_STAR_SHELL.md` must be updated in the same change.
+- If the app needs a new shell concept, `ARCHITECTURE/SHELL_VOCABULARY.md` must be updated in the same change.
 - If the app needs a new provider capability, `ARCHITECTURE/PROVIDER_MODEL.md` must be updated in the same change.
 - If the app adds or changes deterministic visual regression scenarios, they must be driven by `ANVIL_UITEST_SCENARIO` and the scenario names must stay aligned with the seeded screen model.
 
@@ -102,7 +102,7 @@ Custom UI is allowed only when the native primitive cannot express the interacti
 Before merge, verify:
 
 - `TRUTH_MATRIX.md` was updated for any user-facing affordance change.
-- `ARCHITECTURE/NORTH_STAR_SHELL.md` and `ARCHITECTURE/UX_SHELL.md` were updated for any navigation or shell change.
+- `ARCHITECTURE/SHELL_VOCABULARY.md` and `ARCHITECTURE/UX_SHELL.md` were updated for any navigation or shell change.
 - `ARCHITECTURE/PROVIDER_MODEL.md` was updated for any provider or capability change.
 - `docs/pr-checklists/native-ui.md` was completed for any UI change.
 - `docs/pr-checklists/feature-completeness.md` was completed for any feature change.
