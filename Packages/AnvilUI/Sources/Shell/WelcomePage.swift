@@ -106,7 +106,7 @@ public struct WelcomePage: View {
                 .font(.system(size: 32, weight: .semibold, design: .default))
                 .foregroundStyle(.primary)
 
-            Text("Agent-native development environment")
+            Text("AI-native development environment")
                 .font(AnvilFont.body)
                 .foregroundStyle(.secondary)
         }

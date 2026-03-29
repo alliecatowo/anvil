@@ -104,6 +104,7 @@ struct BoardView: View {
                         .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.sidebarItem)
                         .focused($isNewTicketFocused)
+                        .accessibilityIdentifier("intent.board.new-ticket-title")
                         .onSubmit {
                             withAnimation(AnvilAnimation.standard) {
                                 viewModel.createTicket(title: newTicketTitle, status: column.status)
@@ -148,6 +149,7 @@ struct BoardView: View {
                     .frame(maxWidth: .infinity, minHeight: 32)
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("intent.board.add-ticket.\(column.id)")
                 .background(
                     RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
                         .strokeBorder(AnvilColor.borderSubtle, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
@@ -180,6 +182,7 @@ struct BoardView: View {
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(ticket.title), \(IntentViewModel.priorityLabel(ticket.priority)) priority, \(ticket.id)")
+        .accessibilityIdentifier("intent.board.ticket-card.\(ticket.id)")
         .accessibilityAddTraits(.isButton)
         .contextMenu {
             Button {
@@ -187,6 +190,7 @@ struct BoardView: View {
             } label: {
                 Label("Open in Main Pane", systemImage: "arrow.right.square")
             }
+            .accessibilityIdentifier("intent.board.open-main-pane.\(ticket.id)")
 
             Divider()
 

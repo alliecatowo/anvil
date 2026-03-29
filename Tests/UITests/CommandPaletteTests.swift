@@ -75,17 +75,17 @@ final class CommandPaletteTests: XCTestCase {
         XCTAssertTrue(scrollView.waitForExistence(timeout: 3), "Typing in command palette must produce a results list")
     }
 
-    func testSearchForAgentShowsResult() throws {
+    func testSearchForBuildShowsResult() throws {
         app.typeKey("k", modifierFlags: .command)
 
         let searchField = app.textFields["Search commands, files, work items..."]
         XCTAssertTrue(searchField.waitForExistence(timeout: 5))
 
-        searchField.typeText("Agent")
+        searchField.typeText("Build")
 
-        // Result: at least one result containing "Agent" should appear
-        let result = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Agent'")).firstMatch
-        XCTAssertTrue(result.waitForExistence(timeout: 3), "Searching 'Agent' must show Agent-related results")
+        // Result: at least one result containing "Build" should appear
+        let result = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Build'")).firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 3), "Searching 'Build' must show Build-related results")
     }
 
     func testSearchWithNoMatchesShowsEmptyState() throws {
@@ -147,10 +147,10 @@ final class CommandPaletteTests: XCTestCase {
         let searchField = app.textFields["Search commands, files, work items..."]
         XCTAssertTrue(searchField.waitForExistence(timeout: 5))
 
-        searchField.typeText("Agent")
+        searchField.typeText("Build")
 
         // Select a result
-        let agentResult = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Agent'")).firstMatch
+        let agentResult = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Build'")).firstMatch
         if agentResult.waitForExistence(timeout: 3) {
             agentResult.click()
 

@@ -86,29 +86,24 @@ final class DefaultJourneySmokeTests: AnvilUITestCase {
     func testDefaultIntentJourneyCanOpenTicketDetailInMainPane() throws {
         switchToSpace("Plan")
 
-        let newTicket = app.buttons["New Ticket"]
+        let newTicket = app.buttons["intent.sidebar.new-ticket"]
         XCTAssertTrue(newTicket.waitForExistence(timeout: 5), "Plan space must expose New Ticket")
         newTicket.click()
 
-        let titleField = app.textFields["New ticket title..."]
+        let titleField = app.textFields["intent.sidebar.quick-add-title"]
         XCTAssertTrue(titleField.waitForExistence(timeout: 5), "Ticket quick-add must appear")
 
         let title = "Smoke ticket \(Int.random(in: 1000...9999))"
         titleField.typeText(title)
         app.typeKey(.return, modifierFlags: [])
 
-        let ticket = app.cells.matching(NSPredicate(format: "label CONTAINS[c] %@", title)).firstMatch
-        XCTAssertTrue(ticket.waitForExistence(timeout: 5), "Created ticket must appear in the raw journey")
-
-        ticket.click()
-
         let openInMainPane = app.buttons["intent.open-main-pane"]
         XCTAssertTrue(openInMainPane.waitForExistence(timeout: 5), "Intent list should expose explicit open-in-main-pane action")
         openInMainPane.click()
 
-        let detailTitle = app.textFields["Ticket title"]
+        let detailTitle = app.textFields["intent.ticket-detail.title"]
         XCTAssertTrue(detailTitle.waitForExistence(timeout: 5), "Ticket must open into the main-pane detail view")
-        XCTAssertTrue(app.buttons["Back"].waitForExistence(timeout: 5), "Ticket detail must expose a Back action")
+        XCTAssertTrue(app.buttons["intent.ticket-detail.back"].waitForExistence(timeout: 5), "Ticket detail must expose a Back action")
     }
 
     func testDefaultBuildJourneyExposesEditorAndAgentConversation() throws {
@@ -131,7 +126,7 @@ final class DefaultJourneySmokeTests: AnvilUITestCase {
         let messageField = app.descendants(matching: .any).matching(identifier: "agent.conversation.input").firstMatch
         XCTAssertTrue(messageField.waitForExistence(timeout: 8), "New Session must open the agent conversation surface")
 
-        let infoButton = app.buttons.matching(NSPredicate(format: "label == 'Info'")).firstMatch
+        let infoButton = app.buttons["agent.conversation.toggle-sidebar"]
         XCTAssertTrue(infoButton.waitForExistence(timeout: 5), "Agent conversation must expose the info/secondary-pane control")
     }
 

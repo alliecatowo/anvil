@@ -90,6 +90,7 @@ struct AgentChatPanel: View {
             }
             .buttonStyle(.borderless)
             .help("New Session")
+            .accessibilityIdentifier("agent.chat.new-session")
 
             // Close button
             Button {

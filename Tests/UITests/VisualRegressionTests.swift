@@ -7,13 +7,13 @@ final class VisualRegressionTests: AnvilUITestCase {
 
     func testAgentEmptyStateScreenshot() throws {
         launchScenario("agent-empty")
-        XCTAssertTrue(app.staticTexts["Start an AI session"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["agent.empty.new-session"].waitForExistence(timeout: 5))
         addScreenshot("agent-empty")
     }
 
     func testAgentConversationScreenshot() throws {
         launchScenario("agent-conversation")
-        XCTAssertTrue(app.textFields["Message the agent..."].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "agent.conversation.input").firstMatch.waitForExistence(timeout: 5))
         addScreenshot("agent-conversation")
     }
 

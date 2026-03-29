@@ -335,6 +335,7 @@ struct SessionHeader: View {
                     .controlSize(.small)
                     .help(isAgentPanelVisible ? "Hide Agent Sidebar" : "Show Agent Sidebar")
                     .accessibilityLabel(isAgentPanelVisible ? "Hide Agent Sidebar" : "Show Agent Sidebar")
+                    .accessibilityIdentifier("agent.conversation.toggle-sidebar")
                     .accessibilityAddTraits(.isButton)
                 }
 

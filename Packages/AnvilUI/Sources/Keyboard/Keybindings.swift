@@ -47,7 +47,7 @@ public enum AnvilKeybindings {
         Keybinding(id: "cmd-4", key: "4", modifiers: .command, action: "space.operate", label: "Operate Space"),
         Keybinding(id: "cmd-5", key: "5", modifiers: .command, action: "space.library", label: "Library Space"),
         Keybinding(id: "cmd-n", key: "n", modifiers: .command, action: "newItem", label: "New Item"),
-        Keybinding(id: "cmd-shift-a", key: "a", modifiers: [.command, .shift], action: "newAgentSession", label: "New Agent Session"),
+        Keybinding(id: "cmd-shift-a", key: "a", modifiers: [.command, .shift], action: "newAgentSession", label: "New Build Session"),
         Keybinding(id: "cmd-shift-n", key: "n", modifiers: [.command, .shift], action: "appendProjectNotes", label: "Append to Project Notes"),
         Keybinding(id: "cmd-b", key: "b", modifiers: .command, action: "toggleSidebar", label: "Toggle Sidebar"),
         Keybinding(id: "cmd-j", key: "j", modifiers: .command, action: "toggleTerminal", label: "Toggle Terminal"),

@@ -34,7 +34,7 @@ public class AnvilSettings: ObservableObject {
     }
 
     public init() {
-        self.defaultMode = defaults.string(forKey: "defaultMode") ?? "Agent"
+        self.defaultMode = defaults.string(forKey: "defaultMode") ?? "Build"
         self.codeFontSize = defaults.object(forKey: "codeFontSize") as? Double ?? 12
         self.sidebarWidth = defaults.object(forKey: "sidebarWidth") as? Double ?? 260
         self.showLineNumbers = defaults.object(forKey: "showLineNumbers") as? Bool ?? true

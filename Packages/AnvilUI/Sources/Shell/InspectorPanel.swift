@@ -26,6 +26,7 @@ public struct InspectorPanel: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Close Inspector")
+                .accessibilityIdentifier("intent.inspector.close")
             }
             .padding(AnvilSpacing.md)
 
@@ -140,6 +141,7 @@ struct TicketInspectorView: View {
             AnvilButton("Open", icon: "arrow.right.square", style: .ghost) {
                 viewModel.openSelectedTicketInMainPane()
             }
+            .accessibilityIdentifier("intent.inspector.open-main-pane")
 
             Spacer()
 

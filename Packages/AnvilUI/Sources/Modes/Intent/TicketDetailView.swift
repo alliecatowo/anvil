@@ -47,6 +47,7 @@ struct TicketDetailView: View {
             AnvilButton("Back", icon: "chevron.left", style: .ghost) {
                 viewModel.closeTicketDetailInMainPane()
             }
+            .accessibilityIdentifier("intent.ticket-detail.back")
 
             Spacer()
 
@@ -69,11 +70,13 @@ struct TicketDetailView: View {
                 startWork(ticket)
             }
             .disabled(isDispatching)
+            .accessibilityIdentifier("intent.ticket-detail.start-work")
 
             if branchCreated == nil {
                 AnvilButton("Branch Only", icon: "arrow.triangle.branch", style: .ghost) {
                     createBranchForTicket(ticket)
                 }
+                .accessibilityIdentifier("intent.ticket-detail.branch-only")
             }
 
             Button(role: .destructive) {
@@ -87,6 +90,7 @@ struct TicketDetailView: View {
             }
             .buttonStyle(.plain)
             .help("Delete ticket")
+            .accessibilityIdentifier("intent.ticket-detail.delete")
 
             Text(ticket.id)
                 .font(AnvilFont.code)
@@ -161,6 +165,7 @@ struct TicketDetailView: View {
             .font(AnvilFont.heading)
             .foregroundStyle(AnvilColor.textPrimary)
             .accessibilityLabel("Ticket title")
+            .accessibilityIdentifier("intent.ticket-detail.title")
 
             // Metadata row (read-only display)
             HStack(spacing: AnvilSpacing.lg) {

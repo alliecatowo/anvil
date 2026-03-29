@@ -143,7 +143,7 @@ struct SlashCommand: Identifiable {
         SlashCommand(
             id: "ctx-ticket",
             name: "/ticket",
-            description: "Attach a ticket from Intent",
+            description: "Attach a ticket from Plan",
             icon: "ticket",
             type: .picker(kind: .ticket)
         ),

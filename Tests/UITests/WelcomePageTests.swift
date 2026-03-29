@@ -28,7 +28,7 @@ final class WelcomePageTests: XCTestCase {
     }
 
     func testTaglineVisible() throws {
-        let tagline = app.staticTexts["Agent-native development environment"]
+        let tagline = app.staticTexts["AI-native development environment"]
         _ = tagline.waitForExistence(timeout: 5)
     }
 

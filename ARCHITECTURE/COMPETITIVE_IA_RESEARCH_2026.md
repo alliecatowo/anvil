@@ -468,7 +468,7 @@ This is better than the current behavior because:
 Recommended rail behavior details:
 - The selected workspace icon remains highlighted even when the sidebar is hidden.
 - Hover reveals tooltips and optional status summaries, but never the only path to an action.
-- Right-click on a rail item opens workspace-specific quick actions such as `New Agent Session`, `New Query`, or `Open Review Queue`.
+- Right-click on a rail item opens workspace-specific quick actions such as `New Build Session`, `New Query`, or `Open Review Queue`.
 - Badges indicate count or urgency only. They should not encode too many states.
 - The rail remembers the last selected entity for each workspace and restores it on re-entry.
 

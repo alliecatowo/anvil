@@ -26,6 +26,7 @@ struct IntentSidebar: View {
                 .buttonStyle(.borderless)
                 .controlSize(.small)
                 .accessibilityLabel("New Ticket")
+                .accessibilityIdentifier("intent.sidebar.new-ticket")
             }
 
             AnvilSidebarSegmentedPicker(
@@ -102,6 +103,7 @@ struct IntentSidebar: View {
                                 .contextMenu {
                                     ticketContextMenu(ticket)
                                 }
+                                .accessibilityIdentifier("intent.sidebar.ticket-row.\(ticket.id)")
                         }
                     }
                 }
@@ -122,6 +124,7 @@ struct IntentSidebar: View {
                 .textFieldStyle(.roundedBorder)
                 .font(AnvilFont.sidebarItem)
                 .focused($isQuickAddFocused)
+                .accessibilityIdentifier("intent.sidebar.quick-add-title")
                 .onSubmit {
                     if !quickAddText.isEmpty {
                         withAnimation(AnvilAnimation.standard) {
@@ -147,6 +150,7 @@ struct IntentSidebar: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Cancel Quick Add")
+                .accessibilityIdentifier("intent.sidebar.quick-add-cancel")
             }
         }
         .padding(.vertical, 2)
@@ -272,9 +276,7 @@ struct IntentSidebar: View {
         } label: {
             TicketRowContent(
                 ticket: ticket,
-                isSelected: viewModel.selectedTicketId == ticket.id,
-                subtaskProgress: viewModel.subtaskProgress(ticket.id),
-                dueDate: ticket.dueDate
+                isSelected: viewModel.selectedTicketId == ticket.id
             )
             .contentShape(Rectangle())
         }
@@ -299,8 +301,6 @@ struct IntentSidebar: View {
 private struct TicketRowContent: View {
     let ticket: Ticket
     let isSelected: Bool
-    let subtaskProgress: (completed: Int, total: Int)
-    let dueDate: Date?
 
     @State private var isHovered = false
     @GestureState private var isPressed = false
@@ -320,16 +320,6 @@ private struct TicketRowContent: View {
                         .lineLimit(1)
 
                     Spacer()
-
-                    if let sp = ticket.storyPoints {
-                        Text("\(sp)")
-                            .font(AnvilFont.label)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1)
-                            .background(.regularMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 3))
-                    }
                 }
 
                 HStack(spacing: AnvilSpacing.xs) {
@@ -353,22 +343,6 @@ private struct TicketRowContent: View {
                             .lineLimit(1)
                             .accessibilityLabel("Assigned to \(assignee)")
                     }
-
-                    Spacer()
-
-                    if subtaskProgress.total > 0 {
-                        HStack(spacing: 2) {
-                            Image(systemName: "checklist")
-                                .font(.system(size: 9))
-                            Text("\(subtaskProgress.completed)/\(subtaskProgress.total)")
-                                .font(AnvilFont.label)
-                        }
-                        .foregroundStyle(subtaskProgress.completed == subtaskProgress.total ? AnvilColor.accentGreen : .secondary)
-                    }
-
-                    if let due = dueDate {
-                        dueDateLabel(due)
-                    }
                 }
             }
         }
@@ -387,21 +361,5 @@ private struct TicketRowContent: View {
                 .updating($isPressed) { _, pressed, _ in pressed = true }
         )
         .onHover { isHovered = $0 }
-    }
-
-    // MARK: - Due Date
-
-    private func dueDateLabel(_ date: Date) -> some View {
-        let days = Calendar.current.dateComponents([.day], from: .now, to: date).day ?? 0
-        let color: Color = days < 0
-            ? AnvilColor.accentRed
-            : days <= 2 ? AnvilColor.accentAmber : AnvilColor.textTertiary
-
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-
-        return Text(formatter.localizedString(for: date, relativeTo: .now))
-            .font(AnvilFont.label)
-            .foregroundStyle(color)
     }
 }

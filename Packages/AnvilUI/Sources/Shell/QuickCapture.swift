@@ -6,7 +6,7 @@ import AnvilDomain
 enum QuickCaptureType: String, CaseIterable {
     case note = "Note"
     case ticket = "Ticket"
-    case agent = "Agent"
+    case agent = "Build"
 
     var icon: String {
         switch self {
@@ -20,7 +20,7 @@ enum QuickCaptureType: String, CaseIterable {
         switch self {
         case .note: "Will save as a note"
         case .ticket: "Will create a ticket in Plan"
-        case .agent: "Will start an agent session in Build"
+        case .agent: "Will start a Build session"
         }
     }
 

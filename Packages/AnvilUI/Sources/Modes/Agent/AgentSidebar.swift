@@ -32,7 +32,7 @@ struct AgentSidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             AnvilSidebarHeaderRow(
-                title: "Agent",
+                title: "Build",
                 icon: "bubble.left.and.text.bubble.right",
                 count: viewModel.sessions.count
             ) {
@@ -49,7 +49,7 @@ struct AgentSidebar: View {
             }
 
             AnvilSidebarSegmentedPicker(
-                label: "Agent View",
+                label: "Build View",
                 items: AgentSidebarTab.allCases.map {
                     AnvilSidebarSegmentedPicker<AgentSidebarTab>.SidebarPickerItem(
                         id: $0,

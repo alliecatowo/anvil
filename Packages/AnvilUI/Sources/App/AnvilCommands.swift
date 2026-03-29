@@ -11,12 +11,12 @@ public struct AnvilCommands: Commands {
 
     public var body: some Commands {
         CommandGroup(replacing: .newItem) {
-            Button("New Agent Session") {
+            Button("New Build Session") {
                 appState.switchSpace(.build)
                 appState.agentViewModel.startNewSession(prompt: "", model: "claude-sonnet-4-6")
             }
             .keyboardShortcut("a", modifiers: [.command, .shift])
-            .help("Start a new AI agent session")
+            .help("Start a new Build session")
 
             Divider()
 

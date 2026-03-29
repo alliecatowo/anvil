@@ -95,7 +95,7 @@ public struct SetupWizard: View {
                     .font(.system(size: 32, weight: .bold))
                     .foregroundStyle(AnvilColor.textPrimary)
 
-                Text("The post-IDE. Agent-native development for macOS.")
+                Text("The post-IDE. AI-native development for macOS.")
                     .font(AnvilFont.subheading)
                     .foregroundStyle(AnvilColor.textSecondary)
             }

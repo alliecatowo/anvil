@@ -28,7 +28,7 @@ public func registerBuiltInCommands(registry: CommandRegistry, appState: AppStat
     // MARK: - Actions
 
     registry.register(
-        AnvilCommand(id: "new-agent-session", title: "New Agent Session", icon: "cpu", category: .agent, keyboardShortcut: "\u{2318}\u{21E7}A", keyBinding: .cmdShift("a"))
+        AnvilCommand(id: "new-agent-session", title: "New Build Session", icon: "cpu", category: .agent, keyboardShortcut: "\u{2318}\u{21E7}A", keyBinding: .cmdShift("a"))
     ) {
         appState.switchSpace(.build)
         appState.agentViewModel.startNewSession(prompt: "", model: "claude-sonnet-4-6")
@@ -141,7 +141,7 @@ public func registerBuiltInCommands(registry: CommandRegistry, appState: AppStat
     // MARK: - Build Space Contextual
 
     registry.register(
-        AnvilCommand(id: "ctx-new-session", title: "New Agent Session", icon: "cpu", category: .agent, keyboardShortcut: "\u{2318}\u{21E7}A", spaceScope: "Build")
+        AnvilCommand(id: "ctx-new-session", title: "New Build Session", icon: "cpu", category: .agent, keyboardShortcut: "\u{2318}\u{21E7}A", spaceScope: "Build")
     ) {
         appState.switchSpace(.build)
         appState.agentViewModel.startNewSession(prompt: "", model: "claude-sonnet-4-6")

@@ -71,7 +71,7 @@ public struct StatusBar: View {
 
             Spacer()
 
-            // Center: Agent activity indicator
+            // Center: Build activity indicator
             AgentActivityIndicator()
 
             // Background agent sessions badge
@@ -145,7 +145,7 @@ public struct StatusBar: View {
     }
 }
 
-// MARK: - Agent Activity Indicator
+// MARK: - Build Activity Indicator
 
 struct AgentActivityIndicator: View {
     @EnvironmentObject var appState: AppState
@@ -217,8 +217,8 @@ struct AgentActivityIndicator: View {
             .clipShape(RoundedRectangle(cornerRadius: 4))
         }
         .buttonStyle(.borderless)
-        .help(isRunning ? "Click to view active session" : "Agent \(appState.agentStatus.lowercased())")
-        .accessibilityLabel(isRunning ? "Agent running, click to view session" : "Agent \(appState.agentStatus.lowercased())")
+        .help(isRunning ? "Click to view active session" : "Build \(appState.agentStatus.lowercased())")
+        .accessibilityLabel(isRunning ? "Build running, click to view session" : "Build \(appState.agentStatus.lowercased())")
         .accessibilityAddTraits(.isButton)
         .onChange(of: appState.agentRunStartedAt) { _, newValue in
             if newValue != nil {

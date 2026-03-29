@@ -520,7 +520,7 @@ final class CommandPaletteViewModel: ObservableObject {
 
         items.append(CommandItem(
             id: "new-agent-session",
-            title: "New Agent Session",
+            title: "New Build Session",
             icon: "cpu",
             shortcut: "\u{2318}\u{21E7}A",
             category: .actions,
@@ -657,7 +657,7 @@ final class CommandPaletteViewModel: ObservableObject {
             ]
         case .build:
             return [
-                CommandItem(id: "ctx-new-session", title: "New Agent Session", icon: "cpu", iconColor: AnvilColor.accentGreen, shortcut: "\u{2318}\u{21E7}A", category: .contextual, action: .newAgentSession),
+                CommandItem(id: "ctx-new-session", title: "New Build Session", icon: "cpu", iconColor: AnvilColor.accentGreen, shortcut: "\u{2318}\u{21E7}A", category: .contextual, action: .newAgentSession),
                 CommandItem(id: "ctx-source-control", title: "Toggle Source Control Panel", icon: "arrow.triangle.branch", category: .contextual, group: .git, action: .toggleSourceControl),
                 CommandItem(id: "ctx-search-files", title: "Search in Files", icon: "magnifyingglass", shortcut: "\u{2318}\u{21E7}F", category: .contextual, group: .file, action: .searchInFiles),
                 CommandItem(id: "ctx-toggle-whitespace", title: "Toggle Whitespace Visibility", subtitle: "Cycle: None \u{2192} Boundary \u{2192} All", icon: "eye", category: .contextual, group: .editor, action: .cycleWhitespace),

@@ -8,6 +8,6 @@ struct IntentMode: View {
         IntentModeContent(viewModel: appState.intentViewModel)
             .background(.background)
             .accessibilityElement(children: .contain)
-            .accessibilityLabel("Intent mode")
+            .accessibilityLabel("Plan mode")
     }
 }

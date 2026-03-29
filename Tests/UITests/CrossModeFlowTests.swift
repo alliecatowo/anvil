@@ -94,14 +94,14 @@ final class CrossModeFlowTests: XCTestCase {
         app.buttons["Intent"].click()
         _ = app.scrollViews.firstMatch.waitForExistence(timeout: 3)
 
-        // Open command palette and search for Agent
+        // Open command palette and search for Build
         app.typeKey("k", modifierFlags: .command)
         let searchField = app.textFields["Search commands, files, work items..."]
         XCTAssertTrue(searchField.waitForExistence(timeout: 5))
 
-        searchField.typeText("Agent")
+        searchField.typeText("Build")
 
-        let agentResult = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Agent'")).firstMatch
+        let agentResult = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Build'")).firstMatch
         if agentResult.waitForExistence(timeout: 3) {
             agentResult.click()
 

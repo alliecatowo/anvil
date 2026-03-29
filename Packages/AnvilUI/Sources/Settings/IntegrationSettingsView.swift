@@ -101,7 +101,7 @@ struct IntegrationSettingsView: View {
     // MARK: - Slack
 
     private var slackSection: some View {
-        Section("Messaging — Slack") {
+        Section("Chat — Slack") {
             SecureField("Bot Token", text: $slackBotToken)
             Text("Anvil supports multiple messaging providers. Slack is one external provider option; local in-memory messaging remains available as a fallback.")
                 .font(.caption)
