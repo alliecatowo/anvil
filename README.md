@@ -8,6 +8,7 @@ Anvil is a macOS app built with SwiftUI and modular local Swift packages. This r
 - UI implementation governance: [`UI_IMPLEMENTATION_GOVERNANCE.md`](/Users/allie/Develop/anvil/UI_IMPLEMENTATION_GOVERNANCE.md)
 - Mac UI direction: [`MAC_UI_DIRECTION.md`](/Users/allie/Develop/anvil/MAC_UI_DIRECTION.md)
 - Shell vocabulary north star: [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md)
+- Shell standardization backlog: [`ARCHITECTURE/SHELL_STANDARDIZATION_TASKS.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_STANDARDIZATION_TASKS.md)
 - Whole-app truth matrix: [`TRUTH_MATRIX.md`](/Users/allie/Develop/anvil/TRUTH_MATRIX.md)
 - Shell model: [`ARCHITECTURE/UX_SHELL.md`](/Users/allie/Develop/anvil/ARCHITECTURE/UX_SHELL.md)
 - Provider model: [`ARCHITECTURE/PROVIDER_MODEL.md`](/Users/allie/Develop/anvil/ARCHITECTURE/PROVIDER_MODEL.md)

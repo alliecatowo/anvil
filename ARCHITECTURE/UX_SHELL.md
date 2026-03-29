@@ -1,6 +1,6 @@
 # UX Shell
 
-Canonical shell vocabulary lives in [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md). This document defines the shell contract that implements that vocabulary.
+Canonical shell vocabulary lives in [`ARCHITECTURE/NORTH_STAR_SHELL.md`](/Users/allie/Develop/anvil/ARCHITECTURE/NORTH_STAR_SHELL.md). This document defines the shell contract that implements that vocabulary.
 
 This document defines the shell contract for the entire app.
 The shell is the outer structure that holds workspaces, sources, detail panes, utilities, and provider setup.
@@ -18,11 +18,11 @@ The shell is the outer structure that holds workspaces, sources, detail panes, u
 
 Use these layers consistently:
 
-1. `Spaces`
-- Top-level destinations such as Plan, Build, Review, Operate, and Library.
+1. `Workspaces`
+- User-facing task domains such as Plan, Build, Review, Ship.
 
 Note:
-- `Intent`, `Agent`, `Review`, `Ship`, and the auxiliary labels are current implementation names and transitional labels, not the canonical user-facing shell vocabulary.
+- `Intent` and `Agent` are current implementation names and transitional labels, not the canonical user-facing shell vocabulary.
 
 2. `Sources`
 - Collections inside a workspace, such as projects, sessions, tickets, PRs, channels, environments, tables, runs, docs, or plugins.
@@ -48,8 +48,8 @@ Every workspace should expose useful sidebar sections, even when collapsed. The 
 
 Recommended templates:
 
-- `Intent`: `Projects`, `Boards`, `Sprints`, `Tickets`, `Filters`, `History`, `Utilities`
-- `Agent`: `Sessions`, `Plans`, `Runs`, `Memory`, `Tools`, `History`, `Utilities`
+- `Plan`: `Projects`, `Boards`, `Sprints`, `Tickets`, `Filters`, `History`, `Utilities`
+- `Build`: `Sessions`, `Plans`, `Runs`, `Memory`, `Tools`, `History`, `Utilities`
 - `Review`: `Repositories`, `Pull Requests`, `Files`, `Checks`, `Comments`, `History`, `Utilities`
 - `Ship`: `Environments`, `Deployments`, `Services`, `Variables`, `Logs`, `History`, `Providers`
 - `Editor`: `Files`, `Symbols`, `Problems`, `Search`, `History`, `Utilities`
