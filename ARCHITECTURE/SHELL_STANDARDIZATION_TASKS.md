@@ -1,10 +1,19 @@
 # Shell Standardization Tasks
 
 **Status:** Draft
-**Approximate Task Count:** 256
+**Approximate Task Count:** 266
 **North Star:** [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md)
 
 This backlog is the migration plan from the current mixed shell vocabulary to the canonical shell model.
+
+Recent completed wave on `shell-vocabulary-migration`:
+
+- `90c56f4` `Place chat in Library and tighten shell contract`
+- `f480478` `Harden app launch for UI automation`
+- `7bd103f` `Continue shell contract migration`
+- `6cd556a` `Refine plan/build shell labels and selectors`
+
+That wave established the canonical shell vocabulary, moved `Chat` into Library as a toolspace, tightened the `Plan` and `Build` user-facing labels, and hardened the raw/default accessibility selectors.
 
 The target shell model is:
 
@@ -309,6 +318,19 @@ The target shell model is:
 - [ ] S-244 Remove tasks from the backlog only when both the canonical label and the canonical behavior are shipped.
 - [ ] S-245 Remove legacy aliases from public screenshots and demos once the new names are ready.
 - [ ] S-246 Remove remaining shell debt that would make a fresh app bootstrap feel ambiguous or split-brained.
+
+## 18. Branch Queue
+
+- [ ] S-257 Rerun the default raw smoke journeys and close the remaining automation-mode and routing failures.
+- [ ] S-258 Rerun the visual regression suite and record the new canonical baseline for raw and seeded flows.
+- [ ] S-259 Finish the visible `Intent -> Plan` rename across remaining shell chrome and docs.
+- [ ] S-260 Finish the visible `Agent -> Build` rename across remaining shell chrome and docs.
+- [ ] S-261 Keep `Chat` as the canonical Library toolspace label everywhere user-facing messaging copy appears.
+- [ ] S-262 Remove any remaining Plan sidebar duplication so the canvas owns full ticket detail.
+- [ ] S-263 Finish Review workflow polish around browse/review/start-review feedback and reload state.
+- [ ] S-264 Make Build raw/default routing deterministic for sessions, files, and data surfaces.
+- [ ] S-265 Add stable accessibility identifiers for the canonical raw/default smoke journeys.
+- [ ] S-266 Add canonical screenshots for raw Plan, Build, Review, Operate, and Library states.
 
 ## 17. Immediate Execution Queue
 

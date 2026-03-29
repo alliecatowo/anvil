@@ -221,6 +221,8 @@
 
 ## Current Tranche
 
+- Latest completed wave on `shell-vocabulary-migration`: `90c56f4`, `f480478`, `7bd103f`, `6cd556a`.
+- That wave landed the shell vocabulary rewrite, `Chat` as the Library toolspace, `Plan`/`Build` user-facing labels, stable accessibility IDs for the canonical journeys, and the first round of shell-contract cleanup.
 - Shared sidebar migration has landed across the native shell, Agent, Intent, Review, Ship, and auxiliary workspaces.
 - Multi-provider plumbing has landed, including Codex ACP support and provider-aware messaging/provider selection.
 - Chat now lives as a real Library toolspace instead of an orphaned chat client, and the shell contract treats it as sidebar + canvas + inspector, not a peer workspace.

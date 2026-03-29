@@ -8,13 +8,6 @@ struct ReviewSidebar: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var container: DependencyContainer
 
-    private struct SidebarSectionDescriptor: Identifiable {
-        let id: String
-        let title: String
-        let icon: String
-        let count: Int
-    }
-
     private var totalChangesCount: Int {
         appState.stagedChanges.count + appState.unstagedChanges.count + appState.untrackedChanges.count
     }
@@ -23,52 +16,33 @@ struct ReviewSidebar: View {
         viewModel.mergeConflicts.count
     }
 
-    // Minimal adapter target for upcoming shared sidebar abstraction.
-    private var sidebarSections: [SidebarSectionDescriptor] {
-        [
-            SidebarSectionDescriptor(id: "branches", title: "Branches", icon: "arrow.triangle.branch", count: appState.branches.count),
-            SidebarSectionDescriptor(id: "changes", title: "Local Changes", icon: "square.and.pencil", count: totalChangesCount),
-            SidebarSectionDescriptor(id: "pullRequests", title: "Pull Requests", icon: "arrow.triangle.pull", count: appState.gitHubPRViewModel.pullRequests.count),
-            SidebarSectionDescriptor(id: "pending", title: "Pending", icon: "circle", count: viewModel.pendingReviews.count),
-            SidebarSectionDescriptor(id: "completed", title: "Completed", icon: "checkmark.circle", count: viewModel.completedReviews.count)
-        ]
-    }
-
     var body: some View {
         VStack(spacing: 0) {
-            if let review = viewModel.selectedReview {
-                reviewDetailPane(review)
-            } else if appState.gitHubPRViewModel.selectedPR != nil {
-                prSelectedBar
-            } else {
-                gitHubAuthBar
-                Divider()
-                reviewActionsBar
-                Divider()
-                ScrollView {
-                    VStack(spacing: 0) {
-                        branchSection
-                        Divider()
-                        remotesSection
-                        Divider()
-                        tagsSection
-                        Divider()
-                        stashesSection
-                        Divider()
-                        worktreesSection
-                        Divider()
-                        changesSection
-                        Divider()
-                        pullRequestsSection
-                        Divider()
-                        groupedReviewList
-                    }
+            gitHubAuthBar
+            Divider()
+            reviewActionsBar
+            Divider()
+
+            List {
+                if let review = viewModel.selectedReview {
+                    selectedReviewSection(for: review)
                 }
-                .task {
-                    viewModel.loadReviews()
-                    if let adapter = container.getOrCreateGitAdapter() {
-                        viewModel.loadSourceControlData(using: adapter)
-                    }
+
+                branchSection
+                remotesSection
+                tagsSection
+                stashesSection
+                worktreesSection
+                changesSection
+                pullRequestsSection
+                pendingReviewsSection
+                completedReviewsSection
+            }
+            .listStyle(.sidebar)
+            .task {
+                viewModel.loadReviews()
+                if let adapter = container.getOrCreateGitAdapter() {
+                    viewModel.loadSourceControlData(using: adapter)
                 }
             }
         }
@@ -719,64 +693,95 @@ struct ReviewSidebar: View {
         .accessibilityAddTraits(.isButton)
     }
 
-    private func reviewDetailPane(_ review: Review) -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: AnvilSpacing.sm) {
-                Button {
-                    viewModel.clearBranchDiff()
-                } label: {
-                    HStack(spacing: AnvilSpacing.xxs) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 10, weight: .bold))
-                        Text("Back")
+    private var pendingReviewsForSidebar: [Review] {
+        viewModel.pendingReviews.filter { $0.id != viewModel.selectedReviewID }
+    }
+
+    private var completedReviewsForSidebar: [Review] {
+        viewModel.completedReviews.filter { $0.id != viewModel.selectedReviewID }
+    }
+
+    private func selectedReviewSection(for review: Review) -> some View {
+        AnvilSidebarSection(
+            title: "Selected Review",
+            icon: reviewIcon(for: review),
+            count: review.diff.count,
+            content: {
+                HStack(alignment: .top, spacing: AnvilSpacing.sm) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(review.title)
+                            .font(AnvilFont.body)
+                            .foregroundStyle(AnvilColor.textPrimary)
+                            .lineLimit(2)
+
+                        Text("\(review.author) \u{2022} \(review.sourceId)")
                             .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textSecondary)
+                            .lineLimit(1)
                     }
-                    .foregroundStyle(AnvilColor.textSecondary)
+
+                    Spacer()
+
+                    statusBadge(review.status)
                 }
-                .buttonStyle(.plain)
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, AnvilSpacing.xs)
 
-                Spacer()
+                HStack(spacing: AnvilSpacing.xs) {
+                    Image(systemName: "doc")
+                        .font(.system(size: 10))
+                        .foregroundStyle(AnvilColor.textTertiary)
+                        .accessibilityHidden(true)
+                    Text("\(review.diff.count) file\(review.diff.count == 1 ? "" : "s")")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                    Spacer()
+                }
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, AnvilSpacing.xs)
 
-                statusBadge(review.status)
-            }
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.sm)
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
-                Text(review.title)
-                    .font(AnvilFont.subheading)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .lineLimit(2)
-
-                Text("\(review.author) \u{2022} \(review.diff.count) files")
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textSecondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.sm)
-
-            Divider()
-
-            List {
-                Section {
+                if !review.diff.isEmpty {
+                    AnvilSidebarSectionHeader(title: "Files", icon: "doc", count: review.diff.count)
                     ForEach(review.diff) { file in
                         fileRow(file)
                     }
-                } header: {
-                    sectionHeader(
-                        SidebarSectionDescriptor(
-                            id: "files",
-                            title: "Files",
-                            icon: "doc",
-                            count: review.diff.count
-                        )
-                    )
+                }
+            },
+            trailing: {
+                Button {
+                    viewModel.clearBranchDiff()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(AnvilColor.textTertiary)
+                }
+                .buttonStyle(.plain)
+                .help("Back to review inbox")
+            }
+        )
+    }
+
+    private var pendingReviewsSection: some View {
+        AnvilSidebarSection(title: "Pending", icon: "circle", count: pendingReviewsForSidebar.count) {
+            if pendingReviewsForSidebar.isEmpty {
+                emptySectionLabel("No pending reviews")
+            } else {
+                ForEach(pendingReviewsForSidebar) { review in
+                    reviewRow(review)
                 }
             }
-            .listStyle(.sidebar)
+        }
+    }
+
+    private var completedReviewsSection: some View {
+        AnvilSidebarSection(title: "Completed", icon: "checkmark.circle", count: completedReviewsForSidebar.count) {
+            if completedReviewsForSidebar.isEmpty {
+                emptySectionLabel("No completed reviews")
+            } else {
+                ForEach(completedReviewsForSidebar) { review in
+                    reviewRow(review)
+                }
+            }
         }
     }
 
@@ -1046,31 +1051,6 @@ struct ReviewSidebar: View {
         .accessibilityAddTraits(.isButton)
     }
 
-    private var prSelectedBar: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: AnvilSpacing.sm) {
-                Button {
-                    appState.gitHubPRViewModel.clearSelection()
-                } label: {
-                    HStack(spacing: AnvilSpacing.xxs) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 10, weight: .bold))
-                        Text("All PRs")
-                            .font(AnvilFont.label)
-                    }
-                    .foregroundStyle(AnvilColor.textSecondary)
-                }
-                .buttonStyle(.plain)
-
-                Spacer()
-            }
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.sm)
-
-            Divider()
-        }
-    }
-
     private func prStatusColor(_ status: PRStatus) -> Color {
         switch status {
         case .open:   AnvilColor.accentGreen
@@ -1114,43 +1094,6 @@ struct ReviewSidebar: View {
             }
         }
         return ""
-    }
-
-    // MARK: - Grouped Review List (no review selected)
-
-    private var groupedReviewList: some View {
-        List {
-            if !viewModel.pendingReviews.isEmpty {
-                Section {
-                    ForEach(viewModel.pendingReviews) { review in
-                        reviewRow(review)
-                    }
-                } header: {
-                    AnvilSidebarSectionHeader(title: "Pending", icon: "circle", count: viewModel.pendingReviews.count)
-                }
-            }
-
-            if !viewModel.completedReviews.isEmpty {
-                Section {
-                    ForEach(viewModel.completedReviews) { review in
-                        reviewRow(review)
-                    }
-                } header: {
-                    AnvilSidebarSectionHeader(title: "Completed", icon: "checkmark.circle", count: viewModel.completedReviews.count)
-                }
-            }
-        }
-        .listStyle(.sidebar)
-    }
-
-    // MARK: - Shared Components
-
-    private func sectionHeader(_ descriptor: SidebarSectionDescriptor) -> some View {
-        AnvilSidebarSectionHeader(
-            title: descriptor.title,
-            icon: descriptor.icon,
-            count: descriptor.count
-        )
     }
 
     private func statusBadge(_ status: ReviewStatus) -> some View {
