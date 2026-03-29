@@ -14,6 +14,11 @@ public struct AnvilApp: App {
         return SetupWizardViewModel.isFirstLaunch
     }()
 
+    private static var isRunningUITests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            || ProcessInfo.processInfo.environment["ANVIL_UITEST_SCENARIO"] != nil
+    }
+
     public init() {}
 
     public var body: some Scene {
@@ -22,10 +27,13 @@ public struct AnvilApp: App {
                 .environmentObject(appState)
                 .environmentObject(container)
                 .task {
-                    // Set up desktop notifications
-                    let notificationService = DesktopNotificationService.shared
-                    UNUserNotificationCenter.current().delegate = notificationService
-                    _ = await notificationService.requestPermission()
+                    // UI tests need deterministic launch and should not be blocked by
+                    // notification permission prompts or other system dialogs.
+                    if !Self.isRunningUITests {
+                        let notificationService = DesktopNotificationService.shared
+                        UNUserNotificationCenter.current().delegate = notificationService
+                        _ = await notificationService.requestPermission()
+                    }
 
                     // Wire review management port, use case, and event bus into view model
                     appState.reviewViewModel.configure(
