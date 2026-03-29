@@ -6,7 +6,7 @@ struct ChannelList: View {
     var body: some View {
         VStack(spacing: 0) {
             AnvilSidebarHeaderRow(
-                title: "Messaging",
+                title: "Chat",
                 icon: "bubble.left.and.bubble.right",
                 count: viewModel.channels.count + viewModel.directMessages.count
             ) {

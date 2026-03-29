@@ -283,7 +283,7 @@ final class SpaceUserJourneyTests: XCTestCase {
     func testLibraryAllSectionTabsReachable() throws {
         switchToSpace("Library")
 
-        let tabs = ["Docs", "Extensions", "Inbox", "Messages", "Schedule"]
+        let tabs = ["Docs", "Extensions", "Inbox", "Chat", "Schedule"]
         for tab in tabs {
             let btn = app.buttons[tab]
             if btn.waitForExistence(timeout: 3) {

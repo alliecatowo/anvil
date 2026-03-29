@@ -105,14 +105,14 @@ final class WelcomePageTests: XCTestCase {
         _ = tipsHeader.waitForExistence(timeout: 5)
     }
 
-    func testAgentModeTipExists() throws {
-        let agentTip = app.staticTexts["Agent mode"]
-        _ = agentTip.waitForExistence(timeout: 5)
+    func testBuildSpaceTipExists() throws {
+        let buildTip = app.staticTexts["Build space"]
+        _ = buildTip.waitForExistence(timeout: 5)
     }
 
-    func testIntentModeTipExists() throws {
-        let intentTip = app.staticTexts["Intent mode"]
-        _ = intentTip.waitForExistence(timeout: 5)
+    func testPlanSpaceTipExists() throws {
+        let planTip = app.staticTexts["Plan space"]
+        _ = planTip.waitForExistence(timeout: 5)
     }
 
     func testCommandPaletteTipExists() throws {
@@ -120,9 +120,9 @@ final class WelcomePageTests: XCTestCase {
         _ = paletteTip.waitForExistence(timeout: 5)
     }
 
-    func testAgentModeTipContent() throws {
+    func testBuildSpaceTipContent() throws {
         let tipContent = app.staticTexts.matching(NSPredicate(
-            format: "label CONTAINS 'Press' AND label CONTAINS 'Agent'"
+            format: "label CONTAINS 'Press' AND label CONTAINS 'Build'"
         )).firstMatch
         _ = tipContent.waitForExistence(timeout: 5)
     }

@@ -494,14 +494,14 @@ final class SpecComplianceTests: XCTestCase {
         }
     }
 
-    func testLibraryMessagesTab() throws {
+    func testLibraryChatTab() throws {
         switchToSpace("Library")
 
-        let messagesBtn = app.buttons["Messages"]
-        if messagesBtn.waitForExistence(timeout: 3) {
-            messagesBtn.click()
+        let chatBtn = app.buttons["Chat"]
+        if chatBtn.waitForExistence(timeout: 3) {
+            chatBtn.click()
             Thread.sleep(forTimeInterval: 0.3)
-            XCTAssertTrue(app.state == .runningForeground, "Library Messages tab must render without crashing")
+            XCTAssertTrue(app.state == .runningForeground, "Library Chat tab must render without crashing")
         }
     }
 

@@ -190,15 +190,15 @@ public struct WelcomePage: View {
                 WelcomeTipCard(
                     icon: "cpu",
                     iconColor: AnvilColor.accentPurple,
-                    title: "Agent mode",
-                    tip: "Press ⌘2 or click Agent. Type your intent — the agent reads your codebase and works autonomously."
+                    title: "Build space",
+                    tip: "Press ⌘2 or click Build. Start a coding session and let the agent run work against your codebase."
                 )
 
                 WelcomeTipCard(
                     icon: "target",
                     iconColor: AnvilColor.accentBlue,
-                    title: "Intent mode",
-                    tip: "Track tickets in ⌘1. Press ⌘↵ on any ticket to start an agent session scoped to that work."
+                    title: "Plan space",
+                    tip: "Track tickets in ⌘1. Press ⌘↵ on any ticket to start a Build session scoped to that work."
                 )
 
                 WelcomeTipCard(

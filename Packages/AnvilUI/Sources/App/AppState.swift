@@ -225,7 +225,7 @@ public class AppState: ObservableObject {
         case rules = "Rules"
         case extensions = "Extensions"
         case notifications = "Inbox"
-        case messages = "Messages"
+        case messages = "Chat"
         case schedule = "Schedule"
 
         public var icon: String {

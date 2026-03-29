@@ -5,7 +5,7 @@
 > Do not use it to judge release readiness.
 > Use [`ROADMAP_NATIVE_2026.md`](/Users/allie/Develop/anvil/ROADMAP_NATIVE_2026.md) as the canonical roadmap, [`TRUTH_MATRIX.md`](/Users/allie/Develop/anvil/TRUTH_MATRIX.md) for surfaced interactions, and [`UI_IMPLEMENTATION_GOVERNANCE.md`](/Users/allie/Develop/anvil/UI_IMPLEMENTATION_GOVERNANCE.md) for merge rules.
 
-**Total: 399 | Completed: 77 | Pending: 322**
+**Total: 399 | Completed: 78 | Pending: 321**
 
 ## Completed
 
@@ -223,7 +223,8 @@
 
 - Shared sidebar migration has landed across the native shell, Agent, Intent, Review, Ship, and auxiliary workspaces.
 - Multi-provider plumbing has landed, including Codex ACP support and provider-aware messaging/provider selection.
-- Deterministic UI-test launch scenarios and a visual regression suite now exist, but 7 of the 8 seeded canonical screens still fail because scenario fidelity is not yet reliable enough for Agent conversation, Intent list/board, Review inbox/diff, notifications inbox, and Ship dashboard.
+- Chat now lives as a real Library toolspace instead of an orphaned chat client, and the shell contract treats it as sidebar + canvas + inspector, not a peer workspace.
+- Deterministic UI-test launch scenarios and a visual regression suite now exist, but several seeded canonical screens still need a clean rerun after the latest routing fixes.
 - Next concrete UI gaps are the remaining double-sidebar/secondary-pane coupling, Ship and Review native polish, markdown code highlighting consistency, and making the seeded scenarios render their canonical headings without manual clicks.
 
 ## Raw App Audit (No Seed / Default Flow) — 2026-03-29
@@ -233,12 +234,12 @@
 | Shell space switching (Plan/Build/Review/Operate/Library) | Yes | Yes | None in primary rail switching | `/Packages/AnvilUI/Sources/Shell/Sidebar.swift`, `/Packages/AnvilUI/Sources/App/AppState.swift` |
 | Plan (Intent) list/board ticket browsing | Yes | Yes | None; selected tickets can open in a visible full-page detail surface and Back returns to the collection | `/Packages/AnvilUI/Sources/Shell/ContentArea.swift`, `/Packages/AnvilUI/Sources/Shell/InspectorPanel.swift`, `/Packages/AnvilUI/Sources/Modes/Intent/IntentSidebar.swift`, `/Packages/AnvilUI/Sources/Modes/Intent/TicketDetailView.swift` |
 | Plan (Intent) saved filters | Yes | Yes | None blocking core browsing; blocked filter now applies the real blocked filter action | `/Packages/AnvilUI/Sources/Modes/Intent/IntentSidebar.swift`, `/Packages/AnvilUI/Sources/Modes/Intent/IntentViewModel.swift` |
-| Build -> Sessions (Agent conversation/dashboard/synthesis) | Yes | Partial | Agent secondary panel discoverability still depends on contextual controls; users can lose the path to it | `/Packages/AnvilUI/Sources/Modes/Agent/ConversationView.swift`, `/Packages/AnvilUI/Sources/Shell/MainWindow.swift`, `/Packages/AnvilUI/Sources/App/AppState.swift` |
+| Build -> Sessions (Agent conversation/dashboard/synthesis) | Yes | Partial | Agent secondary panel discoverability now has a visible info toggle, but the default journey still needs a fresh smoke rerun after the latest determinism fix | `/Packages/AnvilUI/Sources/Modes/Agent/ConversationView.swift`, `/Packages/AnvilUI/Sources/Modes/Agent/AgentViewModel.swift`, `/Packages/AnvilUI/Sources/Shell/MainWindow.swift`, `/Packages/AnvilUI/Sources/App/AppState.swift` |
 | Build -> Files / Terminal / Data / Tests | Partial | Partial | Core surfaces open, but discoverability varies per sidebar section and lacks clear "you are here" workflow guidance in raw empty states | `/Packages/AnvilUI/Sources/Shell/BuildSidebar.swift`, `/Packages/AnvilUI/Sources/Shell/ContentArea.swift` |
 | Review (local changes/branch/PR drilldown) | Yes | Partial | Core drilldown is wired; follow-up polish remains around explicit empty/raw guidance and non-blocking review journey hints | `/Packages/AnvilUI/Sources/Modes/Review/ReviewSidebar.swift`, `/Packages/AnvilUI/Sources/Modes/Review/ReviewViewModel.swift`, `/Packages/AnvilUI/Sources/App/AppState.swift`, `/Packages/AnvilUI/Sources/App/DependencyContainer.swift` |
 | Operate -> Deploy | Yes | Yes | None blocking core dashboard flows | `/Packages/AnvilUI/Sources/Modes/Ship/ShipSidebar.swift`, `/Packages/AnvilUI/Sources/Shell/ContentArea.swift` |
 | Operate -> Monitor | Partial | Low | Sidebar is empty-state only while content surface exists; navigation affordance feels stubbed | `/Packages/AnvilUI/Sources/Shell/OperateSidebar.swift`, `/Packages/AnvilUI/Sources/Shell/ContentArea.swift` |
-| Library -> Docs / Extensions / Notifications / Messages / Schedule | Partial | Partial | Functionality present but varies by data availability; raw flow needs stronger affordance when no provider/data configured | `/Packages/AnvilUI/Sources/Shell/LibrarySidebar.swift`, `/Packages/AnvilUI/Sources/Shell/ContentArea.swift` |
+| Library -> Docs / Extensions / Notifications / Chat / Schedule | Partial | Partial | Functionality present but varies by data availability; chat is now explicitly a Library toolspace, but raw flow still needs stronger affordance when no provider/data configured | `/Packages/AnvilUI/Sources/Shell/LibrarySidebar.swift`, `/Packages/AnvilUI/Sources/Shell/ContentArea.swift`, `/Packages/AnvilUI/Sources/Modes/Auxiliary/MessagingMode/MessagingMode.swift` |
 | Library -> Rules | Yes | Yes | None; rules now has a real sidebar navigation panel and editor path | `/Packages/AnvilUI/Sources/Shell/LibrarySidebar.swift`, `/Packages/AnvilUI/Sources/Shell/ContentArea.swift` |
 | Welcome (no project open) | Yes | Yes | None; Clone Repository and New Project now open the setup wizard instead of doing nothing | `/Packages/AnvilUI/Sources/Shell/WelcomePage.swift`, `/Packages/AnvilUI/Sources/App/SetupWizard.swift`, `/Packages/AnvilUI/Sources/App/SetupWizardViewModel.swift` |
 
@@ -246,11 +247,24 @@
 
 - [x] #400 Route selected Intent ticket into a visible detail surface in raw flow (not Inspector-only), while preserving Inspector as optional secondary detail.
 - [x] #401 Fix Intent sidebar "Blocked" saved filter wiring to `applyFilterBlocked()` and add regression coverage for saved-filter actions.
-- [ ] #402 Unify Agent secondary panel discoverability: keep a persistent right-side info/inspector toggle in conversation chrome and remove dependence on hidden/global controls.
+- [x] #402 Unify Agent secondary panel discoverability: keep a persistent right-side info/inspector toggle in conversation chrome and remove dependence on hidden/global controls.
 - [x] #403 Make Review worktree selection actually reload project context + git status (or explicitly mark as "preview only" if intentional).
 - [x] #404 Replace Library `rules` sidebar `EmptyView` with a real rules navigation panel so section clicks are visibly wired.
 - [x] #405 Convert Welcome "Clone Repository" and "New Project" cards from placeholders into real flows (or mark as disabled with explicit "coming soon" state).
 - [ ] #406 Add raw/no-seed UI journey tests (no demo load) for Plan, Build, Review, Operate, Library to ensure clicks always change visible state.
+
+### Next 10 Execution-Ready Tasks
+
+- [ ] #407 Rerun `DefaultJourneySmokeTests` on a fresh bundle path and close the remaining Build/Intent failures.
+- [ ] #408 Rerun `VisualRegressionTests` on the repaired raw flows and record the new pass/fail baseline.
+- [ ] #409 Rename user-facing workspace chrome from `Intent` to `Plan` in the rail, top chrome, and canonical docs.
+- [ ] #410 Rename user-facing workspace chrome from `Agent` to `Build` in the rail, session chrome, and canonical docs.
+- [ ] #411 Keep `Chat` as the Library toolspace label everywhere user-facing messaging copy appears.
+- [ ] #412 Remove duplicated ticket-detail affordances from the Plan sidebar so the canvas owns full detail.
+- [ ] #413 Finish the remaining Review workflow polish around browse/review/start-review feedback and reload state.
+- [ ] #414 Make Build raw/default routing deterministic for new sessions, files, and data surfaces.
+- [ ] #415 Add stable accessibility identifiers for the canonical raw/default smoke journeys.
+- [ ] #416 Add canonical screenshots for raw Plan, Build, Review, Operate, and Library states.
 
 - [ ] #189 Build review statistics dashboard (time to review, comments per PR)
 - [ ] #190 Add linked tickets display in PR review

@@ -270,7 +270,7 @@ final class SpaceClickThroughTests: XCTestCase {
     func testLibrarySpaceSectionSwitching() throws {
         switchToSpace("Library")
 
-        let sectionLabels = ["Docs", "Extensions", "Inbox", "Messages", "Schedule"]
+        let sectionLabels = ["Docs", "Extensions", "Inbox", "Chat", "Schedule"]
         for label in sectionLabels {
             let btn = app.buttons[label]
             if btn.waitForExistence(timeout: 2) {

@@ -1,7 +1,7 @@
 # Shell Standardization Tasks
 
 **Status:** Draft
-**Approximate Task Count:** 246
+**Approximate Task Count:** 256
 **North Star:** [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md)
 
 This backlog is the migration plan from the current mixed shell vocabulary to the canonical shell model.
@@ -309,5 +309,16 @@ The target shell model is:
 - [ ] S-244 Remove tasks from the backlog only when both the canonical label and the canonical behavior are shipped.
 - [ ] S-245 Remove legacy aliases from public screenshots and demos once the new names are ready.
 - [ ] S-246 Remove remaining shell debt that would make a fresh app bootstrap feel ambiguous or split-brained.
-- [ ] S-189 Make the standardization branch the source of follow-on migrations.
-- [ ] S-190 Do not let implementation convenience create a new shell vocabulary.
+
+## 17. Immediate Execution Queue
+
+- [ ] S-247 Rerun raw smoke suites to completion with fresh bundle paths and close the remaining Build and Intent failures.
+- [ ] S-248 Rerun visual regression suites to completion and record the new canonical baseline.
+- [ ] S-249 Rename visible workspace labels from `Intent` to `Plan` in the rail, top chrome, and docs.
+- [ ] S-250 Rename visible workspace labels from `Agent` to `Build` in the rail, session chrome, and docs.
+- [ ] S-251 Standardize `Chat` as the Library toolspace name in UI, docs, tests, and screenshots.
+- [ ] S-252 Remove Plan sidebar duplication of ticket detail so the canvas owns the full detail route.
+- [ ] S-253 Finish Review workflow polish for browse/review/start-review feedback and context reload.
+- [ ] S-254 Make Build raw/default routing deterministic for new sessions, files, and data surfaces.
+- [ ] S-255 Add stable accessibility identifiers for canonical raw/default journeys.
+- [ ] S-256 Add canonical screenshots for raw Plan, Build, Review, Operate, and Library states.

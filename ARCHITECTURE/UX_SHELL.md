@@ -52,12 +52,12 @@ Recommended templates:
 - `Build`: `Sessions`, `Plans`, `Runs`, `Memory`, `Tools`, `History`, `Utilities`
 - `Review`: `Repositories`, `Pull Requests`, `Files`, `Checks`, `Comments`, `History`, `Utilities`
 - `Operate`: `Environments`, `Deployments`, `Services`, `Variables`, `Logs`, `History`, `Providers`
-- `Library`: `Libraries`, `Documents`, `Messages`, `Rules`, `History`, `Utilities`, `Extensions`
+- `Library`: `Libraries`, `Documents`, `Chat`, `Rules`, `History`, `Utilities`, `Extensions`
 - `Editor`: `Files`, `Symbols`, `Problems`, `Search`, `History`, `Utilities`
 - `Database`: `Connections`, `Schemas`, `Tables`, `Queries`, `History`, `Export`, `Providers`
 - `Terminal`: `Sessions`, `Splits`, `Profiles`, `History`, `Actions`
 - `Docs`: `Libraries`, `Documents`, `Outline`, `History`, `Utilities`
-- `Messaging`: `Channels`, `Threads`, `DMs`, `History`, `Inspector`, `Utilities`
+- `Chat`: `Channels`, `Threads`, `DMs`, `History`, `Inspector`, `Utilities`
 - `Notifications`: `Sources`, `Filters`, `Inbox`, `History`, `Inspector`, `Utilities`
 - `Extensions`: `Categories`, `Installed`, `Updates`, `History`, `Utilities`
 

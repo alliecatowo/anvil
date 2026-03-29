@@ -8,8 +8,8 @@ struct MessagingMode: View {
             if viewModel.selectedChannelId == nil {
                 AnvilEmptyState(
                     icon: "bubble.left.and.bubble.right",
-                    title: "No conversation selected",
-                    message: "Choose a channel from the sidebar to start messaging."
+                    title: "No chat selected",
+                    message: "Choose a channel from the sidebar to start chatting."
                 )
             } else {
                 ChatView(viewModel: viewModel)
@@ -19,7 +19,7 @@ struct MessagingMode: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 if !viewModel.providerOptions.isEmpty {
-                    Picker("Messaging Provider", selection: Binding(
+                    Picker("Chat Provider", selection: Binding(
                         get: { viewModel.selectedProviderId ?? "" },
                         set: { viewModel.selectProvider($0) }
                     )) {
@@ -29,7 +29,7 @@ struct MessagingMode: View {
                     }
                     .pickerStyle(.menu)
                     .labelsHidden()
-                    .help("Select active messaging provider")
+                    .help("Select active chat provider")
                 }
             }
         }
@@ -43,6 +43,6 @@ struct MessagingMode: View {
             }
         }
         .background(.background)
-        .accessibilityLabel("Messaging")
+        .accessibilityLabel("Chat")
     }
 }

@@ -8,7 +8,7 @@ If another doc disagrees with this one, this one wins.
 
 ## Direct Answer
 
-`Intent`, `Agent`, `Review`, `Ship`, `Editor`, `Database`, `Terminal`, `Docs`, `Messaging`, `Notifications`, `Testing`, and `Extensions` do **not** all make sense as peer "workspaces" in the final product vocabulary.
+`Intent`, `Agent`, `Review`, `Ship`, `Editor`, `Database`, `Terminal`, `Docs`, `Chat`, `Notifications`, `Testing`, and `Extensions` do **not** all make sense as peer "workspaces" in the final product vocabulary.
 
 They are current implementation labels and transitional product labels, not the final shell language.
 
@@ -99,7 +99,7 @@ These are persistent destinations, not transient toggles.
 - `Terminal` -> `Utility Deck`
 - `Database` -> `Build`
 - `Editor` -> `Build`
-- `Messaging` -> `Library`
+- `Chat` -> `Library`
 - `Notifications` -> `Library` or the global `Inbox`
 - `Testing` -> `Review` or `Utility Deck`, depending on whether it is validating work or running tools
 
@@ -131,7 +131,7 @@ Keeping them as peer workspaces makes the app feel like a pile of related featur
 `Library` is the stable home for:
 
 - docs
-- messaging
+- chat
 - snippets
 - extensions
 - provider configuration

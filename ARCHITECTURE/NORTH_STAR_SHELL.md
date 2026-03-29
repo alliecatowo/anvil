@@ -95,7 +95,7 @@ The current codebase still uses some legacy identifiers. This is the current map
 - `Database` -> `Database`
 - `Terminal` -> `Terminal`
 - `Docs` -> `Docs`
-- `Messaging` -> `Messaging`
+- `Messaging` -> `Chat`
 - `Notifications` -> `Notifications`
 - `Testing` -> `Testing`
 - `Extensions` -> `Extensions`
@@ -116,7 +116,7 @@ A first-class workspace must satisfy all of these:
 By that definition:
 
 - `Plan`, `Build`, `Review`, and `Ship` are first-class workspaces.
-- `Editor`, `Database`, `Terminal`, `Docs`, `Messaging`, `Notifications`, `Testing`, and `Extensions` are first-class destinations or toolspaces, but not peer product phases.
+- `Editor`, `Database`, `Terminal`, `Docs`, `Chat`, `Notifications`, `Testing`, and `Extensions` are first-class destinations or toolspaces, but not peer product phases.
 
 ## Structural Rules
 
