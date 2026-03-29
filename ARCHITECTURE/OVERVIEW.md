@@ -162,6 +162,7 @@ Defined in `ARCHITECTURE/SHELL_VOCABULARY.md` and summarized in `ARCHITECTURE/UX
 - Canvas owns the active artifact or workflow
 - Inspector owns metadata and secondary actions for the selected entity
 - Utility deck owns terminal, logs, problems, notifications
+- Messaging is a Library-space canvas surface: channel navigation lives in the sidebar, conversation view lives in the canvas, and provider state belongs in setup/settings/inspector.
 - No surface duplicates another's job
 
 ### Swift 6 Strict Concurrency
@@ -202,7 +203,7 @@ Based on static analysis of all packages. ~270 files, ~21K LOC.
 - Terminal: UI shell present, no real PTY (no SwiftTerm integration)
 - Database mode: UI present, SQLite adapter exists, no live connection flow
 - Docs mode: UI present, in-memory only
-- Messaging mode: UI present, Slack adapter stub
+- Messaging mode: UI present, Library-space canvas surface with Slack adapter stub
 - Observability mode: UI present, Sentry adapter stub
 - Ship mode: Vercel adapter stub, no real deployment triggers
 - Testing mode: UI present, in-memory only

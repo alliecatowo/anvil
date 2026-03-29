@@ -430,7 +430,7 @@ struct LibraryContent: View {
         case .notifications:
             NotificationsContentView(viewModel: appState.notificationsViewModel)
         case .messages:
-            MessagingModeContent(viewModel: appState.messagingViewModel)
+            MessagingMode(viewModel: appState.messagingViewModel)
         case .schedule:
             ScheduleModeContent(viewModel: appState.scheduleViewModel)
         }
@@ -459,35 +459,6 @@ struct NotificationsContentView: View {
                 title: "No notification selected",
                 message: "Select a notification from the sidebar."
             )
-        }
-    }
-}
-
-struct MessagingModeContent: View {
-    @ObservedObject var viewModel: MessagingViewModel
-
-    var body: some View {
-        Group {
-            if viewModel.selectedChannelId == nil {
-                AnvilEmptyState(
-                    icon: "bubble.left.and.bubble.right",
-                    title: "No conversation selected",
-                    message: "Choose a channel from the sidebar to start messaging."
-                )
-            } else {
-            ChatView(viewModel: viewModel)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-        }
-        .background(.background)
-        .onAppear {
-            if viewModel.selectedChannelId == nil {
-                if let channel = viewModel.channels.first {
-                    viewModel.selectChannel(channel.id)
-                } else if let dm = viewModel.directMessages.first {
-                    viewModel.selectChannel(dm.id)
-                }
-            }
         }
     }
 }

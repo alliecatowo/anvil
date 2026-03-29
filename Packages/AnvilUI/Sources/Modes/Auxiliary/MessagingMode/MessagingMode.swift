@@ -1,16 +1,20 @@
 import SwiftUI
 
 struct MessagingMode: View {
-    @EnvironmentObject private var container: DependencyContainer
-    @StateObject private var viewModel = MessagingViewModel()
+    @ObservedObject var viewModel: MessagingViewModel
 
     var body: some View {
-        NavigationSplitView {
-            ChannelList(viewModel: viewModel)
-                .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 340)
-        } detail: {
-            ChatView(viewModel: viewModel)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        Group {
+            if viewModel.selectedChannelId == nil {
+                AnvilEmptyState(
+                    icon: "bubble.left.and.bubble.right",
+                    title: "No conversation selected",
+                    message: "Choose a channel from the sidebar to start messaging."
+                )
+            } else {
+                ChatView(viewModel: viewModel)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -29,20 +33,15 @@ struct MessagingMode: View {
                 }
             }
         }
-        .task {
-            let providers = container.availableMessagingProviderIds
-                .compactMap { container.messagingAdapter(for: $0) }
-            if providers.isEmpty {
-                viewModel.configure(messagingPort: container.messagingService)
-            } else {
-                viewModel.configure(providers: providers, activeProviderId: container.activeMessagingProviderId)
+        .onAppear {
+            if viewModel.selectedChannelId == nil {
+                if let channel = viewModel.channels.first {
+                    viewModel.selectChannel(channel.id)
+                } else if let dm = viewModel.directMessages.first {
+                    viewModel.selectChannel(dm.id)
+                }
             }
         }
-        .onChange(of: container.activeMessagingProviderId) { _, newValue in
-            guard let newValue else { return }
-            viewModel.selectProvider(newValue)
-        }
-        .navigationSplitViewStyle(.balanced)
         .background(.background)
         .accessibilityLabel("Messaging")
     }

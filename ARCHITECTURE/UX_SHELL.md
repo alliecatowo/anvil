@@ -52,13 +52,13 @@ Recommended templates:
 - `Build`: `Sessions`, `Plans`, `Runs`, `Memory`, `Tools`, `History`, `Utilities`
 - `Review`: `Repositories`, `Pull Requests`, `Files`, `Checks`, `Comments`, `History`, `Utilities`
 - `Operate`: `Environments`, `Deployments`, `Services`, `Variables`, `Logs`, `History`, `Providers`
-- `Library`: `Libraries`, `Documents`, `Outline`, `Rules`, `History`, `Utilities`
+- `Library`: `Libraries`, `Documents`, `Messages`, `Rules`, `History`, `Utilities`, `Extensions`
 - `Editor`: `Files`, `Symbols`, `Problems`, `Search`, `History`, `Utilities`
 - `Database`: `Connections`, `Schemas`, `Tables`, `Queries`, `History`, `Export`, `Providers`
 - `Terminal`: `Sessions`, `Splits`, `Profiles`, `History`, `Actions`
 - `Docs`: `Libraries`, `Documents`, `Outline`, `History`, `Utilities`
-- `Messaging`: `Spaces`, `Channels`, `Threads`, `DMs`, `History`, `Utilities`
-- `Notifications`: `Sources`, `Filters`, `Inbox`, `History`, `Utilities`
+- `Messaging`: `Channels`, `Threads`, `DMs`, `History`, `Inspector`, `Utilities`
+- `Notifications`: `Sources`, `Filters`, `Inbox`, `History`, `Inspector`, `Utilities`
 - `Extensions`: `Categories`, `Installed`, `Updates`, `History`, `Utilities`
 
 Do not force every workspace to use every section. Do require the sections that are meaningful for that workspace.

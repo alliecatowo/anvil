@@ -99,8 +99,8 @@ These are persistent destinations, not transient toggles.
 - `Terminal` -> `Utility Deck`
 - `Database` -> `Build`
 - `Editor` -> `Build`
-- `Messaging` -> `Operate`
-- `Notifications` -> `Operate` or the global `Inbox`
+- `Messaging` -> `Library`
+- `Notifications` -> `Library` or the global `Inbox`
 - `Testing` -> `Review` or `Utility Deck`, depending on whether it is validating work or running tools
 
 ### Why `Intent` And `Agent` Should Not Stay As Peer Workspaces
@@ -131,6 +131,7 @@ Keeping them as peer workspaces makes the app feel like a pile of related featur
 `Library` is the stable home for:
 
 - docs
+- messaging
 - snippets
 - extensions
 - provider configuration
@@ -190,4 +191,3 @@ App
 Any new shell or navigation work must first map to this vocabulary before code or pixels are added.
 
 If the app cannot name a thing clearly, the app should not ship it as a first-class shell element yet.
-

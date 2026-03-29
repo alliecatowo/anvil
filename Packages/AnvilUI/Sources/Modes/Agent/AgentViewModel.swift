@@ -74,6 +74,7 @@ public final class AgentViewModel: ObservableObject {
         sessions.insert(session, at: 0)
         selectedSessionId = session.id
         selectedModelId = model
+        viewMode = .conversation
         logger.info("Session created: \(session.id), total sessions: \(self.sessions.count)")
 
         // Create an isolated worktree for this session

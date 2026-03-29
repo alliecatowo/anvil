@@ -46,19 +46,21 @@ struct ChannelList: View {
         let isSelected = viewModel.selectedChannelId == channel.id
         let hasUnread = channel.unreadCount > 0
 
-        return AnvilListItem(
-            icon: channel.icon,
-            title: channel.name,
-            subtitle: hasUnread ? "\(channel.unreadCount) unread messages" : nil,
-            tag: hasUnread ? "\(channel.unreadCount)" : nil,
-            tagColor: AnvilColor.accentBlue,
-            isSelected: isSelected,
-            isCompact: false
-        )
-        .contentShape(Rectangle())
-        .onTapGesture {
+        return Button {
             viewModel.selectChannel(channel.id)
+        } label: {
+            AnvilListItem(
+                icon: channel.icon,
+                title: channel.name,
+                subtitle: hasUnread ? "\(channel.unreadCount) unread messages" : nil,
+                tag: hasUnread ? "\(channel.unreadCount)" : nil,
+                tagColor: AnvilColor.accentBlue,
+                isSelected: isSelected,
+                isCompact: false
+            )
         }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(hasUnread ? "Unread, " : "")\(channel.name)\(hasUnread ? ", \(channel.unreadCount) unread messages" : "")")
         .accessibilityAddTraits(.isButton)
