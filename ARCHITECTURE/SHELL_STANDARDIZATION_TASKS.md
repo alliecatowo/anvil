@@ -1,6 +1,7 @@
 # Shell Standardization Tasks
 
 **Status:** Draft
+**Approximate Task Count:** 246
 **North Star:** [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md)
 
 This backlog is the migration plan from the current mixed shell vocabulary to the canonical shell model.
@@ -238,5 +239,75 @@ The target shell model is:
 - [ ] S-186 Keep all future provider work within the connection/capability model.
 - [ ] S-187 Keep all future workspace work within the canonical shell vocabulary.
 - [ ] S-188 Ensure new UI copy is reviewed against the shell vocabulary before merge.
+
+## 13. Workspace Renaming And Legacy Aliases
+
+- [ ] S-189 Audit every remaining user-facing `Intent` label and classify whether it should become `Plan` or an internal alias.
+- [ ] S-190 Audit every remaining user-facing `Agent` label and classify whether it should become `Build` or an internal alias.
+- [ ] S-191 Audit every remaining user-facing `Ship` label and classify whether it should become `Operate` or an internal alias.
+- [ ] S-192 Audit every remaining user-facing `Mode` label and classify whether it should become `Space`, `Canvas`, `Inspector`, or be removed.
+- [ ] S-193 Keep implementation types named for now, but separate those names from user-facing shell labels.
+- [ ] S-194 Add a single label-mapping table for shell words used in code, docs, UI, tests, and screenshots.
+- [ ] S-195 Ensure accessibility identifiers use stable action nouns, not legacy mode labels, when the UI is user-facing.
+- [ ] S-196 Ensure command palette labels use canonical space names before legacy mode names.
+- [ ] S-197 Ensure sidebar section copy uses canonical shell nouns before legacy terminology.
+- [ ] S-198 Add a deprecation list for old shell words that should not appear in new docs or UI.
+- [ ] S-199 Make `Plan`, `Build`, `Review`, `Operate`, and `Library` the only allowed top-level shell nouns in new copy.
+- [ ] S-200 Keep `Intent`, `Agent`, `Ship`, `Auxiliary`, and `Mode` as transitional labels only until migration completes.
+- [ ] S-201 Add an internal glossary for the current-to-canonical mapping in the architecture docs.
+- [ ] S-202 Update screenshots, PR templates, and visual-test names to use the canonical shell nouns.
+- [ ] S-203 Remove any code comment or TODO that depends on legacy shell labels to explain behavior.
+- [ ] S-204 Ensure the migration notes explicitly call out when a legacy label is retained only for compatibility.
+
+## 14. Shell Enforcement And CI Gates
+
+- [ ] S-205 Add a shell vocabulary lint that fails on new legacy shell words in new UI docs.
+- [ ] S-206 Add a shell vocabulary lint that fails on new legacy shell words in new user-facing copy.
+- [ ] S-207 Add a docs check that `ARCHITECTURE/SHELL_VOCABULARY.md` is referenced by shell docs.
+- [ ] S-208 Add a docs check that `ARCHITECTURE/SHELL_STANDARDIZATION_TASKS.md` is referenced by migration plans.
+- [ ] S-209 Add a CI gate for stale sidebar controls that do not mutate real state.
+- [ ] S-210 Add a CI gate for new controls without accessibility labels.
+- [ ] S-211 Add a CI gate for duplicate visible labels on critical journey buttons.
+- [ ] S-212 Add a CI gate for raw/default smoke scenarios that miss a canonical heading or primary action.
+- [ ] S-213 Add a CI gate for deterministic visual scenarios seeded by `ANVIL_UITEST_SCENARIO`.
+- [ ] S-214 Add a CI gate for shell-doc changes that do not update the vocabulary doc.
+- [ ] S-215 Add a CI gate for provider changes that do not update the provider model doc.
+- [ ] S-216 Add a CI gate for shell changes that introduce custom chrome where native primitives exist.
+- [ ] S-217 Add a CI gate for any new sidebar section that is not declared in the shell vocabulary.
+- [ ] S-218 Add a CI gate for any new workspace concept that is not mapped to the canonical shell model.
+
+## 15. Migration Coverage And Visual Proof
+
+- [ ] S-219 Add a canonical screenshot for raw Plan (list) with no seeded data.
+- [ ] S-220 Add a canonical screenshot for raw Plan (board) with no seeded data.
+- [ ] S-221 Add a canonical screenshot for raw Build (session list/conversation) with no seeded data.
+- [ ] S-222 Add a canonical screenshot for raw Review (inbox) with no seeded data.
+- [ ] S-223 Add a canonical screenshot for raw Operate (dashboard) with no seeded data.
+- [ ] S-224 Add a canonical screenshot for raw Library (rules/docs) with no seeded data.
+- [ ] S-225 Add a canonical screenshot for seeded Plan with a selected ticket in main-pane detail.
+- [ ] S-226 Add a canonical screenshot for seeded Build with the info inspector visible.
+- [ ] S-227 Add a canonical screenshot for seeded Review with a branch diff selected and a real start-review action.
+- [ ] S-228 Add a canonical screenshot for seeded Operate with deployment detail visible.
+- [ ] S-229 Add a canonical screenshot for seeded Library with a real rules editor path.
+- [ ] S-230 Add a canonical screenshot for collapsed rail state in each core workspace.
+- [ ] S-231 Add a canonical screenshot for inspector-open and inspector-closed transitions.
+- [ ] S-232 Add a canonical screenshot for utility deck visible and hidden states.
+
+## 16. Cleanup And Removal
+
+- [ ] S-233 Remove any new shell copy that still says `mode` when `space` is the right concept.
+- [ ] S-234 Remove any user-facing `panel` label that should be `inspector`, `canvas`, or `utility deck`.
+- [ ] S-235 Remove duplicated navigation rows that mirror canvas content.
+- [ ] S-236 Remove any fake empty state that hides a real path to content.
+- [ ] S-237 Remove any feature-specific top bar that duplicates the toolbar contract.
+- [ ] S-238 Remove any workspace breadcrumb that repeats the rail without adding scope.
+- [ ] S-239 Remove any bottom-left utility affordance that should be in the rail, toolbar, or utility deck.
+- [ ] S-240 Remove any toolbar item that is only a workaround for a broken sidebar row.
+- [ ] S-241 Remove any review/agent/build control that becomes redundant after canonical shell migration.
+- [ ] S-242 Remove stale helper names from docs once the canonical shell vocabulary is established.
+- [ ] S-243 Remove transitional doc language that describes the old shell as if it were final.
+- [ ] S-244 Remove tasks from the backlog only when both the canonical label and the canonical behavior are shipped.
+- [ ] S-245 Remove legacy aliases from public screenshots and demos once the new names are ready.
+- [ ] S-246 Remove remaining shell debt that would make a fresh app bootstrap feel ambiguous or split-brained.
 - [ ] S-189 Make the standardization branch the source of follow-on migrations.
 - [ ] S-190 Do not let implementation convenience create a new shell vocabulary.
