@@ -168,61 +168,54 @@ struct IntentSidebar: View {
     // MARK: - Cycle Header
 
     private var cycleHeader: some View {
-        AnvilListItem(
-            icon: "arrow.triangle.2.circlepath",
+        AnvilSidebarRowButton(
             title: viewModel.currentCycle.name,
-            subtitle: "Current cycle",
-            tag: viewModel.currentCycle.velocity.map { "\($0) pts" },
-            tagColor: AnvilColor.accentBlue,
-            isCompact: false
-        )
+            icon: "arrow.triangle.2.circlepath",
+            subtitle: "Current sprint",
+            isActive: viewModel.viewMode == .board
+        ) {
+            viewModel.viewMode = .board
+            viewModel.closeTicketDetailInMainPane()
+        } trailing: {
+            if let v = viewModel.currentCycle.velocity {
+                AnvilBadge(text: "\(v) pts", color: AnvilColor.accentBlue)
+            }
+        }
     }
 
     // MARK: - Pinned Rows
 
     private func pinnedFilterRow(_ filter: PlanSidebarFilter) -> some View {
-        Button {
+        AnvilSidebarRowButton(
+            title: filter.title,
+            icon: filter.icon,
+            isActive: viewModel.currentSavedFilter == filter
+        ) {
             applySavedFilter {
                 switch filter {
                 case .myTickets: viewModel.applyFilterMine()
-                case .blocked: viewModel.applyFilterBlocked()
-                case .dueSoon: viewModel.applyFilterDueSoon()
+                case .blocked:   viewModel.applyFilterBlocked()
+                case .dueSoon:   viewModel.applyFilterDueSoon()
                 }
             }
-        } label: {
-            AnvilListItem(
-                icon: filter.icon,
-                title: filter.title,
-                isCompact: true
-            )
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
         .contextMenu {
-            Button {
-                viewModel.togglePin(filter: filter)
-            } label: {
+            Button { viewModel.togglePin(filter: filter) } label: {
                 Label("Unpin", systemImage: "pin.slash")
             }
         }
     }
 
     private func pinnedTicketRow(_ ticket: Ticket) -> some View {
-        Button {
+        AnvilSidebarRowButton(
+            title: ticket.title,
+            icon: IntentViewModel.statusIcon(ticket.status),
+            isActive: viewModel.selectedTicketId == ticket.id
+        ) {
             viewModel.selectTicket(ticket.id, openInMainPane: true)
-        } label: {
-            AnvilListItem(
-                icon: IntentViewModel.statusIcon(ticket.status),
-                title: ticket.title,
-                isCompact: true
-            )
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
         .contextMenu {
-            Button {
-                viewModel.togglePin(ticketId: ticket.id)
-            } label: {
+            Button { viewModel.togglePin(ticketId: ticket.id) } label: {
                 Label("Unpin", systemImage: "pin.slash")
             }
         }
@@ -231,28 +224,23 @@ struct IntentSidebar: View {
     // MARK: - Saved Filter Row
 
     private func savedFilterRow(title: String, icon: String, count: Int, filter: PlanSidebarFilter, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack {
-                AnvilListItem(
-                    icon: icon,
-                    title: title,
-                    subtitle: nil,
-                    tag: count > 0 ? "\(count)" : nil,
-                    tagColor: AnvilColor.accentBlue,
-                    isCompact: false
-                )
-
+        AnvilSidebarRowButton(
+            title: title,
+            icon: icon,
+            isActive: viewModel.currentSavedFilter == filter,
+            action: action
+        ) {
+            HStack(spacing: AnvilSpacing.xs) {
+                if count > 0 {
+                    AnvilBadge(text: "\(count)", color: AnvilColor.accentBlue)
+                }
                 PinButton(
                     isPinned: viewModel.isPinned(filter: filter),
                     action: { viewModel.togglePin(filter: filter) }
                 )
             }
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title), \(count) tickets")
-        .accessibilityAddTraits(.isButton)
     }
 
     // MARK: - Helpers
@@ -261,11 +249,6 @@ struct IntentSidebar: View {
         viewModel.viewMode = .list
         action()
         viewModel.closeTicketDetailInMainPane()
-        if let first = viewModel.filteredTickets.first {
-            viewModel.selectTicket(first.id)
-        } else {
-            viewModel.selectTicket(nil)
-        }
     }
 }
 

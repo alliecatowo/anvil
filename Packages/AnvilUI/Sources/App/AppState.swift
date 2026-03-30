@@ -579,8 +579,16 @@ public class AppState: ObservableObject {
         // Plan: reinitialize with demo data (already loaded on init, this resets to defaults)
         intentViewModel = IntentViewModel()
 
-        // Review: sample reviews
+        // Review: sample reviews + matching demo working-tree changes so sidebar rows exist to click
         reviewViewModel.reviews = ReviewViewModel.makeSampleReviews()
+        unstagedChanges = [
+            GitFileChange(filePath: "src/auth/handler.ts", status: .modified, staged: false),
+            GitFileChange(filePath: "src/config/database.ts", status: .modified, staged: false),
+        ]
+        stagedChanges = [
+            GitFileChange(filePath: "src/api/routes.ts", status: .added, staged: true),
+        ]
+        uncommittedFileCount = unstagedChanges.count + stagedChanges.count
 
         // Operate: load demo data
         shipViewModel = ShipViewModel()
