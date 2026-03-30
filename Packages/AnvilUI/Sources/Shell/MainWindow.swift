@@ -53,7 +53,7 @@ public struct MainWindow: View {
 
                             // Utility Deck (all spaces)
                             if appState.isTerminalPanelVisible {
-                                UtilityDeck()
+                                UtilityDeck(terminalVM: appState.terminalViewModel)
                                     .frame(height: appState.terminalPanelHeight)
                             }
 

@@ -6,15 +6,12 @@ import AnvilTerminal
 /// Bottom panel — a pure terminal drawer with session tabs.
 struct UtilityDeck: View {
     @EnvironmentObject var appState: AppState
+    @ObservedObject var terminalVM: TerminalViewModel
     @State private var isResizing = false
     @State private var splitSessionId: UUID? = nil
 
     private let minHeight: CGFloat = 100
     private let maxHeight: CGFloat = 600
-
-    private var terminalVM: TerminalViewModel {
-        appState.terminalViewModel
-    }
 
     var body: some View {
         VStack(spacing: 0) {
