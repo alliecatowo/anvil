@@ -68,6 +68,20 @@ public struct MainWindow: View {
                 .accessibilityLabel("Command Palette")
                 .accessibilityAddTraits(.isButton)
 
+                Button("Find in Project", systemImage: "magnifyingglass") {
+                    appState.toggleProjectSearch()
+                }
+                .help("Find in Project")
+                .accessibilityLabel("Find in Project")
+                .accessibilityAddTraits(.isButton)
+
+                Button("Inspector", systemImage: "info.circle") {
+                    appState.toggleInspector()
+                }
+                .help("Toggle Inspector")
+                .accessibilityLabel("Toggle Inspector")
+                .accessibilityAddTraits(.isButton)
+
                 SettingsLink {
                     Image(systemName: "gearshape")
                 }

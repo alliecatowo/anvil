@@ -36,20 +36,6 @@ public struct IconRail: View {
             }
 
             Spacer()
-
-            railDivider
-            RailButton(
-                icon: "magnifyingglass",
-                title: "Find in Project",
-                isActive: appState.isProjectSearchVisible,
-                action: { appState.toggleProjectSearch() }
-            )
-            RailButton(
-                icon: "sidebar.right",
-                title: "Toggle Inspector",
-                isActive: appState.isInspectorVisible,
-                action: { appState.toggleInspector() }
-            )
         }
         .padding(.vertical, AnvilSpacing.sm)
         .background(.regularMaterial)
@@ -58,15 +44,6 @@ public struct IconRail: View {
                 .fill(AnvilColor.borderSubtle)
                 .frame(width: 1)
         }
-    }
-
-    private var railDivider: some View {
-        Rectangle()
-            .fill(AnvilColor.borderSubtle)
-            .frame(height: 1)
-            .padding(.horizontal, AnvilSpacing.sm)
-            .padding(.vertical, AnvilSpacing.xs)
-            .accessibilityHidden(true)
     }
 }
 
