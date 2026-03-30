@@ -8,7 +8,8 @@ struct UtilityDeck: View {
     @EnvironmentObject var appState: AppState
     @ObservedObject var terminalVM: TerminalViewModel
     @State private var isResizing = false
-    @State private var splitSessionId: UUID? = nil
+    /// Maps a primary session ID to its split partner session ID.
+    @State private var splitPairs: [UUID: UUID] = [:]
 
     private let minHeight: CGFloat = 100
     private let maxHeight: CGFloat = 600
@@ -28,8 +29,9 @@ struct UtilityDeck: View {
         }
         .onChange(of: terminalVM.sessions.map(\.id)) { _, newIds in
             // Clear split if the split session was deleted
-            if let splitId = splitSessionId, !newIds.contains(splitId) {
-                splitSessionId = nil
+            // Clean up any split pairs where the partner was deleted
+            for (primary, partner) in splitPairs where !newIds.contains(partner) {
+                splitPairs.removeValue(forKey: primary)
             }
         }
     }
@@ -86,12 +88,12 @@ struct UtilityDeck: View {
             // Actions: split, new, close
             HStack(spacing: AnvilSpacing.sm) {
                 Button { toggleSplit() } label: {
-                    Image(systemName: splitSessionId != nil ? "rectangle.split.2x1.fill" : "rectangle.split.2x1")
+                    Image(systemName: isCurrentSplit ? "rectangle.split.2x1.fill" : "rectangle.split.2x1")
                         .font(.system(size: 11))
-                        .foregroundStyle(splitSessionId != nil ? Color.accentColor : .secondary)
+                        .foregroundStyle(isCurrentSplit ? Color.accentColor : .secondary)
                 }
                 .buttonStyle(.plain)
-                .help(splitSessionId != nil ? "Close Split" : "Split Terminal")
+                .help(isCurrentSplit ? "Close Split" : "Split Terminal")
 
                 Button {
                     terminalVM.addTab()
@@ -124,7 +126,7 @@ struct UtilityDeck: View {
 
     private func terminalTab(_ session: TerminalSession) -> some View {
         let isSelected = terminalVM.selectedSessionId == session.id
-        let isSplitPrimary = isSelected && splitSessionId != nil
+        let hasSplit = splitPairs[session.id] != nil
         let tabTitle = session.title
 
         return HStack(spacing: 0) {
@@ -141,7 +143,7 @@ struct UtilityDeck: View {
                         .lineLimit(1)
 
                     // Split indicator
-                    if isSplitPrimary {
+                    if hasSplit {
                         Image(systemName: "rectangle.split.2x1")
                             .font(.system(size: 8))
                             .foregroundStyle(.tertiary)
@@ -154,7 +156,9 @@ struct UtilityDeck: View {
             // Close button — always visible if multiple tabs
             if terminalVM.sessions.count > 1 {
                 Button {
-                    if splitSessionId == session.id { splitSessionId = nil }
+                    // Clean up split pairs involving this session
+                    splitPairs.removeValue(forKey: session.id)
+                    for (k, v) in splitPairs where v == session.id { splitPairs.removeValue(forKey: k) }
                     terminalVM.closeTab(session.id)
                 } label: {
                     Image(systemName: "xmark")
@@ -170,18 +174,34 @@ struct UtilityDeck: View {
         .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 5))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(session.title)\(isSelected ? ", selected" : "")\(isSplitPrimary ? ", split" : "")")
+        .accessibilityLabel("\(session.title)\(isSelected ? ", selected" : "")\(hasSplit ? ", split" : "")")
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+    }
+
+    /// The split partner for the currently selected session, if any.
+    private var currentSplitId: UUID? {
+        guard let selectedId = terminalVM.selectedSessionId else { return nil }
+        return splitPairs[selectedId]
+    }
+
+    /// Whether the currently selected session has a split.
+    private var isCurrentSplit: Bool {
+        currentSplitId != nil
     }
 
     // MARK: - Split Toggle
 
     private func toggleSplit() {
-        if splitSessionId != nil {
-            splitSessionId = nil
+        guard let selectedId = terminalVM.selectedSessionId else { return }
+        if splitPairs[selectedId] != nil {
+            // Close split — remove the partner mapping
+            splitPairs.removeValue(forKey: selectedId)
         } else {
+            // Create split — new session becomes the partner
             let newSession = terminalVM.addTab()
-            splitSessionId = newSession.id
+            // Switch back to the original tab (addTab auto-selects the new one)
+            terminalVM.selectTab(selectedId)
+            splitPairs[selectedId] = newSession.id
         }
     }
 
@@ -189,7 +209,7 @@ struct UtilityDeck: View {
 
     private var terminalContent: some View {
         Group {
-            if let splitId = splitSessionId {
+            if let splitId = currentSplitId {
                 HSplitView {
                     TerminalView(viewModel: terminalVM)
                     TerminalView(viewModel: terminalVM, sessionOverrideId: splitId)
