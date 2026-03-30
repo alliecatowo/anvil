@@ -23,7 +23,7 @@ struct BuildSidebar: View {
             case .sessions:
                 AgentSidebar(viewModel: appState.agentViewModel)
             case .files:
-                EditorSidebar(viewModel: appState.editorViewModel)
+                BuildFilesSidebar(viewModel: appState.editorViewModel)
             case .terminal:
                 TerminalSidebarSection(viewModel: appState.terminalViewModel)
             case .data:
@@ -31,6 +31,207 @@ struct BuildSidebar: View {
             case .tests:
                 TestSuiteList(viewModel: appState.testingViewModel)
             }
+        }
+    }
+}
+
+// MARK: - Files Sidebar
+
+struct BuildFilesSidebar: View {
+    @EnvironmentObject private var appState: AppState
+    @ObservedObject var viewModel: EditorViewModel
+
+    var body: some View {
+        VStack(spacing: 0) {
+            header
+
+            Divider()
+
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: AnvilSpacing.lg) {
+                    projectSection
+                    openTabsSection
+                    recentFilesSection
+                }
+                .padding(.horizontal, AnvilSpacing.sm)
+                .padding(.vertical, AnvilSpacing.md)
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: AnvilSpacing.sm) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Files")
+                    .font(.headline)
+
+                Text("Open tabs and recent files")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+            }
+
+            Spacer()
+
+            Button {
+                appState.openFilePalette()
+            } label: {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 12))
+            }
+            .buttonStyle(.plain)
+            .help("Find File")
+            .accessibilityLabel("Find File")
+            .accessibilityAddTraits(.isButton)
+
+            Button {
+                appState.openSymbolPalette()
+            } label: {
+                Image(systemName: "list.bullet")
+                    .font(.system(size: 12))
+            }
+            .buttonStyle(.plain)
+            .help("Search Symbols")
+            .accessibilityLabel("Search Symbols")
+            .accessibilityAddTraits(.isButton)
+        }
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, AnvilSpacing.sm)
+    }
+
+    private var projectSection: some View {
+        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+            AnvilSidebarSectionHeader(
+                title: "Project",
+                icon: "folder",
+                count: appState.currentProjectPath == nil ? nil : 1
+            )
+
+            if let projectPath = appState.currentProjectPath {
+                let projectURL = URL(fileURLWithPath: projectPath)
+                AnvilSidebarInfoRow(
+                    title: projectURL.lastPathComponent,
+                    icon: "folder.fill",
+                    detail: projectPath
+                )
+
+                HStack(spacing: AnvilSpacing.xs) {
+                    Button("Find File") {
+                        appState.openFilePalette()
+                    }
+                    .buttonStyle(.borderless)
+
+                    Button("Search Symbols") {
+                        appState.openSymbolPalette()
+                    }
+                    .buttonStyle(.borderless)
+                }
+                .font(AnvilFont.label)
+            } else {
+                AnvilSidebarInfoRow(
+                    title: "No Project Open",
+                    icon: "folder",
+                    detail: "Open a project to browse and edit files."
+                )
+            }
+        }
+    }
+
+    private var openTabsSection: some View {
+        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+            AnvilSidebarSectionHeader(title: "Open Tabs", icon: "doc.on.doc", count: viewModel.openFiles.count)
+
+            if viewModel.openFiles.isEmpty {
+                emptyState(text: "No files are open.")
+            } else {
+                VStack(spacing: 2) {
+                    ForEach(viewModel.openFiles) { file in
+                        Button {
+                            viewModel.selectFile(file.id)
+                        } label: {
+                            AnvilListItem(
+                                icon: fileIcon(for: file.name),
+                                title: file.name,
+                                subtitle: file.relativePath,
+                                tag: viewModel.isFileDirty(file.id) ? "Dirty" : (viewModel.isFileReadOnly(file.id) ? "Read-only" : nil),
+                                tagColor: viewModel.isFileDirty(file.id) ? AnvilColor.accentAmber : AnvilColor.textTertiary,
+                                isSelected: viewModel.selectedFileId == file.id,
+                                isCompact: false
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Open file \(file.name)")
+                        .accessibilityAddTraits(.isButton)
+                    }
+                }
+            }
+        }
+    }
+
+    private var recentFilesSection: some View {
+        let recentPaths = recentEditablePaths
+
+        return VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+            AnvilSidebarSectionHeader(title: "Recent", icon: "clock", count: recentPaths.count)
+
+            if recentPaths.isEmpty {
+                emptyState(text: "Files you edit will appear here.")
+            } else {
+                VStack(spacing: 2) {
+                    ForEach(recentPaths.prefix(8), id: \.self) { path in
+                        Button {
+                            viewModel.openFileFromTree(path)
+                        } label: {
+                            AnvilListItem(
+                                icon: fileIcon(for: path),
+                                title: URL(fileURLWithPath: path).lastPathComponent,
+                                subtitle: relativePath(for: path),
+                                tag: "Recent",
+                                tagColor: AnvilColor.accentBlue,
+                                isCompact: false
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Recent file \(path)")
+                        .accessibilityAddTraits(.isButton)
+                    }
+                }
+            }
+        }
+    }
+
+    private var recentEditablePaths: [String] {
+        let openPaths = Set(viewModel.openFiles.map(\.path))
+        return viewModel.recentlyEditedPaths.filter { !openPaths.contains($0) }
+    }
+
+    private func relativePath(for path: String) -> String {
+        guard let projectPath = appState.currentProjectPath, path.hasPrefix(projectPath) else {
+            return path
+        }
+
+        var relative = String(path.dropFirst(projectPath.count))
+        if relative.hasPrefix("/") {
+            relative = String(relative.dropFirst())
+        }
+        return relative.isEmpty ? path : relative
+    }
+
+    private func emptyState(text: String) -> some View {
+        Text(text)
+            .font(AnvilFont.label)
+            .foregroundStyle(AnvilColor.textTertiary)
+            .padding(.horizontal, AnvilSpacing.md)
+            .padding(.vertical, AnvilSpacing.sm)
+    }
+
+    private func fileIcon(for path: String) -> String {
+        let ext = URL(fileURLWithPath: path).pathExtension.lowercased()
+        switch ext {
+        case "swift": return "swift"
+        case "md": return "doc.richtext"
+        case "json": return "curlybraces"
+        case "yml", "yaml": return "doc.text"
+        default: return "doc"
         }
     }
 }
