@@ -676,61 +676,62 @@ struct ReviewSidebar: View {
     }
 
     private func reviewRow(_ review: Review) -> some View {
-        Button {
+        AnvilSidebarRowButton(
+            title: review.title,
+            icon: reviewIcon(for: review),
+            subtitle: review.author,
+            isActive: viewModel.selectedReviewID == review.id
+        ) {
             appState.gitHubPRViewModel.clearSelection()
             viewModel.resetNavigationState()
             viewModel.selectReview(review.id)
-        } label: {
-            ZStack(alignment: .trailing) {
-                AnvilListItem(
-                    icon: reviewIcon(for: review),
-                    title: review.title,
-                    subtitle: review.author,
-                    tag: review.sourceId,
-                    tagColor: review.sourceType == .pullRequest
+        } trailing: {
+            HStack(spacing: AnvilSpacing.xs) {
+                AnvilBadge(
+                    text: review.sourceId,
+                    color: review.sourceType == .pullRequest
                         ? AnvilColor.accentBlue
-                        : AnvilColor.accentPurple,
-                    timestamp: "\(review.diff.count) files",
-                    isSelected: viewModel.selectedReviewID == review.id,
-                    isCompact: false
+                        : AnvilColor.accentPurple
                 )
+
+                Text("\(review.diff.count) files")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(viewModel.selectedReviewID == review.id ? AnvilColor.accentBlue : AnvilColor.textTertiary)
-                    .padding(.trailing, AnvilSpacing.md)
                     .accessibilityHidden(true)
-                    .allowsHitTesting(false)
             }
         }
-        .buttonStyle(.plain)
         .accessibilityLabel("\(review.title), by \(review.author), \(review.sourceId), \(review.diff.count) files, status \(String(describing: review.status))")
-        .accessibilityAddTraits(.isButton)
     }
 
     private func fileRow(_ file: FileDiff) -> some View {
-        Button {
+        AnvilSidebarRowButton(
+            title: file.filePath.components(separatedBy: "/").last ?? file.filePath,
+            icon: fileIcon(for: file.status),
+            subtitle: file.filePath.components(separatedBy: "/").dropLast().joined(separator: "/"),
+            isActive: viewModel.selectedFileID == file.id
+        ) {
             appState.gitHubPRViewModel.clearSelection()
             viewModel.isCommitGraphVisible = false
             viewModel.selectFile(file.id)
-        } label: {
-            AnvilListItem(
-                icon: fileIcon(for: file.status),
-                title: file.filePath.components(separatedBy: "/").last ?? file.filePath,
-                subtitle: file.filePath.components(separatedBy: "/").dropLast().joined(separator: "/"),
-                tag: viewModel.commentCountForFile(file.id) > 0 ? "\(viewModel.commentCountForFile(file.id)) comments" : nil,
-                tagColor: AnvilColor.accentBlue,
-                timestamp: {
-                    let approved = file.hunks.filter { viewModel.decisionFor($0.id) == .approved }.count
-                    let total = file.hunks.count
-                    return approved > 0 ? "\(approved)/\(total)" : nil
-                }(),
-                isSelected: viewModel.selectedFileID == file.id,
-                isCompact: false
-            )
+        } trailing: {
+            HStack(spacing: AnvilSpacing.xs) {
+                if viewModel.commentCountForFile(file.id) > 0 {
+                    AnvilBadge(text: "\(viewModel.commentCountForFile(file.id)) comments", color: AnvilColor.accentBlue)
+                }
+
+                let approved = file.hunks.filter { viewModel.decisionFor($0.id) == .approved }.count
+                let total = file.hunks.count
+                if approved > 0 {
+                    Text("\(approved)/\(total)")
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                }
+            }
         }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(.isButton)
     }
 
     private func changeStatusIcon(_ status: GitFileChangeStatus) -> String {
@@ -950,22 +951,20 @@ struct ReviewSidebar: View {
     }
 
     private func prRow(_ pr: PullRequest) -> some View {
-        Button {
+        AnvilSidebarRowButton(
+            title: pr.title,
+            icon: pr.isDraft ? "circle.dashed" : "arrow.triangle.pull",
+            subtitle: "#\(pr.number) by \(pr.author)",
+            isActive: appState.gitHubPRViewModel.selectedPR?.id == pr.id
+        ) {
             guard let adapter = container.getOrCreateGitHubAdapter() else { return }
             appState.gitHubPRViewModel.selectPR(pr, using: adapter)
-        } label: {
-            AnvilListItem(
-                icon: pr.isDraft ? "circle.dashed" : "arrow.triangle.pull",
-                title: pr.title,
-                subtitle: "#\(pr.number) by \(pr.author)",
-                tag: pr.isDraft ? "Draft" : pr.status.rawValue.capitalized,
-                tagColor: prStatusColor(pr.status),
-                isSelected: appState.gitHubPRViewModel.selectedPR?.id == pr.id,
-                isCompact: false
+        } trailing: {
+            AnvilBadge(
+                text: pr.isDraft ? "Draft" : pr.status.rawValue.capitalized,
+                color: prStatusColor(pr.status)
             )
         }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(.isButton)
     }
 
     private func prStatusColor(_ status: PRStatus) -> Color {
