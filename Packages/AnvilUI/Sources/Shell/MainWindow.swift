@@ -16,49 +16,51 @@ public struct MainWindow: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ZStack(alignment: .leading) {
-                    // Canvas fills full width (behind everything)
-                    VStack(spacing: 0) {
-                        HStack(spacing: 0) {
-                            // Spacer for sidebar width so content doesn't hide behind it
-                            if !appState.isSidebarCollapsed {
-                                Color.clear.frame(width: AnvilSpacing.iconRailWidth + AnvilSpacing.sidebarWidth)
-                            } else {
-                                Color.clear.frame(width: AnvilSpacing.iconRailWidth)
-                            }
+                    HStack(spacing: 0) {
+                        // Spacer for sidebar width so content doesn't hide behind it
+                        if !appState.isSidebarCollapsed {
+                            Color.clear.frame(width: AnvilSpacing.iconRailWidth + AnvilSpacing.sidebarWidth)
+                        } else {
+                            Color.clear.frame(width: AnvilSpacing.iconRailWidth)
+                        }
 
-                            // Project search panel
-                            if appState.isProjectSearchVisible {
-                                SearchPanel()
-                            }
-
-                            // Content
-                            ContentArea()
-                                .inspector(isPresented: Binding(
-                                    get: { appState.isAgentPanelVisible || appState.isInspectorVisible },
-                                    set: { if !$0 {
-                                        appState.isAgentPanelVisible = false
-                                        appState.isInspectorVisible = false
-                                    }}
-                                )) {
-                                    if appState.isAgentPanelVisible {
-                                        AgentChatPanel()
-                                            .inspectorColumnWidth(min: 320, ideal: 360, max: 480)
-                                    } else {
-                                        InspectorPanel()
-                                            .inspectorColumnWidth(min: 200, ideal: 260, max: 400)
-                                    }
+                        // Canvas column: search + content + utility deck + status bar
+                        VStack(spacing: 0) {
+                            HStack(spacing: 0) {
+                                // Project search panel
+                                if appState.isProjectSearchVisible {
+                                    SearchPanel()
                                 }
-                        }
 
-                        // Utility Deck (all spaces)
-                        if appState.isTerminalPanelVisible {
-                            UtilityDeck()
-                                .frame(height: appState.terminalPanelHeight)
-                        }
+                                // Content
+                                ContentArea()
+                                    .inspector(isPresented: Binding(
+                                        get: { appState.isAgentPanelVisible || appState.isInspectorVisible },
+                                        set: { if !$0 {
+                                            appState.isAgentPanelVisible = false
+                                            appState.isInspectorVisible = false
+                                        }}
+                                    )) {
+                                        if appState.isAgentPanelVisible {
+                                            AgentChatPanel()
+                                                .inspectorColumnWidth(min: 320, ideal: 360, max: 480)
+                                        } else {
+                                            InspectorPanel()
+                                                .inspectorColumnWidth(min: 200, ideal: 260, max: 400)
+                                        }
+                                    }
+                            }
 
-                        // Status bar — Build-only
-                        if appState.currentSpace == .build && !appState.isTerminalPanelVisible {
-                            StatusBar()
+                            // Utility Deck (all spaces)
+                            if appState.isTerminalPanelVisible {
+                                UtilityDeck()
+                                    .frame(height: appState.terminalPanelHeight)
+                            }
+
+                            // Status bar — Build-only
+                            if appState.currentSpace == .build && !appState.isTerminalPanelVisible {
+                                StatusBar()
+                            }
                         }
                     }
 

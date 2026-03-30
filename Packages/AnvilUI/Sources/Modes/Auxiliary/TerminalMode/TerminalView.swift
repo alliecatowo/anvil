@@ -49,32 +49,6 @@ struct TerminalContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Title bar with traffic lights
-            HStack {
-                Circle()
-                    .fill(AnvilColor.accentRed)
-                    .frame(width: 10, height: 10)
-                Circle()
-                    .fill(AnvilColor.accentAmber)
-                    .frame(width: 10, height: 10)
-                Circle()
-                    .fill(AnvilColor.accentGreen)
-                    .frame(width: 10, height: 10)
-
-                Spacer()
-
-                Text(session.title)
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
-
-                Spacer()
-            }
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.sm)
-            .background(.thinMaterial)
-
-            Divider()
-
             // SwiftTerm-backed terminal view -- real PTY with full ANSI support
             SwiftTermView(
                 shell: session.shell,

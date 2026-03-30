@@ -8,6 +8,7 @@ struct UtilityDeck: View {
     @EnvironmentObject var appState: AppState
     @State private var isResizing = false
     @State private var activeTab: Tab = .terminal
+    @State private var splitSessionId: UUID? = nil
 
     private let minHeight: CGFloat = 100
     private let maxHeight: CGFloat = 600
@@ -20,6 +21,14 @@ struct UtilityDeck: View {
 
     private var terminalVM: TerminalViewModel {
         appState.terminalViewModel
+    }
+
+    /// In Build space, show all tabs. Otherwise, terminal only.
+    private var availableTabs: [Tab] {
+        if appState.currentSpace == .build {
+            return Tab.allCases
+        }
+        return [.terminal]
     }
 
     var body: some View {
@@ -43,6 +52,18 @@ struct UtilityDeck: View {
             }
         }
         .background(.regularMaterial)
+        .onChange(of: appState.currentSpace) { _, _ in
+            // Reset to terminal if current tab is not available outside Build
+            if !availableTabs.contains(activeTab) {
+                activeTab = .terminal
+            }
+        }
+        .onChange(of: terminalVM.sessions.map(\.id)) { _, newIds in
+            // Clear split if the split session was deleted
+            if let splitId = splitSessionId, !newIds.contains(splitId) {
+                splitSessionId = nil
+            }
+        }
     }
 
     // MARK: - Resize Handle
@@ -83,15 +104,17 @@ struct UtilityDeck: View {
 
     private var deckHeader: some View {
         HStack(spacing: 0) {
-            // Tab picker
-            Picker("Utility", selection: $activeTab) {
-                ForEach(Tab.allCases, id: \.self) { tab in
-                    Text(tab.rawValue).tag(tab)
+            // Tab picker — only show when there are multiple tabs (Build space)
+            if availableTabs.count > 1 {
+                Picker("Utility", selection: $activeTab) {
+                    ForEach(availableTabs, id: \.self) { tab in
+                        Text(tab.rawValue).tag(tab)
+                    }
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 240)
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(width: 240)
 
             // Terminal tabs (only when terminal tab is active)
             if activeTab == .terminal {
@@ -110,6 +133,24 @@ struct UtilityDeck: View {
             // Actions
             HStack(spacing: AnvilSpacing.xs) {
                 if activeTab == .terminal {
+                    // Split terminal
+                    Button {
+                        if splitSessionId != nil {
+                            splitSessionId = nil
+                        } else {
+                            let newSession = terminalVM.addTab()
+                            splitSessionId = newSession.id
+                        }
+                    } label: {
+                        Image(systemName: "rectangle.split.2x1")
+                            .font(.system(size: 10))
+                            .foregroundStyle(splitSessionId != nil ? Color.accentColor : AnvilColor.textSecondary)
+                    }
+                    .buttonStyle(.borderless)
+                    .help(splitSessionId != nil ? "Close Split" : "Split Terminal")
+                    .accessibilityLabel(splitSessionId != nil ? "Close Split Terminal" : "Split Terminal")
+                    .accessibilityAddTraits(.isButton)
+
                     // New terminal
                     Button {
                         terminalVM.addTab()
@@ -191,8 +232,19 @@ struct UtilityDeck: View {
     // MARK: - Terminal Content
 
     private var terminalContent: some View {
-        TerminalView(viewModel: terminalVM)
-            .background(AnvilColor.backgroundPrimary)
+        Group {
+            if let splitId = splitSessionId {
+                HSplitView {
+                    TerminalView(viewModel: terminalVM)
+                        .background(AnvilColor.backgroundPrimary)
+                    TerminalView(viewModel: terminalVM, sessionOverrideId: splitId)
+                        .background(AnvilColor.backgroundPrimary)
+                }
+            } else {
+                TerminalView(viewModel: terminalVM)
+                    .background(AnvilColor.backgroundPrimary)
+            }
+        }
     }
 
     // MARK: - Empty State
