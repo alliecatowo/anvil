@@ -28,23 +28,17 @@ struct ShipSidebar: View {
     }
 
     private func environmentRow(_ card: EnvironmentCard) -> some View {
-        VStack(spacing: AnvilSpacing.xxs) {
-            Button {
-                viewModel.selectedEnvironmentID = card.id
-            } label: {
-                AnvilListItem(
-                    icon: environmentIcon(card.status),
-                    title: card.environment.name,
-                    subtitle: "\(card.currentVersion) • \(card.environment.branch ?? "--")",
-                    tag: card.overallHealth.label,
-                    tagColor: card.overallHealth.color,
-                    isSelected: viewModel.selectedEnvironmentID == card.id,
-                    isCompact: false
-                )
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("\(card.environment.name), \(card.status.label), \(card.currentVersion)")
+        AnvilSidebarRowButton(
+            title: card.environment.name,
+            icon: environmentIcon(card.status),
+            subtitle: "\(card.currentVersion) \u{2022} \(card.environment.branch ?? "--")",
+            isActive: viewModel.selectedEnvironmentID == card.id
+        ) {
+            viewModel.selectedEnvironmentID = card.id
+        } trailing: {
+            AnvilBadge(text: card.overallHealth.label, color: card.overallHealth.color)
         }
+        .accessibilityLabel("\(card.environment.name), \(card.status.label), \(card.currentVersion)")
         .listRowInsets(EdgeInsets(top: 2, leading: 4, bottom: 2, trailing: 4))
     }
 
