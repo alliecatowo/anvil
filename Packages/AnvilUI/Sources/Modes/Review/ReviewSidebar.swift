@@ -51,24 +51,12 @@ struct ReviewSidebar: View {
     // MARK: - Branch Section
 
     private var branchSection: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: AnvilSpacing.sm) {
-                disclosureHeader("Branches", icon: "arrow.triangle.branch", count: localBranches.count, isExpanded: $isBranchesExpanded)
-                Button {
-                    viewModel.isCommitGraphVisible.toggle()
-                } label: {
-                    Image(systemName: "point.3.connected.trianglepath.dotted")
-                        .font(.system(size: 11))
-                        .foregroundStyle(
-                            viewModel.isCommitGraphVisible ? AnvilColor.accentBlue : AnvilColor.textTertiary
-                        )
-                }
-                .buttonStyle(.plain)
-                .help(viewModel.isCommitGraphVisible ? "Hide Commit Graph" : "Show Commit Graph")
-            }
-            .padding(.trailing, AnvilSpacing.md)
-
-            if isBranchesExpanded {
+        AnvilSidebarDisclosureSection(
+            title: "Branches",
+            icon: "arrow.triangle.branch",
+            count: localBranches.count,
+            isExpanded: $isBranchesExpanded,
+            content: {
                 if appState.branches.isEmpty {
                     HStack {
                         Text("No branches loaded")
@@ -83,8 +71,21 @@ struct ReviewSidebar: View {
                         branchRow(branch)
                     }
                 }
+            },
+            trailing: {
+                Button {
+                    viewModel.isCommitGraphVisible.toggle()
+                } label: {
+                    Image(systemName: "point.3.connected.trianglepath.dotted")
+                        .font(.system(size: 11))
+                        .foregroundStyle(
+                            viewModel.isCommitGraphVisible ? AnvilColor.accentBlue : AnvilColor.textTertiary
+                        )
+                }
+                .buttonStyle(.plain)
+                .help(viewModel.isCommitGraphVisible ? "Hide Commit Graph" : "Show Commit Graph")
             }
-        }
+        )
     }
 
     private var localBranches: [Branch] {
@@ -146,10 +147,12 @@ struct ReviewSidebar: View {
     // MARK: - Remotes Section
 
     private var remotesSection: some View {
-        VStack(spacing: 0) {
-            disclosureHeader("Remotes", icon: "globe", count: viewModel.remotes.count, isExpanded: $isRemotesExpanded)
-
-            if isRemotesExpanded {
+        AnvilSidebarDisclosureSection(
+            title: "Remotes",
+            icon: "globe",
+            count: viewModel.remotes.count,
+            isExpanded: $isRemotesExpanded,
+            content: {
                 if viewModel.remotes.isEmpty {
                     emptySectionLabel("No remotes")
                 } else {
@@ -158,7 +161,7 @@ struct ReviewSidebar: View {
                     }
                 }
             }
-        }
+        )
     }
 
     private func remoteRow(_ remote: GitRemote) -> some View {
@@ -215,10 +218,12 @@ struct ReviewSidebar: View {
     // MARK: - Tags Section
 
     private var tagsSection: some View {
-        VStack(spacing: 0) {
-            disclosureHeader("Tags", icon: "tag", count: viewModel.tags.count, isExpanded: $isTagsExpanded)
-
-            if isTagsExpanded {
+        AnvilSidebarDisclosureSection(
+            title: "Tags",
+            icon: "tag",
+            count: viewModel.tags.count,
+            isExpanded: $isTagsExpanded,
+            content: {
                 if viewModel.tags.isEmpty {
                     emptySectionLabel("No tags")
                 } else {
@@ -227,7 +232,7 @@ struct ReviewSidebar: View {
                     }
                 }
             }
-        }
+        )
     }
 
     private func tagRow(_ tag: Tag) -> some View {
@@ -263,10 +268,12 @@ struct ReviewSidebar: View {
     // MARK: - Stashes Section
 
     private var stashesSection: some View {
-        VStack(spacing: 0) {
-            disclosureHeader("Stashes", icon: "tray.and.arrow.down", count: viewModel.stashes.count, isExpanded: $isStashesExpanded)
-
-            if isStashesExpanded {
+        AnvilSidebarDisclosureSection(
+            title: "Stashes",
+            icon: "tray.and.arrow.down",
+            count: viewModel.stashes.count,
+            isExpanded: $isStashesExpanded,
+            content: {
                 if viewModel.stashes.isEmpty {
                     emptySectionLabel("No stashes")
                 } else {
@@ -275,7 +282,7 @@ struct ReviewSidebar: View {
                     }
                 }
             }
-        }
+        )
     }
 
     private func stashRow(_ stash: Stash) -> some View {
@@ -336,10 +343,21 @@ struct ReviewSidebar: View {
     // MARK: - Worktrees Section
 
     private var worktreesSection: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: AnvilSpacing.sm) {
-                disclosureHeader("Worktrees", icon: "folder.badge.gearshape", count: viewModel.worktrees.count, isExpanded: $isWorktreesExpanded)
-
+        AnvilSidebarDisclosureSection(
+            title: "Worktrees",
+            icon: "folder.badge.gearshape",
+            count: viewModel.worktrees.count,
+            isExpanded: $isWorktreesExpanded,
+            content: {
+                if viewModel.worktrees.isEmpty {
+                    emptySectionLabel("No worktrees")
+                } else {
+                    ForEach(viewModel.worktrees) { wt in
+                        worktreeRow(wt)
+                    }
+                }
+            },
+            trailing: {
                 Button {
                     viewModel.newWorktreeBranch = ""
                     viewModel.isAddWorktreeSheetPresented = true
@@ -351,18 +369,7 @@ struct ReviewSidebar: View {
                 .buttonStyle(.plain)
                 .help("Add Worktree")
             }
-            .padding(.trailing, AnvilSpacing.md)
-
-            if isWorktreesExpanded {
-                if viewModel.worktrees.isEmpty {
-                    emptySectionLabel("No worktrees")
-                } else {
-                    ForEach(viewModel.worktrees) { wt in
-                        worktreeRow(wt)
-                    }
-                }
-            }
-        }
+        )
         .sheet(isPresented: $viewModel.isAddWorktreeSheetPresented) {
             addWorktreeSheet
         }
@@ -508,30 +515,6 @@ struct ReviewSidebar: View {
         .frame(width: 360)
     }
 
-    // MARK: - Disclosure Header
-
-    private func disclosureHeader(_ title: String, icon: String, count: Int, isExpanded: Binding<Bool>) -> some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isExpanded.wrappedValue.toggle()
-            }
-        } label: {
-            HStack(spacing: AnvilSpacing.xs) {
-                Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .frame(width: 10)
-
-                AnvilSidebarSectionHeader(
-                    title: title,
-                    icon: icon,
-                    count: count
-                )
-            }
-        }
-        .buttonStyle(.plain)
-    }
-
     private func emptySectionLabel(_ text: String) -> some View {
         HStack {
             Text(text)
@@ -546,53 +529,56 @@ struct ReviewSidebar: View {
     // MARK: - Changes Section
 
     private var changesSection: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: AnvilSpacing.xs) {
-                disclosureHeader("Local Changes", icon: "square.and.pencil", count: totalChangesCount, isExpanded: $isChangesExpanded)
-
+        AnvilSidebarDisclosureSection(
+            title: "Local Changes",
+            icon: "square.and.pencil",
+            count: totalChangesCount,
+            isExpanded: $isChangesExpanded,
+            content: {
+                if !isChangesExpanded {
+                    EmptyView()
+                } else if totalChangesCount == 0 && conflictCount == 0 {
+                    HStack {
+                        Text("No changes")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textTertiary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, AnvilSpacing.md)
+                    .padding(.vertical, AnvilSpacing.xs)
+                } else {
+                    if conflictCount > 0 {
+                        changeGroupHeader("Conflicts", count: conflictCount)
+                        ForEach(Array(viewModel.mergeConflicts.enumerated()), id: \.element.id) { index, conflict in
+                            conflictRow(conflict, index: index)
+                        }
+                    }
+                    if !appState.stagedChanges.isEmpty {
+                        changeGroupHeader("Staged", count: appState.stagedChanges.count)
+                        ForEach(appState.stagedChanges) { change in
+                            changeRow(change)
+                        }
+                    }
+                    if !appState.unstagedChanges.isEmpty {
+                        changeGroupHeader("Modified", count: appState.unstagedChanges.count)
+                        ForEach(appState.unstagedChanges) { change in
+                            changeRow(change)
+                        }
+                    }
+                    if !appState.untrackedChanges.isEmpty {
+                        changeGroupHeader("Untracked", count: appState.untrackedChanges.count)
+                        ForEach(appState.untrackedChanges) { change in
+                            changeRow(change)
+                        }
+                    }
+                }
+            },
+            trailing: {
                 if conflictCount > 0 {
                     AnvilBadge(text: "\(conflictCount) conflict\(conflictCount == 1 ? "" : "s")", color: AnvilColor.accentRed)
                 }
             }
-
-            if !isChangesExpanded {
-                EmptyView()
-            } else if totalChangesCount == 0 && conflictCount == 0 {
-                HStack {
-                    Text("No changes")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                    Spacer()
-                }
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xs)
-            } else {
-                if conflictCount > 0 {
-                    changeGroupHeader("Conflicts", count: conflictCount)
-                    ForEach(Array(viewModel.mergeConflicts.enumerated()), id: \.element.id) { index, conflict in
-                        conflictRow(conflict, index: index)
-                    }
-                }
-                if !appState.stagedChanges.isEmpty {
-                    changeGroupHeader("Staged", count: appState.stagedChanges.count)
-                    ForEach(appState.stagedChanges) { change in
-                        changeRow(change)
-                    }
-                }
-                if !appState.unstagedChanges.isEmpty {
-                    changeGroupHeader("Modified", count: appState.unstagedChanges.count)
-                    ForEach(appState.unstagedChanges) { change in
-                        changeRow(change)
-                    }
-                }
-                if !appState.untrackedChanges.isEmpty {
-                    changeGroupHeader("Untracked", count: appState.untrackedChanges.count)
-                    ForEach(appState.untrackedChanges) { change in
-                        changeRow(change)
-                    }
-                }
-            }
-        }
+        )
     }
 
     private func conflictRow(_ conflict: MergeConflict, index: Int) -> some View {
@@ -982,51 +968,53 @@ struct ReviewSidebar: View {
     // MARK: - Pull Requests Section
 
     private var pullRequestsSection: some View {
-        VStack(spacing: 0) {
-            let prVM = appState.gitHubPRViewModel
-            disclosureHeader("Pull Requests", icon: "arrow.triangle.pull", count: prVM.pullRequests.count, isExpanded: $isPRsExpanded)
-
-            if !isPRsExpanded {
-                EmptyView()
-            } else if prVM.isLoading {
-                HStack {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("Loading PRs...")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                    Spacer()
-                }
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xs)
-            } else if let error = prVM.error {
-                HStack {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 10))
-                        .foregroundStyle(AnvilColor.accentAmber)
-                    Text(error)
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                        .lineLimit(2)
-                    Spacer()
-                }
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xs)
-            } else if prVM.pullRequests.isEmpty {
-                HStack {
-                    Text("No open pull requests")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                    Spacer()
-                }
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xs)
-            } else {
-                ForEach(prVM.pullRequests) { pr in
-                    prRow(pr)
+        let prVM = appState.gitHubPRViewModel
+        return AnvilSidebarDisclosureSection(
+            title: "Pull Requests",
+            icon: "arrow.triangle.pull",
+            count: prVM.pullRequests.count,
+            isExpanded: $isPRsExpanded,
+            content: {
+                if prVM.isLoading {
+                    HStack {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("Loading PRs...")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textTertiary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, AnvilSpacing.md)
+                    .padding(.vertical, AnvilSpacing.xs)
+                } else if let error = prVM.error {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 10))
+                            .foregroundStyle(AnvilColor.accentAmber)
+                        Text(error)
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textTertiary)
+                            .lineLimit(2)
+                        Spacer()
+                    }
+                    .padding(.horizontal, AnvilSpacing.md)
+                    .padding(.vertical, AnvilSpacing.xs)
+                } else if prVM.pullRequests.isEmpty {
+                    HStack {
+                        Text("No open pull requests")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textTertiary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, AnvilSpacing.md)
+                    .padding(.vertical, AnvilSpacing.xs)
+                } else {
+                    ForEach(prVM.pullRequests) { pr in
+                        prRow(pr)
+                    }
                 }
             }
-        }
+        )
         .task {
             loadPRsIfNeeded()
         }

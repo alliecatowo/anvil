@@ -180,7 +180,13 @@ public class AppState: ObservableObject {
 
     // MARK: - Build Section
 
-    @Published public var buildActiveSection: BuildSection = .sessions
+    @Published public var buildActiveSection: BuildSection = .sessions {
+        didSet {
+            if buildActiveSection != .sessions {
+                isAgentPanelVisible = false
+            }
+        }
+    }
 
     public enum BuildSection: String, CaseIterable, Sendable {
         case sessions = "Sessions"
@@ -440,6 +446,9 @@ public class AppState: ObservableObject {
 
     public func switchSpace(_ space: AnvilSpace) {
         withAnimation(AnvilAnimation.modeSwitch) {
+            if space != .build {
+                isAgentPanelVisible = false
+            }
             lastSpace = space
             currentSpace = space
         }
@@ -454,6 +463,9 @@ public class AppState: ObservableObject {
     public func toggleInspector() {
         withAnimation(AnvilAnimation.standard) {
             isInspectorVisible.toggle()
+            if currentSpace == .build, buildActiveSection == .sessions {
+                isAgentPanelVisible = isInspectorVisible
+            }
         }
     }
 
@@ -474,7 +486,15 @@ public class AppState: ObservableObject {
 
     public func toggleAgentPanel() {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
+            if !isAgentPanelVisible {
+                currentSpace = .build
+                buildActiveSection = .sessions
+                isInspectorVisible = true
+            }
             isAgentPanelVisible.toggle()
+            if !isAgentPanelVisible, currentSpace == .build, buildActiveSection == .sessions {
+                isInspectorVisible = false
+            }
         }
     }
 

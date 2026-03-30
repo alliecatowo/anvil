@@ -163,11 +163,12 @@ struct AgentSidebar: View {
                 List {
                     AnvilSidebarSection(title: "Results", icon: "magnifyingglass", count: searchResults.count) {
                         ForEach(searchResults) { result in
-                            searchResultRow(result)
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    navigateToSearchResult(result)
-                                }
+                            Button {
+                                navigateToSearchResult(result)
+                            } label: {
+                                searchResultRow(result)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -524,12 +525,6 @@ struct AgentSidebar: View {
                         }
                     }
                     .padding(.vertical, 2)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        viewModel.selectedSessionId = session.id
-                        viewModel.showConversation()
-                        activeTab = .sessions
-                    }
                     .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 8))
                     .listRowSeparator(.hidden)
                 }

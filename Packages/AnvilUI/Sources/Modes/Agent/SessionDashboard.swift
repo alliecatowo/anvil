@@ -175,41 +175,42 @@ struct SessionRow: View {
     let onCritique: () -> Void
 
     var body: some View {
-        HStack(spacing: AnvilSpacing.sm) {
-            Circle()
-                .fill(statusColor)
-                .frame(width: 8, height: 8)
-                .accessibilityHidden(true)
+        Button(action: onOpen) {
+            HStack(spacing: AnvilSpacing.sm) {
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 8, height: 8)
+                    .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(session.displayName)
-                    .font(AnvilFont.sidebarItem)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(session.displayName)
+                        .font(AnvilFont.sidebarItem)
+                        .foregroundStyle(AnvilColor.textPrimary)
+                        .lineLimit(1)
 
-                HStack(spacing: AnvilSpacing.sm) {
-                    Text(session.model)
-                    Text(session.status.rawValue)
-                    if linkedCount > 0 {
-                        Text("\(linkedCount) linked")
+                    HStack(spacing: AnvilSpacing.sm) {
+                        Text(session.model)
+                        Text(session.status.rawValue)
+                        if linkedCount > 0 {
+                            Text("\(linkedCount) linked")
+                        }
                     }
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
                 }
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+
+                Spacer()
+
+                Text(session.startedAt, style: .relative)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
             }
-
-            Spacer()
-
-            Text(session.startedAt, style: .relative)
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(session.displayName), \(session.status.rawValue), model \(session.model)\(linkedCount > 0 ? ", \(linkedCount) linked" : "")")
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(session.displayName), \(session.status.rawValue), model \(session.model)\(linkedCount > 0 ? ", \(linkedCount) linked" : "")")
+        .buttonStyle(.plain)
         .accessibilityAddTraits(.isButton)
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onOpen)
         .contextMenu {
             Button("Open Session", action: onOpen)
             Button("Review with Critique Agent", action: onCritique)
@@ -236,36 +237,37 @@ struct SynthesisRoomRow: View {
     let onDelete: () -> Void
 
     var body: some View {
-        HStack(spacing: AnvilSpacing.sm) {
-            Image(systemName: "arrow.triangle.merge")
-                .font(.system(size: 11))
-                .foregroundStyle(AnvilColor.accentPurple)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(room.title)
-                    .font(AnvilFont.sidebarItem)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .lineLimit(1)
-
-                Text(sessionNames.joined(separator: ", "))
+        Button(action: onOpen) {
+            HStack(spacing: AnvilSpacing.sm) {
+                Image(systemName: "arrow.triangle.merge")
                     .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .foregroundStyle(AnvilColor.accentPurple)
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(room.title)
+                        .font(AnvilFont.sidebarItem)
+                        .foregroundStyle(AnvilColor.textPrimary)
+                        .lineLimit(1)
+
+                    Text(sessionNames.joined(separator: ", "))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                Circle()
+                    .fill(synthesisStatusColor)
+                    .frame(width: 6, height: 6)
+                    .accessibilityHidden(true)
             }
-
-            Spacer()
-
-            Circle()
-                .fill(synthesisStatusColor)
-                .frame(width: 6, height: 6)
-                .accessibilityHidden(true)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Synthesis room: \(room.title), status \(room.status.rawValue), sessions: \(sessionNames.joined(separator: ", "))")
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Synthesis room: \(room.title), status \(room.status.rawValue), sessions: \(sessionNames.joined(separator: ", "))")
+        .buttonStyle(.plain)
         .accessibilityAddTraits(.isButton)
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onOpen)
         .contextMenu {
             Button("Open Room", action: onOpen)
             Button("Delete", role: .destructive, action: onDelete)

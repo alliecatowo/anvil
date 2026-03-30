@@ -42,13 +42,39 @@ public struct InspectorPanel: View {
         if appState.currentSpace == .plan, let ticket = appState.intentViewModel.selectedTicket {
             return ticket.id
         }
+        if appState.currentSpace == .build {
+            return buildHeaderTitle
+        }
         return "Inspector"
+    }
+
+    private var buildHeaderTitle: String {
+        switch appState.buildActiveSection {
+        case .sessions:
+            return appState.agentViewModel.selectedSession?.displayName ?? "Build Session"
+        case .files:
+            if appState.isSourceControlVisible {
+                return "Source Control"
+            }
+            if appState.splitEditorState.activePane.viewModel.isSymbolOutlineVisible {
+                return "Outline"
+            }
+            return appState.editorViewModel.selectedFile?.name ?? "File Details"
+        case .terminal:
+            return appState.terminalViewModel.selectedSession?.title ?? "Terminal"
+        case .data:
+            return appState.databaseViewModel.connectionTitle
+        case .tests:
+            return "Tests"
+        }
     }
 
     @ViewBuilder
     private var inspectorContent: some View {
         if appState.currentSpace == .plan, appState.intentViewModel.selectedTicket != nil {
             TicketInspectorView(viewModel: appState.intentViewModel)
+        } else if appState.currentSpace == .build {
+            buildInspectorContent
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: AnvilSpacing.md) {
@@ -60,6 +86,28 @@ public struct InspectorPanel: View {
                 }
                 .padding(AnvilSpacing.md)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var buildInspectorContent: some View {
+        switch appState.buildActiveSection {
+        case .sessions:
+            BuildSessionInspectorView(viewModel: appState.agentViewModel)
+        case .files:
+            if appState.isSourceControlVisible {
+                SourceControlPanel()
+            } else if appState.splitEditorState.activePane.viewModel.isSymbolOutlineVisible {
+                SymbolOutline(viewModel: appState.splitEditorState.activePane.viewModel)
+            } else {
+                EditorInspectorSummaryView(viewModel: appState.editorViewModel)
+            }
+        case .terminal:
+            TerminalInspectorSummaryView(viewModel: appState.terminalViewModel)
+        case .data:
+            DatabaseInspectorSummaryView(viewModel: appState.databaseViewModel)
+        case .tests:
+            TestingInspectorSummaryView(viewModel: appState.testingViewModel)
         }
     }
 }
@@ -406,6 +454,388 @@ struct TicketInspectorView: View {
             appState.switchSpace(.build)
 
             isDispatching = false
+        }
+    }
+}
+
+struct BuildSessionInspectorView: View {
+    @ObservedObject var viewModel: AgentViewModel
+
+    var body: some View {
+        if let session = viewModel.selectedSession {
+            ScrollView {
+                VStack(alignment: .leading, spacing: AnvilSpacing.lg) {
+                    InspectorSection(title: "Session") {
+                        HStack(spacing: AnvilSpacing.xs) {
+                            AnvilBadge(text: session.status.rawValue.capitalized, color: statusColor(for: session.status))
+                            if session.isBackground {
+                                AnvilBadge(text: "Background", color: AnvilColor.accentPurple)
+                            }
+                        }
+
+                        metadataRow("Model", session.model)
+                        metadataRow("Provider", providerName(for: session.providerId))
+
+                        if let ticketId = session.workItemId {
+                            metadataRow("Ticket", ticketId)
+                        }
+
+                        if let worktreePath = session.worktreePath {
+                            VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
+                                Text("Worktree")
+                                    .font(AnvilFont.label)
+                                    .foregroundStyle(.secondary)
+                                Text(worktreePath)
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundStyle(AnvilColor.textSecondary)
+                                    .textSelection(.enabled)
+                                    .lineLimit(3)
+                            }
+                        }
+                    }
+
+                    InspectorSection(title: "Usage") {
+                        metadataRow("Input", session.tokenUsage.inputTokens.formatted())
+                        metadataRow("Output", session.tokenUsage.outputTokens.formatted())
+                        metadataRow("Total", session.tokenUsage.totalTokens.formatted())
+                        metadataRow("Cost", formatCost(session.cost))
+
+                        if let budget = session.costBudget, budget > 0 {
+                            metadataRow("Budget", formatCost(budget))
+                            ProgressView(value: min(session.budgetUsage ?? 0, 1.0))
+                                .tint((session.budgetUsage ?? 0) >= 1.0 ? AnvilColor.accentRed : AnvilColor.accentBlue)
+                            Text("\(Int((session.budgetUsage ?? 0) * 100))% of budget")
+                                .font(AnvilFont.label)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    InspectorSection(title: "Activity") {
+                        let userCount = session.messages.filter { $0.role == .user }.count
+                        let assistantCount = session.messages.filter { $0.role == .assistant }.count
+                        metadataRow("Messages", session.messages.count.formatted())
+                        metadataRow("User", userCount.formatted())
+                        metadataRow("Assistant", assistantCount.formatted())
+                        metadataRow("Started", session.startedAt.formatted(date: .abbreviated, time: .shortened))
+                        metadataRow("Updated", session.lastActivityAt.formatted(date: .omitted, time: .shortened))
+
+                        if let latest = session.messages.last {
+                            VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
+                                Text("Latest")
+                                    .font(AnvilFont.label)
+                                    .foregroundStyle(.secondary)
+                                Text(latest.content)
+                                    .font(AnvilFont.body)
+                                    .foregroundStyle(AnvilColor.textSecondary)
+                                    .lineLimit(6)
+                            }
+                        }
+                    }
+
+                    if let plan = session.plan {
+                        InspectorSection(title: "Plan") {
+                            let completed = plan.steps.filter { $0.status == .completed || $0.status == .skipped }.count
+                            metadataRow("Status", plan.status.rawValue.capitalized)
+                            metadataRow("Steps", "\(completed)/\(plan.steps.count)")
+                            ProgressView(value: plan.progress)
+                                .tint(AnvilColor.accentBlue)
+                            if let active = plan.activeStep {
+                                Text("Active: \(active.title)")
+                                    .font(AnvilFont.label)
+                                    .foregroundStyle(AnvilColor.textSecondary)
+                            }
+                        }
+                    }
+
+                    InspectorSection(title: "Context") {
+                        if viewModel.contextAttachments.isEmpty {
+                            Text("No active context attachments.")
+                                .font(AnvilFont.body)
+                                .foregroundStyle(.tertiary)
+                        } else {
+                            ForEach(viewModel.contextAttachments.prefix(8), id: \.id) { attachment in
+                                HStack(spacing: AnvilSpacing.xs) {
+                                    Image(systemName: attachment.icon)
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(attachment.color)
+                                    Text(attachment.label)
+                                        .font(AnvilFont.body)
+                                        .foregroundStyle(AnvilColor.textSecondary)
+                                        .lineLimit(2)
+                                }
+                            }
+                        }
+
+                        if !viewModel.queuedMessages.isEmpty {
+                            metadataRow("Queued", viewModel.queuedMessages.count.formatted())
+                        }
+                    }
+
+                    InspectorSection(title: "Actions") {
+                        HStack(spacing: AnvilSpacing.sm) {
+                            Button("Focus Session") {
+                                viewModel.showConversation()
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button("Dashboard") {
+                                viewModel.showDashboard()
+                            }
+                            .buttonStyle(.bordered)
+                        }
+
+                        HStack(spacing: AnvilSpacing.sm) {
+                            Button("Copy Markdown") {
+                                viewModel.exportSessionToClipboard(session.id)
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button("Export JSON…") {
+                                viewModel.exportSessionToFile(session.id, format: .json)
+                            }
+                            .buttonStyle(.bordered)
+                        }
+
+                        Button("New Session") {
+                            viewModel.startNewSession(prompt: "", model: viewModel.selectedModelId)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+                .padding(AnvilSpacing.md)
+            }
+        } else {
+            ScrollView {
+                VStack(alignment: .leading, spacing: AnvilSpacing.md) {
+                    InspectorSection(title: "Session") {
+                        Text("Select or create a Build session to inspect details.")
+                            .font(AnvilFont.body)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .padding(AnvilSpacing.md)
+            }
+        }
+    }
+
+    private func metadataRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(AnvilFont.label)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(value)
+                .font(AnvilFont.body)
+                .foregroundStyle(AnvilColor.textSecondary)
+                .multilineTextAlignment(.trailing)
+        }
+    }
+
+    private func formatCost(_ cost: Decimal) -> String {
+        "$\(NSDecimalNumber(decimal: cost).doubleValue.formatted(.number.precision(.fractionLength(2))))"
+    }
+
+    private func statusColor(for status: AgentSessionStatus) -> Color {
+        switch status {
+        case .running: AnvilColor.accentGreen
+        case .completed: AnvilColor.accentBlue
+        case .failed: AnvilColor.accentRed
+        case .paused: AnvilColor.accentAmber
+        case .idle, .cancelled: AnvilColor.textTertiary
+        }
+    }
+
+    private func providerName(for providerId: String) -> String {
+        switch providerId {
+        case "claude-cli": "Claude CLI"
+        case "codex-acp": "Codex ACP"
+        case "zed-acp": "Zed ACP"
+        default: providerId
+        }
+    }
+}
+
+struct EditorInspectorSummaryView: View {
+    @ObservedObject var viewModel: EditorViewModel
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AnvilSpacing.lg) {
+                if let file = viewModel.selectedFile {
+                    InspectorSection(title: "File") {
+                        metadataRow("Name", file.name)
+                        metadataRow("Language", file.language.uppercased())
+                        metadataRow("Path", file.relativePath)
+                        metadataRow("Lines", file.content.components(separatedBy: "\n").count.formatted())
+                        metadataRow("Open Tabs", viewModel.openFiles.count.formatted())
+                        metadataRow("Read-only", viewModel.isFileReadOnly(file.id) ? "Yes" : "No")
+                    }
+
+                    InspectorSection(title: "Cursor") {
+                        metadataRow("Line", viewModel.cursorLine.formatted())
+                        metadataRow("Column", viewModel.cursorColumn.formatted())
+                        metadataRow("Symbols", viewModel.symbols.count.formatted())
+                    }
+
+                    InspectorSection(title: "Editor") {
+                        metadataRow("Word Wrap", viewModel.isWordWrapEnabled ? "On" : "Off")
+                        metadataRow("Minimap", viewModel.isMinimapVisible ? "On" : "Off")
+                        metadataRow("Git Gutter", viewModel.showGitGutter ? "On" : "Off")
+                        metadataRow("Bracket Match", viewModel.showBracketMatching ? "On" : "Off")
+                        metadataRow("Indent Guides", viewModel.showIndentGuides ? "On" : "Off")
+                        metadataRow("Code Folding", viewModel.codeFoldingEnabled ? "On" : "Off")
+                    }
+
+                    InspectorSection(title: "Diagnostics") {
+                        let counts = viewModel.diagnosticCount(forPath: file.path)
+                        metadataRow("Errors", counts.errors.formatted())
+                        metadataRow("Warnings", counts.warnings.formatted())
+                    }
+                } else {
+                    InspectorSection(title: "File") {
+                        Text("Open a file in Build > Files to inspect it.")
+                            .font(AnvilFont.body)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+            .padding(AnvilSpacing.md)
+        }
+    }
+
+    private func metadataRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(AnvilFont.label)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(value)
+                .font(AnvilFont.body)
+                .foregroundStyle(AnvilColor.textSecondary)
+                .multilineTextAlignment(.trailing)
+        }
+    }
+}
+
+struct TerminalInspectorSummaryView: View {
+    @ObservedObject var viewModel: TerminalViewModel
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AnvilSpacing.lg) {
+                InspectorSection(title: "Terminal") {
+                    metadataRow("Sessions", viewModel.sessions.count.formatted())
+                    if let session = viewModel.selectedSession {
+                        metadataRow("Title", session.title)
+                        metadataRow("Status", session.isRunning ? "Running" : "Exited")
+                        if let workingDirectory = session.workingDirectory {
+                            metadataRow("Directory", workingDirectory)
+                        }
+                    } else {
+                        Text("No active terminal session.")
+                            .font(AnvilFont.body)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+            .padding(AnvilSpacing.md)
+        }
+    }
+
+    private func metadataRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(AnvilFont.label)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(value)
+                .font(AnvilFont.body)
+                .foregroundStyle(AnvilColor.textSecondary)
+                .multilineTextAlignment(.trailing)
+                .lineLimit(2)
+        }
+    }
+}
+
+struct DatabaseInspectorSummaryView: View {
+    @ObservedObject var viewModel: DatabaseViewModel
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AnvilSpacing.lg) {
+                InspectorSection(title: "Database") {
+                    metadataRow("Connected", viewModel.isConnected ? "Yes" : "No")
+                    metadataRow("Provider", viewModel.selectedProvider?.title ?? "None")
+                    metadataRow("Connection", viewModel.connectionTitle)
+                    if !viewModel.connectionSubtitle.isEmpty {
+                        metadataRow("Location", viewModel.connectionSubtitle)
+                    }
+                }
+
+                if viewModel.isConnected {
+                    InspectorSection(title: "Schema") {
+                        metadataRow("Tables", viewModel.tables.count.formatted())
+                        metadataRow("Views", viewModel.views.count.formatted())
+                        if let selected = viewModel.selectedObject {
+                            metadataRow("Selected", selected.name)
+                        }
+                    }
+
+                    InspectorSection(title: "Query") {
+                        metadataRow("History", viewModel.queryHistory.count.formatted())
+                        metadataRow("Rows", viewModel.totalRowCount.formatted())
+                        metadataRow("Page", "\(viewModel.currentPage + 1)/\(viewModel.totalPages)")
+                    }
+                }
+            }
+            .padding(AnvilSpacing.md)
+        }
+    }
+
+    private func metadataRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(AnvilFont.label)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(value)
+                .font(AnvilFont.body)
+                .foregroundStyle(AnvilColor.textSecondary)
+                .multilineTextAlignment(.trailing)
+                .lineLimit(2)
+        }
+    }
+}
+
+struct TestingInspectorSummaryView: View {
+    @ObservedObject var viewModel: TestingViewModel
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AnvilSpacing.lg) {
+                InspectorSection(title: "Tests") {
+                    metadataRow("Running", viewModel.isRunning ? "Yes" : "No")
+                    metadataRow("Suites", viewModel.suites.count.formatted())
+                    metadataRow("Total", viewModel.totalTests.formatted())
+                    metadataRow("Passed", viewModel.passedTests.formatted())
+                    metadataRow("Failed", viewModel.failedTests.formatted())
+                    metadataRow("Filter", viewModel.showFilter.rawValue)
+                }
+            }
+            .padding(AnvilSpacing.md)
+        }
+    }
+
+    private func metadataRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(AnvilFont.label)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(value)
+                .font(AnvilFont.body)
+                .foregroundStyle(AnvilColor.textSecondary)
+                .multilineTextAlignment(.trailing)
         }
     }
 }

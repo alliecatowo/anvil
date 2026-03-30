@@ -165,6 +165,109 @@ struct AnvilSidebarSection<Content: View, Trailing: View>: View {
     }
 }
 
+struct AnvilSidebarDisclosureHeaderRow<Trailing: View>: View {
+    let title: String
+    var icon: String? = nil
+    var count: Int? = nil
+    @Binding var isExpanded: Bool
+    @ViewBuilder var trailing: () -> Trailing
+
+    init(
+        title: String,
+        icon: String? = nil,
+        count: Int? = nil,
+        isExpanded: Binding<Bool>,
+        @ViewBuilder trailing: @escaping () -> Trailing = { EmptyView() }
+    ) {
+        self.title = title
+        self.icon = icon
+        self.count = count
+        self._isExpanded = isExpanded
+        self.trailing = trailing
+    }
+
+    var body: some View {
+        HStack(spacing: AnvilSpacing.xs) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(AnvilColor.textTertiary)
+                    .frame(width: 10)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isExpanded ? "Collapse \(title)" : "Expand \(title)")
+
+            if let icon {
+                Image(systemName: icon)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(AnvilColor.textTertiary)
+            }
+
+            Text(title)
+                .font(AnvilFont.label)
+                .foregroundStyle(AnvilColor.textSecondary)
+
+            if let count {
+                Text("\(count)")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(AnvilColor.textTertiary)
+            }
+
+            Spacer()
+
+            trailing()
+        }
+        .padding(.horizontal, AnvilSpacing.md)
+        .padding(.vertical, AnvilSpacing.xs)
+        .textCase(nil)
+    }
+}
+
+struct AnvilSidebarDisclosureSection<Content: View, Trailing: View>: View {
+    let title: String
+    var icon: String? = nil
+    var count: Int? = nil
+    @Binding var isExpanded: Bool
+    @ViewBuilder var trailing: () -> Trailing
+    @ViewBuilder var content: () -> Content
+
+    init(
+        title: String,
+        icon: String? = nil,
+        count: Int? = nil,
+        isExpanded: Binding<Bool>,
+        @ViewBuilder content: @escaping () -> Content,
+        @ViewBuilder trailing: @escaping () -> Trailing = { EmptyView() }
+    ) {
+        self.title = title
+        self.icon = icon
+        self.count = count
+        self._isExpanded = isExpanded
+        self.content = content
+        self.trailing = trailing
+    }
+
+    var body: some View {
+        Section {
+            if isExpanded {
+                content()
+            }
+        } header: {
+            AnvilSidebarDisclosureHeaderRow(
+                title: title,
+                icon: icon,
+                count: count,
+                isExpanded: $isExpanded,
+                trailing: trailing
+            )
+        }
+    }
+}
+
 struct AnvilSidebarEmptyState: View {
     let icon: String
     let title: String

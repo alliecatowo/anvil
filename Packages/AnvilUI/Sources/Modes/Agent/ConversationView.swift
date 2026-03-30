@@ -333,8 +333,8 @@ struct SessionHeader: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
-                    .help(isAgentPanelVisible ? "Hide Agent Sidebar" : "Show Agent Sidebar")
-                    .accessibilityLabel(isAgentPanelVisible ? "Hide Agent Sidebar" : "Show Agent Sidebar")
+                    .help(isAgentPanelVisible ? "Hide Build Inspector" : "Show Build Inspector")
+                    .accessibilityLabel(isAgentPanelVisible ? "Hide Build Inspector" : "Show Build Inspector")
                     .accessibilityIdentifier("agent.conversation.toggle-sidebar")
                     .accessibilityAddTraits(.isButton)
                 }

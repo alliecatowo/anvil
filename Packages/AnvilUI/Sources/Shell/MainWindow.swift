@@ -36,12 +36,6 @@ public struct MainWindow: View {
                             InspectorPanel()
                                 .inspectorColumnWidth(min: 200, ideal: 260, max: 400)
                         }
-                        .overlay(alignment: .trailing) {
-                            if appState.isAgentPanelVisible {
-                                AgentChatPanel()
-                                    .transition(.move(edge: .trailing).combined(with: .opacity))
-                            }
-                        }
                 }
 
                 // Terminal panel (bottom)

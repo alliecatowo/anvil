@@ -134,56 +134,59 @@ struct SCPBranchRow: View {
     let branch: Branch
 
     var body: some View {
-        HStack(spacing: AnvilSpacing.sm) {
-            if branch.isCurrent {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(AnvilColor.accentGreen)
-                    .frame(width: 14)
-            } else {
-                Color.clear.frame(width: 14, height: 1)
-            }
-
-            Text(branch.name)
-                .font(AnvilFont.code)
-                .foregroundStyle(branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textPrimary)
-                .lineLimit(1)
-
-            Spacer()
-
-            if let msg = branch.lastCommitMessage {
-                Text(msg)
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .lineLimit(1)
-                    .frame(maxWidth: 120, alignment: .trailing)
-            }
-
-            if !branch.isCurrent {
-                Button {
-                    guard let adapter = container.getOrCreateGitAdapter() else { return }
-                    viewModel.deleteBranch(branch.name, force: false, using: adapter, appState: appState)
-                } label: {
-                    Image(systemName: "trash")
-                        .font(.system(size: 9))
-                        .foregroundStyle(AnvilColor.accentRed.opacity(0.6))
-                        .frame(width: 18, height: 18)
-                }
-                .buttonStyle(.plain)
-                .help("Delete branch")
-                .accessibilityLabel("Delete branch \(branch.name)")
-                .accessibilityAddTraits(.isButton)
-            }
-        }
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.xs)
-        .background(branch.isCurrent ? AnvilColor.accentGreen.opacity(0.06) : Color.clear)
-        .contentShape(Rectangle())
-        .onTapGesture {
+        Button {
             guard !branch.isCurrent else { return }
             guard let adapter = container.getOrCreateGitAdapter() else { return }
             viewModel.switchBranch(branch.name, using: adapter, appState: appState)
+        } label: {
+            HStack(spacing: AnvilSpacing.sm) {
+                if branch.isCurrent {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(AnvilColor.accentGreen)
+                        .frame(width: 14)
+                } else {
+                    Color.clear.frame(width: 14, height: 1)
+                }
+
+                Text(branch.name)
+                    .font(AnvilFont.code)
+                    .foregroundStyle(branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textPrimary)
+                    .lineLimit(1)
+
+                Spacer()
+
+                if let msg = branch.lastCommitMessage {
+                    Text(msg)
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                        .lineLimit(1)
+                        .frame(maxWidth: 120, alignment: .trailing)
+                }
+
+                if !branch.isCurrent {
+                    Button {
+                        guard let adapter = container.getOrCreateGitAdapter() else { return }
+                        viewModel.deleteBranch(branch.name, force: false, using: adapter, appState: appState)
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 9))
+                            .foregroundStyle(AnvilColor.accentRed.opacity(0.6))
+                            .frame(width: 18, height: 18)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Delete branch")
+                    .accessibilityLabel("Delete branch \(branch.name)")
+                    .accessibilityAddTraits(.isButton)
+                    .allowsHitTesting(true)
+                }
+            }
+            .padding(.horizontal, AnvilSpacing.md)
+            .padding(.vertical, AnvilSpacing.xs)
+            .background(branch.isCurrent ? AnvilColor.accentGreen.opacity(0.06) : Color.clear)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Branch \(branch.name)\(branch.isCurrent ? ", current" : "")")
         .accessibilityAddTraits(branch.isCurrent ? .isStaticText : .isButton)

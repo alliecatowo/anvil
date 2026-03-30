@@ -84,6 +84,9 @@ struct EditorMode: View {
             ToolbarItem(placement: .automatic) {
                 Button {
                     appState.toggleSourceControl()
+                    if appState.isSourceControlVisible {
+                        appState.isInspectorVisible = true
+                    }
                 } label: {
                     Image(systemName: "arrow.triangle.branch")
                         .foregroundStyle(
@@ -100,6 +103,9 @@ struct EditorMode: View {
             ToolbarItem(placement: .automatic) {
                 Button {
                     splitState.activePane.viewModel.toggleSymbolOutline()
+                    if splitState.activePane.viewModel.isSymbolOutlineVisible {
+                        appState.isInspectorVisible = true
+                    }
                 } label: {
                     Image(systemName: "list.bullet.indent")
                         .foregroundStyle(
@@ -168,38 +174,13 @@ struct EditorMode: View {
     // MARK: - Editor Content
 
     private var editorContent: some View {
-        HStack(spacing: 0) {
-            // Left: File tree sidebar or Source Control panel
-            if appState.isSourceControlVisible {
-                SourceControlPanel()
-                    .frame(width: AnvilSpacing.sidebarWidth)
-                    .background(AnvilColor.backgroundSecondary)
-            } else {
-                EditorSidebar(viewModel: viewModel)
-                    .frame(width: AnvilSpacing.sidebarWidth)
-                    .background(AnvilColor.backgroundSecondary)
-            }
+        VStack(spacing: 0) {
+            editorPaneArea
 
-            Divider()
-
-            // Center: Editor pane(s) with optional Problems panel below
-            VStack(spacing: 0) {
-                editorPaneArea
-
-                if viewModel.isProblemsVisible {
-                    Divider()
-                    ProblemsPanel(viewModel: viewModel)
-                        .frame(height: 200)
-                }
-            }
-
-            // Right: Symbol outline for active pane
-            if splitState.activePane.viewModel.isSymbolOutlineVisible {
+            if viewModel.isProblemsVisible {
                 Divider()
-
-                SymbolOutline(viewModel: splitState.activePane.viewModel)
-                    .frame(width: 220)
-                    .background(AnvilColor.backgroundSecondary)
+                ProblemsPanel(viewModel: viewModel)
+                    .frame(height: 200)
             }
         }
     }
