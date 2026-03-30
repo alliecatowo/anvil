@@ -161,36 +161,15 @@ struct BranchDetailView: View {
     }
 
     private func branchFileRow(_ file: FileDiff) -> some View {
-        Button {
+        AnvilSidebarRowButton(
+            title: file.filePath.components(separatedBy: "/").last ?? file.filePath,
+            icon: fileIcon(for: file.status),
+            subtitle: file.filePath.components(separatedBy: "/").dropLast().joined(separator: "/"),
+            isActive: viewModel.selectedFileID == file.id
+        ) {
             viewModel.selectFile(file.id)
-        } label: {
-            HoverableRow {
-                HStack(spacing: AnvilSpacing.sm) {
-                    Image(systemName: fileIcon(for: file.status))
-                        .font(.system(size: 12))
-                        .foregroundStyle(fileColor(for: file.status))
-                        .frame(width: 16)
-
-                    Text(file.filePath.components(separatedBy: "/").last ?? file.filePath)
-                        .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.textPrimary)
-                        .lineLimit(1)
-
-                    Spacer()
-
-                    Text("\(file.filePath.components(separatedBy: "/").dropLast().joined(separator: "/"))")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                        .lineLimit(1)
-                        .truncationMode(.head)
-                }
-                .padding(.vertical, AnvilSpacing.xxs)
-            }
         }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
         .accessibilityLabel("\(file.filePath.components(separatedBy: "/").last ?? file.filePath), \(file.status)")
-        .accessibilityAddTraits(.isButton)
     }
 
     private func fileIcon(for status: DiffFileStatus) -> String {
