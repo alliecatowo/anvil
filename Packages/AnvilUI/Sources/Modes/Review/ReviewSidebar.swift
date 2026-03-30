@@ -43,6 +43,7 @@ struct ReviewSidebar: View {
                 viewModel.loadReviews()
                 if let adapter = container.getOrCreateGitAdapter() {
                     viewModel.loadSourceControlData(using: adapter)
+                    await appState.loadGitStatus(from: adapter)
                 }
             }
         }

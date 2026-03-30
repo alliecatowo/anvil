@@ -73,6 +73,7 @@ public final class ReviewViewModel: ObservableObject {
     @Published var selectedBranchName: String?
     @Published var branchDiffFiles: [FileDiff] = []
     @Published var isLoadingBranchDiff: Bool = false
+    @Published var diffLoadError: String?
 
     // MARK: Commit graph
 
@@ -222,6 +223,7 @@ public final class ReviewViewModel: ObservableObject {
         selectedConflictIndex = nil
         mergeResult = nil
         mergeError = nil
+        diffLoadError = nil
         isCommitGraphVisible = false
         isBlameVisible = false
         blameData = [:]
@@ -635,16 +637,32 @@ public final class ReviewViewModel: ObservableObject {
         Task { @MainActor in
             defer { isLoadingBranchDiff = false }
 
-            let diffs: [FileDiff]
-            if change.staged {
-                guard let staged = try? await adapter.stagedDiff() else { return }
-                diffs = staged
+            let matchingDiffs: [FileDiff]
+
+            if change.status == .untracked {
+                // Untracked files: build a synthetic all-added diff from file content
+                if let fileDiff = await adapter.untrackedFileDiff(filePath: change.filePath) {
+                    matchingDiffs = [fileDiff]
+                } else {
+                    diffLoadError = "Could not read \(change.fileName)"
+                    return
+                }
             } else {
-                guard let unstaged = try? await adapter.unstagedDiff() else { return }
-                diffs = unstaged
+                let allDiffs: [FileDiff]
+                do {
+                    allDiffs = try await change.staged ? adapter.stagedDiff() : adapter.unstagedDiff()
+                } catch {
+                    diffLoadError = "git diff failed: \(error.localizedDescription)"
+                    return
+                }
+                matchingDiffs = allDiffs.filter {
+                    $0.filePath == change.filePath || $0.filePath.hasSuffix("/\(change.fileName)")
+                }
+                if matchingDiffs.isEmpty {
+                    diffLoadError = "No diff found for \(change.fileName)"
+                    return
+                }
             }
-            let matchingDiffs = diffs.filter { $0.filePath == change.filePath || $0.filePath.hasSuffix(change.fileName) }
-            guard !matchingDiffs.isEmpty else { return }
 
             let reviewId = "local-change-\(change.filePath)"
             let review = Review(

@@ -315,6 +315,20 @@ struct ReviewModeContent: View {
                 ?? Branch(name: branchName)
             BranchDetailView(branch: branch, viewModel: viewModel)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if viewModel.isLoadingBranchDiff {
+            VStack(spacing: AnvilSpacing.md) {
+                ProgressView()
+                Text("Loading diff…")
+                    .font(AnvilFont.label)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let err = viewModel.diffLoadError {
+            AnvilEmptyState(
+                icon: "exclamationmark.triangle",
+                title: "Could not load diff",
+                message: err
+            )
         } else if viewModel.selectedReview != nil {
             DiffReviewView(viewModel: viewModel)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -7,9 +7,29 @@ public actor GitSourceControlAdapter: SourceControlPort {
 
     private let shell: GitShell
     private let diffParser = DiffParser()
+    public let workingDirectory: String
 
     public init(workingDirectory: String) {
+        self.workingDirectory = workingDirectory
         self.shell = GitShell(workingDirectory: workingDirectory)
+    }
+
+    /// Returns a synthetic FileDiff for an untracked file by reading its content.
+    public func untrackedFileDiff(filePath: String) async -> FileDiff? {
+        let fullPath = URL(fileURLWithPath: workingDirectory).appendingPathComponent(filePath).path
+        guard let content = try? String(contentsOfFile: fullPath, encoding: .utf8) else { return nil }
+        let lines = content.components(separatedBy: "\n")
+        let diffLines = lines.enumerated().map { i, line in
+            DiffLine(type: .added, content: line, oldLineNumber: nil, newLineNumber: i + 1)
+        }
+        let hunk = DiffHunk(
+            id: "hunk-untracked-0",
+            oldStart: 0, oldCount: 0,
+            newStart: 1, newCount: lines.count,
+            header: "@@ -0,0 +1,\(lines.count) @@",
+            lines: diffLines
+        )
+        return FileDiff(filePath: filePath, status: .added, hunks: [hunk], isBinary: false)
     }
 
     public func validateConnection() async throws -> Bool {
