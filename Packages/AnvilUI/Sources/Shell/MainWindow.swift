@@ -60,7 +60,7 @@ public struct MainWindow: View {
             // Status bar
             StatusBar()
         }
-        .background(AnvilColor.backgroundPrimary)
+        .background(.regularMaterial)
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button("Toggle Sidebar", systemImage: "sidebar.left") {

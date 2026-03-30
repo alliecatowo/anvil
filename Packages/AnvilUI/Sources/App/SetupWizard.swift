@@ -21,11 +21,7 @@ public struct SetupWizard: View {
     }
 
     public var body: some View {
-        ZStack {
-            AnvilColor.backgroundPrimary
-                .ignoresSafeArea()
-
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 // Step indicator
                 if viewModel.currentStep != .welcome {
                     stepIndicator
@@ -58,7 +54,7 @@ public struct SetupWizard: View {
 
                 Spacer()
             }
-        }
+        .background(.regularMaterial)
         .frame(minWidth: 800, minHeight: 600)
     }
 
@@ -106,13 +102,11 @@ public struct SetupWizard: View {
                 withAnimation { viewModel.goNext() }
             }) {
                 Text("Get Started")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 200, height: 44)
-                    .background(AnvilColor.accentPurple)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .frame(width: 160)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderedProminent)
+            .tint(AnvilColor.accentPurple)
+            .controlSize(.large)
 
             Spacer()
         }
@@ -270,19 +264,9 @@ public struct SetupWizard: View {
                                 .controlSize(.small)
                         }
                         Text("Test Connection")
-                            .font(AnvilFont.body)
                     }
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .padding(.horizontal, AnvilSpacing.md)
-                    .padding(.vertical, AnvilSpacing.xs)
-                    .background(AnvilColor.backgroundTertiary)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(AnvilColor.borderMedium, lineWidth: 1)
-                    )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
 
                 connectionTestLabel
             }
@@ -566,13 +550,11 @@ public struct SetupWizard: View {
                 onComplete()
             }) {
                 Text("Start Building")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 200, height: 44)
-                    .background(AnvilColor.accentPurple)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .frame(width: 160)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderedProminent)
+            .tint(AnvilColor.accentPurple)
+            .controlSize(.large)
 
             Spacer()
         }
@@ -616,27 +598,17 @@ public struct SetupWizard: View {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 11, weight: .semibold))
                     Text("Back")
-                        .font(AnvilFont.body)
                 }
-                .foregroundStyle(AnvilColor.textSecondary)
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xs)
             }
             .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
 
             Spacer()
 
-            Button(action: nextAction) {
-                Text(nextLabel)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, AnvilSpacing.xl)
-                    .padding(.vertical, AnvilSpacing.sm)
-                    .background(nextDisabled ? AnvilColor.borderMedium : AnvilColor.accentPurple)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-            .buttonStyle(.plain)
-            .disabled(nextDisabled)
+            Button(nextLabel, action: nextAction)
+                .buttonStyle(.borderedProminent)
+                .tint(AnvilColor.accentPurple)
+                .disabled(nextDisabled)
         }
     }
 }
