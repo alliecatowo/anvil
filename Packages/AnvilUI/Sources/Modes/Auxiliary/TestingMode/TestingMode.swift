@@ -107,6 +107,7 @@ struct TestSuiteList: View {
                 }
             }
             .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
         }
     }
 

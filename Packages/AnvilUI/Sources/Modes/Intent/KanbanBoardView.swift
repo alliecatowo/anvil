@@ -59,7 +59,7 @@ struct KanbanCard: View {
                     Text("\(progress.completed)/\(progress.total)")
                         .font(AnvilFont.label)
                 }
-                .foregroundStyle(progress.completed == progress.total ? .green : .tertiary)
+                .foregroundStyle(progress.completed == progress.total ? Color.green : Color.secondary)
             }
 
             // Assignee + due date

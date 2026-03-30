@@ -3,72 +3,17 @@ import AnvilApplication
 
 public struct StatusBar: View {
     @EnvironmentObject var appState: AppState
-    @State private var isBranchPickerVisible = false
 
     public init() {}
 
+    /// Editor-specific items only show when in Build > Files or Terminal.
+    private var isEditorContext: Bool {
+        appState.currentSpace == .build &&
+        appState.buildActiveSource == .files
+    }
+
     public var body: some View {
         HStack(spacing: AnvilSpacing.md) {
-            // Left: Project name (click to switch)
-            Button {
-                appState.toggleProjectSwitcher()
-            } label: {
-                HStack(spacing: AnvilSpacing.xs) {
-                    Image(systemName: "folder.fill")
-                        .font(.system(size: 10))
-                    Text(appState.currentProject?.name ?? "No Project")
-                        .font(AnvilFont.statusBar)
-                }
-                .foregroundStyle(AnvilColor.textSecondary)
-            }
-            .buttonStyle(.borderless)
-            .help("Switch Project (\u{2318}\u{21E7}O)")
-            .accessibilityLabel("Switch Project: \(appState.currentProject?.name ?? "No Project")")
-            .accessibilityAddTraits(.isButton)
-
-            Circle()
-                .fill(AnvilColor.textTertiary.opacity(0.3))
-                .frame(width: 3, height: 3)
-                .accessibilityHidden(true)
-
-            // Branch + source control (clickable for branch picker)
-            Button {
-                isBranchPickerVisible.toggle()
-            } label: {
-                HStack(spacing: AnvilSpacing.xs) {
-                    Image(systemName: "arrow.triangle.branch")
-                        .font(.system(size: 10))
-                    Text(appState.currentBranch)
-                        .font(AnvilFont.statusBar)
-
-                    if appState.uncommittedFileCount > 0 {
-                        Text("\(appState.uncommittedFileCount)")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(AnvilColor.accentAmber)
-                            .clipShape(RoundedRectangle(cornerRadius: 3))
-                    }
-
-                    Image(systemName: "chevron.up")
-                        .font(.system(size: 8, weight: .medium))
-                }
-                .foregroundStyle(AnvilColor.textSecondary)
-            }
-            .buttonStyle(.borderless)
-            .help("Switch Branch")
-            .accessibilityLabel("Branch: \(appState.currentBranch)")
-            .accessibilityAddTraits(.isButton)
-            .popover(isPresented: $isBranchPickerVisible, arrowEdge: .top) {
-                BranchPicker(isPresented: $isBranchPickerVisible)
-            }
-
-            Circle()
-                .fill(AnvilColor.textTertiary.opacity(0.3))
-                .frame(width: 3, height: 3)
-                .accessibilityHidden(true)
-
             Spacer()
 
             // Center: Build activity indicator
@@ -79,28 +24,18 @@ public struct StatusBar: View {
 
             Spacer()
 
-            Circle()
-                .fill(AnvilColor.textTertiary.opacity(0.3))
-                .frame(width: 3, height: 3)
-                .accessibilityHidden(true)
+            // Editor-specific items: cursor, encoding, line ending
+            if isEditorContext {
+                CursorPositionIndicator()
 
-            // Cursor position (visible in editor-like modes)
-            CursorPositionIndicator()
+                dotSeparator
 
-            Circle()
-                .fill(AnvilColor.textTertiary.opacity(0.3))
-                .frame(width: 3, height: 3)
-                .accessibilityHidden(true)
+                EncodingIndicator()
 
-            // File encoding + line ending
-            EncodingIndicator()
+                LineEndingIndicator()
 
-            LineEndingIndicator()
-
-            Circle()
-                .fill(AnvilColor.textTertiary.opacity(0.3))
-                .frame(width: 3, height: 3)
-                .accessibilityHidden(true)
+                dotSeparator
+            }
 
             // Right: Cost + time
             HStack(spacing: AnvilSpacing.xs) {
@@ -122,6 +57,13 @@ public struct StatusBar: View {
         .padding(.horizontal, AnvilSpacing.md)
         .frame(height: AnvilSpacing.statusBarHeight)
         .background(.bar)
+    }
+
+    private var dotSeparator: some View {
+        Circle()
+            .fill(AnvilColor.textTertiary.opacity(0.3))
+            .frame(width: 3, height: 3)
+            .accessibilityHidden(true)
     }
 
     private func formatCost(_ cost: Decimal) -> String {

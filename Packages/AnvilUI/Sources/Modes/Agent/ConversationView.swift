@@ -50,14 +50,11 @@ struct ConversationView: View {
             // Session header with model picker and session actions
             SessionHeader(
                 session: session,
-                selectedModelId: $selectedModelId,
                 onRename: onRename,
                 onDelete: onDelete,
                 onExport: onExport,
                 onExportFile: onExportFile,
                 onSetBudget: onSetBudget,
-                onSetAutonomy: onSetAutonomy,
-                onModelChange: onModelChange,
                 guardrailCount: guardrailCount,
                 onCreatePR: onCreatePR,
                 onSendToBackground: onSendToBackground,
@@ -66,6 +63,32 @@ struct ConversationView: View {
             )
 
             Divider()
+
+            // Canvas action strip
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: AnvilSpacing.sm) {
+                    Button { } label: {
+                        Label("Review Branch", systemImage: "arrow.triangle.branch")
+                    }
+                    Button { } label: {
+                        Label("Explain", systemImage: "questionmark.circle")
+                    }
+                    Button { } label: {
+                        Label("Fix Error", systemImage: "exclamationmark.triangle")
+                    }
+                    Button { } label: {
+                        Label("Tests", systemImage: "testtube.2")
+                    }
+                    Button { } label: {
+                        Label("Commit", systemImage: "checkmark.circle")
+                    }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.mini)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, AnvilSpacing.lg)
+                .padding(.vertical, AnvilSpacing.xs)
+            }
 
             // Messages
             ScrollViewReader { proxy in
@@ -176,6 +199,10 @@ struct ConversationView: View {
                 onSend: onSend,
                 onRemoveAttachment: onRemoveAttachment,
                 onAddAttachment: onAddAttachment,
+                selectedModelId: $selectedModelId,
+                onModelChange: onModelChange,
+                autonomyLevel: session.autonomyLevel,
+                onSetAutonomy: onSetAutonomy,
                 autoContextFiles: autoContextFiles,
                 onDismissAutoContext: onDismissAutoContext,
                 onAcceptAutoContext: onAcceptAutoContext,
@@ -190,14 +217,11 @@ struct ConversationView: View {
 
 struct SessionHeader: View {
     let session: AgentSession
-    @Binding var selectedModelId: String
     let onRename: (String) -> Void
     let onDelete: () -> Void
     let onExport: () -> Void
     let onExportFile: ((SessionExportFormat) -> Void)?
     var onSetBudget: ((Decimal?, Bool) -> Void)?
-    var onSetAutonomy: ((AutonomyLevel) -> Void)?
-    var onModelChange: ((String) -> Void)?
     let guardrailCount: Int
     var onCreatePR: (() -> Void)?
     var onSendToBackground: (() -> Void)?
@@ -209,15 +233,6 @@ struct SessionHeader: View {
     @State private var showTokenDetails = false
     @State private var showBudgetSheet = false
     @State private var isStatusPulsing = false
-
-    /// Context window limit for the selected model.
-    private var contextLimit: Int {
-        let model = selectedModelId
-        if model.contains("opus") || model.contains("sonnet") { return 200_000 }
-        if model.contains("haiku") { return 200_000 }
-        if model.contains("gpt-4o") { return 128_000 }
-        return 128_000
-    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -285,13 +300,6 @@ struct SessionHeader: View {
                     .help("Send this session to the background")
                 }
 
-                // Model picker
-                ModelPicker(selectedModelId: $selectedModelId, onModelChange: onModelChange)
-                    .accessibilityLabel("AI model selector")
-
-                // Autonomy level picker
-                AutonomyPicker(level: session.autonomyLevel, onChange: onSetAutonomy)
-
                 // Guardrail indicator
                 if guardrailCount > 0 {
                     HStack(spacing: 2) {
@@ -329,7 +337,7 @@ struct SessionHeader: View {
                     Button {
                         onToggleAgentPanel()
                     } label: {
-                        Label("Info", systemImage: isAgentPanelVisible ? "info.circle.fill" : "info.circle")
+                        Label("Agent Sidebar", systemImage: "sidebar.right")
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -381,7 +389,7 @@ struct SessionHeader: View {
                 TokenUsageBar(
                     usage: session.tokenUsage,
                     cost: session.cost,
-                    contextLimit: contextLimit
+                    contextLimit: 200_000
                 )
                 .padding(.horizontal, AnvilSpacing.lg)
                 .padding(.bottom, AnvilSpacing.sm)

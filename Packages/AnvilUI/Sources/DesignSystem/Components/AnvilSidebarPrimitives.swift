@@ -71,34 +71,12 @@ struct AnvilSidebarSearchBar: View {
     let placeholder: String
 
     var body: some View {
-        HStack(spacing: AnvilSpacing.xs) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 11))
-                .foregroundStyle(AnvilColor.textTertiary)
-
-            TextField(placeholder, text: $text)
-                .textFieldStyle(.plain)
-                .font(AnvilFont.body)
-                .accessibilityLabel(placeholder)
-
-            if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Button {
-                    text = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 11))
-                        .foregroundStyle(AnvilColor.textTertiary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Clear \(placeholder)")
-            }
-        }
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.xs)
-        .background(AnvilColor.backgroundSecondary.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .padding(.horizontal, AnvilSpacing.md)
-        .padding(.top, AnvilSpacing.xs)
+        TextField(placeholder, text: $text)
+            .textFieldStyle(.roundedBorder)
+            .controlSize(.small)
+            .accessibilityLabel(placeholder)
+            .padding(.horizontal, AnvilSpacing.sm)
+            .padding(.vertical, AnvilSpacing.xs)
     }
 }
 

@@ -1,12 +1,22 @@
 import SwiftUI
 import AnvilTerminal
 
-struct TerminalPanel: View {
+// MARK: - Utility Deck
+
+/// Bottom panel available in all spaces, housing Terminal, Problems, and Output tabs.
+struct UtilityDeck: View {
     @EnvironmentObject var appState: AppState
     @State private var isResizing = false
+    @State private var activeTab: Tab = .terminal
 
     private let minHeight: CGFloat = 100
     private let maxHeight: CGFloat = 600
+
+    enum Tab: String, CaseIterable {
+        case terminal = "Terminal"
+        case problems = "Problems"
+        case output = "Output"
+    }
 
     private var terminalVM: TerminalViewModel {
         appState.terminalViewModel
@@ -17,13 +27,20 @@ struct TerminalPanel: View {
             // Resize handle
             resizeHandle
 
-            // Tab bar + controls
-            panelHeader
+            // Deck header: tab picker + actions
+            deckHeader
 
             Divider()
 
-            // Terminal content
-            terminalContent
+            // Tab content
+            switch activeTab {
+            case .terminal:
+                terminalContent
+            case .problems:
+                utilityEmptyState("No Problems", icon: "checkmark.circle", message: "No issues detected.")
+            case .output:
+                utilityEmptyState("No Output", icon: "text.alignleft", message: "Build and task output will appear here.")
+            }
         }
         .background(.regularMaterial)
     }
@@ -62,35 +79,50 @@ struct TerminalPanel: View {
             )
     }
 
-    // MARK: - Panel Header
+    // MARK: - Deck Header
 
-    private var panelHeader: some View {
+    private var deckHeader: some View {
         HStack(spacing: 0) {
-            // Terminal tabs
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 0) {
-                    ForEach(terminalVM.sessions) { session in
-                        terminalTabView(session)
+            // Tab picker
+            Picker("Utility", selection: $activeTab) {
+                ForEach(Tab.allCases, id: \.self) { tab in
+                    Text(tab.rawValue).tag(tab)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(width: 240)
+
+            // Terminal tabs (only when terminal tab is active)
+            if activeTab == .terminal {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 0) {
+                        ForEach(terminalVM.sessions) { session in
+                            terminalTabView(session)
+                        }
                     }
                 }
+                .padding(.leading, AnvilSpacing.sm)
             }
 
             Spacer()
 
             // Actions
             HStack(spacing: AnvilSpacing.xs) {
-                // New terminal
-                Button {
-                    terminalVM.addTab()
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 10))
-                        .foregroundStyle(AnvilColor.textSecondary)
+                if activeTab == .terminal {
+                    // New terminal
+                    Button {
+                        terminalVM.addTab()
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 10))
+                            .foregroundStyle(AnvilColor.textSecondary)
+                    }
+                    .buttonStyle(.borderless)
+                    .help("New Terminal")
+                    .accessibilityLabel("New Terminal")
+                    .accessibilityAddTraits(.isButton)
                 }
-                .buttonStyle(.borderless)
-                .help("New Terminal")
-                .accessibilityLabel("New Terminal")
-                .accessibilityAddTraits(.isButton)
 
                 // Close panel
                 Button {
@@ -104,12 +136,13 @@ struct TerminalPanel: View {
                 }
                 .buttonStyle(.borderless)
                 .help("Close Panel (\u{2318}J)")
-                .accessibilityLabel("Close Terminal Panel")
+                .accessibilityLabel("Close Utility Deck")
                 .accessibilityAddTraits(.isButton)
             }
             .padding(.trailing, AnvilSpacing.sm)
         }
         .frame(height: 28)
+        .padding(.horizontal, AnvilSpacing.sm)
     }
 
     private func terminalTabView(_ session: TerminalSession) -> some View {
@@ -160,5 +193,16 @@ struct TerminalPanel: View {
     private var terminalContent: some View {
         TerminalView(viewModel: terminalVM)
             .background(AnvilColor.backgroundPrimary)
+    }
+
+    // MARK: - Empty State
+
+    private func utilityEmptyState(_ title: String, icon: String, message: String) -> some View {
+        ContentUnavailableView {
+            Label(title, systemImage: icon)
+        } description: {
+            Text(message)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

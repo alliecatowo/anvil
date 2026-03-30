@@ -38,6 +38,10 @@ struct InputBar: View {
     let onSend: () -> Void
     let onRemoveAttachment: (String) -> Void
     let onAddAttachment: (ContextAttachment) -> Void
+    @Binding var selectedModelId: String
+    var onModelChange: ((String) -> Void)?
+    var autonomyLevel: AutonomyLevel = .review
+    var onSetAutonomy: ((AutonomyLevel) -> Void)?
     var autoContextFiles: [AutoContextChipData] = []
     var onDismissAutoContext: ((String) -> Void)?
     var onAcceptAutoContext: ((String) -> Void)?
@@ -134,8 +138,10 @@ struct InputBar: View {
             }
 
             HStack(spacing: AnvilSpacing.sm) {
-                // Sparkles button for AI quick actions
-                SparklesButton()
+                // Model picker (compact, left of text field)
+                ModelPicker(selectedModelId: $selectedModelId, onModelChange: onModelChange)
+                    .controlSize(.small)
+                    .accessibilityLabel("AI model selector")
 
                 TextField(isRunning ? "Queue next message..." : "Message the agent...", text: $text, axis: .vertical)
                     .textFieldStyle(.roundedBorder)
@@ -178,6 +184,10 @@ struct InputBar: View {
                         .background(AnvilColor.accentAmber.opacity(0.15))
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
+
+                // Autonomy level picker (compact, right of text field)
+                AutonomyPicker(level: autonomyLevel, onChange: onSetAutonomy)
+                    .controlSize(.small)
 
                 Button(action: onSend) {
                     Image(systemName: isRunning ? (text.isEmpty ? "pause.circle.fill" : "plus.circle.fill") : "arrow.up.circle.fill")
@@ -412,36 +422,3 @@ enum InputBarHelpers {
     }
 }
 
-// MARK: - Sparkles Button
-
-struct SparklesButton: View {
-    @State private var isShowingMenu = false
-
-    var body: some View {
-        Menu {
-            Button { } label: {
-                Label("Review Current Branch", systemImage: "checkmark.circle")
-            }
-            Button { } label: {
-                Label("Explain Selection", systemImage: "text.bubble")
-            }
-            Button { } label: {
-                Label("Fix Current Error", systemImage: "wrench")
-            }
-            Button { } label: {
-                Label("Generate Tests", systemImage: "testtube.2")
-            }
-            Divider()
-            Button { } label: {
-                Label("Auto-Commit", systemImage: "arrow.up.circle")
-            }
-        } label: {
-            Image(systemName: "sparkles")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(AnvilColor.accentPurple)
-        }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
-        .help("AI Actions")
-    }
-}

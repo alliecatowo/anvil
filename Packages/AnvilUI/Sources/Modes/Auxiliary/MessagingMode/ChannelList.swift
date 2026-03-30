@@ -37,6 +37,7 @@ struct ChannelList: View {
                 }
             }
             .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
         }
     }
 

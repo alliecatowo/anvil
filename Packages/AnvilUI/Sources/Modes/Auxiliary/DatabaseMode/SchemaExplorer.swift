@@ -16,6 +16,7 @@ struct SchemaExplorer: View {
             actionsSection
         }
         .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
     }
 
     private var connectionSection: some View {

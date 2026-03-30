@@ -111,7 +111,7 @@ struct ObservabilityMode: View {
                 Button("Connect") {
                     Task { await connectSentry() }
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.bordered)
                 .disabled(viewModel.sentryOrg.isEmpty || viewModel.sentryProject.isEmpty || viewModel.sentryToken.isEmpty || viewModel.isLoading)
 
                 Button("Use Demo Data") {

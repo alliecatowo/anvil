@@ -25,6 +25,7 @@ struct ShipSidebar: View {
             }
         }
         .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
     }
 
     private func environmentRow(_ card: EnvironmentCard) -> some View {

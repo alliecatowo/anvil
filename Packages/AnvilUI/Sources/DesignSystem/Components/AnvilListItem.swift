@@ -12,7 +12,6 @@ public struct AnvilListItem: View {
     let indentLevel: Int
 
     @State private var isHovered = false
-    @GestureState private var isPressed = false
 
     public init(
         icon: String? = nil,
@@ -98,12 +97,6 @@ public struct AnvilListItem: View {
                 : (isHovered ? Color.primary.opacity(0.06) : .clear)
         )
         .contentShape(Rectangle())
-        .scaleEffect(isPressed ? 0.97 : 1.0)
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .updating($isPressed) { _, pressed, _ in pressed = true }
-        )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.12)) {
                 isHovered = hovering

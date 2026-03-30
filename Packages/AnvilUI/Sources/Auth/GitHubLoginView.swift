@@ -48,7 +48,7 @@ struct GitHubLoginView: View {
                 .foregroundStyle(AnvilColor.textSecondary)
                 .multilineTextAlignment(.center)
 
-            AnvilButton("Sign in with GitHub", icon: "arrow.right.circle", style: .primary) {
+            AnvilButton("Sign in with GitHub", icon: "arrow.right.circle", style: .cta) {
                 viewModel.startLogin()
             }
         }

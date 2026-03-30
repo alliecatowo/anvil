@@ -383,7 +383,7 @@ struct TicketDetailView: View {
                     } label: {
                         Image(systemName: subtask.isCompleted ? "checkmark.circle.fill" : "circle")
                             .font(.system(size: 14))
-                            .foregroundStyle(subtask.isCompleted ? .green : .tertiary)
+                            .foregroundStyle(subtask.isCompleted ? Color.green : Color.secondary)
                     }
                     .buttonStyle(.plain)
 
@@ -531,7 +531,7 @@ struct TicketDetailView: View {
                             } label: {
                                 Label("Comment", systemImage: "paperplane")
                             }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(.bordered)
                             .controlSize(.small)
                         }
                     }

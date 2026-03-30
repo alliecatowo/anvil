@@ -390,15 +390,13 @@ struct BuildContent: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        switch appState.buildActiveSection {
+        switch appState.buildActiveSource {
         case .sessions:
             AgentModeContent(viewModel: appState.agentViewModel)
         case .files:
             EditorMode()
         case .data:
             DatabaseMode(viewModel: appState.databaseViewModel)
-        case .terminal:
-            TerminalMode()
         case .tests:
             if appState.testingViewModel.suites.isEmpty {
                 AnvilEmptyState(
@@ -429,7 +427,7 @@ struct OperateContent: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        switch appState.operateActiveSection {
+        switch appState.operateActiveSource {
         case .deploy:
             ShipModeContent(viewModel: appState.shipViewModel)
         case .monitor:
@@ -442,7 +440,7 @@ struct LibraryContent: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        switch appState.libraryActiveSection {
+        switch appState.libraryActiveSource {
         case .docs:
             DocsMode()
         case .rules:

@@ -44,6 +44,7 @@ struct EditorSidebar: View {
                 }
             }
             .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
         }
         .alert("Rename", isPresented: Binding(
             get: { renamingNodeId != nil },

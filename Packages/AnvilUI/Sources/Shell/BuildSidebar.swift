@@ -9,23 +9,11 @@ struct BuildSidebar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            SidebarTabBar(
-                sections: Array(AppState.BuildSection.allCases),
-                active: appState.buildActiveSection,
-                icon: { $0.icon },
-                label: { $0.rawValue },
-                onSelect: { appState.buildActiveSection = $0 }
-            )
-
-            Divider()
-
-            switch appState.buildActiveSection {
+            switch appState.buildActiveSource {
             case .sessions:
                 AgentSidebar(viewModel: appState.agentViewModel)
             case .files:
                 BuildFilesSidebar(viewModel: appState.editorViewModel)
-            case .terminal:
-                TerminalSidebarSection(viewModel: appState.terminalViewModel)
             case .data:
                 DatabaseSidebarView(viewModel: appState.databaseViewModel)
             case .tests:

@@ -27,7 +27,7 @@ struct BranchDetailView: View {
 
                 Spacer()
 
-                AnvilButton("Start Review", icon: "play.fill", style: .primary) {
+                AnvilButton("Start Review", icon: "play.fill", style: .cta) {
                     guard let firstFile = viewModel.branchDiffFiles.first else { return }
                     viewModel.selectFile(firstFile.id)
                 }
@@ -127,6 +127,7 @@ struct BranchDetailView: View {
                         }
                     }
                     .listStyle(.sidebar)
+                    .scrollContentBackground(.hidden)
                 }
             } else {
                 Spacer()

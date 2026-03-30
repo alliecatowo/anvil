@@ -65,7 +65,7 @@ struct BoardView: View {
                 if let limit = column.wipLimit {
                     Text("/ \(limit)")
                         .font(AnvilFont.label)
-                        .foregroundStyle(overWip ? .red : .tertiary)
+                        .foregroundStyle(overWip ? Color.red : Color.secondary)
                 }
 
                 Spacer()

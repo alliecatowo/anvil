@@ -776,181 +776,181 @@ struct AnvilSpaceEnumTests {
     }
 }
 
-// MARK: - AppState — Section Switching
+// MARK: - AppState — Source Switching
 
-@Suite("AppState — Build Section Switching")
-struct AppStateBuildSectionTests {
+@Suite("AppState — Build Source Switching")
+struct AppStateBuildSourceTests {
 
-    @Test("buildActiveSection defaults to sessions")
+    @Test("buildActiveSource defaults to sessions")
     @MainActor
-    func buildActiveSectionDefaultsToSessions() {
+    func buildActiveSourceDefaultsToSessions() {
         let state = AppState()
-        #expect(state.buildActiveSection == .sessions)
+        #expect(state.buildActiveSource == .sessions)
     }
 
-    @Test("buildActiveSection can be set to tests")
+    @Test("buildActiveSource can be set to tests")
     @MainActor
-    func buildSectionSwitchesToTests() {
+    func buildSourceSwitchesToTests() {
         let state = AppState()
-        state.buildActiveSection = .tests
-        #expect(state.buildActiveSection == .tests)
+        state.buildActiveSource = .tests
+        #expect(state.buildActiveSource == .tests)
     }
 
-    @Test("buildActiveSection can be set to files")
+    @Test("buildActiveSource can be set to files")
     @MainActor
-    func buildSectionSwitchesToFiles() {
+    func buildSourceSwitchesToFiles() {
         let state = AppState()
-        state.buildActiveSection = .files
-        #expect(state.buildActiveSection == .files)
+        state.buildActiveSource = .files
+        #expect(state.buildActiveSource == .files)
     }
 
-    @Test("buildActiveSection can be set to data")
+    @Test("buildActiveSource can be set to data")
     @MainActor
-    func buildSectionSwitchesToData() {
+    func buildSourceSwitchesToData() {
         let state = AppState()
-        state.buildActiveSection = .data
-        #expect(state.buildActiveSection == .data)
+        state.buildActiveSource = .data
+        #expect(state.buildActiveSource == .data)
     }
 
-    @Test("buildActiveSection roundtrips through all values")
+    @Test("buildActiveSource roundtrips through all values")
     @MainActor
-    func buildSectionCyclesThroughAllValues() {
+    func buildSourceCyclesThroughAllValues() {
         let state = AppState()
-        for section in AppState.BuildSection.allCases {
-            state.buildActiveSection = section
-            #expect(state.buildActiveSection == section)
+        for section in AppState.BuildSource.allCases {
+            state.buildActiveSource = section
+            #expect(state.buildActiveSource == section)
         }
     }
 
-    @Test("all BuildSection cases have non-empty rawValues")
-    func allBuildSectionsHaveRawValues() {
-        for section in AppState.BuildSection.allCases {
-            #expect(!section.rawValue.isEmpty, "Expected non-empty rawValue for BuildSection.\(section)")
+    @Test("all BuildSource cases have non-empty rawValues")
+    func allBuildSourcesHaveRawValues() {
+        for section in AppState.BuildSource.allCases {
+            #expect(!section.rawValue.isEmpty, "Expected non-empty rawValue for BuildSource.\(section)")
         }
     }
 
-    @Test("BuildSection has exactly four cases")
-    func buildSectionHasFourCases() {
-        #expect(AppState.BuildSection.allCases.count == 4)
+    @Test("BuildSource has exactly four cases")
+    func buildSourceHasFourCases() {
+        #expect(AppState.BuildSource.allCases.count == 4)
     }
 }
 
-@Suite("AppState — Operate Section Switching")
-struct AppStateOperateSectionTests {
+@Suite("AppState — Operate Source Switching")
+struct AppStateOperateSourceTests {
 
-    @Test("operateActiveSection defaults to deploy")
+    @Test("operateActiveSource defaults to deploy")
     @MainActor
-    func operateActiveSectionDefaultsToDeploy() {
+    func operateActiveSourceDefaultsToDeploy() {
         let state = AppState()
-        #expect(state.operateActiveSection == .deploy)
+        #expect(state.operateActiveSource == .deploy)
     }
 
-    @Test("operateActiveSection can be set to terminal")
+    @Test("operateActiveSource can be set to terminal")
     @MainActor
-    func operateSectionSwitchesToTerminal() {
+    func operateSourceSwitchesToTerminal() {
         let state = AppState()
-        state.operateActiveSection = .terminal
-        #expect(state.operateActiveSection == .terminal)
+        state.operateActiveSource = .terminal
+        #expect(state.operateActiveSource == .terminal)
     }
 
-    @Test("operateActiveSection can be set to monitor")
+    @Test("operateActiveSource can be set to monitor")
     @MainActor
-    func operateSectionSwitchesToMonitor() {
+    func operateSourceSwitchesToMonitor() {
         let state = AppState()
-        state.operateActiveSection = .monitor
-        #expect(state.operateActiveSection == .monitor)
+        state.operateActiveSource = .monitor
+        #expect(state.operateActiveSource == .monitor)
     }
 
-    @Test("operateActiveSection roundtrips through all values")
+    @Test("operateActiveSource roundtrips through all values")
     @MainActor
-    func operateSectionCyclesThroughAllValues() {
+    func operateSourceCyclesThroughAllValues() {
         let state = AppState()
-        for section in AppState.OperateSection.allCases {
-            state.operateActiveSection = section
-            #expect(state.operateActiveSection == section)
+        for section in AppState.OperateSource.allCases {
+            state.operateActiveSource = section
+            #expect(state.operateActiveSource == section)
         }
     }
 
-    @Test("all OperateSection cases have non-empty rawValues")
-    func allOperateSectionsHaveRawValues() {
-        for section in AppState.OperateSection.allCases {
-            #expect(!section.rawValue.isEmpty, "Expected non-empty rawValue for OperateSection.\(section)")
+    @Test("all OperateSource cases have non-empty rawValues")
+    func allOperateSourcesHaveRawValues() {
+        for section in AppState.OperateSource.allCases {
+            #expect(!section.rawValue.isEmpty, "Expected non-empty rawValue for OperateSource.\(section)")
         }
     }
 
-    @Test("OperateSection has exactly three cases")
-    func operateSectionHasThreeCases() {
-        #expect(AppState.OperateSection.allCases.count == 3)
+    @Test("OperateSource has exactly three cases")
+    func operateSourceHasThreeCases() {
+        #expect(AppState.OperateSource.allCases.count == 3)
     }
 }
 
-@Suite("AppState — Library Section Switching")
-struct AppStateLibrarySectionTests {
+@Suite("AppState — Library Source Switching")
+struct AppStateLibrarySourceTests {
 
-    @Test("libraryActiveSection defaults to docs")
+    @Test("libraryActiveSource defaults to docs")
     @MainActor
-    func libraryActiveSectionDefaultsToDocs() {
+    func libraryActiveSourceDefaultsToDocs() {
         let state = AppState()
-        #expect(state.libraryActiveSection == .docs)
+        #expect(state.libraryActiveSource == .docs)
     }
 
-    @Test("libraryActiveSection can be set to extensions")
+    @Test("libraryActiveSource can be set to extensions")
     @MainActor
-    func librarySectionSwitchesToExtensions() {
+    func librarySourceSwitchesToExtensions() {
         let state = AppState()
-        state.libraryActiveSection = .extensions
-        #expect(state.libraryActiveSection == .extensions)
+        state.libraryActiveSource = .extensions
+        #expect(state.libraryActiveSource == .extensions)
     }
 
-    @Test("libraryActiveSection can be set to schedule")
+    @Test("libraryActiveSource can be set to schedule")
     @MainActor
-    func librarySectionSwitchesToSchedule() {
+    func librarySourceSwitchesToSchedule() {
         let state = AppState()
-        state.libraryActiveSection = .schedule
-        #expect(state.libraryActiveSection == .schedule)
+        state.libraryActiveSource = .schedule
+        #expect(state.libraryActiveSource == .schedule)
     }
 
-    @Test("libraryActiveSection can be set to notifications inbox")
+    @Test("libraryActiveSource can be set to notifications inbox")
     @MainActor
-    func librarySectionSwitchesToNotifications() {
+    func librarySourceSwitchesToNotifications() {
         let state = AppState()
-        state.libraryActiveSection = .notifications
-        #expect(state.libraryActiveSection == .notifications)
+        state.libraryActiveSource = .notifications
+        #expect(state.libraryActiveSource == .notifications)
     }
 
-    @Test("libraryActiveSection can be set to messages")
+    @Test("libraryActiveSource can be set to messages")
     @MainActor
-    func librarySectionSwitchesToMessages() {
+    func librarySourceSwitchesToMessages() {
         let state = AppState()
-        state.libraryActiveSection = .messages
-        #expect(state.libraryActiveSection == .messages)
+        state.libraryActiveSource = .messages
+        #expect(state.libraryActiveSource == .messages)
     }
 
-    @Test("libraryActiveSection roundtrips through all values")
+    @Test("libraryActiveSource roundtrips through all values")
     @MainActor
-    func librarySectionCyclesThroughAllValues() {
+    func librarySourceCyclesThroughAllValues() {
         let state = AppState()
-        for section in AppState.LibrarySection.allCases {
-            state.libraryActiveSection = section
-            #expect(state.libraryActiveSection == section)
+        for section in AppState.LibrarySource.allCases {
+            state.libraryActiveSource = section
+            #expect(state.libraryActiveSource == section)
         }
     }
 
-    @Test("all LibrarySection cases have non-empty rawValues")
-    func allLibrarySectionsHaveRawValues() {
-        for section in AppState.LibrarySection.allCases {
-            #expect(!section.rawValue.isEmpty, "Expected non-empty rawValue for LibrarySection.\(section)")
+    @Test("all LibrarySource cases have non-empty rawValues")
+    func allLibrarySourcesHaveRawValues() {
+        for section in AppState.LibrarySource.allCases {
+            #expect(!section.rawValue.isEmpty, "Expected non-empty rawValue for LibrarySource.\(section)")
         }
     }
 
-    @Test("LibrarySection has exactly five cases")
-    func librarySectionHasFiveCases() {
-        #expect(AppState.LibrarySection.allCases.count == 5)
+    @Test("LibrarySource has exactly five cases")
+    func librarySourceHasFiveCases() {
+        #expect(AppState.LibrarySource.allCases.count == 5)
     }
 
     @Test("notifications case has rawValue Inbox")
     func notificationsRawValueIsInbox() {
-        #expect(AppState.LibrarySection.notifications.rawValue == "Inbox")
+        #expect(AppState.LibrarySource.notifications.rawValue == "Inbox")
     }
 }
 

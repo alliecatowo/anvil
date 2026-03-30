@@ -51,12 +51,13 @@ struct DiffReviewView: View {
             Spacer()
 
             // View mode toggle
-            Picker("View", selection: $viewModel.diffViewMode) {
+            Picker("View Mode", selection: $viewModel.diffViewMode) {
                 ForEach(DiffViewMode.allCases, id: \.self) { mode in
                     Text(mode.rawValue).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
+            .labelsHidden()
             .frame(width: 180)
 
             // Blame toggle
@@ -400,7 +401,7 @@ struct DiffReviewView: View {
                 Button("Comment") {
                     viewModel.submitInlineComment()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.bordered)
                 .disabled(viewModel.inlineCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
@@ -600,7 +601,7 @@ struct DiffReviewView: View {
                 .foregroundStyle(AnvilColor.accentGreen)
             }
 
-            AnvilButton("Merge Branch", icon: "arrow.triangle.merge", style: .primary) {
+            AnvilButton("Merge Branch", icon: "arrow.triangle.merge", style: .cta) {
                 guard let adapter = container.getOrCreateGitAdapter() else { return }
                 viewModel.mergeSelectedBranch(using: adapter)
             }

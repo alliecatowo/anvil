@@ -12,6 +12,7 @@ struct DocBrowser: View {
             }
         }
         .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
         .safeAreaInset(edge: .top) {
             HStack {
                 Text("Documents")

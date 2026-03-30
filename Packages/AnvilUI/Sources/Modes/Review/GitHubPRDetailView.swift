@@ -429,7 +429,7 @@ struct GitHubPRDetailView: View {
                                     .accessibilityLabel("Merging pull request")
                             }
 
-                            AnvilButton("Merge Pull Request", icon: "arrow.triangle.merge", style: .primary) {
+                            AnvilButton("Merge Pull Request", icon: "arrow.triangle.merge", style: .cta) {
                                 guard let adapter = container.getOrCreateGitHubAdapter() else { return }
                                 viewModel.mergePR(using: adapter)
                             }

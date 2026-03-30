@@ -1,6 +1,8 @@
 import SwiftUI
 
 public enum AnvilButtonStyle {
+    /// Accent-filled button — use for the single most important action in a context.
+    case cta
     case primary, secondary, destructive, ghost
 }
 
@@ -35,14 +37,16 @@ private extension View {
     @ViewBuilder
     func modify(for style: AnvilButtonStyle) -> some View {
         switch style {
+        case .cta:
+            self.buttonStyle(.borderedProminent).controlSize(.small)
         case .primary:
-            self.buttonStyle(.borderedProminent)
+            self.buttonStyle(.bordered)
                 .controlSize(.small)
         case .secondary:
             self.buttonStyle(.bordered)
                 .controlSize(.small)
         case .destructive:
-            self.buttonStyle(.borderedProminent)
+            self.buttonStyle(.bordered)
                 .tint(.red)
                 .controlSize(.small)
         case .ghost:

@@ -18,8 +18,28 @@ struct ReviewSidebar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            gitHubAuthBar
-            Divider()
+            switch appState.reviewActiveSource {
+            case .changes:
+                changesNavigator
+            case .branches:
+                branchesNavigator
+            case .pullRequests:
+                pullRequestsNavigator
+            }
+        }
+        .task {
+            viewModel.loadReviews()
+            if let adapter = container.getOrCreateGitAdapter() {
+                viewModel.loadSourceControlData(using: adapter)
+                await appState.loadGitStatus(from: adapter)
+            }
+        }
+    }
+
+    // MARK: - Changes Navigator
+
+    private var changesNavigator: some View {
+        VStack(spacing: 0) {
             reviewActionsBar
             Divider()
 
@@ -28,24 +48,41 @@ struct ReviewSidebar: View {
                     selectedReviewSection(for: review)
                 }
 
-                branchSection
-                remotesSection
-                tagsSection
-                stashesSection
-                worktreesSection
                 changesSection
-                pullRequestsSection
                 pendingReviewsSection
                 completedReviewsSection
             }
             .listStyle(.sidebar)
-            .task {
-                viewModel.loadReviews()
-                if let adapter = container.getOrCreateGitAdapter() {
-                    viewModel.loadSourceControlData(using: adapter)
-                    await appState.loadGitStatus(from: adapter)
-                }
+            .scrollContentBackground(.hidden)
+        }
+    }
+
+    // MARK: - Branches Navigator
+
+    private var branchesNavigator: some View {
+        List {
+            branchSection
+            remotesSection
+            tagsSection
+            stashesSection
+            worktreesSection
+        }
+        .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+    }
+
+    // MARK: - Pull Requests Navigator
+
+    private var pullRequestsNavigator: some View {
+        VStack(spacing: 0) {
+            gitHubAuthBar
+            Divider()
+
+            List {
+                pullRequestsSection
             }
+            .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
         }
     }
 
@@ -844,7 +881,7 @@ struct ReviewSidebar: View {
             } label: {
                 Label("Start Review", systemImage: "plus")
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.bordered)
             .controlSize(.small)
 
             Button {

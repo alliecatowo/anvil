@@ -148,26 +148,101 @@ It is not a tool surface. It is the place where the app's reusable knowledge liv
 
 ```
 App
-└── Space
-    ├── Sidebar
-    │   └── Sections
-    │       └── Items
+├── Toolbar (three zones)
+│   ├── Left: [📁 Project ▾] [🔀 Branch] (context anchor, branch Build-only)
+│   ├── Center: Space · Navigator ▾ (Space Compositor with navigator dropdown)
+│   │   Examples: "Build · ⊕ Sessions ▾", "Review · Changes ▾"
+│   └── Right: [⌘K] [🔔] [ℹ️] [✨] (fixed panel controls)
+│
+└── Space (Plan, Build, Review, Operate, Library)
+    ├── Sidebar (pure content — NO chrome, no navigator picker)
+    │   └── Items for the active navigator
     ├── Canvas
     │   └── Views / detail routes
     ├── Inspector
     │   └── selection-driven metadata and quick actions
-    └── Utility Deck
-        └── Terminal / logs / problems / notifications / background tasks
+    ├── Agent Sidebar (sparkles panel — universal AI, contextual per space)
+    └── Utility Deck (bottom, always available across all spaces)
+        └── Terminal / Problems / Output
 ```
+
+### Navigators
+
+A **Navigator** is a collection type within a Space. Navigators are selected
+via the center toolbar dropdown (the Space Compositor), NOT the sidebar.
+The sidebar shows only content for the active navigator — no intra-view chrome.
+
+Per-space navigators:
+- **Plan**: No navigator (single view: Tickets). Center shows sprint context.
+- **Build**: Sessions, Files, Data, Tests
+- **Review**: Changes, Branches, Pull Requests
+- **Operate**: Deploy, Monitor
+- **Library**: Docs, Rules, Extensions, Inbox, Chat, Schedule
+
+Terminal is NOT a navigator — it lives in the Utility Deck.
+
+### Glass and Materials
+
+Anvil uses solid backgrounds, not translucent materials:
+- **Window**: `NSColor.windowBackgroundColor` (solid dark, adapts to appearance)
+- **Sidebar + Rail**: `NSColor.controlBackgroundColor` (subtle tone difference from canvas)
+- **Canvas**: Inherits window background
+- **Toolbar**: Native macOS Tahoe Liquid Glass on toolbar items (automatic)
+
+No `.regularMaterial` or `.ultraThinMaterial` on structural surfaces.
+Glass is only on toolbar pills/buttons where macOS applies it natively.
+
+### Agent Sidebar
+
+The Agent Sidebar (sparkles icon, ✨) is the universal AI interaction surface.
+It is contextual to the current space:
+- In **Plan**: ticket operations, planning conversations
+- In **Build**: code sessions, agent chat
+- In **Review**: diff explanations, review conversations
+- In **Operate**: deployment assistance
+- In **Library**: reference queries
+
+The Agent Sidebar is NOT Build-specific. It is the single most important
+interaction point in the AIDE and should adapt to whatever the user is doing.
+
+### Toolbar Zones
+
+The toolbar has three stable zones:
+
+- **Left zone** (context anchor): Project dropdown + branch pill (Build-only).
+  Answers "where am I working." Project is a Menu with Switch Project and Command Palette.
+  Branch pill only appears in the Build space.
+- **Center zone** (Space Compositor): `Space · Navigator ▾` dropdown.
+  Shows the space name (static) + active navigator name with dropdown to switch.
+  Plan shows sprint context instead of a navigator dropdown.
+- **Right zone** (panel controls): Fixed set, never changes per space.
+  ⌘K, Notifications, Inspector, Agent Sidebar (sparkles).
+
+### Status Bar
+
+The Status Bar is **Build-only**. It shows editor context (cursor position,
+encoding, line ending, cost) only when the user is in the Build space.
+Other spaces do not render a status bar.
+
+### Per-Space Accent Colors
+
+Each space has a semantic accent color used for toolbar glass tinting,
+rail active state, and navigator picker active icon:
+- Plan: blue
+- Build: green
+- Review: orange
+- Operate: purple
+- Library: gray
 
 ### Semantic Rules
 
-- `Sidebar` owns navigation, scope, saved views, and entity selection.
+- `Toolbar` owns global scope, project/branch context, and per-space orientation.
+- `Sidebar` owns navigation via the Navigator Picker and entity selection.
 - `Canvas` owns the primary collection view or full-page detail route.
 - `Inspector` owns secondary context and quick actions only.
-- `Utility Deck` owns transient operational panes.
-- `Toolbar` owns global scope and app-level actions.
-- `Status Bar` owns persistent low-level status.
+- `Agent Sidebar` owns all AI interaction, contextual to the current space.
+- `Utility Deck` owns persistent operational panes (Terminal, Problems, Output).
+- `Status Bar` owns editor-level status (Build-only).
 
 ## Current Conflicts To Eliminate
 

@@ -52,6 +52,17 @@ public enum AnvilSpace: String, CaseIterable, Identifiable, Sendable {
         case .library: 5
         }
     }
+
+    /// Per-space accent color for toolbar glass tinting and active indicators.
+    public var spaceAccent: Color {
+        switch self {
+        case .plan:    .blue
+        case .build:   .green
+        case .review:  .orange
+        case .operate: .purple
+        case .library: .gray
+        }
+    }
 }
 
 public enum FileEncoding: String, CaseIterable, Sendable {
@@ -181,20 +192,19 @@ public class AppState: ObservableObject {
     @Published var scheduleViewModel = ScheduleViewModel()
     @Published public var autoContextService = AutoContextService()
 
-    // MARK: - Build Section
+    // MARK: - Build Source
 
-    @Published public var buildActiveSection: BuildSection = .sessions {
+    @Published public var buildActiveSource: BuildSource = .sessions {
         didSet {
-            if buildActiveSection != .sessions {
+            if buildActiveSource != .sessions {
                 isAgentPanelVisible = false
             }
         }
     }
 
-    public enum BuildSection: String, CaseIterable, Sendable {
+    public enum BuildSource: String, CaseIterable, Sendable {
         case sessions = "Sessions"
         case files = "Files"
-        case terminal = "Terminal"
         case data = "Data"
         case tests = "Tests"
 
@@ -202,18 +212,17 @@ public class AppState: ObservableObject {
             switch self {
             case .sessions: "bubble.left.and.text.bubble.right"
             case .files: "doc.text"
-            case .terminal: "terminal"
             case .data: "cylinder"
             case .tests: "testtube.2"
             }
         }
     }
 
-    // MARK: - Operate Section
+    // MARK: - Operate Source
 
-    @Published public var operateActiveSection: OperateSection = .deploy
+    @Published public var operateActiveSource: OperateSource = .deploy
 
-    public enum OperateSection: String, CaseIterable, Sendable {
+    public enum OperateSource: String, CaseIterable, Sendable {
         case deploy = "Deploy"
         case monitor = "Monitor"
 
@@ -225,11 +234,29 @@ public class AppState: ObservableObject {
         }
     }
 
-    // MARK: - Library Section
+    // MARK: - Review Source
 
-    @Published public var libraryActiveSection: LibrarySection = .docs
+    @Published public var reviewActiveSource: ReviewSource = .changes
 
-    public enum LibrarySection: String, CaseIterable, Sendable {
+    public enum ReviewSource: String, CaseIterable, Sendable {
+        case changes = "Changes"
+        case branches = "Branches"
+        case pullRequests = "Pull Requests"
+
+        public var icon: String {
+            switch self {
+            case .changes: "arrow.left.arrow.right"
+            case .branches: "arrow.triangle.branch"
+            case .pullRequests: "arrow.triangle.pull"
+            }
+        }
+    }
+
+    // MARK: - Library Source
+
+    @Published public var libraryActiveSource: LibrarySource = .docs
+
+    public enum LibrarySource: String, CaseIterable, Sendable {
         case docs = "Docs"
         case rules = "Rules"
         case extensions = "Extensions"
@@ -280,7 +307,7 @@ public class AppState: ObservableObject {
                 return .ticket(id: ticket.id, title: ticket.title)
             }
         case .build:
-            switch buildActiveSection {
+            switch buildActiveSource {
             case .sessions:
                 if let session = agentViewModel.selectedSession {
                     return .agentSession(id: session.id, name: session.displayName)
@@ -491,7 +518,7 @@ public class AppState: ObservableObject {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
             if !isAgentPanelVisible {
                 currentSpace = .build
-                buildActiveSection = .sessions
+                buildActiveSource = .sessions
                 isInspectorVisible = false
             }
             isAgentPanelVisible.toggle()
@@ -629,7 +656,7 @@ public class AppState: ObservableObject {
         switch scenario {
         case .agentEmpty:
             currentSpace = .build
-            buildActiveSection = .sessions
+            buildActiveSource = .sessions
             agentViewModel.sessions = []
             agentViewModel.selectedSessionId = nil
             agentViewModel.viewMode = .conversation
@@ -643,7 +670,7 @@ public class AppState: ObservableObject {
         case .agentConversation:
             loadDemoData()
             currentSpace = .build
-            buildActiveSection = .sessions
+            buildActiveSource = .sessions
             agentViewModel.viewMode = .conversation
             if agentViewModel.selectedSessionId == nil {
                 agentViewModel.selectedSessionId = agentViewModel.sessions.first?.id
@@ -692,14 +719,15 @@ public class AppState: ObservableObject {
         case .shipDashboard:
             loadDemoData()
             currentSpace = .operate
-            operateActiveSection = .deploy
+            operateActiveSource = .deploy
             shipViewModel.selectedTab = .dashboard
             shipViewModel.selectedEnvironmentID = shipViewModel.environments.first?.id
 
         case .workspaceTerminal:
             loadDemoData()
             currentSpace = .build
-            buildActiveSection = .terminal
+            buildActiveSource = .sessions
+            isTerminalPanelVisible = true
             if terminalViewModel.sessions.isEmpty {
                 _ = terminalViewModel.addTab()
             }
@@ -710,7 +738,7 @@ public class AppState: ObservableObject {
         case .workspaceNotifications:
             loadDemoData()
             currentSpace = .library
-            libraryActiveSection = .notifications
+            libraryActiveSource = .notifications
             notificationsViewModel.loadSampleData()
             notificationsViewModel.selectedTab = .inbox
             notificationsViewModel.selectedItemID = notificationsViewModel.filteredInboxItems.first?.id

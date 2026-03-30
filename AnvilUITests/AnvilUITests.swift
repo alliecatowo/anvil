@@ -470,8 +470,8 @@ final class AnvilLibrarySpaceTests: XCTestCase {
         super.tearDown()
     }
 
-    /// Navigate to Library space and verify the Docs section is the default.
-    func testLibrarySpaceShowsDocsSectionByDefault() {
+    /// Navigate to Library space and verify the Docs source is the default.
+    func testLibrarySpaceShowsDocsSourceByDefault() {
         // Library space is reached via Cmd+5 or the "Library" rail button
         app.typeKey("5", modifierFlags: .command)
         XCTAssertTrue(
@@ -482,12 +482,12 @@ final class AnvilLibrarySpaceTests: XCTestCase {
         let docsPicker = app.buttons["Docs"]
         XCTAssertTrue(
             docsPicker.waitForExistence(timeout: 5),
-            "Library sidebar must show a 'Docs' segment in the section picker"
+            "Library sidebar must show a 'Docs' segment in the source picker"
         )
     }
 
-    /// Navigate to Library space and switch to the Extensions section.
-    func testLibrarySpaceSwitchToExtensionsSection() {
+    /// Navigate to Library space and switch to the Extensions source.
+    func testLibrarySpaceSwitchToExtensionsSource() {
         app.typeKey("5", modifierFlags: .command)
         let extensionsButton = app.buttons["Extensions"]
         XCTAssertTrue(
@@ -501,12 +501,12 @@ final class AnvilLibrarySpaceTests: XCTestCase {
             || app.lists.firstMatch.waitForExistence(timeout: 3)
         XCTAssertTrue(
             contentVisible,
-            "Switching to Extensions section must render extensions content"
+            "Switching to Extensions source must render extensions content"
         )
     }
 
-    /// Navigate to Library space and switch to the Inbox (Notifications) section.
-    func testLibrarySpaceSwitchToInboxSection() {
+    /// Navigate to Library space and switch to the Inbox (Notifications) source.
+    func testLibrarySpaceSwitchToInboxSource() {
         app.typeKey("5", modifierFlags: .command)
         let inboxButton = app.buttons["Inbox"]
         XCTAssertTrue(
@@ -518,12 +518,12 @@ final class AnvilLibrarySpaceTests: XCTestCase {
             || app.lists.firstMatch.waitForExistence(timeout: 3)
         XCTAssertTrue(
             contentVisible,
-            "Switching to Inbox section must render notifications content"
+            "Switching to Inbox source must render notifications content"
         )
     }
 
-    /// Navigate to Library space and switch to the Messages section.
-    func testLibrarySpaceSwitchToMessagesSection() {
+    /// Navigate to Library space and switch to the Messages source.
+    func testLibrarySpaceSwitchToMessagesSource() {
         app.typeKey("5", modifierFlags: .command)
         let messagesButton = app.buttons["Messages"]
         XCTAssertTrue(
@@ -536,12 +536,12 @@ final class AnvilLibrarySpaceTests: XCTestCase {
             || app.lists.firstMatch.waitForExistence(timeout: 3)
         XCTAssertTrue(
             contentVisible,
-            "Switching to Messages section must render messaging channel content"
+            "Switching to Messages source must render messaging channel content"
         )
     }
 
-    /// Navigate to Library space and switch to the Schedule section.
-    func testLibrarySpaceSwitchToScheduleSection() {
+    /// Navigate to Library space and switch to the Schedule source.
+    func testLibrarySpaceSwitchToScheduleSource() {
         app.typeKey("5", modifierFlags: .command)
         let scheduleButton = app.buttons["Schedule"]
         XCTAssertTrue(
@@ -554,17 +554,17 @@ final class AnvilLibrarySpaceTests: XCTestCase {
             || app.lists.firstMatch.waitForExistence(timeout: 3)
         XCTAssertTrue(
             contentVisible,
-            "Switching to Schedule section must render schedule content"
+            "Switching to Schedule source must render schedule content"
         )
     }
 
-    /// All five Library section picker segments must be present simultaneously.
-    func testLibraryAllSectionSegmentsExist() {
+    /// All five Library source picker segments must be present simultaneously.
+    func testLibraryAllSourceSegmentsExist() {
         app.typeKey("5", modifierFlags: .command)
         for label in ["Docs", "Extensions", "Inbox", "Messages", "Schedule"] {
             XCTAssertTrue(
                 app.buttons[label].waitForExistence(timeout: 5),
-                "Library section picker must contain '\(label)' segment"
+                "Library source picker must contain '\(label)' segment"
             )
         }
     }
@@ -589,24 +589,24 @@ final class AnvilOperateSpaceTests: XCTestCase {
         super.tearDown()
     }
 
-    /// Navigate to Operate space and verify the Deploy (Ship) section is shown by default.
-    func testOperateSpaceShowsDeploySectionByDefault() {
+    /// Navigate to Operate space and verify the Deploy (Ship) source is shown by default.
+    func testOperateSpaceShowsDeploySourceByDefault() {
         let operateButton = app.buttons["Operate"]
         XCTAssertTrue(operateButton.waitForExistence(timeout: 5), "Operate rail button must exist")
         operateButton.click()
         // The Operate sidebar content must include ENVIRONMENTS
         XCTAssertTrue(
             app.staticTexts["ENVIRONMENTS"].waitForExistence(timeout: 5),
-            "Deploy section must render ENVIRONMENTS list"
+            "Deploy source must render ENVIRONMENTS list"
         )
     }
 
-    /// Navigate to Operate space and verify monitoring section is available.
-    func testOperateSpaceHasMonitorSection() {
+    /// Navigate to Operate space and verify monitoring source is available.
+    func testOperateSpaceHasMonitorSource() {
         let operateButton = app.buttons["Operate"]
         XCTAssertTrue(operateButton.waitForExistence(timeout: 5), "Operate rail button must exist")
         operateButton.click()
-        // Monitor section is available via the section picker
+        // Monitor source is available via the source picker
         let contentVisible = app.staticTexts["ENVIRONMENTS"].waitForExistence(timeout: 3)
             || app.buttons.matching(
                 NSPredicate(format: "label CONTAINS 'New Terminal Session'")
@@ -614,23 +614,23 @@ final class AnvilOperateSpaceTests: XCTestCase {
             || app.windows.firstMatch.exists
         XCTAssertTrue(
             contentVisible,
-            "Switching to Terminal section must render terminal sessions content"
+            "Switching to Terminal source must render terminal sessions content"
         )
     }
 
-    /// All three Operate section picker segments must be present after entering the space.
-    func testOperateAllSectionSegmentsExist() {
+    /// All three Operate source picker segments must be present after entering the space.
+    func testOperateAllSourceSegmentsExist() {
         app.buttons["Ship"].click()
         for label in ["Deploy", "Monitor", "Terminal"] {
             XCTAssertTrue(
                 app.buttons[label].waitForExistence(timeout: 5),
-                "Operate section picker must contain '\(label)' segment"
+                "Operate source picker must contain '\(label)' segment"
             )
         }
     }
 
-    /// The Operate space must survive switching through all sections without crashing.
-    func testOperateSectionCycleDoesNotCrash() {
+    /// The Operate space must survive switching through all sources without crashing.
+    func testOperateSourceCycleDoesNotCrash() {
         app.buttons["Ship"].click()
         for label in ["Deploy", "Monitor", "Terminal", "Deploy"] {
             let btn = app.buttons[label]
@@ -638,7 +638,7 @@ final class AnvilOperateSpaceTests: XCTestCase {
         }
         XCTAssertTrue(
             app.windows.firstMatch.exists,
-            "App must remain alive after cycling all Operate sections"
+            "App must remain alive after cycling all Operate sources"
         )
     }
 }

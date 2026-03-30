@@ -143,7 +143,7 @@ struct PluginDetailView: View {
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("Plugin status: \(plugin.isEnabled ? "Enabled" : "Disabled")")
                 } else {
-                    AnvilButton("Install", icon: "arrow.down.circle", style: .primary) {
+                    AnvilButton("Install", icon: "arrow.down.circle", style: .cta) {
                         viewModel.installPlugin(pluginId)
                     }
                     .accessibilityLabel("Install \(plugin.name)")

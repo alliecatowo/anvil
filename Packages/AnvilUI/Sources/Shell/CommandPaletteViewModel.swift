@@ -252,18 +252,18 @@ enum CommandAction: Sendable {
             appState.intentViewModel.deleteTicket(ticketId)
         case .renameFile(let path):
             appState.switchSpace(.build)
-            appState.buildActiveSection = .files
+            appState.buildActiveSource = .files
             appState.editorViewModel.pendingRenameFilePath = path
         case .copyFilePath(let path):
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(path, forType: .string)
         case .runTestsForFile(let path):
             appState.switchSpace(.build)
-            appState.buildActiveSection = .tests
+            appState.buildActiveSource = .tests
             appState.testingViewModel.runTestsForFile(path)
         case .openAgentSession(let sessionId):
             appState.switchSpace(.build)
-            appState.buildActiveSection = .sessions
+            appState.buildActiveSource = .sessions
             appState.agentViewModel.selectedSessionId = sessionId
         case .stopAgentSession(let sessionId):
             if let idx = appState.agentViewModel.sessions.firstIndex(where: { $0.id == sessionId }) {

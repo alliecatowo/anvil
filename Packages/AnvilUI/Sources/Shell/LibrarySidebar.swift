@@ -6,17 +6,7 @@ struct LibrarySidebar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            SidebarTabBar(
-                sections: Array(AppState.LibrarySection.allCases),
-                active: appState.libraryActiveSection,
-                icon: { $0.icon },
-                label: { $0.rawValue },
-                onSelect: { appState.libraryActiveSection = $0 }
-            )
-
-            Divider()
-
-            switch appState.libraryActiveSection {
+            switch appState.libraryActiveSource {
             case .docs:
                 DocBrowser(viewModel: appState.libraryDocsViewModel)
             case .rules:
@@ -56,6 +46,7 @@ struct LibrarySidebar: View {
                     }
                 }
                 .listStyle(.sidebar)
+                .scrollContentBackground(.hidden)
                 .onChange(of: selectedNotificationID) { _, newId in
                     guard let id = newId else { return }
                     viewModel.selectedItemID = id
@@ -103,7 +94,7 @@ struct LibrarySidebar: View {
 
                 Button {
                     appState.switchSpace(.build)
-                    appState.buildActiveSection = .files
+                    appState.buildActiveSource = .files
                     appState.pendingFileToOpen = rulesPath
                 } label: {
                     Label("Open in Editor", systemImage: "doc.text")
@@ -150,6 +141,7 @@ struct LibrarySidebar: View {
                     }
                 }
                 .listStyle(.sidebar)
+                .scrollContentBackground(.hidden)
                 .onChange(of: selectedScheduleEntryID) { _, newId in
                     viewModel.selectedEntryID = newId
                 }
@@ -225,6 +217,7 @@ struct ExtensionsSidebarView: View {
                     }
                 }
                 .listStyle(.sidebar)
+                .scrollContentBackground(.hidden)
                 .onChange(of: selectedPluginID) { _, newId in
                     guard let id = newId else { return }
                     viewModel.selectPlugin(id)

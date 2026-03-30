@@ -1,27 +1,11 @@
 import SwiftUI
 import AnvilDomain
 
-// MARK: - Agent Sidebar Tab
-
-private enum AgentSidebarTab: String, CaseIterable, Hashable {
-    case sessions = "Sessions"
-    case dashboard = "Dashboard"
-
-    var icon: String {
-        switch self {
-        case .sessions: "message"
-        case .dashboard: "square.grid.2x2"
-        }
-    }
-}
-
 // MARK: - Agent Sidebar
 
 struct AgentSidebar: View {
     @ObservedObject var viewModel: AgentViewModel
     @EnvironmentObject var container: DependencyContainer
-
-    @State private var activeTab: AgentSidebarTab = .sessions
 
     // Search state
     @State private var searchQuery = ""
@@ -30,55 +14,7 @@ struct AgentSidebar: View {
     @State private var searchTask: Task<Void, Never>?
 
     var body: some View {
-        VStack(spacing: 0) {
-            AnvilSidebarHeaderRow(
-                title: "Build",
-                icon: "bubble.left.and.text.bubble.right",
-                count: viewModel.sessions.count
-            ) {
-                Button {
-                    viewModel.startNewSession(prompt: "", model: viewModel.selectedModelId)
-                    viewModel.showConversation()
-                } label: {
-                    Image(systemName: "plus")
-                }
-                .buttonStyle(.borderless)
-                .controlSize(.small)
-                .accessibilityLabel("New Session")
-                .accessibilityIdentifier("agent.sidebar.new-session")
-            }
-
-            AnvilSidebarSegmentedPicker(
-                label: "Build View",
-                items: AgentSidebarTab.allCases.map {
-                    AnvilSidebarSegmentedPicker<AgentSidebarTab>.SidebarPickerItem(
-                        id: $0,
-                        title: $0.rawValue,
-                        icon: $0.icon
-                    )
-                },
-                selection: $activeTab
-            )
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.bottom, AnvilSpacing.xs)
-
-            Divider()
-
-            switch activeTab {
-            case .sessions:
-                sessionsSourceList
-            case .dashboard:
-                dashboardContent
-            }
-        }
-        .onChange(of: viewModel.viewMode) { _, newMode in
-            switch newMode {
-            case .dashboard:
-                activeTab = .dashboard
-            case .conversation, .synthesisRoom:
-                activeTab = .sessions
-            }
-        }
+        sessionsSourceList
     }
 
     // MARK: - Sessions Source List
@@ -91,9 +27,24 @@ struct AgentSidebar: View {
 
     private var sessionsSourceList: some View {
         VStack(spacing: 0) {
-            AnvilSidebarSearchBar(text: $searchQuery, placeholder: "Search sessions...")
+            // Search + new session
+            HStack(spacing: AnvilSpacing.xs) {
+                AnvilSidebarSearchBar(text: $searchQuery, placeholder: "Search sessions...")
 
-            Divider()
+                Button {
+                    viewModel.startNewSession(prompt: "", model: viewModel.selectedModelId)
+                    viewModel.showConversation()
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 12))
+                }
+                .buttonStyle(.borderless)
+                .controlSize(.small)
+                .accessibilityLabel("New Session")
+                .accessibilityIdentifier("agent.sidebar.new-session")
+                .padding(.trailing, AnvilSpacing.md)
+            }
+            .padding(.vertical, AnvilSpacing.xs)
 
             if isSearchActive {
                 searchResultsList
@@ -141,22 +92,22 @@ struct AgentSidebar: View {
     private var searchResultsList: some View {
         Group {
             if isSearching {
-                VStack(spacing: AnvilSpacing.sm) {
+                VStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)
                     Text("Searching...")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if searchResults.isEmpty {
-                VStack(spacing: AnvilSpacing.sm) {
+                VStack(spacing: 8) {
                     Image(systemName: "magnifyingglass")
-                        .font(.system(size: 20))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .font(.system(size: 20, weight: .thin))
+                        .foregroundStyle(.tertiary)
                     Text("No results for \"\(searchQuery)\"")
-                        .font(AnvilFont.body)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .font(.body)
+                        .foregroundStyle(.tertiary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -173,27 +124,30 @@ struct AgentSidebar: View {
                     }
                 }
                 .listStyle(.sidebar)
+                .scrollContentBackground(.hidden)
             }
         }
     }
 
     private func searchResultRow(_ result: SessionSearchResult) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(result.sessionName)
-                .font(AnvilFont.sidebarItem)
-                .foregroundStyle(AnvilColor.textPrimary)
-                .lineLimit(1)
-
-            Text(result.excerpt)
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textSecondary)
-                .lineLimit(2)
-
+        HStack(spacing: 8) {
+            Circle()
+                .fill(.tertiary)
+                .frame(width: 8, height: 8)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(result.sessionName)
+                    .font(.body)
+                    .lineLimit(1)
+                Text(result.excerpt)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer()
             Text(result.date, style: .relative)
-                .font(.system(size: 10))
-                .foregroundStyle(AnvilColor.textTertiary)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, AnvilSpacing.xxs)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(result.sessionName), \(result.excerpt)")
         .accessibilityAddTraits(.isButton)
@@ -258,6 +212,7 @@ struct AgentSidebar: View {
             }
         }
         .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
         .onChange(of: selectedId) { _, newId in
             guard let id = newId else { return }
             Task { @MainActor in
@@ -282,80 +237,39 @@ struct AgentSidebar: View {
         }
     }
 
-    // MARK: - Child Session Row (compact, nested under parent)
-
-    private func childSessionRow(_ session: AgentSession) -> some View {
-        AnvilListItem(
-            icon: session.isForked ? "arrow.triangle.branch" : sessionStatusIcon(session.status),
-            title: session.displayName,
-            subtitle: session.messages.last(where: { $0.role == .assistant })?.content.prefix(60).description,
-            tag: session.status.rawValue.capitalized,
-            tagColor: sessionStatusColor(session.status),
-            timestamp: elapsedTime(from: session.startedAt, to: session.lastActivityAt, isRunning: session.status == .running),
-            isSelected: viewModel.selectedSessionId == session.id,
-            isCompact: false,
-            indentLevel: 1
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Subagent \(session.displayName), \(session.status.rawValue)")
-        .accessibilityAddTraits(.isButton)
-        .contextMenu {
-            Button("Open Session") {
-                viewModel.selectedSessionId = session.id
-                viewModel.showConversation()
-            }
-            Button("Export to Clipboard") {
-                viewModel.exportSessionToClipboard(session.id)
-            }
-            Divider()
-            Button("Delete", role: .destructive) {
-                viewModel.deleteSession(session.id)
-            }
-        }
-    }
-
-    /// Status dot for child sessions — uses pulse animation for running state per spec.
-    @ViewBuilder
-    private func childStatusDot(_ status: AgentSessionStatus) -> some View {
-        switch status {
-        case .running:
-            ChildRunningDot()
-        case .completed:
-            Circle()
-                .fill(AnvilColor.accentGreen)
-                .frame(width: 6, height: 6)
-        case .failed:
-            Circle()
-                .fill(AnvilColor.accentRed)
-                .frame(width: 6, height: 6)
-        case .paused:
-            Circle()
-                .fill(AnvilColor.accentAmber)
-                .frame(width: 6, height: 6)
-        case .idle:
-            Circle()
-                .stroke(AnvilColor.textTertiary, lineWidth: 1)
-                .frame(width: 6, height: 6)
-        case .cancelled:
-            Circle()
-                .stroke(AnvilColor.textTertiary, lineWidth: 1)
-                .frame(width: 6, height: 6)
-        }
-    }
-
     // MARK: - Session Row
 
     private func sessionRow(_ session: AgentSession) -> some View {
-        AnvilListItem(
-            icon: session.isForked ? "arrow.triangle.branch" : sessionStatusIcon(session.status),
-            title: session.displayName,
-            subtitle: session.cost > 0 ? "\(elapsedTime(from: session.startedAt, to: session.lastActivityAt, isRunning: session.status == .running)) • \(formatCost(session.cost))" : elapsedTime(from: session.startedAt, to: session.lastActivityAt, isRunning: session.status == .running),
-            tag: session.status.rawValue.capitalized,
-            tagColor: sessionStatusColor(session.status),
-            timestamp: session.isForked ? "forked" : nil,
-            isSelected: viewModel.selectedSessionId == session.id,
-            isCompact: false
-        )
+        let subtitle: String = {
+            var parts: [String] = []
+            let elapsed = elapsedTime(from: session.startedAt, to: session.lastActivityAt, isRunning: session.status == .running)
+            parts.append(elapsed)
+            if session.cost > 0 {
+                parts.append(formatCost(session.cost))
+            }
+            return parts.joined(separator: " \u{2022} ")
+        }()
+
+        return HStack(spacing: 8) {
+            Circle()
+                .fill(sessionStatusColor(session.status))
+                .frame(width: 8, height: 8)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(session.displayName)
+                    .font(.body)
+                    .lineLimit(1)
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer()
+            if session.isForked {
+                Text("forked")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(session.displayName), \(session.status.rawValue)\(session.isForked ? ", forked" : "")")
         .accessibilityAddTraits(.isButton)
@@ -377,18 +291,67 @@ struct AgentSidebar: View {
         }
     }
 
+    // MARK: - Child Session Row (compact, nested under parent)
+
+    private func childSessionRow(_ session: AgentSession) -> some View {
+        let subtitle = session.messages.last(where: { $0.role == .assistant })?.content.prefix(60).description
+
+        return HStack(spacing: 8) {
+            Circle()
+                .fill(sessionStatusColor(session.status))
+                .frame(width: 8, height: 8)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(session.displayName)
+                    .font(.body)
+                    .lineLimit(1)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            Spacer()
+            Text(elapsedTime(from: session.startedAt, to: session.lastActivityAt, isRunning: session.status == .running))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Subagent \(session.displayName), \(session.status.rawValue)")
+        .accessibilityAddTraits(.isButton)
+        .contextMenu {
+            Button("Open Session") {
+                viewModel.selectedSessionId = session.id
+                viewModel.showConversation()
+            }
+            Button("Export to Clipboard") {
+                viewModel.exportSessionToClipboard(session.id)
+            }
+            Divider()
+            Button("Delete", role: .destructive) {
+                viewModel.deleteSession(session.id)
+            }
+        }
+    }
+
     // MARK: - Synthesis Room Row
 
     private func synthesisRoomRow(_ room: SynthesisRoom) -> some View {
-        AnvilListItem(
-            icon: "arrow.triangle.merge",
-            title: room.title,
-            subtitle: room.status.rawValue.capitalized,
-            tag: room.status.rawValue.capitalized,
-            tagColor: synthesisStatusColor(room.status),
-            isSelected: viewModel.selectedSessionId == room.id,
-            isCompact: false
-        )
+        HStack(spacing: 8) {
+            Circle()
+                .fill(synthesisStatusColor(room.status))
+                .frame(width: 8, height: 8)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(room.title)
+                    .font(.body)
+                    .lineLimit(1)
+                Text(room.status.rawValue.capitalized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer()
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(room.title), \(room.status.rawValue)")
         .accessibilityAddTraits(.isButton)
@@ -399,169 +362,28 @@ struct AgentSidebar: View {
         }
     }
 
-    // MARK: - Status Indicator
-
-    private func sessionStatusIcon(_ status: AgentSessionStatus) -> String {
-        switch status {
-        case .running: "circle.fill"
-        case .completed: "checkmark.circle.fill"
-        case .failed: "xmark.circle.fill"
-        case .paused: "pause.circle.fill"
-        case .idle: "circle"
-        case .cancelled: "slash.circle"
-        }
-    }
+    // MARK: - Status Helpers
 
     private func sessionStatusColor(_ status: AgentSessionStatus) -> Color {
         switch status {
-        case .running: AnvilColor.accentGreen
-        case .completed: AnvilColor.accentBlue
-        case .failed: AnvilColor.accentRed
-        case .paused: AnvilColor.accentAmber
-        case .idle, .cancelled: AnvilColor.textTertiary
+        case .running: .green
+        case .completed: Color.accentColor
+        case .failed: .red
+        case .paused: .orange
+        case .idle, .cancelled: Color.secondary
         }
     }
 
-    @ViewBuilder
-    private func statusIndicator(_ status: AgentSessionStatus) -> some View {
+    private func synthesisStatusColor(_ status: SynthesisStatus) -> Color {
         switch status {
-        case .running:
-            RunningIndicator()
-        case .completed:
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 12))
-                .foregroundStyle(AnvilColor.accentGreen)
-        case .failed:
-            Image(systemName: "xmark.circle.fill")
-                .font(.system(size: 12))
-                .foregroundStyle(AnvilColor.accentRed)
-        case .paused:
-            Image(systemName: "pause.circle.fill")
-                .font(.system(size: 12))
-                .foregroundStyle(AnvilColor.accentAmber)
-        case .idle:
-            Image(systemName: "circle")
-                .font(.system(size: 12))
-                .foregroundStyle(AnvilColor.textTertiary)
-        case .cancelled:
-            Image(systemName: "slash.circle")
-                .font(.system(size: 12))
-                .foregroundStyle(AnvilColor.textTertiary)
-        }
-    }
-
-    private func sessionStatusBadge(_ status: AgentSessionStatus) -> some View {
-        let (text, color): (String, Color) = {
-            switch status {
-            case .running: ("Running", AnvilColor.accentGreen)
-            case .completed: ("Done", AnvilColor.accentBlue)
-            case .failed: ("Failed", AnvilColor.accentRed)
-            case .paused: ("Paused", AnvilColor.accentAmber)
-            case .idle: ("Idle", AnvilColor.textTertiary)
-            case .cancelled: ("Cancelled", AnvilColor.textTertiary)
-            }
-        }()
-        return Text(text)
-            .font(.system(size: 9, weight: .medium))
-            .foregroundStyle(color)
-            .padding(.horizontal, AnvilSpacing.xs)
-            .padding(.vertical, 1)
-            .background(color.opacity(0.12))
-            .clipShape(Capsule())
-    }
-
-    // MARK: - Dashboard Content
-
-    private var dashboardContent: some View {
-        VStack(spacing: 0) {
-            // Summary stats
-            VStack(spacing: AnvilSpacing.sm) {
-                dashboardStat("Total Sessions", value: "\(viewModel.sessions.count)", icon: "message")
-                dashboardStat("Running", value: "\(viewModel.sessions.filter { $0.status == .running }.count)", icon: "circle.fill", color: AnvilColor.accentGreen)
-                dashboardStat("Total Cost", value: formatTotalCost(), icon: "dollarsign.circle")
-            }
-            .padding(AnvilSpacing.md)
-
-            Divider()
-
-            // Team roster
-            if !viewModel.sessions.isEmpty {
-                AnvilSidebarSectionHeader(
-                    title: "Team Roster",
-                    icon: "person.3",
-                    count: Set(viewModel.sessions.map(\.model)).count
-                )
-                .padding(.horizontal, AnvilSpacing.sm)
-                .padding(.top, AnvilSpacing.sm)
-
-                TeamManagementView(viewModel: viewModel) { sessionId in
-                    viewModel.selectedSessionId = sessionId
-                    viewModel.showConversation()
-                    activeTab = .sessions
-                }
-                .frame(maxHeight: 200)
-
-                Divider()
-            }
-
-            // Session list overview
-            List {
-                ForEach(viewModel.sessions) { session in
-                    HStack(spacing: AnvilSpacing.sm) {
-                        statusIndicator(session.status)
-                            .frame(width: 14)
-
-                        Text(session.displayName)
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                            .lineLimit(1)
-
-                        Spacer()
-
-                        if session.cost > 0 {
-                            Text(formatCost(session.cost))
-                                .font(AnvilFont.label)
-                                .foregroundStyle(AnvilColor.textTertiary)
-                        }
-                    }
-                    .padding(.vertical, 2)
-                    .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 8))
-                    .listRowSeparator(.hidden)
-                }
-            }
-            .listStyle(.sidebar)
-        }
-    }
-
-    private func dashboardStat(_ label: String, value: String, icon: String, color: Color = AnvilColor.textSecondary) -> some View {
-        HStack(spacing: AnvilSpacing.sm) {
-            Image(systemName: icon)
-                .font(.system(size: 11))
-                .foregroundStyle(color)
-                .frame(width: 16)
-
-            Text(label)
-                .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textSecondary)
-
-            Spacer()
-
-            Text(value)
-                .font(AnvilFont.sidebarItem)
-                .foregroundStyle(AnvilColor.textPrimary)
+        case .pending: Color.secondary
+        case .running: .green
+        case .completed: .purple
+        case .failed: .red
         }
     }
 
     // MARK: - Helpers
-
-    private func synthesisStatusColor(_ status: SynthesisStatus) -> Color {
-        switch status {
-        case .pending: AnvilColor.textTertiary
-        case .running: AnvilColor.accentGreen
-        case .completed: AnvilColor.accentPurple
-        case .failed: AnvilColor.accentRed
-        }
-    }
 
     private func elapsedTime(from start: Date, to end: Date, isRunning: Bool) -> String {
         let reference = isRunning ? Date() : end
@@ -585,11 +407,6 @@ struct AgentSidebar: View {
         formatter.minimumFractionDigits = 2
         return formatter.string(from: cost as NSDecimalNumber) ?? "$0.00"
     }
-
-    private func formatTotalCost() -> String {
-        let total = viewModel.sessions.reduce(Decimal.zero) { $0 + $1.cost }
-        return formatCost(total)
-    }
 }
 
 // MARK: - Session Tree Node
@@ -608,36 +425,17 @@ private struct RunningIndicator: View {
 
     var body: some View {
         Circle()
-            .fill(AnvilColor.accentGreen)
+            .fill(Color.green)
             .frame(width: 8, height: 8)
             .overlay(
                 Circle()
-                    .stroke(AnvilColor.accentGreen.opacity(0.4), lineWidth: 2)
+                    .stroke(Color.green.opacity(0.4), lineWidth: 2)
                     .scaleEffect(isAnimating ? 2.0 : 1.0)
                     .opacity(isAnimating ? 0.0 : 0.6)
             )
             .onAppear {
                 withAnimation(.easeOut(duration: 1.2).repeatForever(autoreverses: false)) {
                     isAnimating = true
-                }
-            }
-            .accessibilityLabel("Running")
-    }
-}
-
-// MARK: - Child Running Dot (pulse opacity per spec)
-
-private struct ChildRunningDot: View {
-    @State private var isPulsing = false
-
-    var body: some View {
-        Circle()
-            .fill(AnvilColor.accentGreen)
-            .frame(width: 6, height: 6)
-            .opacity(isPulsing ? 1.0 : 0.6)
-            .onAppear {
-                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                    isPulsing = true
                 }
             }
             .accessibilityLabel("Running")

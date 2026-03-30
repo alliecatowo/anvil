@@ -247,7 +247,7 @@ struct ToolCallView: View {
                 // Approve/Reject for pending tool calls
                 if toolCall.status == .pending {
                     HStack(spacing: AnvilSpacing.sm) {
-                        AnvilButton("Approve", icon: "checkmark", style: .primary) {
+                        AnvilButton("Approve", icon: "checkmark", style: .cta) {
                             onApprove?(false)
                         }
                         AnvilButton("Reject", icon: "xmark", style: .destructive) {
@@ -341,7 +341,7 @@ struct ToolCallView: View {
 
     private var diffActionButtons: some View {
         HStack(spacing: AnvilSpacing.sm) {
-            AnvilButton("Accept", icon: "checkmark.circle", style: .primary) {
+            AnvilButton("Accept", icon: "checkmark.circle", style: .cta) {
                 onApprove?(false)
             }
             AnvilButton("Reject", icon: "xmark.circle", style: .destructive) {

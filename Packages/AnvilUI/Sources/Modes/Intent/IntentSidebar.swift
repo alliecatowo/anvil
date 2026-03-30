@@ -118,6 +118,7 @@ struct IntentSidebar: View {
                 }
             }
             .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
         }
     }
 

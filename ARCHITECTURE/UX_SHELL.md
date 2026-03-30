@@ -43,26 +43,51 @@ Note:
 7. `Providers`
 - Setup, connection, and capability configuration.
 
-## Space Sidebar Templates
+## Navigator Selection
 
-Every workspace should expose useful sidebar sections, even when collapsed. The exact sections vary by workspace, but the pattern should stay legible.
+Navigators are selected via the **center toolbar dropdown** (the Space Compositor),
+NOT the sidebar. The toolbar shows `Space · Navigator ▾`. Clicking the navigator
+name opens a menu to switch. The sidebar shows only content for the active navigator
+— no intra-view chrome, no picker at the top.
 
-Recommended templates:
+### Navigators by Space
 
-- `Plan`: `Projects`, `Boards`, `Sprints`, `Tickets`, `Filters`, `History`, `Utilities`
-- `Build`: `Sessions`, `Plans`, `Runs`, `Memory`, `Tools`, `History`, `Utilities`
-- `Review`: `Repositories`, `Pull Requests`, `Files`, `Checks`, `Comments`, `History`, `Utilities`
-- `Operate`: `Environments`, `Deployments`, `Services`, `Variables`, `Logs`, `History`, `Providers`
-- `Library`: `Libraries`, `Documents`, `Chat`, `Rules`, `History`, `Utilities`, `Extensions`
-- `Editor`: `Files`, `Symbols`, `Problems`, `Search`, `History`, `Utilities`
-- `Database`: `Connections`, `Schemas`, `Tables`, `Queries`, `History`, `Export`, `Providers`
-- `Terminal`: `Sessions`, `Splits`, `Profiles`, `History`, `Actions`
-- `Docs`: `Libraries`, `Documents`, `Outline`, `History`, `Utilities`
-- `Chat`: `Channels`, `Threads`, `DMs`, `History`, `Inspector`, `Utilities`
-- `Notifications`: `Sources`, `Filters`, `Inbox`, `History`, `Inspector`, `Utilities`
-- `Extensions`: `Categories`, `Installed`, `Updates`, `History`, `Utilities`
+- `Plan`: No navigator — center toolbar shows sprint context instead.
+- `Build`: `Sessions`, `Files`, `Data`, `Tests`
+- `Review`: `Changes`, `Branches`, `Pull Requests`
+- `Operate`: `Deploy`, `Monitor`
+- `Library`: `Docs`, `Rules`, `Extensions`, `Inbox`, `Chat`, `Schedule`
 
-Do not force every workspace to use every section. Do require the sections that are meaningful for that workspace.
+### What is NOT a navigator
+
+- `Terminal` lives in the Utility Deck (bottom panel, always available).
+- `Editor` is the Build > Files canvas, not a standalone navigator.
+- `Database` is the Build > Data navigator.
+- `Chat` is a Library navigator.
+- `Notifications` is a Library navigator (Inbox).
+- `Extensions` is a Library navigator.
+
+### Sidebar Content Templates
+
+Each navigator's sidebar is pure content — no chrome:
+
+- `Build > Sessions`: Session list, search, synthesis rooms
+- `Build > Files`: Project tree, open tabs, recent files
+- `Build > Data`: Connections, schemas, tables, queries
+- `Build > Tests`: Test suites, recent runs
+- `Review > Changes`: Staged/unstaged/untracked files, Start Review, Refresh
+- `Review > Branches`: Branch list, remotes, tags, stashes, worktrees
+- `Review > Pull Requests`: GitHub auth, PR list, pending/completed reviews
+- `Operate > Deploy`: Environments, deployment history
+- `Operate > Monitor`: Service health, alerts
+- `Library > Docs`: Document browser
+- `Library > Rules`: Project rules editor
+- `Library > Extensions`: Installed plugins, marketplace
+- `Library > Inbox`: Notifications list
+- `Library > Chat`: Channels, DMs
+- `Library > Schedule`: Calendar, events
+
+Do not force every navigator to use every section.
 
 ## Collapsed Sidebar Rule
 

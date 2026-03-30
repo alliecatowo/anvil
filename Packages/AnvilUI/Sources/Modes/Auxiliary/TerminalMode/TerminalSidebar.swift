@@ -27,6 +27,7 @@ struct TerminalSidebarSection: View {
             )
         }
         .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
     }
 }
 

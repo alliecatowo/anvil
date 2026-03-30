@@ -142,6 +142,7 @@ struct SessionDashboard: View {
             }
         }
         .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
     }
 
     // MARK: - Helpers

@@ -4,6 +4,7 @@ public struct MainWindow: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var container: DependencyContainer
     @State private var isNotificationsPopoverVisible = false
+    @State private var isBranchPickerVisible = false
 
     public init() {}
 
@@ -16,15 +17,8 @@ public struct MainWindow: View {
             } else {
                 // Main content area
                 HStack(spacing: 0) {
-                    // Icon rail — always visible (44pt)
-                    IconRail()
-                        .frame(width: AnvilSpacing.iconRailWidth)
-
-                    // Content sidebar — toggleable (260pt)
-                    if !appState.isSidebarCollapsed {
-                        ContentSidebar()
-                            .frame(width: AnvilSpacing.sidebarWidth)
-                    }
+                    // Unified sidebar panel (rail + content, one glass surface)
+                    SidebarPanel()
 
                     // Project search panel
                     if appState.isProjectSearchVisible {
@@ -50,17 +44,19 @@ public struct MainWindow: View {
                         }
                 }
 
-                // Terminal panel (bottom)
+                // Utility Deck (bottom panel — available in all spaces)
                 if appState.isTerminalPanelVisible {
-                    TerminalPanel()
+                    UtilityDeck()
                         .frame(height: appState.terminalPanelHeight)
                 }
             }
 
-            // Status bar
-            StatusBar()
+            // Status bar — Build-only (editor context)
+            if appState.currentSpace == .build {
+                StatusBar()
+            }
         }
-        .background(.regularMaterial)
+        .background(Color(nsColor: .windowBackgroundColor))
         .toolbar {
             // Left: sidebar toggle
             ToolbarItem(placement: .navigation) {
@@ -72,11 +68,74 @@ public struct MainWindow: View {
                 .accessibilityAddTraits(.isButton)
             }
 
-            // Center: current space name
+            // Left: project switcher (always visible, clear dropdown)
+            ToolbarItem(placement: .navigation) {
+                Menu {
+                    Button {
+                        appState.toggleProjectSwitcher()
+                    } label: {
+                        Label("Switch Project...", systemImage: "folder")
+                    }
+                    Divider()
+                    Button {
+                        appState.toggleCommandPalette()
+                    } label: {
+                        Label("Command Palette", systemImage: "magnifyingglass")
+                    }
+                } label: {
+                    HStack(spacing: AnvilSpacing.xxs) {
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 11))
+                        Text(appState.currentProject?.name ?? "Anvil")
+                            .font(.system(size: 12, weight: .medium))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .semibold))
+                    }
+                    .foregroundStyle(.secondary)
+                }
+                .menuStyle(.borderlessButton)
+                .help("Project: \(appState.currentProject?.name ?? "Anvil")")
+                .accessibilityLabel("Project: \(appState.currentProject?.name ?? "Anvil")")
+            }
+
+            // Left: branch pill (Build-only)
+            ToolbarItem(placement: .navigation) {
+                if appState.currentSpace == .build {
+                    Button {
+                        isBranchPickerVisible.toggle()
+                    } label: {
+                        HStack(spacing: AnvilSpacing.xxs) {
+                            Image(systemName: "arrow.triangle.branch")
+                                .font(.system(size: 11, weight: .medium))
+                            Text(appState.currentBranch)
+                                .font(.system(size: 11))
+                                .lineLimit(1)
+
+                            if appState.uncommittedFileCount > 0 {
+                                Text("\(appState.uncommittedFileCount)")
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 4)
+                                    .padding(.vertical, 1)
+                                    .background(Color.orange)
+                                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                            }
+                        }
+                        .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help("Switch Branch")
+                    .accessibilityLabel("Branch: \(appState.currentBranch)")
+                    .popover(isPresented: $isBranchPickerVisible, arrowEdge: .bottom) {
+                        BranchPicker(isPresented: $isBranchPickerVisible)
+                    }
+                }
+            }
+
+            // Center: space name
             ToolbarItem(placement: .principal) {
-                Text(appState.currentSpace.displayName)
-                    .font(.headline)
-                    .accessibilityLabel("Current space: \(appState.currentSpace.displayName)")
+                ToolbarSourcePicker()
             }
 
             // Right: actions
@@ -113,7 +172,7 @@ public struct MainWindow: View {
                 .accessibilityIdentifier("toolbar.toggle-inspector")
                 .accessibilityAddTraits(.isButton)
 
-                Button("Agent Sidebar", systemImage: "sidebar.right") {
+                Button("Agent Sidebar", systemImage: "sparkles") {
                     appState.toggleAgentPanel()
                 }
                 .help("Toggle Agent Sidebar")
@@ -122,6 +181,7 @@ public struct MainWindow: View {
                 .accessibilityAddTraits(.isButton)
             }
         }
+        .navigationTitle("")
         .toolbarBackground(.visible, for: .windowToolbar)
         .toolbarBackground(.bar, for: .windowToolbar)
         .overlay {

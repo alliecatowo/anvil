@@ -49,7 +49,7 @@ public struct InspectorPanel: View {
     }
 
     private var buildHeaderTitle: String {
-        switch appState.buildActiveSection {
+        switch appState.buildActiveSource {
         case .sessions:
             return appState.agentViewModel.selectedSession?.displayName ?? "Build Session"
         case .files:
@@ -60,8 +60,6 @@ public struct InspectorPanel: View {
                 return "Outline"
             }
             return appState.editorViewModel.selectedFile?.name ?? "File Details"
-        case .terminal:
-            return appState.terminalViewModel.selectedSession?.title ?? "Terminal"
         case .data:
             return appState.databaseViewModel.connectionTitle
         case .tests:
@@ -91,7 +89,7 @@ public struct InspectorPanel: View {
 
     @ViewBuilder
     private var buildInspectorContent: some View {
-        switch appState.buildActiveSection {
+        switch appState.buildActiveSource {
         case .sessions:
             BuildSessionInspectorView(viewModel: appState.agentViewModel)
         case .files:
@@ -102,8 +100,6 @@ public struct InspectorPanel: View {
             } else {
                 EditorInspectorSummaryView(viewModel: appState.editorViewModel)
             }
-        case .terminal:
-            TerminalInspectorSummaryView(viewModel: appState.terminalViewModel)
         case .data:
             DatabaseInspectorSummaryView(viewModel: appState.databaseViewModel)
         case .tests:
@@ -227,7 +223,7 @@ struct TicketInspectorView: View {
             AnvilButton(
                 isDispatching ? "Starting..." : "Start Work",
                 icon: "bolt.fill",
-                style: .primary
+                style: .cta
             ) {
                 startWork(ticket)
             }
@@ -652,7 +648,7 @@ struct BuildSessionInspectorView: View {
                         Button("New Session") {
                             viewModel.startNewSession(prompt: "", model: viewModel.selectedModelId)
                         }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(.bordered)
                     }
                 }
                 .padding(AnvilSpacing.md)

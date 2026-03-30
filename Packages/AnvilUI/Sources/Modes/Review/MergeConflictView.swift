@@ -110,7 +110,7 @@ struct MergeConflictView: View {
                     let content = buildResolvedContent()
                     onResolve?(content)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.bordered)
                 .tint(AnvilColor.accentGreen)
                 .accessibilityLabel("Mark file as resolved")
             }

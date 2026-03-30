@@ -38,6 +38,7 @@ struct SymbolOutline: View {
             }
         }
         .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
     }
 
     private func symbolRow(_ symbol: EditorSymbol) -> some View {
