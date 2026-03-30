@@ -7,7 +7,7 @@ import SwiftUI
 struct SidebarGlass: ViewModifier {
     func body(content: Content) -> some View {
         if #available(macOS 26, *) {
-            content.glassEffect(.regular.tint(.black.opacity(0.15)), in: .rect(cornerRadius: 10))
+            content.glassEffect(.regular.tint(.black.opacity(0.15)), in: .rect(cornerRadius: 12))
         } else {
             content.background(.ultraThickMaterial)
         }
@@ -57,7 +57,7 @@ public struct SidebarPanel: View {
             }
         }
         .sidebarGlass()
-        .padding(4)
+        .shadow(color: .black.opacity(0.3), radius: 8, x: 2, y: 0)
     }
 
     // MARK: - Rail Icons

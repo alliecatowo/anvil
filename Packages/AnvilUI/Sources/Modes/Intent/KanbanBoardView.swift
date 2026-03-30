@@ -93,7 +93,6 @@ struct KanbanCard: View {
             radius: isHovered ? 8 : 4,
             y: isHovered ? 3 : 1
         )
-        .scaleEffect(isHovered ? 1.02 : (isSelected ? 1.01 : 1.0))
         .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isHovered)
         .onHover { hovering in isHovered = hovering }
         .contentShape(Rectangle())

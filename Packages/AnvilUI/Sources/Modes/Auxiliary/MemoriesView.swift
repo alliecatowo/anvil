@@ -179,7 +179,7 @@ struct AllMemoriesView: View {
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
-            .background(AnvilColor.backgroundToolbar)
+            .background(.bar)
 
             Divider()
 

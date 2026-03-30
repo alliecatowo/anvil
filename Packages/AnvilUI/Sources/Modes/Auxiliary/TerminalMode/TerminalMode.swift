@@ -153,7 +153,7 @@ private struct TerminalWorkspace: View {
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.sm)
-        .background(AnvilColor.backgroundToolbar)
+        .background(.bar)
     }
 
     private var splitSessionTitle: String {

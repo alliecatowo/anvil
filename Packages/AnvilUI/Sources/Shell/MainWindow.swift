@@ -21,9 +21,9 @@ public struct MainWindow: View {
                         HStack(spacing: 0) {
                             // Spacer for sidebar width so content doesn't hide behind it
                             if !appState.isSidebarCollapsed {
-                                Color.clear.frame(width: AnvilSpacing.iconRailWidth + AnvilSpacing.sidebarWidth + 8)
+                                Color.clear.frame(width: AnvilSpacing.iconRailWidth + AnvilSpacing.sidebarWidth)
                             } else {
-                                Color.clear.frame(width: AnvilSpacing.iconRailWidth + 8)
+                                Color.clear.frame(width: AnvilSpacing.iconRailWidth)
                             }
 
                             // Project search panel
@@ -50,13 +50,10 @@ public struct MainWindow: View {
                                 }
                         }
 
-                        // Utility Deck (floating glass, all spaces)
+                        // Utility Deck (all spaces)
                         if appState.isTerminalPanelVisible {
                             UtilityDeck()
                                 .frame(height: appState.terminalPanelHeight)
-                                .sidebarGlass()
-                                .padding(.horizontal, 4)
-                                .padding(.bottom, 4)
                         }
 
                         // Status bar — Build-only

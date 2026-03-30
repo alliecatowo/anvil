@@ -408,8 +408,6 @@ private struct ModeHintChip: View {
     let isActive: Bool
     let action: () -> Void
 
-    @GestureState private var isPressed = false
-
     var body: some View {
         Button(action: action) {
             HStack(spacing: 3) {
@@ -423,12 +421,6 @@ private struct ModeHintChip: View {
         .buttonStyle(.bordered)
         .tint(isActive ? .accentColor : nil)
         .controlSize(.mini)
-        .scaleEffect(isPressed ? 0.93 : 1.0)
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .updating($isPressed) { _, pressed, _ in pressed = true }
-        )
         .accessibilityLabel("\(label) mode")
         .accessibilityAddTraits(.isButton)
     }
@@ -506,8 +498,6 @@ struct CommandResultItem: View {
                 ? AnvilColor.selectionBackground
                 : (isHovered ? Color.primary.opacity(0.06) : .clear)
         )
-        .scaleEffect(isSelected ? 1.01 : 1.0)
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.12)) {
                 isHovered = hovering
@@ -573,8 +563,6 @@ private struct FileResultItem: View {
                 ? AnvilColor.selectionBackground
                 : (isHovered ? Color.primary.opacity(0.06) : .clear)
         )
-        .scaleEffect(isSelected ? 1.01 : 1.0)
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.12)) {
                 isHovered = hovering
@@ -653,8 +641,6 @@ private struct SymbolResultItem: View {
                 ? AnvilColor.selectionBackground
                 : (isHovered ? Color.primary.opacity(0.06) : .clear)
         )
-        .scaleEffect(isSelected ? 1.01 : 1.0)
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.12)) {
                 isHovered = hovering

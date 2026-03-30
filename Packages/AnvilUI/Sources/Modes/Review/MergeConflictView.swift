@@ -78,7 +78,7 @@ struct MergeConflictView: View {
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.sm)
-        .background(AnvilColor.backgroundToolbar)
+        .background(.bar)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Merge conflict in \(conflict.filePath), \(hunks.filter { $0.resolution != .pending }.count) of \(hunks.count) hunks resolved")
     }
@@ -145,7 +145,7 @@ struct MergeConflictView: View {
             }
             .padding(.horizontal, AnvilSpacing.md)
             .padding(.vertical, AnvilSpacing.sm)
-            .background(AnvilColor.backgroundToolbar)
+            .background(.bar)
 
             Divider()
 

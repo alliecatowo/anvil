@@ -219,8 +219,6 @@ struct QuickCaptureTypeButton: View {
     let shortcutIndex: Int
     let action: () -> Void
 
-    @GestureState private var isPressed = false
-
     var body: some View {
         Button(action: action) {
             HStack(spacing: 4) {
@@ -233,11 +231,5 @@ struct QuickCaptureTypeButton: View {
         .buttonStyle(.bordered)
         .tint(isSelected ? .accentColor : nil)
         .controlSize(.small)
-        .scaleEffect(isPressed ? 0.93 : 1.0)
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .updating($isPressed) { _, pressed, _ in pressed = true }
-        )
     }
 }

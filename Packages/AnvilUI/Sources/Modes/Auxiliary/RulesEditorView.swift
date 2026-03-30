@@ -156,7 +156,7 @@ struct RulesEditorView: View {
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.sm)
-        .background(AnvilColor.backgroundToolbar)
+        .background(.bar)
     }
 
     private var editorArea: some View {
