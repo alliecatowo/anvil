@@ -183,7 +183,7 @@ struct AgentModeContent: View {
                     onToggleAgentPanel: {
                         appState.toggleAgentPanel()
                     },
-                    isAgentPanelVisible: appState.isInspectorVisible && appState.isAgentPanelVisible,
+                    isAgentPanelVisible: appState.isAgentPanelVisible,
                     autoContextFiles: appState.autoContextService.suggestions.map { file in
                         AutoContextChipData(id: file.id, path: file.path, name: file.name, reason: file.reason.rawValue)
                     },

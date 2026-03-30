@@ -462,10 +462,10 @@ public class AppState: ObservableObject {
 
     public func toggleInspector() {
         withAnimation(AnvilAnimation.standard) {
-            isInspectorVisible.toggle()
-            if currentSpace == .build, buildActiveSection == .sessions {
-                isAgentPanelVisible = isInspectorVisible
+            if !isInspectorVisible {
+                isAgentPanelVisible = false
             }
+            isInspectorVisible.toggle()
         }
     }
 
@@ -489,12 +489,9 @@ public class AppState: ObservableObject {
             if !isAgentPanelVisible {
                 currentSpace = .build
                 buildActiveSection = .sessions
-                isInspectorVisible = true
-            }
-            isAgentPanelVisible.toggle()
-            if !isAgentPanelVisible, currentSpace == .build, buildActiveSection == .sessions {
                 isInspectorVisible = false
             }
+            isAgentPanelVisible.toggle()
         }
     }
 

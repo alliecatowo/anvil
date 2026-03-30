@@ -23,6 +23,47 @@ enum TicketSortField: String, CaseIterable {
     case title = "Title"
 }
 
+enum PlanSidebarFilter: String, CaseIterable, Codable, Sendable {
+    case myTickets
+    case blocked
+    case dueSoon
+
+    var title: String {
+        switch self {
+        case .myTickets: "My Tickets"
+        case .blocked: "Blocked"
+        case .dueSoon: "Due Soon"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .myTickets: "person.fill"
+        case .blocked: "exclamationmark.triangle"
+        case .dueSoon: "clock.badge.exclamationmark"
+        }
+    }
+
+    var subtitle: String {
+        "Saved filter"
+    }
+}
+
+struct PlanSidebarPin: Codable, Hashable, Sendable {
+    enum Kind: String, Codable, Sendable {
+        case ticket
+        case filter
+        case cycle
+    }
+
+    let kind: Kind
+    let value: String
+
+    var id: String {
+        "\(kind.rawValue):\(value)"
+    }
+}
+
 // MARK: - View Model
 
 @MainActor
@@ -69,6 +110,7 @@ public final class IntentViewModel: ObservableObject {
     @Published var editingDescription = ""
     @Published var newCommentText = ""
     @Published var newSubtaskTitle = ""
+    @Published var sidebarPins: [PlanSidebarPin] = []
 
     // MARK: Computed
 
@@ -140,6 +182,41 @@ public final class IntentViewModel: ObservableObject {
 
     func ticketsForColumn(_ column: BoardColumn) -> [Ticket] {
         filteredTickets.filter { $0.status == column.status }
+    }
+
+    var currentSavedFilter: PlanSidebarFilter? {
+        if filterAssignee == "allie.c" && !filterBlocked && !filterDueSoon && filterPriority == nil && filterStatus == nil {
+            return .myTickets
+        }
+        if filterBlocked && filterAssignee == nil && !filterDueSoon && filterPriority == nil && filterStatus == nil {
+            return .blocked
+        }
+        if filterDueSoon && filterAssignee == nil && !filterBlocked && filterPriority == nil && filterStatus == nil {
+            return .dueSoon
+        }
+        return nil
+    }
+
+    var pinnedTickets: [Ticket] {
+        sidebarPins.compactMap { pin in
+            guard pin.kind == .ticket else { return nil }
+            return tickets.first { $0.id == pin.value }
+        }
+    }
+
+    var pinnedFilters: [PlanSidebarFilter] {
+        sidebarPins.compactMap { pin in
+            guard pin.kind == .filter else { return nil }
+            return PlanSidebarFilter(rawValue: pin.value)
+        }
+    }
+
+    var isCurrentCyclePinned: Bool {
+        sidebarPins.contains(where: { $0.kind == .cycle && $0.value == currentCycle.id })
+    }
+
+    var pinnedSidebarCount: Int {
+        sidebarPins.count
     }
 
     func relationsFor(_ ticketId: String) -> [TicketRelation] {
@@ -257,6 +334,7 @@ public final class IntentViewModel: ObservableObject {
         subtasks.removeValue(forKey: ticketId)
         comments.removeValue(forKey: ticketId)
         relations.removeAll { $0.sourceId == ticketId || $0.targetId == ticketId }
+        sidebarPins.removeAll { $0.kind == .ticket && $0.value == ticketId }
         if selectedTicketId == ticketId {
             selectTicket(nil)
         } else {
@@ -293,6 +371,16 @@ public final class IntentViewModel: ObservableObject {
 
     func closeTicketDetailInMainPane() {
         isShowingTicketDetailInMainPane = false
+    }
+
+    func showList() {
+        viewMode = .list
+        closeTicketDetailInMainPane()
+    }
+
+    func showBoard() {
+        viewMode = .board
+        closeTicketDetailInMainPane()
     }
 
     func updateTitle(_ newTitle: String) {
@@ -437,19 +525,62 @@ public final class IntentViewModel: ObservableObject {
     func applyFilterMine() {
         clearFilters()
         filterAssignee = "allie.c"
-        closeTicketDetailInMainPane()
+        showList()
     }
 
     func applyFilterDueSoon() {
         clearFilters()
         filterDueSoon = true
-        closeTicketDetailInMainPane()
+        showList()
     }
 
     func applyFilterBlocked() {
         clearFilters()
         filterBlocked = true
-        closeTicketDetailInMainPane()
+        showList()
+    }
+
+    // MARK: - Sidebar Pinning
+
+    func togglePin(ticketId: String) {
+        toggleSidebarPin(.init(kind: .ticket, value: ticketId))
+    }
+
+    func togglePin(filter: PlanSidebarFilter) {
+        toggleSidebarPin(.init(kind: .filter, value: filter.rawValue))
+    }
+
+    func togglePinCurrentCycle() {
+        toggleSidebarPin(.init(kind: .cycle, value: currentCycle.id))
+    }
+
+    func isPinned(ticketId: String) -> Bool {
+        sidebarPins.contains(where: { $0.kind == .ticket && $0.value == ticketId })
+    }
+
+    func isPinned(filter: PlanSidebarFilter) -> Bool {
+        sidebarPins.contains(where: { $0.kind == .filter && $0.value == filter.rawValue })
+    }
+
+    private func toggleSidebarPin(_ pin: PlanSidebarPin) {
+        if let index = sidebarPins.firstIndex(of: pin) {
+            sidebarPins.remove(at: index)
+        } else {
+            sidebarPins.append(pin)
+        }
+    }
+
+    private static func loadSidebarPins() -> [PlanSidebarPin] {
+        guard let data = UserDefaults.standard.data(forKey: "anvil_plan_sidebar_pins"),
+              let pins = try? JSONDecoder().decode([PlanSidebarPin].self, from: data) else {
+            return []
+        }
+        return pins
+    }
+
+    private func persistSidebarPins() {
+        guard let data = try? JSONEncoder().encode(sidebarPins) else { return }
+        UserDefaults.standard.set(data, forKey: "anvil_plan_sidebar_pins")
     }
 
     // MARK: - Multi-Select Actions

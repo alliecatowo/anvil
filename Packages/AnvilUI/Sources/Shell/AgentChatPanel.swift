@@ -39,7 +39,7 @@ struct AgentChatPanel: View {
                 panelInput
             }
         }
-        .frame(width: 360)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.ultraThinMaterial)
     }
 

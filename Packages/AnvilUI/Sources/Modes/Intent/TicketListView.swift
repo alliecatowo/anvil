@@ -3,6 +3,11 @@ import AnvilDomain
 
 struct TicketListView: View {
     @ObservedObject var viewModel: IntentViewModel
+    private let updatedAtFormatter: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return formatter
+    }()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -173,7 +178,7 @@ struct TicketListView: View {
                 Text(ticket.updatedAt, style: .relative)
                     .font(AnvilFont.label)
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel("Updated \(ticket.updatedAt, style: .relative)")
+                    .accessibilityLabel("Updated \(updatedAtFormatter.localizedString(for: ticket.updatedAt, relativeTo: .now))")
             }
             .width(min: 60, ideal: 90)
         }

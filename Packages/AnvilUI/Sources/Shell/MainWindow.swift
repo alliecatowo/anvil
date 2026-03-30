@@ -32,9 +32,20 @@ public struct MainWindow: View {
 
                     // Content
                     ContentArea()
-                        .inspector(isPresented: $appState.isInspectorVisible) {
-                            InspectorPanel()
-                                .inspectorColumnWidth(min: 200, ideal: 260, max: 400)
+                        .inspector(isPresented: Binding(
+                            get: { appState.isAgentPanelVisible || appState.isInspectorVisible },
+                            set: { if !$0 {
+                                appState.isAgentPanelVisible = false
+                                appState.isInspectorVisible = false
+                            }}
+                        )) {
+                            if appState.isAgentPanelVisible {
+                                AgentChatPanel()
+                                    .inspectorColumnWidth(min: 320, ideal: 360, max: 480)
+                            } else {
+                                InspectorPanel()
+                                    .inspectorColumnWidth(min: 200, ideal: 260, max: 400)
+                            }
                         }
                 }
 
@@ -66,13 +77,6 @@ public struct MainWindow: View {
                 .help("Command Palette (\u{2318}K)")
                 .keyboardShortcut("k", modifiers: .command)
                 .accessibilityLabel("Command Palette")
-                .accessibilityAddTraits(.isButton)
-
-                Button("Find in Project", systemImage: "magnifyingglass") {
-                    appState.toggleProjectSearch()
-                }
-                .help("Find in Project")
-                .accessibilityLabel("Find in Project")
                 .accessibilityAddTraits(.isButton)
 
                 Button("Agent Sidebar", systemImage: "sidebar.right") {
