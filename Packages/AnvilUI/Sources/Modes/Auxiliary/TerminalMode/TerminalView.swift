@@ -65,11 +65,6 @@ struct TerminalContentView: View {
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
+        .clipped()
     }
 }

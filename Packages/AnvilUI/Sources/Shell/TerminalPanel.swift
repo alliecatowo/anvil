@@ -87,34 +87,36 @@ struct UtilityDeck: View {
             Spacer()
 
             // Actions: split, new, close
-            HStack(spacing: AnvilSpacing.xs) {
+            HStack(spacing: AnvilSpacing.sm) {
                 Button { toggleSplit() } label: {
                     Image(systemName: splitSessionId != nil ? "rectangle.split.2x1.fill" : "rectangle.split.2x1")
-                        .font(.system(size: 10))
+                        .font(.system(size: 11))
+                        .foregroundStyle(splitSessionId != nil ? Color.accentColor : .secondary)
                 }
-                .buttonStyle(.borderless)
-                .foregroundStyle(splitSessionId != nil ? Color.accentColor : .secondary)
+                .buttonStyle(.plain)
                 .help(splitSessionId != nil ? "Close Split" : "Split Terminal")
 
-                Button { terminalVM.addTab() } label: {
+                Button {
+                    terminalVM.addTab()
+                } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 10))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.secondary)
+                .buttonStyle(.plain)
                 .help("New Terminal")
 
                 Button {
                     withAnimation { appState.isTerminalPanelVisible = false }
                 } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .medium))
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.tertiary)
                 }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.tertiary)
+                .buttonStyle(.plain)
                 .help("Close Terminal")
             }
-            .padding(.trailing, AnvilSpacing.sm)
+            .padding(.trailing, AnvilSpacing.md)
         }
         .frame(height: 28)
         .padding(.leading, AnvilSpacing.sm)
@@ -192,13 +194,10 @@ struct UtilityDeck: View {
             if let splitId = splitSessionId {
                 HSplitView {
                     TerminalView(viewModel: terminalVM)
-                        .background(AnvilColor.backgroundPrimary)
                     TerminalView(viewModel: terminalVM, sessionOverrideId: splitId)
-                        .background(AnvilColor.backgroundPrimary)
                 }
             } else {
                 TerminalView(viewModel: terminalVM)
-                    .background(AnvilColor.backgroundPrimary)
             }
         }
     }
