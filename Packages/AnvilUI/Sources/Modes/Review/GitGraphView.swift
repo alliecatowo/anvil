@@ -11,6 +11,7 @@ struct GitGraphView: View {
     /// Map of commit hash → branch names that point to it
     var branchLabels: [String: [String]] = [:]
     var headHash: String?
+    var onCommitSelected: ((GitGraphBuilder.GraphNode) -> Void)? = nil
 
     @State private var selectedNodeIndex: Int? = nil
 
@@ -66,27 +67,30 @@ struct GitGraphView: View {
         let prevNode: GitGraphBuilder.GraphNode? = index > 0 ? graph.nodes[index - 1] : nil
 
         VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                // Graph lane canvas
-                graphLane(node: node, prevNode: prevNode, nextNode: nextNode)
-                    .frame(width: graphWidth, height: Self.rowHeight)
-                    .accessibilityHidden(true)
-
-                // Commit info
-                commitInfo(node: node, isSelected: isSelected)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(height: Self.rowHeight)
-            .background(isSelected ? AnvilColor.selectionBackground : Color.clear)
-            .contentShape(Rectangle())
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(node.commit.message.components(separatedBy: "\n").first ?? node.commit.message), by \(node.commit.author), \(relativeDate(node.commit.date))")
-            .accessibilityAddTraits(.isButton)
-            .onTapGesture {
+            Button {
                 withAnimation(.easeInOut(duration: 0.15)) {
                     selectedNodeIndex = selectedNodeIndex == index ? nil : index
                 }
+                onCommitSelected?(node)
+            } label: {
+                HStack(spacing: 0) {
+                    // Graph lane canvas
+                    graphLane(node: node, prevNode: prevNode, nextNode: nextNode)
+                        .frame(width: graphWidth, height: Self.rowHeight)
+                        .accessibilityHidden(true)
+
+                    // Commit info
+                    commitInfo(node: node, isSelected: isSelected)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(height: Self.rowHeight)
+                .background(isSelected ? AnvilColor.selectionBackground : Color.clear)
+                .contentShape(Rectangle())
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(node.commit.message.components(separatedBy: "\n").first ?? node.commit.message), by \(node.commit.author), \(relativeDate(node.commit.date))")
+                .accessibilityHint("Opens the branch or review for this commit")
             }
+            .buttonStyle(.plain)
 
             // Inline detail panel
             if isSelected {
@@ -421,6 +425,7 @@ struct GitGraphView: View {
 struct GitGraphContainerView: View {
     @EnvironmentObject var container: DependencyContainer
     @EnvironmentObject var appState: AppState
+    private var viewModel: ReviewViewModel { appState.reviewViewModel }
 
     @State private var graph: GitGraphBuilder.CommitGraph = GitGraphBuilder.CommitGraph(nodes: [], maxColumns: 0)
     @State private var branchLabels: [String: [String]] = [:]
@@ -446,12 +451,29 @@ struct GitGraphContainerView: View {
                     message: error
                 )
             } else {
-                GitGraphView(graph: graph, branchLabels: branchLabels, headHash: headHash)
+                GitGraphView(
+                    graph: graph,
+                    branchLabels: branchLabels,
+                    headHash: headHash,
+                    onCommitSelected: handleCommitSelection(_:)
+                )
             }
         }
         .task {
             await loadGraph()
         }
+    }
+
+    private func handleCommitSelection(_ node: GitGraphBuilder.GraphNode) {
+        guard let adapter = container.getOrCreateGitAdapter() else { return }
+
+        let preferredBranch = branchLabels[node.commit.id]?.first(where: { $0 != "HEAD" })
+            ?? (node.isHead ? appState.currentBranch : nil)
+
+        guard let branchName = preferredBranch else { return }
+
+        viewModel.isCommitGraphVisible = false
+        viewModel.loadBranchDiff(branchName, using: adapter)
     }
 
     private func loadGraph() async {

@@ -285,33 +285,40 @@ struct ReviewSidebar: View {
     }
 
     private func stashRow(_ stash: Stash) -> some View {
-        HoverableRow {
-            HStack(spacing: AnvilSpacing.sm) {
-                Image(systemName: "tray")
-                    .font(.system(size: 11))
-                    .foregroundStyle(AnvilColor.accentPurple)
-                    .frame(width: 16)
-                    .accessibilityHidden(true)
+        Button {
+            guard let adapter = container.getOrCreateGitAdapter() else { return }
+            viewModel.applyStash(index: stash.index, using: adapter)
+        } label: {
+            HoverableRow {
+                HStack(spacing: AnvilSpacing.sm) {
+                    Image(systemName: "tray")
+                        .font(.system(size: 11))
+                        .foregroundStyle(AnvilColor.accentPurple)
+                        .frame(width: 16)
+                        .accessibilityHidden(true)
 
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(stash.message)
-                        .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.textPrimary)
-                        .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(stash.message)
+                            .font(AnvilFont.code)
+                            .foregroundStyle(AnvilColor.textPrimary)
+                            .lineLimit(1)
 
-                    Text(Self.relativeStashDate(stash.date))
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        Text(Self.relativeStashDate(stash.date))
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textTertiary)
+                    }
+
+                    Spacer()
                 }
-
-                Spacer()
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Stash: \(stash.message)")
+                .padding(.horizontal, AnvilSpacing.md)
+                .padding(.vertical, AnvilSpacing.xs)
+                .padding(.vertical, 2)
             }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Stash: \(stash.message)")
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.xs)
-            .padding(.vertical, 2)
         }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(.isButton)
         .contentShape(Rectangle())
         .contextMenu {
             Button("Apply") {
