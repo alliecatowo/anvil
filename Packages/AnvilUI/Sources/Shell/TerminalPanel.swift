@@ -74,10 +74,10 @@ struct UtilityDeck: View {
 
     private var deckHeader: some View {
         HStack(spacing: 0) {
-            // Terminal session tabs
+            // Terminal session tabs (filter out split partners — they're sub-terminals)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 1) {
-                    ForEach(terminalVM.sessions) { session in
+                    ForEach(visibleTabs) { session in
                         terminalTab(session)
                     }
                 }
@@ -127,7 +127,13 @@ struct UtilityDeck: View {
     private func terminalTab(_ session: TerminalSession) -> some View {
         let isSelected = terminalVM.selectedSessionId == session.id
         let hasSplit = splitPairs[session.id] != nil
-        let tabTitle = session.title
+        let tabTitle: String = {
+            if let partnerId = splitPairs[session.id],
+               let partner = terminalVM.sessions.first(where: { $0.id == partnerId }) {
+                return "\(session.title) | \(partner.title)"
+            }
+            return session.title
+        }()
 
         return HStack(spacing: 0) {
             // Tab content (clickable to select)
@@ -154,9 +160,12 @@ struct UtilityDeck: View {
             .buttonStyle(.plain)
 
             // Close button — always visible if multiple tabs
-            if terminalVM.sessions.count > 1 {
+            if visibleTabs.count > 1 {
                 Button {
-                    // Clean up split pairs involving this session
+                    // Also close the split partner if this tab has one
+                    if let partnerId = splitPairs[session.id] {
+                        terminalVM.closeTab(partnerId)
+                    }
                     splitPairs.removeValue(forKey: session.id)
                     for (k, v) in splitPairs where v == session.id { splitPairs.removeValue(forKey: k) }
                     terminalVM.closeTab(session.id)
@@ -176,6 +185,16 @@ struct UtilityDeck: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(session.title)\(isSelected ? ", selected" : "")\(hasSplit ? ", split" : "")")
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+    }
+
+    /// Sessions that are split partners (values in splitPairs) — hidden from tab bar.
+    private var splitPartnerIds: Set<UUID> {
+        Set(splitPairs.values)
+    }
+
+    /// Only show primary sessions as tabs (split partners are sub-terminals, not tabs).
+    private var visibleTabs: [TerminalSession] {
+        terminalVM.sessions.filter { !splitPartnerIds.contains($0.id) }
     }
 
     /// The split partner for the currently selected session, if any.
