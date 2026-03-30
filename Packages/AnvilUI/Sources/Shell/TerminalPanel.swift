@@ -115,14 +115,26 @@ struct TerminalPanel: View {
     private func terminalTabView(_ session: TerminalSession) -> some View {
         let isSelected = terminalVM.selectedSessionId == session.id
 
-        return HStack(spacing: AnvilSpacing.xxs) {
-            Image(systemName: "terminal")
-                .font(.system(size: 9))
-            Text(session.title)
-                .font(AnvilFont.label)
-                .lineLimit(1)
+        return HStack(spacing: 2) {
+            Button {
+                terminalVM.selectTab(session.id)
+            } label: {
+                HStack(spacing: AnvilSpacing.xxs) {
+                    Image(systemName: "terminal")
+                        .font(.system(size: 9))
+                    Text(session.title)
+                        .font(AnvilFont.label)
+                        .lineLimit(1)
+                }
+                .foregroundStyle(isSelected ? AnvilColor.textPrimary : AnvilColor.textTertiary)
+                .padding(.horizontal, AnvilSpacing.sm)
+                .padding(.vertical, AnvilSpacing.xxs)
+                .background(isSelected ? AnvilColor.backgroundPrimary : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
 
-            // Close tab button
             if terminalVM.sessions.count > 1 {
                 Button {
                     terminalVM.closeTab(session.id)
@@ -130,18 +142,11 @@ struct TerminalPanel: View {
                     Image(systemName: "xmark")
                         .font(.system(size: 7, weight: .bold))
                         .foregroundStyle(AnvilColor.textTertiary)
+                        .frame(width: 14, height: 14)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.borderless)
             }
-        }
-        .foregroundStyle(isSelected ? AnvilColor.textPrimary : AnvilColor.textTertiary)
-        .padding(.horizontal, AnvilSpacing.sm)
-        .padding(.vertical, AnvilSpacing.xxs)
-        .background(isSelected ? AnvilColor.backgroundPrimary : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 4))
-        .contentShape(Rectangle())
-        .onTapGesture {
-            terminalVM.selectTab(session.id)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(session.title)\(isSelected ? ", selected" : ""), \(session.isRunning ? "running" : "exited")")

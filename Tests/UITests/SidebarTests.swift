@@ -32,23 +32,23 @@ final class SidebarTests: XCTestCase {
         XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Sidebar New Session button must reappear after toggle")
     }
 
-    // MARK: - Agent Sidebar
+    // MARK: - Build Sidebar
 
-    func testAgentSidebarShowsNewSessionButton() throws {
+    func testBuildSidebarShowsNewSessionButton() throws {
         app.typeKey("2", modifierFlags: .command)
 
         let newSession = app.buttons["New Session"]
-        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Agent sidebar must show New Session button")
+        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Build sidebar must show New Session button")
     }
 
-    func testAgentSidebarSessionDashboardButton() throws {
+    func testBuildSidebarSessionDashboardButton() throws {
         app.typeKey("2", modifierFlags: .command)
 
         let dashboard = app.buttons["Session Dashboard"]
-        XCTAssertTrue(dashboard.waitForExistence(timeout: 5), "Agent sidebar must show Session Dashboard button")
+        XCTAssertTrue(dashboard.waitForExistence(timeout: 5), "Build sidebar must show Session Dashboard button")
     }
 
-    func testAgentSidebarSessionsSection() throws {
+    func testBuildSidebarSessionsSection() throws {
         app.typeKey("2", modifierFlags: .command)
         // Create a session to populate sidebar
         let newSession = app.buttons["New Session"]
@@ -58,16 +58,16 @@ final class SidebarTests: XCTestCase {
 
         // Sessions section header should appear
         let sessionsHeader = app.staticTexts["SESSIONS"]
-        XCTAssertTrue(sessionsHeader.waitForExistence(timeout: 5), "Agent sidebar must show SESSIONS section after creating a session")
+        XCTAssertTrue(sessionsHeader.waitForExistence(timeout: 5), "Build sidebar must show SESSIONS section after creating a session")
     }
 
-    // MARK: - Intent Sidebar
+    // MARK: - Plan Sidebar
 
-    func testIntentSidebarHasScrollContent() throws {
+    func testPlanSidebarHasScrollContent() throws {
         app.typeKey("1", modifierFlags: .command)
 
         let scroll = app.scrollViews.firstMatch
-        XCTAssertTrue(scroll.waitForExistence(timeout: 5), "Intent sidebar must have scrollable content")
+        XCTAssertTrue(scroll.waitForExistence(timeout: 5), "Plan sidebar must have scrollable content")
     }
 
     // MARK: - Review Sidebar
@@ -161,7 +161,7 @@ final class SidebarTests: XCTestCase {
     // MARK: - Sidebar Content Changes On Mode Switch
 
     func testSidebarContentChangesOnModeSwitch() throws {
-        // Agent mode: New Session button
+        // Build mode: New Session button
         app.typeKey("2", modifierFlags: .command)
         let newSession = app.buttons["New Session"]
         XCTAssertTrue(newSession.waitForExistence(timeout: 5))
@@ -171,7 +171,7 @@ final class SidebarTests: XCTestCase {
         XCTAssertFalse(newSession.waitForExistence(timeout: 3), "New Session button must not be visible in Review mode")
 
         let branches = app.staticTexts["BRANCHES"]
-        XCTAssertTrue(branches.waitForExistence(timeout: 5), "Review sidebar must show BRANCHES after mode switch from Agent")
+        XCTAssertTrue(branches.waitForExistence(timeout: 5), "Review sidebar must show BRANCHES after mode switch from Build")
     }
 
     // MARK: - Helpers

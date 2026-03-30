@@ -22,7 +22,7 @@ final class NavigationTests: XCTestCase {
 
         // Collapsed: New Session button should no longer be visible
         let newSession = app.buttons["New Session"]
-        app.typeKey("2", modifierFlags: .command) // Go to Agent mode first
+        app.typeKey("2", modifierFlags: .command) // Go to Build mode first
         _ = newSession.waitForExistence(timeout: 3)
 
         app.typeKey("b", modifierFlags: .command)
@@ -36,21 +36,21 @@ final class NavigationTests: XCTestCase {
     // MARK: - Mode Switching Preserves State
 
     func testSwitchingModesPreservesAgentSessions() throws {
-        // Go to Agent mode and create a session
+        // Go to Build mode and create a session
         app.typeKey("2", modifierFlags: .command)
         let newSession = app.buttons["New Session"]
         XCTAssertTrue(newSession.waitForExistence(timeout: 5))
         newSession.click()
         _ = app.textFields["Message the agent..."].waitForExistence(timeout: 5)
 
-        // Switch to Intent and back
+        // Switch to Plan and back
         app.typeKey("1", modifierFlags: .command)
         app.typeKey("2", modifierFlags: .command)
 
         // Result: session should still be in the sidebar
         let scrollView = app.scrollViews.firstMatch
         XCTAssertTrue(scrollView.waitForExistence(timeout: 5))
-        XCTAssertGreaterThan(scrollView.otherElements.count, 0, "Agent sessions must persist through mode switches")
+        XCTAssertGreaterThan(scrollView.otherElements.count, 0, "Build sessions must persist through mode switches")
     }
 
     // MARK: - Branch Picker

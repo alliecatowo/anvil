@@ -26,12 +26,14 @@ public struct ProjectSwitcher: View {
     public var body: some View {
         ZStack {
             // Backdrop — clear so sidebar remains clickable
-            Color.clear
-                .contentShape(Rectangle())
-                .ignoresSafeArea()
-                .onTapGesture {
-                    appState.toggleProjectSwitcher()
-                }
+            Button {
+                appState.toggleProjectSwitcher()
+            } label: {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .ignoresSafeArea()
+            }
+            .buttonStyle(.plain)
 
             // Switcher panel
             VStack(spacing: 0) {
@@ -68,16 +70,18 @@ public struct ProjectSwitcher: View {
                             }
 
                             ForEach(Array(filteredProjects.enumerated()), id: \.element.id) { index, project in
-                                ProjectRow(
-                                    project: project,
-                                    isSelected: index == selectedIndex,
-                                    isCurrent: appState.currentProject?.id == project.id
-                                )
+                                Button {
+                                    selectProject(project)
+                                } label: {
+                                    ProjectRow(
+                                        project: project,
+                                        isSelected: index == selectedIndex,
+                                        isCurrent: appState.currentProject?.id == project.id
+                                    )
+                                }
+                                .buttonStyle(.plain)
                                 .id(project.id)
                                 .contentShape(Rectangle())
-                                .onTapGesture {
-                                    selectProject(project)
-                                }
                             }
 
                             // "Open New" button at bottom

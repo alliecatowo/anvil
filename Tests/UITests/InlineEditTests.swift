@@ -110,7 +110,7 @@ final class InlineEditTests: XCTestCase {
     }
 
     private func navigateToAgentSession() {
-        // Switch to Agent mode
+        // Switch to Build mode
         app.typeKey("2", modifierFlags: .command)
 
         // Select the demo session in the sidebar

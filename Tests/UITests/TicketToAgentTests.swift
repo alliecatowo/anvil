@@ -1,7 +1,7 @@
 import XCTest
 
 /// Tests for the ticket-to-agent pipeline.
-/// Verifies "Start Work" on ticket detail creates an agent session and switches to Agent mode.
+/// Verifies "Start Work" on ticket detail creates an agent session and switches to Build mode.
 final class TicketToAgentTests: XCTestCase {
     var app: XCUIApplication!
 
@@ -16,7 +16,7 @@ final class TicketToAgentTests: XCTestCase {
         app = nil
     }
 
-    // MARK: - Start Work → Agent Mode
+    // MARK: - Start Work → Build Mode
 
     func testStartWorkButtonExists() throws {
         navigateToTicketDetail()
@@ -32,10 +32,10 @@ final class TicketToAgentTests: XCTestCase {
         XCTAssertTrue(startWork.waitForExistence(timeout: 5))
         startWork.click()
 
-        // Result: Agent mode conversation view must appear
+        // Result: Build mode conversation view must appear
         let inputField = app.textFields["Message the agent..."]
         XCTAssertTrue(inputField.waitForExistence(timeout: 8),
-            "Start Work must switch to Agent mode with conversation input field visible")
+            "Start Work must switch to Build mode with conversation input field visible")
     }
 
     func testStartWorkCreatesAgentSession() throws {
@@ -45,11 +45,11 @@ final class TicketToAgentTests: XCTestCase {
         XCTAssertTrue(startWork.waitForExistence(timeout: 5))
         startWork.click()
 
-        // Result: Agent sidebar must show a session row (not empty state)
+        // Result: Build sidebar must show a session row (not empty state)
         let scrollView = app.scrollViews.firstMatch
         XCTAssertTrue(scrollView.waitForExistence(timeout: 8))
         let sessionRows = scrollView.otherElements.allElementsBoundByIndex
-        XCTAssertGreaterThan(sessionRows.count, 0, "Start Work must create at least one session in Agent sidebar")
+        XCTAssertGreaterThan(sessionRows.count, 0, "Start Work must create at least one session in Build sidebar")
     }
 
     // MARK: - Branch Only Button
@@ -152,7 +152,7 @@ final class TicketToAgentTests: XCTestCase {
     }
 
     private func navigateToTicketDetail() {
-        // Switch to Intent mode
+        // Switch to Plan mode
         app.typeKey("1", modifierFlags: .command)
 
         // Click first ticket

@@ -169,7 +169,7 @@ struct AllMemoriesView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Agent Memories")
+                Text("Build Memories")
                     .font(AnvilFont.subheading)
                     .foregroundStyle(AnvilColor.textPrimary)
                 Spacer()

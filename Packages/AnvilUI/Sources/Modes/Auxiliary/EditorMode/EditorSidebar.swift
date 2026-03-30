@@ -113,7 +113,13 @@ struct EditorSidebar: View {
         let isSelected = node.filePath != nil
             && viewModel.selectedFile?.path == node.filePath
 
-        return HoverableRow(isSelected: isSelected) {
+        return Button {
+            if node.isFolder {
+                viewModel.toggleFolder(node.id)
+            } else if let path = node.filePath {
+                viewModel.openFileFromTree(path)
+            }
+        } label: {
             HStack(spacing: AnvilSpacing.xxs) {
                 // Disclosure indicator for folders
                 if node.isFolder {
@@ -168,18 +174,11 @@ struct EditorSidebar: View {
             }
             .frame(height: 24)
         }
-        .contentShape(Rectangle())
+        .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(node.isFolder ? "Folder: \(node.name)" : "\(node.name), \(fileTypeDescription(for: node.name))")
-        .accessibilityAddTraits(node.isFolder ? .isButton : .isStaticText)
+        .accessibilityAddTraits(.isButton)
         .listRowBackground(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
-        .onTapGesture {
-            if node.isFolder {
-                viewModel.toggleFolder(node.id)
-            } else if let path = node.filePath {
-                viewModel.openFileFromTree(path)
-            }
-        }
         .contextMenu {
             fileContextMenu(for: node)
         }

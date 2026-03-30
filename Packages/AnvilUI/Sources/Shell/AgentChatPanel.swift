@@ -1,8 +1,8 @@
 import SwiftUI
 import AnvilDomain
 
-/// A compact floating chat panel that provides agent access from any space.
-/// Slides in from the trailing edge of the window as a 360pt overlay.
+/// A compact build-inspector chat surface for the current agent session.
+/// This is a dedicated inspector-side panel, not a floating app overlay.
 struct AgentChatPanel: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var container: DependencyContainer
@@ -101,7 +101,7 @@ struct AgentChatPanel: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.borderless)
-            .help("Close Agent Panel")
+            .help("Close Build Inspector")
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.sm)

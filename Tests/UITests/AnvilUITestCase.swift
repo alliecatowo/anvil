@@ -14,7 +14,10 @@ class AnvilUITestCase: XCTestCase {
     var launchArguments: [String] { [] }
 
     /// Additional launch environment used by the default bootstrap path.
-    var launchEnvironment: [String: String] { [:] }
+    /// UI tests always bypass first-run setup to keep launch deterministic.
+    var launchEnvironment: [String: String] {
+        ["ANVIL_SKIP_SETUP_WIZARD": "1"]
+    }
 
     /// Capture the default launch screenshot for this test.
     var shouldCaptureLaunchScreenshot: Bool { true }

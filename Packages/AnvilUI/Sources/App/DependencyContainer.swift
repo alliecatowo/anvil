@@ -427,7 +427,7 @@ public final class DependencyContainer: ObservableObject {
             guard let self, let e = event as? AgentCompletedEvent else { return }
             let branch = e.branchName.map { " (branch: \($0))" } ?? ""
             let notification = EventNotification(
-                title: "Agent session completed",
+                title: "Build session completed",
                 body: "Session \(e.sessionId) finished\(branch). Worktree ready for review."
             )
             await MainActor.run { self.eventNotifications.insert(notification, at: 0) }

@@ -98,7 +98,7 @@ final class DefaultJourneySmokeTests: AnvilUITestCase {
         app.typeKey(.return, modifierFlags: [])
 
         let openInMainPane = app.buttons["intent.open-main-pane"]
-        XCTAssertTrue(openInMainPane.waitForExistence(timeout: 5), "Intent list should expose explicit open-in-main-pane action")
+        XCTAssertTrue(openInMainPane.waitForExistence(timeout: 5), "Plan list should expose explicit open-in-main-pane action")
         openInMainPane.click()
 
         let detailTitle = app.textFields["intent.ticket-detail.title"]
@@ -120,14 +120,14 @@ final class DefaultJourneySmokeTests: AnvilUITestCase {
         let sidebarNewSession = app.buttons["agent.sidebar.new-session"]
         let emptyNewSession = app.buttons["agent.empty.new-session"]
         let newSession = emptyNewSession.waitForExistence(timeout: 2) ? emptyNewSession : sidebarNewSession
-        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Agent sessions must remain discoverable in default launch")
+        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Build sessions must remain discoverable in default launch")
         newSession.click()
 
         let messageField = app.descendants(matching: .any).matching(identifier: "agent.conversation.input").firstMatch
         XCTAssertTrue(messageField.waitForExistence(timeout: 8), "New Session must open the agent conversation surface")
 
         let infoButton = app.buttons["agent.conversation.toggle-sidebar"]
-        XCTAssertTrue(infoButton.waitForExistence(timeout: 5), "Agent conversation must expose the info/secondary-pane control")
+        XCTAssertTrue(infoButton.waitForExistence(timeout: 5), "Build conversation must expose the info/secondary-pane control")
     }
 
     func testDefaultReviewAndRulesJourneysStayReachable() throws {

@@ -16,7 +16,7 @@ final class CostBudgetTests: XCTestCase {
         menuBar.menuItems["Load Demo Project"].click()
         sleep(1)
 
-        // Switch to Agent mode (Cmd+1)
+        // Switch to Build mode (Cmd+1)
         app.typeKey("1", modifierFlags: .command)
         sleep(1)
     }
@@ -117,7 +117,7 @@ final class CostBudgetTests: XCTestCase {
         XCTAssertTrue(dollarSign.exists || costText.exists || true, "Status bar should show session cost")
     }
 
-    // MARK: - Budget Integration with Agent
+    // MARK: - Budget Integration with Build
 
     func testNewSessionHasNoBudget() {
         // Create a new session

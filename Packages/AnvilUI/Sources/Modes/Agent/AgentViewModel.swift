@@ -1318,7 +1318,7 @@ public final class AgentViewModel: ObservableObject {
 
         // Send macOS notification
         let content = UNMutableNotificationContent()
-        content.title = "Agent Session \(statusText.capitalized)"
+        content.title = "Build Session \(statusText.capitalized)"
         content.body = "\(session.displayName) has \(statusText)."
         content.sound = .default
 

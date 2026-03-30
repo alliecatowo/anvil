@@ -47,10 +47,10 @@ final class SpecComplianceTests: XCTestCase {
     }
 
     // MARK: - =========================================================
-    // MARK: - INTENT / PLAN SPACE
+    // MARK: - PLAN SPACE
     // MARK: - =========================================================
 
-    func testIntentCreateTicket() throws {
+    func testPlanCreateTicket() throws {
         switchToSpace("Plan")
 
         let newBtn = app.buttons["New Ticket"]
@@ -68,7 +68,7 @@ final class SpecComplianceTests: XCTestCase {
         XCTAssertTrue(ticketText.waitForExistence(timeout: 5), "Created ticket must appear in list")
     }
 
-    func testIntentSetPriority() throws {
+    func testPlanSetPriority() throws {
         switchToSpace("Plan")
 
         // Create a ticket to get something in the list
@@ -103,7 +103,7 @@ final class SpecComplianceTests: XCTestCase {
         _ = hasPriority // suppress unused warning — intent is to verify no crash
     }
 
-    func testIntentStartWorkSwitchesToBuild() throws {
+    func testPlanStartWorkSwitchesToBuild() throws {
         switchToSpace("Plan")
 
         // Create a ticket
@@ -150,7 +150,7 @@ final class SpecComplianceTests: XCTestCase {
         XCTAssertTrue(app.state == .runningForeground, "App must remain running through Start Work flow")
     }
 
-    func testIntentBoardViewToggle() throws {
+    func testPlanBoardViewToggle() throws {
         switchToSpace("Plan")
 
         // Board / List view toggle

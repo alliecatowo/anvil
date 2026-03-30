@@ -410,7 +410,7 @@ struct ProviderFormSheet: View {
         case "anthropic": return "Anthropic"
         case "openai": return "OpenAI"
         case "ollama": return "Ollama"
-        case "zed-acp": return "ACP Agent Command"
+        case "zed-acp": return "ACP Provider Command"
         case "codex-acp": return "Codex ACP"
         default: return type.capitalized
         }
@@ -641,12 +641,12 @@ struct AdvancedSettingsView: View {
                 .help("Directory where agent worktrees are created. Leave empty to use a sibling directory of the project.")
             }
 
-            Section("Agent Automation") {
+            Section("Build Automation") {
                 Toggle("Auto-create draft PR on session completion", isOn: $appState.isAutoPREnabled)
-                    .help("Automatically creates a draft GitHub PR when an agent session completes with file changes in an isolated worktree.")
+                    .help("Automatically creates a draft GitHub PR when a build session completes with file changes in an isolated worktree.")
 
                 Toggle("Auto-scan sessions for memories", isOn: $appState.isMemoryScanEnabled)
-                    .help("Automatically scans completed agent sessions to extract reusable memories and project context.")
+                    .help("Automatically scans completed build sessions to extract reusable memories and project context.")
             }
         }
         .formStyle(.grouped)

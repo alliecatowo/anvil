@@ -134,40 +134,42 @@ struct ProblemsPanel: View {
     // MARK: - Diagnostic Row
 
     private func diagnosticRow(_ diagnostic: LSPDiagnostic) -> some View {
-        HStack(spacing: AnvilSpacing.sm) {
-            // Severity icon
-            Image(systemName: severityIcon(diagnostic.severity))
-                .font(.system(size: 12))
-                .foregroundStyle(severityColor(diagnostic.severity))
-                .frame(width: 16)
-                .accessibilityHidden(true)
+        Button {
+            viewModel.navigateToDiagnostic(diagnostic)
+        } label: {
+            HStack(spacing: AnvilSpacing.sm) {
+                // Severity icon
+                Image(systemName: severityIcon(diagnostic.severity))
+                    .font(.system(size: 12))
+                    .foregroundStyle(severityColor(diagnostic.severity))
+                    .frame(width: 16)
+                    .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text(diagnostic.message)
-                    .font(AnvilFont.body)
-                    .foregroundStyle(.primary)
-                    .lineLimit(2)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(diagnostic.message)
+                        .font(AnvilFont.body)
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
 
-                HStack(spacing: AnvilSpacing.xs) {
-                    Text("Ln \(diagnostic.line + 1), Col \(diagnostic.character + 1)")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(.tertiary)
-
-                    if let source = diagnostic.source {
-                        Text(source)
+                    HStack(spacing: AnvilSpacing.xs) {
+                        Text("Ln \(diagnostic.line + 1), Col \(diagnostic.character + 1)")
                             .font(AnvilFont.label)
                             .foregroundStyle(.tertiary)
+
+                        if let source = diagnostic.source {
+                            Text(source)
+                                .font(AnvilFont.label)
+                                .foregroundStyle(.tertiary)
+                        }
                     }
                 }
-            }
 
-            Spacer()
+                Spacer()
+            }
+            .padding(.vertical, 2)
+            .contentShape(Rectangle())
         }
-        .padding(.vertical, 2)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            viewModel.navigateToDiagnostic(diagnostic)
-        }
+        .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(severityLabel(diagnostic.severity)): \(diagnostic.message), line \(diagnostic.line + 1)")
         .accessibilityAddTraits(.isButton)

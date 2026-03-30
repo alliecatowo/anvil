@@ -1,6 +1,6 @@
 import XCTest
 
-/// Tests for Task #17 — Agent activity indicator in the status bar.
+/// Tests for Task #17 — Build activity indicator in the status bar.
 /// Shows spinner when running, tool name, elapsed timer, idle/failed states,
 /// click to navigate to active session.
 final class AgentActivityIndicatorTests: XCTestCase {
@@ -35,7 +35,7 @@ final class AgentActivityIndicatorTests: XCTestCase {
     func testAgentActivityIndicatorShowsIdleState() {
         // When no agent is running, the indicator should show "Idle" status
         let idleText = app.staticTexts["Idle"]
-        XCTAssertTrue(idleText.waitForExistence(timeout: 3) || true, "Agent activity should show Idle when no agent is running")
+        XCTAssertTrue(idleText.waitForExistence(timeout: 3) || true, "Build activity should show Idle when no agent is running")
     }
 
     func testAgentActivityIndicatorHasStatusDot() {
@@ -43,13 +43,13 @@ final class AgentActivityIndicatorTests: XCTestCase {
         // The dot color depends on agentStatus: "Failed" -> red, default -> textTertiary
         // This verifies the status indicator area exists
         let activityArea = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'agent' OR label CONTAINS[c] 'Idle' OR label CONTAINS[c] 'Running'")).firstMatch
-        XCTAssertTrue(activityArea.waitForExistence(timeout: 3) || true, "Agent activity indicator should be present")
+        XCTAssertTrue(activityArea.waitForExistence(timeout: 3) || true, "Build activity indicator should be present")
     }
 
     // MARK: - Running State
 
     func testActivityIndicatorDuringAgentRun() {
-        // Switch to Agent mode and send a message to trigger a run
+        // Switch to Build mode and send a message to trigger a run
         app.typeKey("1", modifierFlags: .command)
         sleep(1)
 
@@ -119,7 +119,7 @@ final class AgentActivityIndicatorTests: XCTestCase {
         // The activity indicator is a Button that calls navigateToActiveSession()
         // When clicked, it switches to agent mode and selects the active session
         // First switch away from agent mode
-        app.typeKey("2", modifierFlags: .command) // Intent mode
+        app.typeKey("2", modifierFlags: .command) // Plan mode
         sleep(1)
 
         // Click the activity indicator area
@@ -128,7 +128,7 @@ final class AgentActivityIndicatorTests: XCTestCase {
             activityButton.click()
             sleep(1)
 
-            // Should navigate to Agent mode
+            // Should navigate to Build mode
             // This may or may not switch depending on whether there's an active session
         }
         XCTAssertTrue(true, "Activity indicator click handled without crash")
@@ -170,7 +170,7 @@ final class AgentActivityIndicatorTests: XCTestCase {
     func testIdleStateHelpText() {
         // The help text changes based on state:
         //   Running: "Click to view active session"
-        //   Idle: "Agent idle"
+        //   Idle: "Build idle"
         // Tooltips are hard to test in XCUITest but the component should exist
         let activityButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Idle' OR label CONTAINS[c] 'agent'")).firstMatch
         XCTAssertTrue(activityButton.waitForExistence(timeout: 3) || true, "Activity indicator should have help text")

@@ -17,30 +17,30 @@ final class SidebarNavigationTests: XCTestCase {
 
     func testClickingIntentRailIconChangesContent() throws {
         // First navigate somewhere else
-        app.buttons["Agent"].click()
+        app.buttons["Build"].click()
         _ = app.buttons["New Session"].waitForExistence(timeout: 5)
 
-        // Now click Intent rail icon
-        app.buttons["Intent"].click()
+        // Now click Plan rail icon
+        app.buttons["Plan"].click()
 
-        // Intent mode content renders — sidebar or ticket list
+        // Plan mode content renders — sidebar or ticket list
         let result = app.scrollViews.firstMatch.waitForExistence(timeout: 5)
-            || app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Intent'")).firstMatch.waitForExistence(timeout: 3)
-        XCTAssertTrue(result, "Clicking Intent rail icon must change main content area")
+            || app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Plan'")).firstMatch.waitForExistence(timeout: 3)
+        XCTAssertTrue(result, "Clicking Plan rail icon must change main content area")
     }
 
     func testClickingAgentRailIconShowsNewSessionButton() throws {
-        app.buttons["Intent"].click()
+        app.buttons["Plan"].click()
         _ = app.scrollViews.firstMatch.waitForExistence(timeout: 3)
 
-        app.buttons["Agent"].click()
+        app.buttons["Build"].click()
 
         let newSession = app.buttons["New Session"]
-        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Clicking Agent rail icon must show New Session button")
+        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Clicking Build rail icon must show New Session button")
     }
 
     func testClickingReviewRailIconShowsReviewContent() throws {
-        app.buttons["Agent"].click()
+        app.buttons["Build"].click()
         _ = app.buttons["New Session"].waitForExistence(timeout: 3)
 
         app.buttons["Review"].click()
@@ -51,7 +51,7 @@ final class SidebarNavigationTests: XCTestCase {
     }
 
     func testClickingShipRailIconShowsEnvironmentsSection() throws {
-        app.buttons["Agent"].click()
+        app.buttons["Build"].click()
         _ = app.buttons["New Session"].waitForExistence(timeout: 3)
 
         app.buttons["Ship"].click()
@@ -63,7 +63,7 @@ final class SidebarNavigationTests: XCTestCase {
     // MARK: - Rail Icon Accessibility
 
     func testAllCoreRailIconsAreHittable() throws {
-        for modeName in ["Intent", "Agent", "Review", "Ship"] {
+        for modeName in ["Plan", "Build", "Review", "Ship"] {
             let button = app.buttons[modeName]
             XCTAssertTrue(button.waitForExistence(timeout: 5), "\(modeName) rail icon must exist")
             XCTAssertTrue(button.isHittable, "\(modeName) rail icon must be hittable")
@@ -73,29 +73,29 @@ final class SidebarNavigationTests: XCTestCase {
     // MARK: - Main Content Area Changes
 
     func testMainContentAreaDiffersAcrossModes() throws {
-        // Agent mode: New Session button is the distinguishing element
-        app.buttons["Agent"].click()
+        // Build mode: New Session button is the distinguishing element
+        app.buttons["Build"].click()
         let agentElement = app.buttons["New Session"]
         XCTAssertTrue(agentElement.waitForExistence(timeout: 5))
 
         // Review mode: New Session must not be visible
         app.buttons["Review"].click()
         XCTAssertFalse(agentElement.waitForExistence(timeout: 3),
-            "Main content area must change when switching modes — Agent elements must not persist in Review mode")
+            "Main content area must change when switching modes — Build elements must not persist in Review mode")
     }
 
     func testIntentToAgentContentSwitch() throws {
-        app.buttons["Intent"].click()
+        app.buttons["Plan"].click()
         _ = app.scrollViews.firstMatch.waitForExistence(timeout: 3)
 
-        app.buttons["Agent"].click()
+        app.buttons["Build"].click()
 
         let newSession = app.buttons["New Session"]
-        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Switching from Intent to Agent must reveal Agent content")
+        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Switching from Plan to Build must reveal Build content")
     }
 
     func testAgentToShipContentSwitch() throws {
-        app.buttons["Agent"].click()
+        app.buttons["Build"].click()
         _ = app.buttons["New Session"].waitForExistence(timeout: 3)
 
         app.buttons["Ship"].click()
@@ -116,7 +116,7 @@ final class SidebarNavigationTests: XCTestCase {
 
         app.typeKey("2", modifierFlags: .command)
         let newSession = app.buttons["New Session"]
-        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Cmd+2 must navigate to Agent mode")
+        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Cmd+2 must navigate to Build mode")
 
         app.typeKey("3", modifierFlags: .command)
         let branches = app.staticTexts["BRANCHES"]
@@ -149,7 +149,7 @@ final class SidebarNavigationTests: XCTestCase {
     // MARK: - Cycle All Modes Does Not Crash
 
     func testCyclingAllRailIconsDoesNotCrash() throws {
-        for mode in ["Intent", "Agent", "Review", "Ship"] {
+        for mode in ["Plan", "Build", "Review", "Ship"] {
             let button = app.buttons[mode]
             if button.waitForExistence(timeout: 3) {
                 button.click()

@@ -13,29 +13,29 @@ final class AgentPanelTests: XCTestCase {
         app = nil
     }
 
-    // MARK: - Open Agent Panel
+    // MARK: - Open Build Panel
 
-    func testOpenAgentPanelViaKeyboardShortcut() throws {
+    func testOpenBuildPanelViaKeyboardShortcut() throws {
         app.typeKey("a", modifierFlags: [.command, .option])
 
-        // Agent panel must open — look for any panel indicator
-        let panelExists = app.otherElements["AgentPanel"].waitForExistence(timeout: 5)
-            || app.textFields["Message the agent..."].waitForExistence(timeout: 5)
+        // Build panel must open — look for any stable panel indicator
+        let panelExists = app.descendants(matching: .any).matching(identifier: "agent.conversation.input").firstMatch.waitForExistence(timeout: 5)
+            || app.buttons["agent.sidebar.new-session"].waitForExistence(timeout: 5)
             || app.buttons["New Session"].waitForExistence(timeout: 5)
         XCTAssertTrue(panelExists, "Cmd+Opt+A must open the agent panel")
     }
 
-    func testAgentPanelShowsNewSessionButton() throws {
+    func testBuildPanelShowsNewSessionButton() throws {
         app.typeKey("2", modifierFlags: .command)
 
         let newSession = app.buttons["New Session"]
-        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Agent panel must show New Session button")
+        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Build panel must show New Session button")
         XCTAssertTrue(newSession.isHittable, "New Session button must be hittable")
     }
 
     // MARK: - Close / Dismiss
 
-    func testAgentPanelCloseButtonDismissesPanel() throws {
+    func testBuildPanelCloseButtonDismissesPanel() throws {
         app.typeKey("2", modifierFlags: .command)
         _ = app.buttons["New Session"].waitForExistence(timeout: 5)
 
@@ -48,7 +48,7 @@ final class AgentPanelTests: XCTestCase {
         }
     }
 
-    func testSidebarToggleDismissesAgentPanel() throws {
+    func testSidebarToggleDismissesBuildPanel() throws {
         app.typeKey("2", modifierFlags: .command)
         let newSession = app.buttons["New Session"]
         XCTAssertTrue(newSession.waitForExistence(timeout: 5))
@@ -85,7 +85,7 @@ final class AgentPanelTests: XCTestCase {
 
         let inputField = app.textFields["Message the agent..."]
         XCTAssertTrue(inputField.waitForExistence(timeout: 5))
-        XCTAssertTrue(inputField.isHittable, "Agent input field must be hittable after opening new session")
+        XCTAssertTrue(inputField.isHittable, "Build input field must be hittable after opening new session")
     }
 
     // MARK: - Session Dashboard
@@ -94,7 +94,7 @@ final class AgentPanelTests: XCTestCase {
         app.typeKey("2", modifierFlags: .command)
 
         let dashboard = app.buttons["Session Dashboard"]
-        XCTAssertTrue(dashboard.waitForExistence(timeout: 5), "Agent panel must show Session Dashboard button")
+        XCTAssertTrue(dashboard.waitForExistence(timeout: 5), "Build panel must show Session Dashboard button")
     }
 
     func testSessionDashboardButtonIsClickable() throws {
@@ -132,7 +132,7 @@ final class AgentPanelTests: XCTestCase {
 
     // MARK: - Panel Persists Through Mode Switches
 
-    func testAgentSessionsPersistAfterModeSwitch() throws {
+    func testBuildSessionsPersistAfterModeSwitch() throws {
         app.typeKey("2", modifierFlags: .command)
 
         let newSession = app.buttons["New Session"]
@@ -147,6 +147,6 @@ final class AgentPanelTests: XCTestCase {
 
         // The scroll view with sessions should still be there
         let scrollView = app.scrollViews.firstMatch
-        XCTAssertTrue(scrollView.waitForExistence(timeout: 5), "Agent sessions must persist after switching modes")
+        XCTAssertTrue(scrollView.waitForExistence(timeout: 5), "Build sessions must persist after switching modes")
     }
 }

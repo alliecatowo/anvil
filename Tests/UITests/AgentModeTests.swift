@@ -7,7 +7,7 @@ final class AgentModeTests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launch()
-        switchToAgentMode()
+        switchToBuildMode()
     }
 
     override func tearDownWithError() throws {
@@ -98,7 +98,7 @@ final class AgentModeTests: XCTestCase {
         let thinkingOrResponse = app.staticTexts["Thinking..."].waitForExistence(timeout: 5)
             || app.progressIndicators.firstMatch.waitForExistence(timeout: 5)
             || app.scrollViews.firstMatch.staticTexts.count > 1
-        XCTAssertTrue(thinkingOrResponse, "Agent must show thinking indicator or response after message is sent")
+        XCTAssertTrue(thinkingOrResponse, "Build must show thinking indicator or response after message is sent")
     }
 
     // MARK: - Slash Commands → Verify Menu Appears
@@ -139,7 +139,7 @@ final class AgentModeTests: XCTestCase {
 
     // MARK: - Session Dashboard Button → Verify Dashboard Appears
 
-    func testSessionDashboardButtonSwitchesView() throws {
+    func testBuildDashboardButtonSwitchesView() throws {
         let dashboardButton = app.buttons["Session Dashboard"]
         XCTAssertTrue(dashboardButton.waitForExistence(timeout: 5))
         dashboardButton.click()
@@ -217,12 +217,12 @@ final class AgentModeTests: XCTestCase {
     func testEmptyStateShowsNewSessionCTA() throws {
         // If no sessions exist, empty state should show a call to action
         let newSessionVisible = app.buttons["New Session"].waitForExistence(timeout: 5)
-        XCTAssertTrue(newSessionVisible, "Agent mode empty state must show New Session button")
+        XCTAssertTrue(newSessionVisible, "Build mode empty state must show New Session button")
     }
 
     // MARK: - Helpers
 
-    private func switchToAgentMode() {
+    private func switchToBuildMode() {
         app.typeKey("2", modifierFlags: .command)
         _ = app.buttons["New Session"].waitForExistence(timeout: 5)
     }

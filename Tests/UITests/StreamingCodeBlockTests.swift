@@ -11,7 +11,7 @@ final class StreamingCodeBlockTests: XCTestCase {
         app = XCUIApplication()
         app.launch()
 
-        // Load demo project and switch to Agent mode
+        // Load demo project and switch to Build mode
         let menuBar = app.menuBars
         menuBar.menuItems["Load Demo Project"].click()
         sleep(1)
@@ -23,12 +23,12 @@ final class StreamingCodeBlockTests: XCTestCase {
         app = nil
     }
 
-    // MARK: - Agent Mode Setup
+    // MARK: - Build Mode Setup
 
     func testAgentModeHasConversation() {
         // Verify agent mode loads with conversation view
         let newSessionButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'New Session'")).firstMatch
-        XCTAssertTrue(newSessionButton.waitForExistence(timeout: 3) || true, "Agent mode should show New Session button")
+        XCTAssertTrue(newSessionButton.waitForExistence(timeout: 3) || true, "Build mode should show New Session button")
     }
 
     // MARK: - Code Block Rendering (with demo data)

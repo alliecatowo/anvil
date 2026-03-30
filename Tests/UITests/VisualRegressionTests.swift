@@ -5,28 +5,28 @@ final class VisualRegressionTests: AnvilUITestCase {
     override var shouldCaptureLaunchScreenshot: Bool { false }
     override var shouldCaptureTearDownScreenshot: Bool { false }
 
-    func testAgentEmptyStateScreenshot() throws {
+    func testBuildEmptyStateScreenshot() throws {
         launchScenario("agent-empty")
         XCTAssertTrue(app.buttons["agent.empty.new-session"].waitForExistence(timeout: 5))
         addScreenshot("agent-empty")
     }
 
-    func testAgentConversationScreenshot() throws {
+    func testBuildConversationScreenshot() throws {
         launchScenario("agent-conversation")
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "agent.conversation.input").firstMatch.waitForExistence(timeout: 5))
         addScreenshot("agent-conversation")
     }
 
-    func testIntentListScreenshot() throws {
+    func testPlanListScreenshot() throws {
         launchScenario("intent-list")
         XCTAssertTrue(app.staticTexts["Sprint 14"].waitForExistence(timeout: 5))
-        addScreenshot("intent-list")
+        addScreenshot("plan-list")
     }
 
-    func testIntentBoardScreenshot() throws {
+    func testPlanBoardScreenshot() throws {
         launchScenario("intent-board")
         XCTAssertTrue(app.staticTexts["Sprint 14"].waitForExistence(timeout: 5))
-        addScreenshot("intent-board")
+        addScreenshot("plan-board")
     }
 
     func testReviewInboxScreenshot() throws {

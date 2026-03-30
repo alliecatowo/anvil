@@ -139,7 +139,7 @@ final class CommandPaletteTests: XCTestCase {
 
     func testSearchAndExecuteSwitchesMode() throws {
         // Start in a known mode
-        app.buttons["Intent"].click()
+        app.buttons["Plan"].click()
         _ = app.scrollViews.firstMatch.waitForExistence(timeout: 3)
 
         app.typeKey("k", modifierFlags: .command)

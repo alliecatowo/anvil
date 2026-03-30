@@ -96,7 +96,7 @@ final class KeyboardShortcutTests: AnvilUITestCase {
     }
 
     func testCmdBDoesNotCrashFromAnySpace() {
-        let spaces = ["Intent", "Build", "Review", "Operate", "Library"]
+        let spaces = ["Plan", "Build", "Review", "Operate", "Library"]
         for space in spaces {
             let btn = app.buttons[space]
             if btn.waitForExistence(timeout: 3) {
@@ -152,7 +152,7 @@ final class KeyboardShortcutTests: AnvilUITestCase {
 
     func testCmdShiftTDoesNotCrashFromOtherSpaces() {
         // Issue the shortcut from a non-build space — must not crash
-        let intentButton = app.buttons["Intent"]
+        let intentButton = app.buttons["Plan"]
         if intentButton.waitForExistence(timeout: 3) {
             intentButton.click()
             Thread.sleep(forTimeInterval: 0.2)

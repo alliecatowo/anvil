@@ -16,7 +16,7 @@ final class ModeTests: XCTestCase {
     // MARK: - Core Mode Tabs Exist
 
     func testAllCoreModesExist() throws {
-        for mode in ["Intent", "Agent", "Review", "Ship"] {
+        for mode in ["Plan", "Build", "Review", "Ship"] {
             let tab = app.buttons[mode]
             XCTAssertTrue(tab.waitForExistence(timeout: 5), "\(mode) tab must exist")
         }
@@ -24,24 +24,24 @@ final class ModeTests: XCTestCase {
 
     // MARK: - Click Each Tab → Verify Result
 
-    func testSwitchToIntentModeShowsContent() throws {
-        app.buttons["Intent"].click()
+    func testSwitchToPlanModeShowsContent() throws {
+        app.buttons["Plan"].click()
 
-        // Intent mode content: sidebar or ticket list should render
-        let result = app.staticTexts["Intent"].waitForExistence(timeout: 3)
+        // Plan mode content: sidebar or ticket list should render
+        let result = app.staticTexts["Plan"].waitForExistence(timeout: 3)
             || app.scrollViews.firstMatch.waitForExistence(timeout: 3)
-        XCTAssertTrue(result, "Intent mode should render some content after clicking tab")
+        XCTAssertTrue(result, "Plan mode should render some content after clicking tab")
     }
 
-    func testSwitchToAgentModeShowsNewSessionButton() throws {
+    func testSwitchToBuildModeShowsNewSessionButton() throws {
         // Switch away first, then back to verify switch actually happened
-        app.buttons["Intent"].click()
+        app.buttons["Plan"].click()
         _ = app.staticTexts.firstMatch.waitForExistence(timeout: 2)
 
-        app.buttons["Agent"].click()
+        app.buttons["Build"].click()
 
         let newSession = app.buttons["New Session"]
-        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Agent mode must show New Session button")
+        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Build mode must show New Session button")
     }
 
     func testSwitchToReviewModeShowsSidebar() throws {
@@ -80,21 +80,21 @@ final class ModeTests: XCTestCase {
 
     // MARK: - Each Mode Has Clickable Elements
 
-    func testIntentModeHasClickableElements() throws {
+    func testPlanModeHasClickableElements() throws {
         loadDemoData()
-        app.buttons["Intent"].click()
+        app.buttons["Plan"].click()
         _ = app.scrollViews.firstMatch.waitForExistence(timeout: 5)
 
-        let clickable = app.buttons.allElementsBoundByIndex.filter { $0.isHittable && $0.label != "Intent" }
-        XCTAssertGreaterThan(clickable.count, 0, "Intent mode must have clickable elements beyond the tab itself")
+        let clickable = app.buttons.allElementsBoundByIndex.filter { $0.isHittable && $0.label != "Plan" }
+        XCTAssertGreaterThan(clickable.count, 0, "Plan mode must have clickable elements beyond the tab itself")
     }
 
-    func testAgentModeHasClickableElements() throws {
-        app.buttons["Agent"].click()
+    func testBuildModeHasClickableElements() throws {
+        app.buttons["Build"].click()
 
         let newSession = app.buttons["New Session"]
         XCTAssertTrue(newSession.waitForExistence(timeout: 5))
-        XCTAssertTrue(newSession.isHittable, "New Session button must be hittable in Agent mode")
+        XCTAssertTrue(newSession.isHittable, "New Session button must be hittable in Build mode")
     }
 
     func testReviewModeHasClickableElements() throws {
@@ -115,34 +115,34 @@ final class ModeTests: XCTestCase {
 
     // MARK: - Keyboard Shortcuts → Verify Mode Changes
 
-    func testCmdOneActivatesIntentMode() throws {
-        // Start in Agent mode
-        app.buttons["Agent"].click()
+    func testCmdOneActivatesPlanMode() throws {
+        // Start in Build mode
+        app.buttons["Build"].click()
         _ = app.buttons["New Session"].waitForExistence(timeout: 3)
 
         // Switch via keyboard
         app.typeKey("1", modifierFlags: .command)
 
-        // Intent mode specific element should now exist
-        // (at minimum the Intent tab remains visible and content changed)
-        let intentTab = app.buttons["Intent"]
-        XCTAssertTrue(intentTab.waitForExistence(timeout: 3))
+        // Plan mode specific element should now exist
+        // (at minimum the Plan tab remains visible and content changed)
+        let planTab = app.buttons["Plan"]
+        XCTAssertTrue(planTab.waitForExistence(timeout: 3))
     }
 
-    func testCmdTwoActivatesAgentMode() throws {
-        // Start in Intent mode
-        app.buttons["Intent"].click()
+    func testCmdTwoActivatesBuildMode() throws {
+        // Start in Plan mode
+        app.buttons["Plan"].click()
         _ = app.scrollViews.firstMatch.waitForExistence(timeout: 3)
 
         app.typeKey("2", modifierFlags: .command)
 
-        // New Session button is Agent-mode-specific
+        // New Session button is Build-mode-specific
         let newSession = app.buttons["New Session"]
-        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Cmd+2 must switch to Agent mode showing New Session button")
+        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Cmd+2 must switch to Build mode showing New Session button")
     }
 
     func testCmdThreeActivatesReviewMode() throws {
-        app.buttons["Agent"].click()
+        app.buttons["Build"].click()
         _ = app.buttons["New Session"].waitForExistence(timeout: 3)
 
         app.typeKey("3", modifierFlags: .command)
@@ -154,7 +154,7 @@ final class ModeTests: XCTestCase {
     }
 
     func testCmdFourActivatesShipMode() throws {
-        app.buttons["Agent"].click()
+        app.buttons["Build"].click()
         _ = app.buttons["New Session"].waitForExistence(timeout: 3)
 
         app.typeKey("4", modifierFlags: .command)
@@ -166,7 +166,7 @@ final class ModeTests: XCTestCase {
     // MARK: - Rapid Mode Switching Does Not Crash
 
     func testRapidModeSwitchingDoesNotCrash() throws {
-        let modes = ["Intent", "Agent", "Review", "Ship", "Intent", "Agent"]
+        let modes = ["Plan", "Build", "Review", "Ship", "Plan", "Build"]
         for mode in modes {
             let tab = app.buttons[mode]
             if tab.waitForExistence(timeout: 3) {

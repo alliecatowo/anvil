@@ -11,7 +11,7 @@ final class ContextInjectionTests: XCTestCase {
         app = XCUIApplication()
         app.launch()
 
-        // Load demo project and switch to Agent mode
+        // Load demo project and switch to Build mode
         let menuBar = app.menuBars
         menuBar.menuItems["Load Demo Project"].click()
         sleep(1)
@@ -29,7 +29,7 @@ final class ContextInjectionTests: XCTestCase {
         // The agent mode should show an input field for the conversation
         let inputField = app.textFields.matching(NSPredicate(format: "placeholderValue CONTAINS[c] 'message' OR placeholderValue CONTAINS[c] 'ask' OR placeholderValue CONTAINS[c] 'type'")).firstMatch
         let textView = app.textViews.firstMatch
-        XCTAssertTrue(inputField.waitForExistence(timeout: 3) || textView.waitForExistence(timeout: 3), "Agent mode should have an input area")
+        XCTAssertTrue(inputField.waitForExistence(timeout: 3) || textView.waitForExistence(timeout: 3), "Build mode should have an input area")
     }
 
     func testContextChipAppearanceWithFile() {

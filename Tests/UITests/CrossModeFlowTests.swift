@@ -16,13 +16,13 @@ final class CrossModeFlowTests: XCTestCase {
         app = nil
     }
 
-    // MARK: - Intent → Agent (Start Work)
+    // MARK: - Plan → Build (Start Work)
 
-    func testStartWorkFlowIntentToAgent() throws {
-        // 1. Navigate to Intent mode
-        app.buttons["Intent"].click()
+    func testStartWorkFlowPlanToBuild() throws {
+        // 1. Navigate to Plan mode
+        app.buttons["Plan"].click()
         let ticketList = app.scrollViews.firstMatch
-        XCTAssertTrue(ticketList.waitForExistence(timeout: 5), "Intent mode must show ticket list")
+        XCTAssertTrue(ticketList.waitForExistence(timeout: 5), "Plan mode must show ticket list")
 
         // 2. Click first ticket
         let firstTicket = ticketList.otherElements.firstMatch
@@ -35,17 +35,17 @@ final class CrossModeFlowTests: XCTestCase {
         XCTAssertTrue(startWork.waitForExistence(timeout: 5))
         startWork.click()
 
-        // 4. Verify: Agent mode conversation view appeared
+        // 4. Verify: Build mode conversation view appeared
         let inputField = app.textFields["Message the agent..."]
         XCTAssertTrue(inputField.waitForExistence(timeout: 8),
-            "Start Work must switch to Agent mode and show conversation input")
+            "Start Work must switch to Build mode and show conversation input")
     }
 
-    // MARK: - Agent → Review (Auto PR)
+    // MARK: - Build → Review (Auto PR)
 
-    func testAgentSessionHasCreatePROption() throws {
+    func testBuildSessionHasCreatePROption() throws {
         // 1. Create agent session
-        app.buttons["Agent"].click()
+        app.buttons["Build"].click()
         let newSession = app.buttons["New Session"]
         XCTAssertTrue(newSession.waitForExistence(timeout: 5))
         newSession.click()
@@ -57,15 +57,15 @@ final class CrossModeFlowTests: XCTestCase {
         // 3. PR creation button accessible in session header
         let prButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'PR' OR label CONTAINS 'Pull Request'")).firstMatch
         // May or may not be visible depending on session state — just verify no crash
-        XCTAssertTrue(app.windows.firstMatch.exists, "Agent session view must remain stable")
+        XCTAssertTrue(app.windows.firstMatch.exists, "Build session view must remain stable")
         _ = prButton.waitForExistence(timeout: 3)
     }
 
-    // MARK: - Full Pipeline: Intent → Agent → Review
+    // MARK: - Full Pipeline: Plan → Build → Review
 
-    func testFullPipelineIntentAgentReview() throws {
-        // 1. Start in Intent — click a ticket
-        app.buttons["Intent"].click()
+    func testFullPipelinePlanBuildReview() throws {
+        // 1. Start in Plan — click a ticket
+        app.buttons["Plan"].click()
         let ticketList = app.scrollViews.firstMatch
         if ticketList.waitForExistence(timeout: 5) {
             let firstTicket = ticketList.otherElements.firstMatch
@@ -74,7 +74,7 @@ final class CrossModeFlowTests: XCTestCase {
             }
         }
 
-        // 2. Start Work → Agent mode
+        // 2. Start Work → Build mode
         let startWork = app.buttons["Start Work"]
         if startWork.waitForExistence(timeout: 5) {
             startWork.click()
@@ -84,14 +84,14 @@ final class CrossModeFlowTests: XCTestCase {
         // 3. Switch to Review mode — should still be stable
         app.buttons["Review"].click()
         let branchesVisible = app.staticTexts["BRANCHES"].waitForExistence(timeout: 5)
-        XCTAssertTrue(branchesVisible, "Review mode must be accessible after Intent→Agent flow")
+        XCTAssertTrue(branchesVisible, "Review mode must be accessible after Plan→Build flow")
     }
 
     // MARK: - Command Palette Switches Mode
 
     func testCommandPaletteNavigatesToMode() throws {
         // Start in a known state
-        app.buttons["Intent"].click()
+        app.buttons["Plan"].click()
         _ = app.scrollViews.firstMatch.waitForExistence(timeout: 3)
 
         // Open command palette and search for Build
@@ -101,9 +101,9 @@ final class CrossModeFlowTests: XCTestCase {
 
         searchField.typeText("Build")
 
-        let agentResult = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Build'")).firstMatch
-        if agentResult.waitForExistence(timeout: 3) {
-            agentResult.click()
+        let buildResult = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Build'")).firstMatch
+        if buildResult.waitForExistence(timeout: 3) {
+            buildResult.click()
 
             // Result: palette closed
             XCTAssertFalse(searchField.waitForExistence(timeout: 3), "Command palette must close after selecting result")
@@ -132,15 +132,15 @@ final class CrossModeFlowTests: XCTestCase {
             }
         }
 
-        // Switch to Agent mode — must work fine
-        app.buttons["Agent"].click()
+        // Switch to Build mode — must work fine
+        app.buttons["Build"].click()
         let newSession = app.buttons["New Session"]
-        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Agent mode must be accessible after Review mode back navigation")
+        XCTAssertTrue(newSession.waitForExistence(timeout: 5), "Build mode must be accessible after Review mode back navigation")
     }
 
     // MARK: - Ship Deploy Does Not Block Other Modes
 
-    func testShipModeDeployDoesNotBlockIntentMode() throws {
+    func testShipModeDeployDoesNotBlockPlanMode() throws {
         // Go to Ship mode, select environment
         app.buttons["Ship"].click()
         _ = app.staticTexts["ENVIRONMENTS"].waitForExistence(timeout: 5)
@@ -154,10 +154,10 @@ final class CrossModeFlowTests: XCTestCase {
             }
         }
 
-        // Switch to Intent — must not be blocked
-        app.buttons["Intent"].click()
+        // Switch to Plan — must not be blocked
+        app.buttons["Plan"].click()
         let ticketList = app.scrollViews.firstMatch
-        XCTAssertTrue(ticketList.waitForExistence(timeout: 5), "Intent mode must be accessible while Ship mode has environment selected")
+        XCTAssertTrue(ticketList.waitForExistence(timeout: 5), "Plan mode must be accessible while Ship mode has environment selected")
     }
 
     // MARK: - Helpers

@@ -26,7 +26,7 @@ public class ChordTracker: ObservableObject {
         Chord(keys: ["g", "b"], action: "goto.branch", label: "Go to Branch"),
         Chord(keys: ["g", "p"], action: "goto.pr", label: "Go to PR"),
         Chord(keys: ["g", "d"], action: "goto.deployment", label: "Go to Deployment"),
-        Chord(keys: ["g", "a"], action: "goto.agentSession", label: "Go to Agent Session"),
+        Chord(keys: ["g", "a"], action: "goto.agentSession", label: "Go to Build Session"),
         Chord(keys: ["g", "n"], action: "goto.projectNotes", label: "Go to Project Notes"),
         Chord(keys: ["g", "c"], action: "goto.ciRun", label: "Go to CI Run"),
         Chord(keys: ["g", "e"], action: "goto.error", label: "Go to Error"),
