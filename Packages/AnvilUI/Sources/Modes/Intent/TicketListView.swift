@@ -195,9 +195,9 @@ struct TicketListView: View {
             }
         }
         .onChange(of: viewModel.selectedTicketIds) { _, newValue in
-            // Sync single-select selection with the main detail view.
+            // Sync single-click selection without opening the detail pane.
             if newValue.count == 1, let id = newValue.first {
-                viewModel.selectTicket(id)
+                viewModel.selectTicket(id, openInMainPane: false)
             }
         }
     }
