@@ -43,7 +43,7 @@ struct BoardView: View {
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.md)
-        .background(AnvilColor.backgroundToolbar)
+        .background(.bar)
     }
 
     // MARK: - Column

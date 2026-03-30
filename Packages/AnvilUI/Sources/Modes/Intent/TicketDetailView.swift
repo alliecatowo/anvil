@@ -36,7 +36,7 @@ struct TicketDetailView: View {
                     .padding(AnvilSpacing.xxl)
                 }
             }
-            .background(AnvilColor.backgroundPrimary)
+            .background(.regularMaterial)
         }
     }
 
@@ -189,16 +189,16 @@ struct TicketDetailView: View {
                 if let assignee = ticket.assignee {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Circle()
-                            .fill(AnvilColor.backgroundElevated)
+                            .fill(Color.secondary.opacity(0.2))
                             .frame(width: 18, height: 18)
                             .overlay(
                                 Text(String(assignee.prefix(1)).uppercased())
                                     .font(.system(size: 9, weight: .medium))
-                                    .foregroundStyle(AnvilColor.textSecondary)
+                                    .foregroundStyle(.secondary)
                             )
                         Text(assignee)
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textSecondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
 
@@ -317,11 +317,10 @@ struct TicketDetailView: View {
                     .scrollContentBackground(.hidden)
                     .frame(minHeight: 120)
                     .padding(AnvilSpacing.sm)
-                    .background(AnvilColor.backgroundSecondary)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
-                            .stroke(AnvilColor.accentBlue.opacity(0.4), lineWidth: 1)
+                            .stroke(Color.accentColor.opacity(0.4), lineWidth: 1)
                     )
                     .onChange(of: viewModel.editingDescription) { _, newValue in
                         viewModel.updateDescription(newValue)
@@ -491,7 +490,7 @@ struct TicketDetailView: View {
                     .foregroundStyle(AnvilColor.textTertiary)
                     .padding(.horizontal, 5)
                     .padding(.vertical, 1)
-                    .background(AnvilColor.backgroundElevated)
+                    .background(Color.secondary.opacity(0.2))
                     .clipShape(Capsule())
             }
 
@@ -528,12 +527,7 @@ struct TicketDetailView: View {
                     }
                 }
                 .padding(AnvilSpacing.sm)
-                .background(AnvilColor.backgroundSecondary)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(AnvilColor.borderSubtle, lineWidth: 1)
-                )
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
             }
         }
     }
@@ -541,7 +535,7 @@ struct TicketDetailView: View {
     private func commentRow(_ comment: TicketComment, ticketId: String) -> some View {
         HStack(alignment: .top, spacing: AnvilSpacing.sm) {
             Circle()
-                .fill(AnvilColor.backgroundElevated)
+                .fill(Color.secondary.opacity(0.2))
                 .frame(width: 24, height: 24)
                 .overlay(
                     Text(String(comment.author.prefix(1)).uppercased())

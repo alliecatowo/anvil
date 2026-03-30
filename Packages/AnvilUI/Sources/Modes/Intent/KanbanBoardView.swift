@@ -34,7 +34,7 @@ struct KanbanCard: View {
                         .foregroundStyle(AnvilColor.textTertiary)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 1)
-                        .background(AnvilColor.backgroundElevated)
+                        .background(Color.secondary.opacity(0.2))
                         .clipShape(RoundedRectangle(cornerRadius: 3))
                 }
 
@@ -104,7 +104,7 @@ struct KanbanCard: View {
 
     private func assigneeBubble(_ name: String) -> some View {
         Circle()
-            .fill(AnvilColor.backgroundElevated)
+            .fill(Color.secondary.opacity(0.2))
             .frame(width: 16, height: 16)
             .overlay(
                 Text(String(name.prefix(1)).uppercased())

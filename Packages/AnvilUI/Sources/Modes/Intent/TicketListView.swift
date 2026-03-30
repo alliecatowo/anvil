@@ -21,7 +21,7 @@ struct TicketListView: View {
                 ticketTable
             }
         }
-        .background(AnvilColor.backgroundPrimary)
+        .background(.regularMaterial)
     }
 
     // MARK: - Toolbar
@@ -278,7 +278,7 @@ struct TicketListView: View {
             if let name = assignee {
                 HStack(spacing: AnvilSpacing.xxs) {
                     Circle()
-                        .fill(AnvilColor.backgroundElevated)
+                        .fill(Color.secondary.opacity(0.2))
                         .frame(width: 18, height: 18)
                         .overlay(
                             Text(String(name.prefix(1)).uppercased())
