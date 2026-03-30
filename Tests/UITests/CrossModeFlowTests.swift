@@ -2,18 +2,13 @@ import XCTest
 
 /// End-to-end flow tests that cross mode boundaries.
 /// Every test: click action → verify result in a different mode.
-final class CrossModeFlowTests: XCTestCase {
-    var app: XCUIApplication!
+final class CrossModeFlowTests: AnvilUITestCase {
+    override var shouldCaptureLaunchScreenshot: Bool { false }
+    override var shouldCaptureTearDownScreenshot: Bool { false }
 
     override func setUpWithError() throws {
-        continueAfterFailure = false
-        app = XCUIApplication()
-        app.launch()
-        loadDemoData()
-    }
-
-    override func tearDownWithError() throws {
-        app = nil
+        try super.setUpWithError()
+        loadDemoProject()
     }
 
     // MARK: - Plan → Build (Start Work)
@@ -160,9 +155,4 @@ final class CrossModeFlowTests: XCTestCase {
         XCTAssertTrue(ticketList.waitForExistence(timeout: 5), "Plan mode must be accessible while Ship mode has environment selected")
     }
 
-    // MARK: - Helpers
-
-    private func loadDemoData() {
-        app.menuItems["Load Demo Project"].click()
-    }
 }

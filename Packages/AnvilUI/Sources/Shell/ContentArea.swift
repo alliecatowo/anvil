@@ -434,7 +434,7 @@ struct LibraryContent: View {
         case .messages:
             MessagingMode(viewModel: appState.messagingViewModel)
         case .schedule:
-            ScheduleModeContent(viewModel: appState.scheduleViewModel)
+            ScheduleMode(viewModel: appState.scheduleViewModel)
         }
     }
 }
@@ -462,46 +462,6 @@ struct NotificationsContentView: View {
                 message: "Select a notification from the sidebar."
             )
         }
-    }
-}
-
-struct ScheduleModeContent: View {
-    @ObservedObject var viewModel: ScheduleViewModel
-
-    var body: some View {
-        HStack(spacing: 0) {
-            VStack(spacing: 0) {
-                scheduleTabSelector
-                Divider()
-
-                Group {
-                    switch viewModel.selectedTab {
-                    case .agenda:
-                        AgendaView(viewModel: viewModel)
-                    case .blocks:
-                        TimeBlockView(viewModel: viewModel)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .onAppear {
-            if viewModel.entries.isEmpty {
-                viewModel.loadSampleData()
-            }
-        }
-    }
-
-    private var scheduleTabSelector: some View {
-        Picker("View", selection: $viewModel.selectedTab) {
-            ForEach(ScheduleTab.allCases, id: \.rawValue) { tab in
-                Text(tab.rawValue).tag(tab)
-            }
-        }
-        .pickerStyle(.segmented)
-        .accessibilityLabel("Schedule View")
-        .padding(.horizontal, AnvilSpacing.sm)
-        .padding(.vertical, AnvilSpacing.xs)
     }
 }
 

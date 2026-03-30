@@ -2,7 +2,7 @@ import SwiftUI
 import AnvilDomain
 
 struct ScheduleMode: View {
-    @StateObject private var viewModel = ScheduleViewModel()
+    @ObservedObject var viewModel: ScheduleViewModel
 
     var body: some View {
         HSplitView {

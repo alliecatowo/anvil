@@ -60,8 +60,8 @@ final class AppLaunchTests: XCTestCase {
     }
 
     func testStatusBarShowsBranch() throws {
-        // Branch picker button should exist
-        let branchButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Switch Branch'")).firstMatch
+        // Branch picker button should exist and read as current branch context.
+        let branchButton = app.buttons.matching(NSPredicate(format: "label BEGINSWITH[c] 'Branch:'")).firstMatch
         XCTAssertTrue(branchButton.waitForExistence(timeout: 5), "Branch button should be visible in status bar")
     }
 }

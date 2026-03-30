@@ -94,4 +94,18 @@ class AnvilUITestCase: XCTestCase {
         addScreenshot(name)
         return exists
     }
+
+    /// Open the demo project through the menu bar, which is more reliable than
+    /// jumping directly to the app's synthesized menu item tree.
+    func loadDemoProject() {
+        let fileMenu = app.menuBars.menuBarItems["File"]
+        XCTAssertTrue(fileMenu.waitForExistence(timeout: 5), "File menu must exist")
+        fileMenu.click()
+
+        let loadDemoProject = app.menuItems["Load Demo Project"]
+        XCTAssertTrue(loadDemoProject.waitForExistence(timeout: 5), "Load Demo Project menu item must exist")
+        loadDemoProject.click()
+
+        _ = app.windows.firstMatch.waitForExistence(timeout: 2)
+    }
 }

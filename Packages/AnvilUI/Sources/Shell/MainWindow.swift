@@ -75,11 +75,20 @@ public struct MainWindow: View {
                 .accessibilityLabel("Find in Project")
                 .accessibilityAddTraits(.isButton)
 
+                Button("Agent Sidebar", systemImage: "sidebar.right") {
+                    appState.toggleAgentPanel()
+                }
+                .help("Toggle Agent Sidebar")
+                .accessibilityLabel("Toggle Agent Sidebar")
+                .accessibilityIdentifier("toolbar.toggle-agent-sidebar")
+                .accessibilityAddTraits(.isButton)
+
                 Button("Inspector", systemImage: "info.circle") {
                     appState.toggleInspector()
                 }
                 .help("Toggle Inspector")
                 .accessibilityLabel("Toggle Inspector")
+                .accessibilityIdentifier("toolbar.toggle-inspector")
                 .accessibilityAddTraits(.isButton)
 
                 SettingsLink {
