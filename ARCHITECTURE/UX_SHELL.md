@@ -22,7 +22,8 @@ Use these layers consistently:
 - User-facing destinations such as Plan, Build, Review, Operate, and Library.
 
 Note:
-- `Intent` and `Agent` are current implementation names and transitional labels, not the canonical user-facing shell vocabulary.
+- `Intent`, `Agent`, and `Ship` are current implementation names and transitional labels, not the canonical user-facing shell vocabulary.
+- The live shell already uses `Operate`; `Ship` is the legacy alias.
 
 2. `Sources`
 - Collections inside a workspace, such as projects, sessions, tickets, PRs, channels, environments, tables, runs, docs, or plugins.

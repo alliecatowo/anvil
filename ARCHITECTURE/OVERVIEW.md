@@ -1,6 +1,6 @@
 # Anvil Architecture Overview
 
-Last updated: 2026-03-28
+Last updated: 2026-03-29
 
 This document is the single authoritative summary of what Anvil is, how it is structured, what exists today, and how to build and extend it. Every other document in this repo is subordinate to or referenced from this one.
 
@@ -12,7 +12,7 @@ Anvil is a native macOS development environment built for the post-IDE era. It i
 
 **The core premise:** AI is ambient infrastructure, not a bolted-on feature. Every surface in Anvil is AI-capable via the Agent Communication Protocol (ACP). Plugins inherit AI for free. There is no per-feature API key setup.
 
-**The opinionated workflow:** Plan → Build → Review → Operate → Library. Five first-class spaces, keyboard-navigable throughout. `Intent` and `Agent` remain transitional identifiers during migration, not the canonical shell vocabulary. See [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md) for the canonical shell language and grouping model.
+**The opinionated workflow:** Plan → Build → Review → Operate → Library. Five first-class spaces, keyboard-navigable throughout. `Intent`, `Agent`, and `Ship` remain transitional/internal identifiers during migration, not the canonical shell vocabulary. `Ship` is the legacy label for `Operate`. See [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md) for the canonical shell language and grouping model.
 
 **The native moat:** None of the AI-first competitors — Cursor, Windsurf, Zed — are native macOS apps. Anvil is Swift 6, SwiftUI, AppKit interop, targeting macOS 15+ (Sequoia). The native shell is the product differentiator.
 
@@ -100,11 +100,11 @@ SwiftUI presentation layer. Depends on Application and Domain. Never imports Anv
 Contains:
 - **Shell** — `MainWindow`, `Sidebar`, `ContentArea`, `StatusBar`, `ModeTabBar`, `CommandPalette`, `CommandPaletteViewModel`, `InspectorPanel`, `TerminalPanel`, `SourceControlPanel`, `ProjectSwitcher`, `QuickCapture`, `SearchPanel`, `WelcomePage`, `BranchPicker`, `CodebaseQAView`
 - **Shell sidebar sections** — `BuildSidebar`, `LibrarySidebar`, `OperateSidebar`, source control panel sections (`SCPBranchSection`, `SCPHistorySection`, `SCPRemoteSection`, `SCPStashSection`, `SCPTagSection`)
-- **Agent mode** — `AgentMode`, `AgentSidebar`, `AgentChatPanel`, `AgentModeView`, `AgentViewModel`, `SessionDetailView`, `SessionDashboard`, `SynthesisRoomView`
-- **Intent mode** — `IntentMode`, `IntentSidebar`, `IntentViewModel`, `BoardView`, `TicketListView`, `TicketDetailView`
-- **Review mode** — `ReviewMode`, `ReviewSidebar`, `ReviewViewModel`, `DiffReviewView`, `GitHubPRDetailView`, `GitHubPRViewModel`, `ReviewInboxView`, `GitGraphView`
-- **Ship mode** — `ShipMode`, `ShipSidebar`, `ShipViewModel`, `DeployDashboardView`, `EnvVarManagerView`, `BuildLogView`
-- **Auxiliary modes** — `DatabaseMode`, `TerminalMode`, `DocsMode`, `MessagingMode`, `NotificationsMode`, `ObservabilityMode`, `ScheduleMode`, `TestingMode`, and their respective ViewModels and sub-views
+- **Build space** — `AgentMode`, `AgentSidebar`, `AgentChatPanel`, `AgentModeView`, `AgentViewModel`, `SessionDetailView`, `SessionDashboard`, `SynthesisRoomView`
+- **Plan space** — `IntentMode`, `IntentSidebar`, `IntentViewModel`, `BoardView`, `TicketListView`, `TicketDetailView`
+- **Review space** — `ReviewMode`, `ReviewSidebar`, `ReviewViewModel`, `DiffReviewView`, `GitHubPRDetailView`, `GitHubPRViewModel`, `ReviewInboxView`, `GitGraphView`
+- **Operate space** — `ShipMode`, `ShipSidebar`, `ShipViewModel`, `DeployDashboardView`, `EnvVarManagerView`, `BuildLogView`
+- **Auxiliary spaces** — `DatabaseMode`, `TerminalMode`, `DocsMode`, `MessagingMode`, `NotificationsMode`, `ObservabilityMode`, `ScheduleMode`, `TestingMode`, and their respective ViewModels and sub-views
 - **Settings** — `SettingsWindow`, `IntegrationSettingsView`
 - **Keyboard** — `KeyEventRouter`, `ChordTracker`
 
@@ -205,7 +205,7 @@ Based on static analysis of all packages. ~270 files, ~21K LOC.
 - Docs mode: UI present, in-memory only
 - Chat: UI present, Library-space canvas surface with Slack adapter stub
 - Observability mode: UI present, Sentry adapter stub
-- Ship mode: Vercel adapter stub, no real deployment triggers
+- Operate space: Vercel adapter stub, no real deployment triggers
 - Testing mode: UI present, in-memory only
 - Schedule mode: UI present, in-memory only
 - @ context references: partial (files, basic), not full (no @web, @git, @docs, @recommended)
@@ -247,7 +247,7 @@ Based on static analysis of all packages. ~270 files, ~21K LOC.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  Traffic lights    [Mode tabs: Intent Agent Review Ship ...]     │
+│  Traffic lights    [Space tabs: Plan Build Review Operate Library] │
 │                    Title / Context indicator        [Search Cmd+K]│
 ├────────┬─────────────────────────────────┬───────────────────────┤
 │        │                                 │                       │
@@ -266,7 +266,7 @@ Based on static analysis of all packages. ~270 files, ~21K LOC.
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-Mode workspaces: Intent, Agent, Review, Ship (core) + Editor, Database, Terminal, Docs, Chat, Notifications, Testing, Schedule, Observability (auxiliary)
+Spaces: Plan, Build, Review, Operate, Library (core) + Editor, Database, Terminal, Docs, Chat, Notifications, Testing, Schedule, Observability (auxiliary)
 
 ---
 

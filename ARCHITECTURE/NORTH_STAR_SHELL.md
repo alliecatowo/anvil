@@ -20,7 +20,7 @@ Workspace names should describe user outcomes, not internal code history.
 
 ## Recommendation On Workspace Names
 
-`Intent` and `Agent` do not make sense as long-term user-facing workspace nouns.
+`Intent`, `Agent`, and `Ship` do not make sense as long-term user-facing workspace nouns.
 They are useful internal labels, but they are too implementation-shaped to be the shell's north-star vocabulary.
 
 Use these user-facing workspaces instead:
@@ -28,10 +28,11 @@ Use these user-facing workspaces instead:
 - `Plan`
 - `Build`
 - `Review`
-- `Ship`
+- `Operate`
+- `Library`
 
-Keep `Intent` and `Agent` as internal identifiers until the migration is complete.
-`Review` and `Ship` already work well as workspace names and should remain first-class.
+Keep `Intent`, `Agent`, and `Ship` as internal identifiers until the migration is complete.
+`Operate` is the live user-facing name for the operating surface. `Library` is the live user-facing name for the durable toolspace that holds docs, chat, rules, extensions, and configuration.
 
 ## Shell Model
 
@@ -90,7 +91,7 @@ The current codebase still uses some legacy identifiers. This is the current map
 - `Intent` -> `Plan`
 - `Agent` -> `Build`
 - `Review` -> `Review`
-- `Ship` -> `Ship`
+- `Ship` -> `Operate`
 - `Editor` -> `Editor`
 - `Database` -> `Database`
 - `Terminal` -> `Terminal`
@@ -101,6 +102,7 @@ The current codebase still uses some legacy identifiers. This is the current map
 - `Extensions` -> `Extensions`
 
 Legacy names may remain in code until the migration is complete, but shared shell copy should prefer the canonical names above.
+`Ship` is a legacy alias for the live `Operate` space, not a canonical user-facing workspace name.
 
 ## What Counts As A First-Class Workspace
 
@@ -115,7 +117,7 @@ A first-class workspace must satisfy all of these:
 
 By that definition:
 
-- `Plan`, `Build`, `Review`, and `Ship` are first-class workspaces.
+- `Plan`, `Build`, `Review`, `Operate`, and `Library` are first-class spaces.
 - `Editor`, `Database`, `Terminal`, `Docs`, `Chat`, `Notifications`, `Testing`, and `Extensions` are first-class destinations or toolspaces, but not peer product phases.
 
 ## Structural Rules

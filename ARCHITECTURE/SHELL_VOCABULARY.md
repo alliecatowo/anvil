@@ -8,7 +8,9 @@ If another doc disagrees with this one, this one wins.
 
 ## Direct Answer
 
-`Intent`, `Agent`, `Review`, `Ship`, `Editor`, `Database`, `Terminal`, `Docs`, `Chat`, `Notifications`, `Testing`, and `Extensions` do **not** all make sense as peer "workspaces" in the final product vocabulary.
+The live shell spaces are `Plan`, `Build`, `Review`, `Operate`, and `Library`.
+
+`Intent`, `Agent`, `Ship`, `Editor`, `Database`, `Terminal`, `Docs`, `Chat`, `Notifications`, `Testing`, and `Extensions` do **not** all make sense as peer "workspaces" in the final product vocabulary.
 
 They are current implementation labels and transitional product labels, not the final shell language.
 
@@ -113,9 +115,10 @@ These are persistent destinations, not transient toggles.
 
 Keeping them as peer workspaces makes the app feel like a pile of related features rather than a coherent environment.
 
-### Why `Ship` Should Become `Operate`
+### Why `Ship` Is Transitional
 
-`Ship` is too narrow. It describes deployment, but Anvil's actual operating surface includes:
+`Ship` is the legacy implementation label for the live `Operate` space.
+It describes deployment, but Anvil's actual operating surface includes:
 
 - deployments
 - environments
@@ -124,7 +127,7 @@ Keeping them as peer workspaces makes the app feel like a pile of related featur
 - incidents
 - operational messaging
 
-`Operate` is the broader and more durable category.
+`Operate` is the broader and more durable user-facing category.
 
 ### Why `Library` Should Exist
 

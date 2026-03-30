@@ -5,13 +5,14 @@
 **North Star:** [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md)
 
 This backlog is the migration plan from the current mixed shell vocabulary to the canonical shell model.
+The live user-facing shell already uses `Plan / Build / Review / Operate / Library`; `Intent`, `Agent`, and `Ship` are transitional/internal labels only.
 
 Recent completed wave on `shell-vocabulary-migration`:
 
-- `9e945c9` `Sync shell backlog and simplify review sidebar`
-- `3d66db7` `Unify build inspector and sidebar interactions`
+- `7907463` `Wire review graph and stash interactions`
+- `60a9c90` `Flatten build sidebar into a compact files navigator`
 
-That wave tightened Review navigation, unified the Build inspector/sidebar split, and removed the last obvious double-sidebar affordance from the current shell. The next execution slice is still the raw smoke / visual rerun, followed by the remaining visible `Plan` / `Build` rename and routing cleanup.
+That wave tightened Review navigation, flattened the Build sidebar split, and removed the last obvious double-sidebar affordance from the current shell. The next execution slice is still the raw smoke / visual rerun, followed by the remaining visible `Plan` / `Build` rename and routing cleanup.
 
 The target shell model is:
 
@@ -235,8 +236,8 @@ The target shell model is:
 - [ ] S-175 Make every new shell change reference `ARCHITECTURE/SHELL_VOCABULARY.md` before implementation.
 - [ ] S-176 Ensure all docs that describe the shell point to the north-star vocabulary doc.
 - [ ] S-177 Make the repo’s canonical UI docs agree on `Workspace Rail`, `Sidebar`, `Canvas`, `Inspector`, `Utility Deck`, `Toolbar`, and `Status Bar`.
-- [ ] S-178 Make `Plan`, `Build`, `Review`, and `Ship` the only top-level user-facing workspaces.
-- [ ] S-179 Keep `Intent`, `Agent`, and similar labels only as transitional/internal implementation names until removed.
+- [ ] S-178 Make `Plan`, `Build`, `Review`, `Operate`, and `Library` the only top-level user-facing workspaces.
+- [ ] S-179 Keep `Intent`, `Agent`, `Ship`, and similar labels only as transitional/internal implementation names until removed.
 - [ ] S-180 Ensure the new vocabulary is reflected in task tracking, visual tests, and onboarding.
 - [ ] S-181 Update the root task registry to mirror the new shell vocabulary.
 - [ ] S-182 Update shell screenshots and marketing copy to match the canonical terms.
@@ -332,9 +333,9 @@ The target shell model is:
 
 ## 17. Immediate Execution Queue
 
-The next execution slice after `3d66db7` is the raw smoke / visual rerun, then the remaining visible `Plan` / `Build` rename and routing cleanup.
+The next execution slice is the raw smoke / visual rerun, then the remaining visible `Plan` / `Build` rename and routing cleanup.
 
-- [ ] S-247 Rerun raw smoke suites to completion with fresh bundle paths and close the remaining Build and Intent failures.
+- [ ] S-247 Rerun raw smoke suites to completion with fresh bundle paths and close the remaining Build and Plan failures.
 - [ ] S-248 Rerun visual regression suites to completion and record the new canonical baseline.
 - [ ] S-249 Rename visible workspace labels from `Intent` to `Plan` in the rail, top chrome, and docs.
 - [ ] S-250 Rename visible workspace labels from `Agent` to `Build` in the rail, session chrome, and docs.
