@@ -100,7 +100,6 @@ struct ReviewSidebar: View {
             }
             guard let adapter = container.getOrCreateGitAdapter() else { return }
             appState.gitHubPRViewModel.clearSelection()
-            viewModel.isCommitGraphVisible = false
             viewModel.loadBranchDiff(branch.name, using: adapter)
         } label: {
             HoverableRow(isSelected: viewModel.selectedBranchName == branch.name) {
@@ -634,7 +633,6 @@ struct ReviewSidebar: View {
     private func changeRow(_ change: GitFileChange) -> some View {
         Button {
             appState.gitHubPRViewModel.clearSelection()
-            viewModel.isCommitGraphVisible = false
             if change.status == .unmerged {
                 // Show merge conflict view for unmerged files
                 if let idx = viewModel.mergeConflicts.firstIndex(where: { $0.filePath == change.filePath }) {
@@ -774,8 +772,7 @@ struct ReviewSidebar: View {
     private func reviewRow(_ review: Review) -> some View {
         Button {
             appState.gitHubPRViewModel.clearSelection()
-            viewModel.isCommitGraphVisible = false
-            viewModel.selectedBranchName = nil
+            viewModel.resetNavigationState()
             viewModel.selectReview(review.id)
         } label: {
             AnvilListItem(
@@ -943,8 +940,6 @@ struct ReviewSidebar: View {
         guard let adapter = container.getOrCreateGitAdapter() else { return }
 
         appState.gitHubPRViewModel.clearSelection()
-        viewModel.isCommitGraphVisible = false
-        viewModel.selectedBranchName = nil
 
         if let staged = appState.stagedChanges.first {
             viewModel.loadLocalFileDiff(staged, using: adapter)

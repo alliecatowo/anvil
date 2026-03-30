@@ -72,7 +72,7 @@ public struct InspectorPanel: View {
     @ViewBuilder
     private var inspectorContent: some View {
         if appState.currentSpace == .plan, appState.intentViewModel.selectedTicket != nil {
-            TicketInspectorView(viewModel: appState.intentViewModel)
+            TicketInspectorSummaryView(viewModel: appState.intentViewModel)
         } else if appState.currentSpace == .build {
             buildInspectorContent
         } else {
@@ -108,6 +108,59 @@ public struct InspectorPanel: View {
             DatabaseInspectorSummaryView(viewModel: appState.databaseViewModel)
         case .tests:
             TestingInspectorSummaryView(viewModel: appState.testingViewModel)
+        }
+    }
+}
+
+// MARK: - Ticket Inspector Summary (shown when detail is open in the main canvas)
+
+struct TicketInspectorSummaryView: View {
+    @ObservedObject var viewModel: IntentViewModel
+
+    var body: some View {
+        if let ticket = viewModel.selectedTicket {
+            ScrollView {
+                VStack(alignment: .leading, spacing: AnvilSpacing.lg) {
+                    InspectorSection(title: "Selected Ticket") {
+                        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+                            Text(ticket.title)
+                                .font(AnvilFont.subheading)
+                                .foregroundStyle(AnvilColor.textPrimary)
+                                .lineLimit(2)
+
+                            Text(ticket.id)
+                                .font(AnvilFont.code)
+                                .foregroundStyle(AnvilColor.textTertiary)
+
+                            HStack(spacing: AnvilSpacing.sm) {
+                                AnvilBadge(text: ticket.status.capitalized, color: IntentViewModel.statusColor(ticket.status))
+                                Text(IntentViewModel.priorityLabel(ticket.priority))
+                                    .font(AnvilFont.label)
+                                    .foregroundStyle(IntentViewModel.priorityColor(ticket.priority))
+                            }
+
+                            if let assignee = ticket.assignee {
+                                Text("Assigned to \(assignee)")
+                                    .font(AnvilFont.label)
+                                    .foregroundStyle(AnvilColor.textSecondary)
+                            }
+                        }
+                    }
+
+                    InspectorSection(title: "Canvas") {
+                        VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
+                            Text("This ticket is open in the main canvas.")
+                                .font(AnvilFont.body)
+                                .foregroundStyle(AnvilColor.textSecondary)
+
+                            AnvilButton("Back to List", icon: "chevron.left", style: .ghost) {
+                                viewModel.closeTicketDetailInMainPane()
+                            }
+                        }
+                    }
+                }
+                .padding(AnvilSpacing.md)
+            }
         }
     }
 }

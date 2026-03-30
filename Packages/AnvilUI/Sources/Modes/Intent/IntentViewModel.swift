@@ -267,7 +267,7 @@ public final class IntentViewModel: ObservableObject {
         }
     }
 
-    func selectTicket(_ id: String?, openInMainPane: Bool = false) {
+    func selectTicket(_ id: String?, openInMainPane: Bool = true) {
         selectedTicketId = id
         if let id {
             selectedTicketIds = [id]

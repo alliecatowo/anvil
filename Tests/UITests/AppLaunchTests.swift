@@ -97,10 +97,6 @@ final class DefaultJourneySmokeTests: AnvilUITestCase {
         titleField.typeText(title)
         app.typeKey(.return, modifierFlags: [])
 
-        let openInMainPane = app.buttons["intent.open-main-pane"]
-        XCTAssertTrue(openInMainPane.waitForExistence(timeout: 5), "Plan list should expose explicit open-in-main-pane action")
-        openInMainPane.click()
-
         let detailTitle = app.textFields["intent.ticket-detail.title"]
         XCTAssertTrue(detailTitle.waitForExistence(timeout: 5), "Ticket must open into the main-pane detail view")
         XCTAssertTrue(app.buttons["intent.ticket-detail.back"].waitForExistence(timeout: 5), "Ticket detail must expose a Back action")

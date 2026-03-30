@@ -309,8 +309,10 @@ struct ReviewModeContent: View {
         } else if appState.gitHubPRViewModel.selectedPR != nil {
             GitHubPRDetailView(viewModel: appState.gitHubPRViewModel)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if viewModel.selectedBranchName != nil, viewModel.selectedFileID == nil,
-                  let branch = appState.branches.first(where: { $0.name == viewModel.selectedBranchName }) {
+        } else if viewModel.selectedBranchName != nil, viewModel.selectedFileID == nil {
+            let branchName = viewModel.selectedBranchName ?? "detached"
+            let branch = appState.branches.first(where: { $0.name == branchName })
+                ?? Branch(name: branchName)
             BranchDetailView(branch: branch, viewModel: viewModel)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if viewModel.selectedReview != nil {

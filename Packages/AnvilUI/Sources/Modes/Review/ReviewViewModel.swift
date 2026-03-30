@@ -212,6 +212,24 @@ public final class ReviewViewModel: ObservableObject {
         }
     }
 
+    /// Clear transient routing state before opening a new review surface.
+    func resetNavigationState(keepBranchSelection: Bool = false) {
+        if !keepBranchSelection {
+            selectedBranchName = nil
+        }
+        selectedReviewID = nil
+        selectedFileID = nil
+        selectedConflictIndex = nil
+        mergeResult = nil
+        mergeError = nil
+        isCommitGraphVisible = false
+        isBlameVisible = false
+        blameData = [:]
+        activeCommentLine = nil
+        replyingToThreadId = nil
+        inlineCommentText = ""
+    }
+
     func selectFile(_ id: String) {
         selectedFileID = id
         focusedHunkIndex = 0
@@ -543,6 +561,7 @@ public final class ReviewViewModel: ObservableObject {
 
     /// Load the diff of a branch against main/master using the git adapter.
     func loadBranchDiff(_ branchName: String, using adapter: GitSourceControlAdapter) {
+        resetNavigationState()
         selectedBranchName = branchName
         isLoadingBranchDiff = true
         branchDiffFiles = []
@@ -610,6 +629,7 @@ public final class ReviewViewModel: ObservableObject {
 
     /// Load a diff for a single locally changed file (from git status).
     func loadLocalFileDiff(_ change: GitFileChange, using adapter: GitSourceControlAdapter) {
+        resetNavigationState()
         isLoadingBranchDiff = true
 
         Task { @MainActor in
@@ -648,11 +668,9 @@ public final class ReviewViewModel: ObservableObject {
     }
 
     func clearBranchDiff() {
-        selectedBranchName = nil
+        resetNavigationState()
         branchDiffFiles = []
         reviews.removeAll { $0.id.hasPrefix("branch-diff-") }
-        selectedReviewID = nil
-        selectedFileID = nil
     }
 
     // MARK: - Blame

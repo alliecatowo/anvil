@@ -48,6 +48,7 @@ struct ReviewInboxView: View {
 
     private func reviewRow(_ review: Review) -> some View {
         Button {
+            viewModel.resetNavigationState()
             viewModel.selectReview(review.id)
         } label: {
             HStack(spacing: AnvilSpacing.md) {
