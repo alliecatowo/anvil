@@ -8,12 +8,10 @@ This backlog is the migration plan from the current mixed shell vocabulary to th
 
 Recent completed wave on `shell-vocabulary-migration`:
 
-- `90c56f4` `Place chat in Library and tighten shell contract`
-- `f480478` `Harden app launch for UI automation`
-- `7bd103f` `Continue shell contract migration`
-- `6cd556a` `Refine plan/build shell labels and selectors`
+- `9e945c9` `Sync shell backlog and simplify review sidebar`
+- `3d66db7` `Unify build inspector and sidebar interactions`
 
-That wave established the canonical shell vocabulary, moved `Chat` into Library as a toolspace, tightened the `Plan` and `Build` user-facing labels, and hardened the raw/default accessibility selectors.
+That wave tightened Review navigation, unified the Build inspector/sidebar split, and removed the last obvious double-sidebar affordance from the current shell. The next execution slice is still the raw smoke / visual rerun, followed by the remaining visible `Plan` / `Build` rename and routing cleanup.
 
 The target shell model is:
 
@@ -333,6 +331,8 @@ The target shell model is:
 - [ ] S-266 Add canonical screenshots for raw Plan, Build, Review, Operate, and Library states.
 
 ## 17. Immediate Execution Queue
+
+The next execution slice after `3d66db7` is the raw smoke / visual rerun, then the remaining visible `Plan` / `Build` rename and routing cleanup.
 
 - [ ] S-247 Rerun raw smoke suites to completion with fresh bundle paths and close the remaining Build and Intent failures.
 - [ ] S-248 Rerun visual regression suites to completion and record the new canonical baseline.
