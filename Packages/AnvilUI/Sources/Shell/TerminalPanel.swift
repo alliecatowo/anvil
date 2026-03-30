@@ -125,8 +125,11 @@ struct UtilityDeck: View {
 
     // MARK: - Terminal Tab
 
+    @State private var hoveredTabId: UUID?
+
     private func terminalTab(_ session: TerminalSession) -> some View {
         let isSelected = terminalVM.selectedSessionId == session.id
+        let isHovered = hoveredTabId == session.id
         let tabTitle: String = {
             if let splitId = splitSessionId,
                terminalVM.selectedSessionId == session.id,
@@ -136,44 +139,44 @@ struct UtilityDeck: View {
             return session.title
         }()
 
-        return HStack(spacing: 2) {
-            Button {
-                terminalVM.selectTab(session.id)
-            } label: {
-                HStack(spacing: AnvilSpacing.xxs) {
-                    Image(systemName: "terminal")
-                        .font(.system(size: 9))
-                    Text(tabTitle)
-                        .font(AnvilFont.label)
-                        .lineLimit(1)
-                }
-                .foregroundStyle(isSelected ? .primary : .tertiary)
-                .padding(.horizontal, AnvilSpacing.sm)
-                .padding(.vertical, AnvilSpacing.xxs)
-                .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+        return Button {
+            terminalVM.selectTab(session.id)
+        } label: {
+            HStack(spacing: AnvilSpacing.xxs) {
+                Image(systemName: "terminal")
+                    .font(.system(size: 9))
 
-            if terminalVM.sessions.count > 1 && isSelected {
-                Button {
-                    terminalVM.closeTab(session.id)
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 7, weight: .bold))
-                        .foregroundStyle(.tertiary)
-                        .frame(width: 14, height: 14)
-                        .contentShape(Rectangle())
+                Text(tabTitle)
+                    .font(AnvilFont.label)
+                    .lineLimit(1)
+
+                // Close button (visible on hover or when selected, if multiple tabs)
+                if terminalVM.sessions.count > 1 && (isSelected || isHovered) {
+                    Button {
+                        if splitSessionId == session.id { splitSessionId = nil }
+                        terminalVM.closeTab(session.id)
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 7, weight: .bold))
+                            .foregroundStyle(.tertiary)
+                            .frame(width: 16, height: 16)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.borderless)
             }
+            .foregroundStyle(isSelected ? .primary : .secondary)
+            .padding(.horizontal, AnvilSpacing.sm)
+            .padding(.vertical, 4)
+            .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .onHover { hovering in hoveredTabId = hovering ? session.id : nil }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(session.title)\(isSelected ? ", selected" : ""), \(session.isRunning ? "running" : "exited")")
+        .accessibilityLabel("\(session.title)\(isSelected ? ", selected" : "")")
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-        .padding(.horizontal, 2)
-        .padding(.vertical, 2)
     }
 
     // MARK: - Split Toggle
