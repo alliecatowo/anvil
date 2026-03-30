@@ -145,22 +145,21 @@ struct BuildFilesSidebar: View {
             } else {
                 VStack(spacing: 2) {
                     ForEach(viewModel.openFiles) { file in
-                        Button {
+                        AnvilSidebarRowButton(
+                            title: file.name,
+                            icon: fileIcon(for: file.name),
+                            subtitle: file.relativePath,
+                            isActive: viewModel.selectedFileId == file.id
+                        ) {
                             viewModel.selectFile(file.id)
-                        } label: {
-                            AnvilListItem(
-                                icon: fileIcon(for: file.name),
-                                title: file.name,
-                                subtitle: file.relativePath,
-                                tag: viewModel.isFileDirty(file.id) ? "Dirty" : (viewModel.isFileReadOnly(file.id) ? "Read-only" : nil),
-                                tagColor: viewModel.isFileDirty(file.id) ? AnvilColor.accentAmber : AnvilColor.textTertiary,
-                                isSelected: viewModel.selectedFileId == file.id,
-                                isCompact: false
-                            )
+                        } trailing: {
+                            if viewModel.isFileDirty(file.id) {
+                                AnvilBadge(text: "Dirty", color: AnvilColor.accentAmber)
+                            } else if viewModel.isFileReadOnly(file.id) {
+                                AnvilBadge(text: "Read-only", color: AnvilColor.textTertiary)
+                            }
                         }
-                        .buttonStyle(.plain)
                         .accessibilityLabel("Open file \(file.name)")
-                        .accessibilityAddTraits(.isButton)
                     }
                 }
             }
@@ -178,21 +177,16 @@ struct BuildFilesSidebar: View {
             } else {
                 VStack(spacing: 2) {
                     ForEach(recentPaths.prefix(8), id: \.self) { path in
-                        Button {
+                        AnvilSidebarRowButton(
+                            title: URL(fileURLWithPath: path).lastPathComponent,
+                            icon: fileIcon(for: path),
+                            subtitle: relativePath(for: path)
+                        ) {
                             viewModel.openFileFromTree(path)
-                        } label: {
-                            AnvilListItem(
-                                icon: fileIcon(for: path),
-                                title: URL(fileURLWithPath: path).lastPathComponent,
-                                subtitle: relativePath(for: path),
-                                tag: "Recent",
-                                tagColor: AnvilColor.accentBlue,
-                                isCompact: false
-                            )
+                        } trailing: {
+                            AnvilBadge(text: "Recent", color: AnvilColor.accentBlue)
                         }
-                        .buttonStyle(.plain)
                         .accessibilityLabel("Recent file \(path)")
-                        .accessibilityAddTraits(.isButton)
                     }
                 }
             }
