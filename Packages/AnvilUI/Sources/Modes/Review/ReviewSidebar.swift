@@ -98,9 +98,13 @@ struct ReviewSidebar: View {
                 appState.gitOperationResult = .success("Already on \(branch.name). Choose another branch or use Start Review.")
                 return
             }
-            guard let adapter = container.getOrCreateGitAdapter() else { return }
             appState.gitHubPRViewModel.clearSelection()
-            viewModel.loadBranchDiff(branch.name, using: adapter)
+            if let adapter = container.getOrCreateGitAdapter() {
+                viewModel.loadBranchDiff(branch.name, using: adapter)
+            } else {
+                // No real git adapter — show branch detail with demo context
+                viewModel.selectedBranchName = branch.name
+            }
         } label: {
             HoverableRow(isSelected: viewModel.selectedBranchName == branch.name) {
                 HStack(spacing: AnvilSpacing.sm) {
@@ -646,14 +650,22 @@ struct ReviewSidebar: View {
         Button {
             appState.gitHubPRViewModel.clearSelection()
             if change.status == .unmerged {
-                // Show merge conflict view for unmerged files
                 if let idx = viewModel.mergeConflicts.firstIndex(where: { $0.filePath == change.filePath }) {
                     viewModel.selectConflict(idx)
                 }
-            } else {
-                // Load diff for this changed file
-                guard let adapter = container.getOrCreateGitAdapter() else { return }
+            } else if let adapter = container.getOrCreateGitAdapter() {
                 viewModel.loadLocalFileDiff(change, using: adapter)
+            } else {
+                // No git adapter — seed demo reviews and select best match
+                if viewModel.reviews.isEmpty {
+                    viewModel.reviews = ReviewViewModel.makeSampleReviews()
+                }
+                let match = viewModel.reviews.first(where: {
+                    $0.diff.contains(where: { $0.filePath.hasSuffix(change.fileName) })
+                }) ?? viewModel.reviews.first
+                if let review = match {
+                    viewModel.selectReview(review.id, selectFirstFile: true)
+                }
             }
         } label: {
             HoverableRow {
@@ -953,26 +965,33 @@ struct ReviewSidebar: View {
     }
 
     private func startReviewFromCurrentChanges() {
-        guard let adapter = container.getOrCreateGitAdapter() else { return }
-
         appState.gitHubPRViewModel.clearSelection()
 
-        if let staged = appState.stagedChanges.first {
-            viewModel.loadLocalFileDiff(staged, using: adapter)
-            return
-        }
-        if let unstaged = appState.unstagedChanges.first {
-            viewModel.loadLocalFileDiff(unstaged, using: adapter)
-            return
-        }
-        if let untracked = appState.untrackedChanges.first {
-            viewModel.loadLocalFileDiff(untracked, using: adapter)
+        if let adapter = container.getOrCreateGitAdapter() {
+            if let staged = appState.stagedChanges.first {
+                viewModel.loadLocalFileDiff(staged, using: adapter)
+                return
+            }
+            if let unstaged = appState.unstagedChanges.first {
+                viewModel.loadLocalFileDiff(unstaged, using: adapter)
+                return
+            }
+            if let untracked = appState.untrackedChanges.first {
+                viewModel.loadLocalFileDiff(untracked, using: adapter)
+                return
+            }
+            if let branch = appState.branches.first(where: { !$0.isCurrent && !$0.name.contains("/") }) {
+                viewModel.loadBranchDiff(branch.name, using: adapter)
+            }
             return
         }
 
-        // Fall back to reviewing a non-current branch if available.
-        if let branch = appState.branches.first(where: { !$0.isCurrent && !$0.name.contains("/") }) {
-            viewModel.loadBranchDiff(branch.name, using: adapter)
+        // No git adapter — use or seed demo reviews
+        if viewModel.reviews.isEmpty {
+            viewModel.reviews = ReviewViewModel.makeSampleReviews()
+        }
+        if let first = viewModel.reviews.first {
+            viewModel.selectReview(first.id, selectFirstFile: true)
         }
     }
 
