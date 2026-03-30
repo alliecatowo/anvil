@@ -23,26 +23,22 @@ public struct IconRail: View {
     public init() {}
 
     public var body: some View {
-        VStack(spacing: 0) {
-            VStack(spacing: 4) {
-                ForEach(spaces) { entry in
-                    RailButton(
-                        icon: entry.icon,
-                        title: entry.label,
-                        isActive: appState.currentSpace == entry.space,
-                        action: { appState.switchSpace(entry.space) }
-                    )
-                }
+        VStack(spacing: 4) {
+            ForEach(spaces) { entry in
+                RailButton(
+                    icon: entry.icon,
+                    title: entry.label,
+                    isActive: appState.currentSpace == entry.space,
+                    action: { appState.switchSpace(entry.space) }
+                )
             }
 
             Spacer()
         }
         .padding(.vertical, AnvilSpacing.sm)
-        .background(.regularMaterial)
+        .background(.sidebar)
         .overlay(alignment: .trailing) {
-            Rectangle()
-                .fill(AnvilColor.borderSubtle)
-                .frame(width: 1)
+            Divider()
         }
     }
 }
@@ -68,11 +64,9 @@ public struct ContentSidebar: View {
                 LibrarySidebar()
             }
         }
-        .background(.regularMaterial)
+        .background(.sidebar)
         .overlay(alignment: .trailing) {
-            Rectangle()
-                .fill(AnvilColor.borderSubtle)
-                .frame(width: 1)
+            Divider()
         }
     }
 }
@@ -101,37 +95,17 @@ private struct RailButton: View {
     let isActive: Bool
     let action: () -> Void
 
-    @State private var isHovered = false
-    @GestureState private var isPressed = false
-
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 14, weight: isActive ? .semibold : .regular))
-                .foregroundStyle(isActive ? AnvilColor.textPrimary : AnvilColor.textSecondary)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(isActive ? Color.accentColor : .secondary)
                 .frame(width: 36, height: 32)
-                .background(
-                    isActive
-                        ? Color.accentColor.opacity(0.14)
-                        : (isHovered ? Color.primary.opacity(0.08) : .clear)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .scaleEffect(isPressed ? 0.93 : 1.0)
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .updating($isPressed) { _, pressed, _ in pressed = true }
-        )
         .accessibilityLabel(title)
         .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
         .help(title)
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.12)) {
-                isHovered = hovering
-            }
-        }
     }
 }
