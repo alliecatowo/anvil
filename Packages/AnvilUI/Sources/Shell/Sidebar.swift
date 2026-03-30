@@ -36,7 +36,7 @@ public struct IconRail: View {
             Spacer()
         }
         .padding(.vertical, AnvilSpacing.sm)
-        .background(.sidebar)
+        .background(.regularMaterial)
         .overlay(alignment: .trailing) {
             Divider()
         }
@@ -64,7 +64,7 @@ public struct ContentSidebar: View {
                 LibrarySidebar()
             }
         }
-        .background(.sidebar)
+        .background(.regularMaterial)
         .overlay(alignment: .trailing) {
             Divider()
         }
