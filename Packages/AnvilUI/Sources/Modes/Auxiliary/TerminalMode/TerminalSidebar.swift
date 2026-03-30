@@ -36,21 +36,20 @@ struct TerminalSessionList: View {
 
     var body: some View {
         ForEach(viewModel.sessions) { session in
-            Button {
+            AnvilSidebarRowButton(
+                title: session.title,
+                icon: session.isRunning ? "terminal" : "terminal.fill",
+                subtitle: session.isRunning ? "running" : "exited",
+                isActive: viewModel.selectedSessionId == session.id
+            ) {
                 viewModel.selectTab(session.id)
                 onSelect?(session.id)
-            } label: {
-                AnvilListItem(
-                    icon: session.isRunning ? "terminal" : "terminal.fill",
-                    title: session.title,
-                    subtitle: session.isRunning ? "running" : "exited",
-                    tag: session.isRunning ? "running" : "stopped",
-                    tagColor: session.isRunning ? AnvilColor.accentGreen : AnvilColor.textTertiary,
-                    isSelected: viewModel.selectedSessionId == session.id,
-                    isCompact: false
+            } trailing: {
+                AnvilBadge(
+                    text: session.isRunning ? "running" : "stopped",
+                    color: session.isRunning ? AnvilColor.accentGreen : AnvilColor.textTertiary
                 )
             }
-            .buttonStyle(.plain)
         }
     }
 }
