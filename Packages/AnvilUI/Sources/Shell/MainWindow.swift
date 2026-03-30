@@ -134,6 +134,7 @@ public struct MainWindow: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 3))
                             }
                         }
+                        .padding(.horizontal, 2)
                         .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.bordered)
