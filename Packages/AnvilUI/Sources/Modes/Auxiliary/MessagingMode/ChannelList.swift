@@ -43,26 +43,20 @@ struct ChannelList: View {
     // MARK: - Channel Row
 
     private func channelRow(_ channel: Channel) -> some View {
-        let isSelected = viewModel.selectedChannelId == channel.id
         let hasUnread = channel.unreadCount > 0
 
-        return Button {
+        return AnvilSidebarRowButton(
+            title: channel.name,
+            icon: channel.icon,
+            subtitle: hasUnread ? "\(channel.unreadCount) unread messages" : nil,
+            isActive: viewModel.selectedChannelId == channel.id
+        ) {
             viewModel.selectChannel(channel.id)
-        } label: {
-            AnvilListItem(
-                icon: channel.icon,
-                title: channel.name,
-                subtitle: hasUnread ? "\(channel.unreadCount) unread messages" : nil,
-                tag: hasUnread ? "\(channel.unreadCount)" : nil,
-                tagColor: AnvilColor.accentBlue,
-                isSelected: isSelected,
-                isCompact: false
-            )
+        } trailing: {
+            if hasUnread {
+                AnvilBadge(text: "\(channel.unreadCount)", color: AnvilColor.accentBlue)
+            }
         }
-        .buttonStyle(.plain)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
         .accessibilityLabel("\(hasUnread ? "Unread, " : "")\(channel.name)\(hasUnread ? ", \(channel.unreadCount) unread messages" : "")")
-        .accessibilityAddTraits(.isButton)
     }
 }
