@@ -125,57 +125,55 @@ struct UtilityDeck: View {
 
     // MARK: - Terminal Tab
 
-    @State private var hoveredTabId: UUID?
-
     private func terminalTab(_ session: TerminalSession) -> some View {
         let isSelected = terminalVM.selectedSessionId == session.id
-        let isHovered = hoveredTabId == session.id
-        let tabTitle: String = {
-            if let splitId = splitSessionId,
-               terminalVM.selectedSessionId == session.id,
-               let splitSession = terminalVM.sessions.first(where: { $0.id == splitId }) {
-                return "\(session.title) | \(splitSession.title)"
-            }
-            return session.title
-        }()
+        let isSplitPrimary = isSelected && splitSessionId != nil
+        let tabTitle = session.title
 
-        return Button {
-            terminalVM.selectTab(session.id)
-        } label: {
-            HStack(spacing: AnvilSpacing.xxs) {
-                Image(systemName: "terminal")
-                    .font(.system(size: 9))
+        return HStack(spacing: 0) {
+            // Tab content (clickable to select)
+            Button {
+                terminalVM.selectTab(session.id)
+            } label: {
+                HStack(spacing: AnvilSpacing.xxs) {
+                    Image(systemName: "terminal")
+                        .font(.system(size: 9))
 
-                Text(tabTitle)
-                    .font(AnvilFont.label)
-                    .lineLimit(1)
+                    Text(tabTitle)
+                        .font(AnvilFont.label)
+                        .lineLimit(1)
 
-                // Close button (visible on hover or when selected, if multiple tabs)
-                if terminalVM.sessions.count > 1 && (isSelected || isHovered) {
-                    Button {
-                        if splitSessionId == session.id { splitSessionId = nil }
-                        terminalVM.closeTab(session.id)
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 7, weight: .bold))
+                    // Split indicator
+                    if isSplitPrimary {
+                        Image(systemName: "rectangle.split.2x1")
+                            .font(.system(size: 8))
                             .foregroundStyle(.tertiary)
-                            .frame(width: 16, height: 16)
-                            .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
                 }
+                .foregroundStyle(isSelected ? .primary : .secondary)
             }
-            .foregroundStyle(isSelected ? .primary : .secondary)
-            .padding(.horizontal, AnvilSpacing.sm)
-            .padding(.vertical, 4)
-            .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
-            .clipShape(RoundedRectangle(cornerRadius: 5))
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+
+            // Close button — always visible if multiple tabs
+            if terminalVM.sessions.count > 1 {
+                Button {
+                    if splitSessionId == session.id { splitSessionId = nil }
+                    terminalVM.closeTab(session.id)
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+                .padding(.leading, 4)
+            }
         }
-        .buttonStyle(.plain)
-        .onHover { hovering in hoveredTabId = hovering ? session.id : nil }
+        .padding(.horizontal, AnvilSpacing.sm)
+        .padding(.vertical, 4)
+        .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: 5))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(session.title)\(isSelected ? ", selected" : "")")
+        .accessibilityLabel("\(session.title)\(isSelected ? ", selected" : "")\(isSplitPrimary ? ", split" : "")")
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 

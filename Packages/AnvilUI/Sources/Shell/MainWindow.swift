@@ -96,7 +96,7 @@ public struct MainWindow: View {
                         Label("Command Palette", systemImage: "magnifyingglass")
                     }
                 } label: {
-                    HStack(spacing: AnvilSpacing.xxs) {
+                    HStack(spacing: AnvilSpacing.xs) {
                         Image(systemName: "folder.fill")
                             .font(.system(size: 11))
                         Text(appState.currentProject?.name ?? "Anvil")
@@ -117,7 +117,7 @@ public struct MainWindow: View {
                     Button {
                         isBranchPickerVisible.toggle()
                     } label: {
-                        HStack(spacing: AnvilSpacing.xxs) {
+                        HStack(spacing: AnvilSpacing.xs) {
                             Image(systemName: "arrow.triangle.branch")
                                 .font(.system(size: 11, weight: .medium))
                             Text(appState.currentBranch)
