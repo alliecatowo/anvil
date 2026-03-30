@@ -348,9 +348,9 @@ struct GitGraphView: View {
             AnvilColor.accentGreen,
             AnvilColor.accentAmber,
             AnvilColor.accentRed,
-            Color(red: 0.2, green: 0.8, blue: 0.8),  // teal
-            Color(red: 0.9, green: 0.5, blue: 0.2),  // orange
-            Color(red: 0.7, green: 0.3, blue: 0.9),  // violet
+            AnvilColor.accentTeal,
+            Color.orange,
+            Color.purple,
         ]
         return palette[col % palette.count]
     }

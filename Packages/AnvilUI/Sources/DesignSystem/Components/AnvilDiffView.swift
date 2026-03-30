@@ -255,8 +255,8 @@ public struct AnvilDiffView: View {
     private func lineBackground(for type: DiffLineType) -> Color {
         switch type {
         case .context: .clear
-        case .added: Color(hex: 0x22C55E, opacity: 0.1)
-        case .removed: Color(hex: 0xEF4444, opacity: 0.1)
+        case .added: AnvilColor.diffAddedBackground
+        case .removed: AnvilColor.diffRemovedBackground
         }
     }
 
