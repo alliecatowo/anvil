@@ -343,6 +343,13 @@ private struct TicketRowContent: View {
                             .lineLimit(1)
                             .accessibilityLabel("Assigned to \(assignee)")
                     }
+
+                    Spacer(minLength: AnvilSpacing.xxs)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(isSelected ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                        .accessibilityHidden(true)
                 }
             }
         }

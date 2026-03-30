@@ -79,6 +79,11 @@ struct ReviewInboxView: View {
                             .padding(.vertical, 2)
                             .background(.regularMaterial)
                             .clipShape(Capsule())
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(viewModel.selectedReviewID == review.id ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                            .accessibilityHidden(true)
                     }
 
                     HStack(spacing: AnvilSpacing.sm) {

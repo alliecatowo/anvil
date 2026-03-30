@@ -55,11 +55,11 @@ struct TicketListView: View {
 
             filterIndicator
 
-            if viewModel.selectedTicketId != nil {
+            if viewModel.selectedTicketId != nil && !viewModel.isShowingTicketDetailInMainPane {
                 Button {
                     viewModel.openSelectedTicketInMainPane()
                 } label: {
-                    Label("Open", systemImage: "arrow.right.square")
+                    Label("Open in Canvas", systemImage: "arrow.right.square")
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
@@ -121,6 +121,13 @@ struct TicketListView: View {
                     Text(ticket.title)
                         .font(AnvilFont.body)
                         .lineLimit(1)
+
+                    Spacer(minLength: AnvilSpacing.xs)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(ticket.id == viewModel.selectedTicketId ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                        .accessibilityHidden(true)
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("\(ticket.title), \(ticket.id)")

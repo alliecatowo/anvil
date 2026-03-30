@@ -131,6 +131,11 @@ struct ReviewSidebar: View {
                             .font(AnvilFont.label)
                             .foregroundStyle(AnvilColor.accentRed)
                     }
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(viewModel.selectedBranchName == branch.name ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                        .accessibilityHidden(true)
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("Branch \(branch.name)\(branch.isCurrent ? ", current" : "")")
@@ -698,44 +703,39 @@ struct ReviewSidebar: View {
             icon: reviewIcon(for: review),
             count: review.diff.count,
             content: {
-                HStack(alignment: .top, spacing: AnvilSpacing.sm) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(review.title)
-                            .font(AnvilFont.body)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                            .lineLimit(2)
+                VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
+                    HStack(alignment: .top, spacing: AnvilSpacing.sm) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(review.title)
+                                .font(AnvilFont.body)
+                                .foregroundStyle(AnvilColor.textPrimary)
+                                .lineLimit(2)
 
-                        Text("\(review.author) \u{2022} \(review.sourceId)")
+                            Text("\(review.author) \u{2022} \(review.sourceId)")
+                                .font(AnvilFont.label)
+                                .foregroundStyle(AnvilColor.textSecondary)
+                                .lineLimit(1)
+                        }
+
+                        Spacer()
+
+                        statusBadge(review.status)
+                    }
+                    .padding(.horizontal, AnvilSpacing.md)
+                    .padding(.vertical, AnvilSpacing.xs)
+
+                    HStack(spacing: AnvilSpacing.xs) {
+                        Image(systemName: "checkmark.circle")
+                            .font(.system(size: 10))
+                            .foregroundStyle(AnvilColor.textTertiary)
+                            .accessibilityHidden(true)
+                        Text("Open in the main canvas")
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textSecondary)
-                            .lineLimit(1)
+                            .foregroundStyle(AnvilColor.textTertiary)
+                        Spacer()
                     }
-
-                    Spacer()
-
-                    statusBadge(review.status)
-                }
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xs)
-
-                HStack(spacing: AnvilSpacing.xs) {
-                    Image(systemName: "doc")
-                        .font(.system(size: 10))
-                        .foregroundStyle(AnvilColor.textTertiary)
-                        .accessibilityHidden(true)
-                    Text("\(review.diff.count) file\(review.diff.count == 1 ? "" : "s")")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
-                    Spacer()
-                }
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xs)
-
-                if !review.diff.isEmpty {
-                    AnvilSidebarSectionHeader(title: "Files", icon: "doc", count: review.diff.count)
-                    ForEach(review.diff) { file in
-                        fileRow(file)
-                    }
+                    .padding(.horizontal, AnvilSpacing.md)
+                    .padding(.bottom, AnvilSpacing.xs)
                 }
             },
             trailing: {
@@ -782,18 +782,27 @@ struct ReviewSidebar: View {
             viewModel.resetNavigationState()
             viewModel.selectReview(review.id)
         } label: {
-            AnvilListItem(
-                icon: reviewIcon(for: review),
-                title: review.title,
-                subtitle: review.author,
-                tag: review.sourceId,
-                tagColor: review.sourceType == .pullRequest
-                    ? AnvilColor.accentBlue
-                    : AnvilColor.accentPurple,
-                timestamp: "\(review.diff.count) files",
-                isSelected: viewModel.selectedReviewID == review.id,
-                isCompact: false
-            )
+            ZStack(alignment: .trailing) {
+                AnvilListItem(
+                    icon: reviewIcon(for: review),
+                    title: review.title,
+                    subtitle: review.author,
+                    tag: review.sourceId,
+                    tagColor: review.sourceType == .pullRequest
+                        ? AnvilColor.accentBlue
+                        : AnvilColor.accentPurple,
+                    timestamp: "\(review.diff.count) files",
+                    isSelected: viewModel.selectedReviewID == review.id,
+                    isCompact: false
+                )
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(viewModel.selectedReviewID == review.id ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                    .padding(.trailing, AnvilSpacing.md)
+                    .accessibilityHidden(true)
+                    .allowsHitTesting(false)
+            }
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(review.title), by \(review.author), \(review.sourceId), \(review.diff.count) files, status \(String(describing: review.status))")

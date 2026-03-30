@@ -37,6 +37,11 @@ struct KanbanCard: View {
                         .background(AnvilColor.backgroundElevated)
                         .clipShape(RoundedRectangle(cornerRadius: 3))
                 }
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(isSelected ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                    .accessibilityHidden(true)
             }
 
             // Title
