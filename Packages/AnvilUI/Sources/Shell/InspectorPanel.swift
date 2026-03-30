@@ -64,6 +64,10 @@ public struct InspectorPanel: View {
             return appState.databaseViewModel.connectionTitle
         case .tests:
             return "Tests"
+        case .problems:
+            return "Problems"
+        case .output:
+            return "Output"
         }
     }
 
@@ -104,6 +108,17 @@ public struct InspectorPanel: View {
             DatabaseInspectorSummaryView(viewModel: appState.databaseViewModel)
         case .tests:
             TestingInspectorSummaryView(viewModel: appState.testingViewModel)
+        case .problems, .output:
+            ScrollView {
+                VStack(alignment: .leading, spacing: AnvilSpacing.md) {
+                    InspectorSection(title: "Details") {
+                        Text("No details available.")
+                            .font(AnvilFont.body)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .padding(AnvilSpacing.md)
+            }
         }
     }
 }

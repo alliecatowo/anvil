@@ -18,6 +18,12 @@ struct BuildSidebar: View {
                 DatabaseSidebarView(viewModel: appState.databaseViewModel)
             case .tests:
                 TestSuiteList(viewModel: appState.testingViewModel)
+            case .problems:
+                // Future: problems/issues list
+                AnvilSidebarEmptyState(icon: "checkmark.circle", title: "No problems", message: "Issues will appear here.")
+            case .output:
+                // Future: build output list
+                AnvilSidebarEmptyState(icon: "text.alignleft", title: "No output", message: "Build output will appear here.")
             }
         }
     }

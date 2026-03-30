@@ -54,6 +54,7 @@ struct BranchPicker: View {
                     }
                 }
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
                 .frame(maxHeight: 300)
             }
 
@@ -114,7 +115,7 @@ struct BranchPicker: View {
                 .buttonStyle(.plain)
             }
         }
-        .frame(width: 280)
+        .frame(width: 320)
         .task {
             isLoading = true
             if let adapter = container.getOrCreateGitAdapter() {

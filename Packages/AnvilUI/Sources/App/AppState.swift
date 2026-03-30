@@ -207,6 +207,8 @@ public class AppState: ObservableObject {
         case files = "Files"
         case data = "Data"
         case tests = "Tests"
+        case problems = "Problems"
+        case output = "Output"
 
         public var icon: String {
             switch self {
@@ -214,6 +216,8 @@ public class AppState: ObservableObject {
             case .files: "doc.text"
             case .data: "cylinder"
             case .tests: "testtube.2"
+            case .problems: "exclamationmark.triangle"
+            case .output: "text.alignleft"
             }
         }
     }

@@ -3,32 +3,17 @@ import AnvilTerminal
 
 // MARK: - Utility Deck
 
-/// Bottom panel available in all spaces, housing Terminal, Problems, and Output tabs.
+/// Bottom panel — a pure terminal drawer with session tabs.
 struct UtilityDeck: View {
     @EnvironmentObject var appState: AppState
     @State private var isResizing = false
-    @State private var activeTab: Tab = .terminal
     @State private var splitSessionId: UUID? = nil
 
     private let minHeight: CGFloat = 100
     private let maxHeight: CGFloat = 600
 
-    enum Tab: String, CaseIterable {
-        case terminal = "Terminal"
-        case problems = "Problems"
-        case output = "Output"
-    }
-
     private var terminalVM: TerminalViewModel {
         appState.terminalViewModel
-    }
-
-    /// In Build space, show all tabs. Otherwise, terminal only.
-    private var availableTabs: [Tab] {
-        if appState.currentSpace == .build {
-            return Tab.allCases
-        }
-        return [.terminal]
     }
 
     var body: some View {
@@ -36,27 +21,13 @@ struct UtilityDeck: View {
             // Resize handle
             resizeHandle
 
-            // Deck header: tab picker + actions
+            // Deck header: terminal tabs + actions
             deckHeader
 
             Divider()
 
-            // Tab content
-            switch activeTab {
-            case .terminal:
-                terminalContent
-            case .problems:
-                utilityEmptyState("No Problems", icon: "checkmark.circle", message: "No issues detected.")
-            case .output:
-                utilityEmptyState("No Output", icon: "text.alignleft", message: "Build and task output will appear here.")
-            }
-        }
-        .background(.regularMaterial)
-        .onChange(of: appState.currentSpace) { _, _ in
-            // Reset to terminal if current tab is not available outside Build
-            if !availableTabs.contains(activeTab) {
-                activeTab = .terminal
-            }
+            // Terminal content
+            terminalContent
         }
         .onChange(of: terminalVM.sessions.map(\.id)) { _, newIds in
             // Clear split if the split session was deleted
@@ -104,90 +75,64 @@ struct UtilityDeck: View {
 
     private var deckHeader: some View {
         HStack(spacing: 0) {
-            // Tab picker — only show when there are multiple tabs (Build space)
-            if availableTabs.count > 1 {
-                Picker("Utility", selection: $activeTab) {
-                    ForEach(availableTabs, id: \.self) { tab in
-                        Text(tab.rawValue).tag(tab)
+            // Terminal session tabs
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 1) {
+                    ForEach(terminalVM.sessions) { session in
+                        terminalTab(session)
                     }
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 240)
-            }
-
-            // Terminal tabs (only when terminal tab is active)
-            if activeTab == .terminal {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 0) {
-                        ForEach(terminalVM.sessions) { session in
-                            terminalTabView(session)
-                        }
-                    }
-                }
-                .padding(.leading, AnvilSpacing.sm)
             }
 
             Spacer()
 
-            // Actions
+            // Actions: split, new, close
             HStack(spacing: AnvilSpacing.xs) {
-                if activeTab == .terminal {
-                    // Split terminal
-                    Button {
-                        if splitSessionId != nil {
-                            splitSessionId = nil
-                        } else {
-                            let newSession = terminalVM.addTab()
-                            splitSessionId = newSession.id
-                        }
-                    } label: {
-                        Image(systemName: "rectangle.split.2x1")
-                            .font(.system(size: 10))
-                            .foregroundStyle(splitSessionId != nil ? Color.accentColor : AnvilColor.textSecondary)
-                    }
-                    .buttonStyle(.borderless)
-                    .help(splitSessionId != nil ? "Close Split" : "Split Terminal")
-                    .accessibilityLabel(splitSessionId != nil ? "Close Split Terminal" : "Split Terminal")
-                    .accessibilityAddTraits(.isButton)
-
-                    // New terminal
-                    Button {
-                        terminalVM.addTab()
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 10))
-                            .foregroundStyle(AnvilColor.textSecondary)
-                    }
-                    .buttonStyle(.borderless)
-                    .help("New Terminal")
-                    .accessibilityLabel("New Terminal")
-                    .accessibilityAddTraits(.isButton)
+                Button { toggleSplit() } label: {
+                    Image(systemName: splitSessionId != nil ? "rectangle.split.2x1.fill" : "rectangle.split.2x1")
+                        .font(.system(size: 10))
                 }
+                .buttonStyle(.borderless)
+                .foregroundStyle(splitSessionId != nil ? Color.accentColor : .secondary)
+                .help(splitSessionId != nil ? "Close Split" : "Split Terminal")
 
-                // Close panel
+                Button { terminalVM.addTab() } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 10))
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+                .help("New Terminal")
+
                 Button {
-                    withAnimation(AnvilAnimation.standard) {
-                        appState.isTerminalPanelVisible = false
-                    }
+                    withAnimation { appState.isTerminalPanelVisible = false }
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(AnvilColor.textTertiary)
                 }
                 .buttonStyle(.borderless)
-                .help("Close Panel (\u{2318}J)")
-                .accessibilityLabel("Close Utility Deck")
-                .accessibilityAddTraits(.isButton)
+                .foregroundStyle(.tertiary)
+                .help("Close Terminal")
             }
             .padding(.trailing, AnvilSpacing.sm)
         }
         .frame(height: 28)
-        .padding(.horizontal, AnvilSpacing.sm)
+        .padding(.leading, AnvilSpacing.sm)
+        .background(.bar)
     }
 
-    private func terminalTabView(_ session: TerminalSession) -> some View {
+    // MARK: - Terminal Tab
+
+    private func terminalTab(_ session: TerminalSession) -> some View {
         let isSelected = terminalVM.selectedSessionId == session.id
+        let tabTitle: String = {
+            if let splitId = splitSessionId,
+               terminalVM.selectedSessionId == session.id,
+               let splitSession = terminalVM.sessions.first(where: { $0.id == splitId }) {
+                return "\(session.title) | \(splitSession.title)"
+            }
+            return session.title
+        }()
 
         return HStack(spacing: 2) {
             Button {
@@ -196,11 +141,11 @@ struct UtilityDeck: View {
                 HStack(spacing: AnvilSpacing.xxs) {
                     Image(systemName: "terminal")
                         .font(.system(size: 9))
-                    Text(session.title)
+                    Text(tabTitle)
                         .font(AnvilFont.label)
                         .lineLimit(1)
                 }
-                .foregroundStyle(isSelected ? AnvilColor.textPrimary : AnvilColor.textTertiary)
+                .foregroundStyle(isSelected ? .primary : .tertiary)
                 .padding(.horizontal, AnvilSpacing.sm)
                 .padding(.vertical, AnvilSpacing.xxs)
                 .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
@@ -209,13 +154,13 @@ struct UtilityDeck: View {
             }
             .buttonStyle(.plain)
 
-            if terminalVM.sessions.count > 1 {
+            if terminalVM.sessions.count > 1 && isSelected {
                 Button {
                     terminalVM.closeTab(session.id)
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 7, weight: .bold))
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                         .frame(width: 14, height: 14)
                         .contentShape(Rectangle())
                 }
@@ -227,6 +172,17 @@ struct UtilityDeck: View {
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
         .padding(.horizontal, 2)
         .padding(.vertical, 2)
+    }
+
+    // MARK: - Split Toggle
+
+    private func toggleSplit() {
+        if splitSessionId != nil {
+            splitSessionId = nil
+        } else {
+            let newSession = terminalVM.addTab()
+            splitSessionId = newSession.id
+        }
     }
 
     // MARK: - Terminal Content
@@ -245,16 +201,5 @@ struct UtilityDeck: View {
                     .background(AnvilColor.backgroundPrimary)
             }
         }
-    }
-
-    // MARK: - Empty State
-
-    private func utilityEmptyState(_ title: String, icon: String, message: String) -> some View {
-        ContentUnavailableView {
-            Label(title, systemImage: icon)
-        } description: {
-            Text(message)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

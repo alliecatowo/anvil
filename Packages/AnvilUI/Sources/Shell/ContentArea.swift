@@ -419,6 +419,18 @@ struct BuildContent: View {
             } else {
                 TestDetailView(viewModel: appState.testingViewModel)
             }
+        case .problems:
+            ContentUnavailableView {
+                Label("No Problems", systemImage: "checkmark.circle")
+            } description: {
+                Text("No issues detected.")
+            }
+        case .output:
+            ContentUnavailableView {
+                Label("No Output", systemImage: "text.alignleft")
+            } description: {
+                Text("Build and task output will appear here.")
+            }
         }
     }
 }
