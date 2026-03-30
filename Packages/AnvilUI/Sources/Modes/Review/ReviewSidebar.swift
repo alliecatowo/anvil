@@ -93,38 +93,24 @@ struct ReviewSidebar: View {
     }
 
     private func branchRow(_ branch: Branch) -> some View {
-        Button {
-            guard !branch.isCurrent else {
-                appState.gitOperationResult = .success("Already on \(branch.name). Choose another branch or use Start Review.")
-                return
-            }
-            appState.gitHubPRViewModel.clearSelection()
-            if let adapter = container.getOrCreateGitAdapter() {
-                viewModel.loadBranchDiff(branch.name, using: adapter)
-            } else {
-                // No real git adapter — show branch detail with demo context
-                viewModel.selectedBranchName = branch.name
-            }
-        } label: {
-            HoverableRow(isSelected: viewModel.selectedBranchName == branch.name) {
-                HStack(spacing: AnvilSpacing.sm) {
-                    Image(systemName: branch.isCurrent ? "checkmark.circle.fill" : "arrow.triangle.branch")
-                        .font(.system(size: 11))
-                        .foregroundStyle(branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textTertiary)
-                        .frame(width: 16)
-                        .accessibilityHidden(true)
-
-                    Text(branch.name)
-                        .font(AnvilFont.code)
-                        .foregroundStyle(
-                            viewModel.selectedBranchName == branch.name
-                                ? AnvilColor.accentBlue
-                                : (branch.isCurrent ? AnvilColor.accentGreen : AnvilColor.textPrimary)
-                        )
-                        .lineLimit(1)
-
-                    Spacer()
-
+        AnvilSidebarRowButton(
+            title: branch.name,
+            icon: branch.isCurrent ? "checkmark" : "arrow.triangle.branch",
+            isActive: viewModel.selectedBranchName == branch.name,
+            action: {
+                guard !branch.isCurrent else {
+                    appState.gitOperationResult = .success("Already on \(branch.name). Choose another branch or use Start Review.")
+                    return
+                }
+                appState.gitHubPRViewModel.clearSelection()
+                if let adapter = container.getOrCreateGitAdapter() {
+                    viewModel.loadBranchDiff(branch.name, using: adapter)
+                } else {
+                    viewModel.selectedBranchName = branch.name
+                }
+            },
+            trailing: {
+                HStack(spacing: AnvilSpacing.xs) {
                     if branch.aheadCount > 0 {
                         Text("+\(branch.aheadCount)")
                             .font(AnvilFont.label)
@@ -135,21 +121,10 @@ struct ReviewSidebar: View {
                             .font(AnvilFont.label)
                             .foregroundStyle(AnvilColor.accentRed)
                     }
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(viewModel.selectedBranchName == branch.name ? AnvilColor.accentBlue : AnvilColor.textTertiary)
-                        .accessibilityHidden(true)
                 }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Branch \(branch.name)\(branch.isCurrent ? ", current" : "")")
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xs)
-                .padding(.vertical, 2)
             }
-        }
-        .buttonStyle(.plain)
-        .contentShape(Rectangle())
+        )
+        .accessibilityLabel("Branch \(branch.name)\(branch.isCurrent ? ", current" : "")")
     }
 
     // MARK: - Remotes Section
@@ -294,41 +269,16 @@ struct ReviewSidebar: View {
     }
 
     private func stashRow(_ stash: Stash) -> some View {
-        Button {
-            guard let adapter = container.getOrCreateGitAdapter() else { return }
-            viewModel.applyStash(index: stash.index, using: adapter)
-        } label: {
-            HoverableRow {
-                HStack(spacing: AnvilSpacing.sm) {
-                    Image(systemName: "tray")
-                        .font(.system(size: 11))
-                        .foregroundStyle(AnvilColor.accentPurple)
-                        .frame(width: 16)
-                        .accessibilityHidden(true)
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(stash.message)
-                            .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                            .lineLimit(1)
-
-                        Text(Self.relativeStashDate(stash.date))
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
-                    }
-
-                    Spacer()
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Stash: \(stash.message)")
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xs)
-                .padding(.vertical, 2)
+        AnvilSidebarRowButton(
+            title: stash.message,
+            icon: "tray.and.arrow.down",
+            subtitle: Self.relativeStashDate(stash.date),
+            action: {
+                guard let adapter = container.getOrCreateGitAdapter() else { return }
+                viewModel.applyStash(index: stash.index, using: adapter)
             }
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(.isButton)
-        .contentShape(Rectangle())
+        )
+        .accessibilityLabel("Stash: \(stash.message)")
         .contextMenu {
             Button("Apply") {
                 guard let adapter = container.getOrCreateGitAdapter() else { return }
@@ -391,53 +341,28 @@ struct ReviewSidebar: View {
     }
 
     private func worktreeRow(_ wt: Worktree) -> some View {
-        Button {
-            activateWorktree(wt)
-        } label: {
-            HoverableRow(isSelected: appState.currentProjectPath == wt.path) {
-                HStack(spacing: AnvilSpacing.sm) {
-                    Image(systemName: wt.isMain ? "folder.fill" : "folder.badge.gearshape")
-                        .font(.system(size: 11))
-                        .foregroundStyle(wt.isMain ? AnvilColor.accentGreen : AnvilColor.accentBlue)
-                        .frame(width: 16)
-                        .accessibilityHidden(true)
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(wt.branch ?? "detached")
-                            .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.textPrimary)
-                            .lineLimit(1)
-
-                        HStack(spacing: AnvilSpacing.xs) {
-                            if let sha = wt.headSHA {
-                                Text(String(sha.prefix(7)))
-                                    .font(.system(size: 10, design: .monospaced))
-                                    .foregroundStyle(AnvilColor.textTertiary)
-                            }
-
-                            Text((wt.path as NSString).lastPathComponent)
-                                .font(AnvilFont.label)
-                                .foregroundStyle(AnvilColor.textTertiary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        }
-                    }
-
-                    Spacer()
-
-                    if wt.isMain {
-                        AnvilBadge(text: "main", color: AnvilColor.accentGreen)
-                    }
+        AnvilSidebarRowButton(
+            title: wt.branch ?? "detached",
+            icon: wt.isMain ? "folder.fill" : "folder.badge.gearshape",
+            subtitle: {
+                var parts: [String] = []
+                if let sha = wt.headSHA {
+                    parts.append(String(sha.prefix(7)))
+                }
+                parts.append((wt.path as NSString).lastPathComponent)
+                return parts.joined(separator: " ")
+            }(),
+            isActive: appState.currentProjectPath == wt.path,
+            action: {
+                activateWorktree(wt)
+            },
+            trailing: {
+                if wt.isMain {
+                    AnvilBadge(text: "main", color: AnvilColor.accentGreen)
                 }
             }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Worktree \(wt.branch ?? "detached") at \(wt.path)")
-            .padding(.horizontal, AnvilSpacing.md)
-            .padding(.vertical, AnvilSpacing.xs)
-            .padding(.vertical, 2)
-        }
-        .buttonStyle(.plain)
-        .contentShape(Rectangle())
+        )
+        .accessibilityLabel("Worktree \(wt.branch ?? "detached") at \(wt.path)")
         .contextMenu {
             Button("Open in New Window") {
                 if let url = URL(string: "anvil://open?path=\(wt.path)") {
@@ -597,39 +522,22 @@ struct ReviewSidebar: View {
     }
 
     private func conflictRow(_ conflict: MergeConflict, index: Int) -> some View {
-        Button {
-            appState.gitHubPRViewModel.clearSelection()
-            viewModel.isCommitGraphVisible = false
-            viewModel.selectConflict(index)
-        } label: {
-            HoverableRow(isSelected: viewModel.selectedConflictIndex == index) {
-                HStack(spacing: AnvilSpacing.sm) {
-                    Text("U")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .foregroundStyle(AnvilColor.accentRed)
-                        .frame(width: 14)
-
-                    Text((conflict.filePath as NSString).lastPathComponent)
-                        .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.textPrimary)
-                        .lineLimit(1)
-
-                    Spacer()
-
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(AnvilColor.accentRed)
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Merge conflict: \((conflict.filePath as NSString).lastPathComponent)")
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, 2)
-                .padding(.vertical, 2)
+        AnvilSidebarRowButton(
+            title: (conflict.filePath as NSString).lastPathComponent,
+            icon: "exclamationmark.triangle.fill",
+            isActive: viewModel.selectedConflictIndex == index,
+            action: {
+                appState.gitHubPRViewModel.clearSelection()
+                viewModel.isCommitGraphVisible = false
+                viewModel.selectConflict(index)
+            },
+            trailing: {
+                Text("U")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundStyle(AnvilColor.accentRed)
             }
-        }
-        .buttonStyle(.plain)
-        .contentShape(Rectangle())
-        .accessibilityAddTraits(.isButton)
+        )
+        .accessibilityLabel("Merge conflict: \((conflict.filePath as NSString).lastPathComponent)")
     }
 
     private func changeGroupHeader(_ title: String, count: Int) -> some View {
@@ -647,58 +555,37 @@ struct ReviewSidebar: View {
     }
 
     private func changeRow(_ change: GitFileChange) -> some View {
-        Button {
-            appState.gitHubPRViewModel.clearSelection()
-            if change.status == .unmerged {
-                if let idx = viewModel.mergeConflicts.firstIndex(where: { $0.filePath == change.filePath }) {
-                    viewModel.selectConflict(idx)
-                }
-            } else if let adapter = container.getOrCreateGitAdapter() {
-                viewModel.loadLocalFileDiff(change, using: adapter)
-            } else {
-                // No git adapter — seed demo reviews and select best match
-                if viewModel.reviews.isEmpty {
-                    viewModel.reviews = ReviewViewModel.makeSampleReviews()
-                }
-                let match = viewModel.reviews.first(where: {
-                    $0.diff.contains(where: { $0.filePath.hasSuffix(change.fileName) })
-                }) ?? viewModel.reviews.first
-                if let review = match {
-                    viewModel.selectReview(review.id, selectFirstFile: true)
-                }
-            }
-        } label: {
-            HoverableRow {
-                HStack(spacing: AnvilSpacing.sm) {
-                    Text(changeStatusLabel(change.status))
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .foregroundStyle(changeStatusColor(change.status))
-                        .frame(width: 14)
-
-                    Text(change.fileName)
-                        .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.textPrimary)
-                        .lineLimit(1)
-
-                    Spacer()
-
-                    if !change.directory.isEmpty {
-                        Text(change.directory)
-                            .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
-                            .lineLimit(1)
-                            .truncationMode(.head)
+        AnvilSidebarRowButton(
+            title: change.fileName,
+            icon: changeStatusIcon(change.status),
+            isActive: viewModel.selectedFileID == change.filePath,
+            action: {
+                appState.gitHubPRViewModel.clearSelection()
+                if change.status == .unmerged {
+                    if let idx = viewModel.mergeConflicts.firstIndex(where: { $0.filePath == change.filePath }) {
+                        viewModel.selectConflict(idx)
+                    }
+                } else if let adapter = container.getOrCreateGitAdapter() {
+                    viewModel.loadLocalFileDiff(change, using: adapter)
+                } else {
+                    if viewModel.reviews.isEmpty {
+                        viewModel.reviews = ReviewViewModel.makeSampleReviews()
+                    }
+                    let match = viewModel.reviews.first(where: {
+                        $0.diff.contains(where: { $0.filePath.hasSuffix(change.fileName) })
+                    }) ?? viewModel.reviews.first
+                    if let review = match {
+                        viewModel.selectReview(review.id, selectFirstFile: true)
                     }
                 }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(change.fileName), \(change.status.rawValue)")
-                .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, 2)
-                .padding(.vertical, 2)
+            },
+            trailing: {
+                Text(changeStatusLabel(change.status))
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundStyle(changeStatusColor(change.status))
             }
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(.isButton)
+        )
+        .accessibilityLabel("\(change.fileName), \(change.status.rawValue)")
     }
 
     private var pendingReviewsForSidebar: [Review] {
@@ -846,6 +733,18 @@ struct ReviewSidebar: View {
         .accessibilityAddTraits(.isButton)
     }
 
+    private func changeStatusIcon(_ status: GitFileChangeStatus) -> String {
+        switch status {
+        case .modified:  "pencil"
+        case .added:     "plus"
+        case .deleted:   "minus"
+        case .renamed:   "arrow.right"
+        case .copied:    "doc.on.doc"
+        case .untracked: "questionmark"
+        case .unmerged:  "exclamationmark.triangle"
+        }
+    }
+
     private func changeStatusLabel(_ status: GitFileChangeStatus) -> String {
         switch status {
         case .modified:  "M"
@@ -912,7 +811,7 @@ struct ReviewSidebar: View {
                     .buttonStyle(.plain)
                 }
                 .padding(.horizontal, AnvilSpacing.md)
-                .padding(.vertical, AnvilSpacing.xs)
+                .padding(.vertical, AnvilSpacing.sm)
             } else {
                 Button {
                     isLoginSheetPresented = true
@@ -925,7 +824,7 @@ struct ReviewSidebar: View {
                     }
                     .foregroundStyle(AnvilColor.textSecondary)
                     .padding(.horizontal, AnvilSpacing.md)
-                    .padding(.vertical, AnvilSpacing.xs)
+                    .padding(.vertical, AnvilSpacing.sm)
                 }
                 .buttonStyle(.plain)
             }
@@ -961,7 +860,7 @@ struct ReviewSidebar: View {
             Spacer()
         }
         .padding(.horizontal, AnvilSpacing.md)
-        .padding(.vertical, AnvilSpacing.xs)
+        .padding(.vertical, AnvilSpacing.sm)
     }
 
     private func startReviewFromCurrentChanges() {
