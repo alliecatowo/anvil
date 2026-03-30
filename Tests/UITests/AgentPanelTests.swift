@@ -1,6 +1,6 @@
 import XCTest
 
-final class AgentPanelTests: XCTestCase {
+final class BuildPanelTests: XCTestCase {
     var app: XCUIApplication!
 
     override func setUpWithError() throws {

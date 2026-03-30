@@ -1,6 +1,6 @@
 import XCTest
 
-final class AgentModeTests: XCTestCase {
+final class BuildModeTests: XCTestCase {
     var app: XCUIApplication!
 
     override func setUpWithError() throws {

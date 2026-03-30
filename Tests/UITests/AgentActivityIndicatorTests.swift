@@ -3,7 +3,7 @@ import XCTest
 /// Tests for Task #17 — Build activity indicator in the status bar.
 /// Shows spinner when running, tool name, elapsed timer, idle/failed states,
 /// click to navigate to active session.
-final class AgentActivityIndicatorTests: XCTestCase {
+final class BuildActivityIndicatorTests: XCTestCase {
 
     private var app: XCUIApplication!
 
@@ -115,10 +115,10 @@ final class AgentActivityIndicatorTests: XCTestCase {
 
     // MARK: - Click to Navigate
 
-    func testClickActivityIndicatorNavigatesToAgent() {
+    func testClickActivityIndicatorNavigatesToBuild() {
         // The activity indicator is a Button that calls navigateToActiveSession()
         // When clicked, it switches to agent mode and selects the active session
-        // First switch away from agent mode
+        // First switch away from build mode
         app.typeKey("2", modifierFlags: .command) // Plan mode
         sleep(1)
 
