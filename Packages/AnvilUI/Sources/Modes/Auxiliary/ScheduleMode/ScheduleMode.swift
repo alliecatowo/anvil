@@ -71,7 +71,7 @@ private struct ScheduleDetailView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(AnvilColor.backgroundPrimary)
+        .background(.regularMaterial)
     }
 
     private var emptyState: some View {

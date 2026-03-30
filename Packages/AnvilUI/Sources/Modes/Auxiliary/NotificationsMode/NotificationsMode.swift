@@ -23,7 +23,7 @@ struct NotificationsMode: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(AnvilColor.backgroundPrimary)
+        .background(.regularMaterial)
         .accessibilityLabel("Notifications")
         .onAppear {
             if let adapter = container.getOrCreateGitHubAdapter() {

@@ -181,7 +181,7 @@ struct BuildLogView: View {
                 }
             }
         }
-        .background(AnvilColor.backgroundPrimary)
+        .background(.regularMaterial)
         .onDisappear {
             viewModel.stopLogStreaming()
         }

@@ -135,7 +135,7 @@ struct EditHunkView: View {
                 }
                 .padding(.horizontal, AnvilSpacing.sm)
                 .padding(.vertical, AnvilSpacing.xxs)
-                .background(AnvilColor.backgroundPrimary.opacity(0.5))
+                .background(.ultraThinMaterial)
             }
 
             // Context before

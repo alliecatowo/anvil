@@ -713,7 +713,7 @@ struct GitHubPRDetailView: View {
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.xs)
-        .background(AnvilColor.backgroundPrimary.opacity(0.5))
+        .background(.ultraThinMaterial)
     }
 
     private func replyInput(threadId: String) -> some View {

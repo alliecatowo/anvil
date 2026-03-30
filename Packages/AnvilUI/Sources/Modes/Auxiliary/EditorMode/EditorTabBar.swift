@@ -76,8 +76,8 @@ struct EditorTabBar: View {
         .padding(.vertical, AnvilSpacing.xs)
         .background(
             isSelected
-                ? AnvilColor.backgroundPrimary
-                : AnvilColor.backgroundSecondary
+                ? Color.accentColor.opacity(0.08)
+                : Color.clear
         )
         .overlay(
             Rectangle()

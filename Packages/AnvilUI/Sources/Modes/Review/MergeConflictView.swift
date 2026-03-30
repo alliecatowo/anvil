@@ -48,7 +48,7 @@ struct MergeConflictView: View {
                 conflictFooter
             }
         }
-        .background(AnvilColor.backgroundPrimary)
+        .background(.regularMaterial)
         .onAppear { parseConflictHunks() }
     }
 

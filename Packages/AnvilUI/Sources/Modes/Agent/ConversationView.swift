@@ -182,7 +182,7 @@ struct ConversationView: View {
                 contextResolver: contextResolver
             )
         }
-        .background(AnvilColor.backgroundPrimary)
+        .background(.regularMaterial)
     }
 }
 

@@ -27,7 +27,7 @@ struct NotificationPreferencesView: View {
             }
             .padding(AnvilSpacing.xxl)
         }
-        .background(AnvilColor.backgroundPrimary)
+        .background(.regularMaterial)
     }
 
     // MARK: - Desktop Notifications

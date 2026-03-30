@@ -447,7 +447,7 @@ struct DiffReviewView: View {
         Color.clear
             .frame(maxWidth: .infinity)
             .frame(height: 20)
-            .background(AnvilColor.backgroundPrimary.opacity(0.5))
+            .background(.ultraThinMaterial)
     }
 
     // MARK: - Hunk Header

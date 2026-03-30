@@ -91,7 +91,7 @@ struct DeployDashboardView: View {
             }
             .padding(AnvilSpacing.xl)
         }
-        .background(AnvilColor.backgroundPrimary)
+        .background(.regularMaterial)
         .alert("Confirm Rollback", isPresented: $viewModel.showingRollbackConfirm) {
             Button("Rollback", role: .destructive) { viewModel.confirmRollback() }
             Button("Cancel", role: .cancel) { viewModel.cancelRollback() }

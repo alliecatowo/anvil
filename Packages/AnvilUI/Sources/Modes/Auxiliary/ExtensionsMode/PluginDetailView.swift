@@ -59,7 +59,7 @@ struct PluginDetailView: View {
                     .padding(AnvilSpacing.lg)
                 }
             }
-            .background(AnvilColor.backgroundPrimary)
+            .background(.regularMaterial)
         } else {
             AnvilEmptyState(
                 icon: "puzzlepiece.extension",

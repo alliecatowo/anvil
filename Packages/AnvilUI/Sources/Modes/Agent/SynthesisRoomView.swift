@@ -28,7 +28,7 @@ struct SynthesisRoomView: View {
                 Divider()
                 roomContent(room)
             }
-            .background(AnvilColor.backgroundPrimary)
+            .background(.regularMaterial)
         } else {
             Text("Room not found")
                 .foregroundStyle(AnvilColor.textTertiary)

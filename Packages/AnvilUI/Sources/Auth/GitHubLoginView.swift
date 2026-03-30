@@ -36,7 +36,7 @@ struct GitHubLoginView: View {
         }
         .padding(AnvilSpacing.xxl)
         .frame(width: 400, height: 380)
-        .background(AnvilColor.backgroundPrimary)
+        .background(.regularMaterial)
     }
 
     // MARK: - States
