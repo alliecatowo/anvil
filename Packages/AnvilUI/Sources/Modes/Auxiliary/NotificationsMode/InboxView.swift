@@ -75,64 +75,67 @@ struct InboxView: View {
 
     private func inboxRow(_ item: InboxItem) -> some View {
         HStack(spacing: AnvilSpacing.md) {
-            // Unread indicator
-            Circle()
-                .fill(item.notification.isRead ? Color.clear : AnvilColor.accentBlue)
-                .frame(width: 8, height: 8)
-                .accessibilityHidden(true)
+            Button {
+                viewModel.selectedItemID = item.id
+            } label: {
+                HStack(spacing: AnvilSpacing.md) {
+                    // Unread indicator
+                    Circle()
+                        .fill(item.notification.isRead ? Color.clear : AnvilColor.accentBlue)
+                        .frame(width: 8, height: 8)
+                        .accessibilityHidden(true)
 
-            // Source icon
-            Image(systemName: item.source.icon)
-                .font(.system(size: 14))
-                .foregroundStyle(item.source.color)
-                .frame(width: 24, height: 24)
-                .background(item.source.color.opacity(0.15))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .accessibilityHidden(true)
+                    // Source icon
+                    Image(systemName: item.source.icon)
+                        .font(.system(size: 14))
+                        .foregroundStyle(item.source.color)
+                        .frame(width: 24, height: 24)
+                        .background(item.source.color.opacity(0.15))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .accessibilityHidden(true)
 
-            // Priority indicator
-            if item.notification.urgency == .critical || item.notification.urgency == .high {
-                Image(systemName: "exclamationmark.circle.fill")
-                    .font(.system(size: 10))
-                    .foregroundStyle(
-                        item.notification.urgency == .critical
-                            ? AnvilColor.accentRed
-                            : AnvilColor.accentAmber
-                    )
-                    .accessibilityLabel(item.notification.urgency == .critical ? "Critical priority" : "High priority")
+                    // Priority indicator
+                    if item.notification.urgency == .critical || item.notification.urgency == .high {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(
+                                item.notification.urgency == .critical
+                                    ? AnvilColor.accentRed
+                                    : AnvilColor.accentAmber
+                            )
+                            .accessibilityLabel(item.notification.urgency == .critical ? "Critical priority" : "High priority")
+                    }
+
+                    // Content
+                    VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
+                        Text(item.notification.title)
+                            .font(AnvilFont.sidebarItem)
+                            .fontWeight(item.notification.isRead ? .regular : .medium)
+                            .foregroundStyle(AnvilColor.textPrimary)
+                            .lineLimit(1)
+
+                        Text(item.notification.body)
+                            .font(AnvilFont.label)
+                            .foregroundStyle(AnvilColor.textSecondary)
+                            .lineLimit(1)
+                    }
+
+                    Spacer()
+
+                    Text(timeFormatter.localizedString(for: item.notification.createdAt, relativeTo: .now))
+                        .font(AnvilFont.label)
+                        .foregroundStyle(AnvilColor.textTertiary)
+                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
 
-            // Content
-            VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
-                Text(item.notification.title)
-                    .font(AnvilFont.sidebarItem)
-                    .fontWeight(item.notification.isRead ? .regular : .medium)
-                    .foregroundStyle(AnvilColor.textPrimary)
-                    .lineLimit(1)
-
-                Text(item.notification.body)
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textSecondary)
-                    .lineLimit(1)
-            }
-
-            Spacer()
-
-            // Action buttons when selected, timestamp otherwise
             if viewModel.selectedItemID == item.id {
                 actionButtons(for: item)
-            } else {
-                Text(timeFormatter.localizedString(for: item.notification.createdAt, relativeTo: .now))
-                    .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
             }
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.md)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            viewModel.selectedItemID = item.id
-        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(item.notification.isRead ? "" : "Unread, ")\(item.notification.title), \(item.notification.body)")
         .accessibilityAddTraits(.isButton)

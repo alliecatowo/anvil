@@ -70,76 +70,78 @@ struct AgendaView: View {
     // MARK: - Agenda Row
 
     private func agendaRow(_ entry: ScheduleEntry) -> some View {
-        HStack(spacing: AnvilSpacing.md) {
-            // Time column
-            VStack(alignment: .trailing, spacing: AnvilSpacing.xxs) {
-                Text(timeFormatter.string(from: entry.start))
-                    .font(AnvilFont.code)
-                Text(entry.duration)
-                    .font(AnvilFont.label)
-                    .foregroundStyle(.tertiary)
-            }
-            .frame(width: 72, alignment: .trailing)
-
-            // Color bar
-            RoundedRectangle(cornerRadius: 2)
-                .fill(entry.kindColor)
-                .frame(width: 3)
-                .accessibilityHidden(true)
-
-            // Content
-            VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
-                HStack(spacing: AnvilSpacing.sm) {
-                    Image(systemName: entry.kindIcon)
-                        .font(.system(size: 12))
-                        .foregroundStyle(entry.kindColor)
-                        .accessibilityHidden(true)
-
-                    Text(entry.title)
-                        .font(AnvilFont.sidebarItem)
-                        .lineLimit(1)
-
-                    Spacer()
-
-                    AnvilBadge(text: entry.kindLabel, color: entry.kindColor)
-                }
-
-                HStack(spacing: AnvilSpacing.sm) {
-                    if let subtitle = entry.subtitle {
-                        Text(subtitle)
-                            .font(AnvilFont.label)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-
-                    if let ticket = entry.linkedTicket {
-                        Text(ticket)
-                            .font(AnvilFont.code)
-                            .foregroundStyle(AnvilColor.accentBlue)
-                    }
-                }
-
-                if !entry.attendees.isEmpty {
-                    HStack(spacing: AnvilSpacing.xxs) {
-                        Image(systemName: "person.2")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.tertiary)
-                            .accessibilityHidden(true)
-                        Text(entry.attendees.joined(separator: ", "))
-                            .font(AnvilFont.label)
-                            .foregroundStyle(.tertiary)
-                            .lineLimit(1)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Attendees: \(entry.attendees.joined(separator: ", "))")
-                }
-            }
-        }
-        .contentShape(Rectangle())
-        .listRowBackground(viewModel.selectedEntryID == entry.id ? Color.accentColor.opacity(0.14) : Color.clear)
-        .onTapGesture {
+        Button {
             viewModel.selectedEntryID = entry.id
+        } label: {
+            HStack(spacing: AnvilSpacing.md) {
+                // Time column
+                VStack(alignment: .trailing, spacing: AnvilSpacing.xxs) {
+                    Text(timeFormatter.string(from: entry.start))
+                        .font(AnvilFont.code)
+                    Text(entry.duration)
+                        .font(AnvilFont.label)
+                        .foregroundStyle(.tertiary)
+                }
+                .frame(width: 72, alignment: .trailing)
+
+                // Color bar
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(entry.kindColor)
+                    .frame(width: 3)
+                    .accessibilityHidden(true)
+
+                // Content
+                VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
+                    HStack(spacing: AnvilSpacing.sm) {
+                        Image(systemName: entry.kindIcon)
+                            .font(.system(size: 12))
+                            .foregroundStyle(entry.kindColor)
+                            .accessibilityHidden(true)
+
+                        Text(entry.title)
+                            .font(AnvilFont.sidebarItem)
+                            .lineLimit(1)
+
+                        Spacer()
+
+                        AnvilBadge(text: entry.kindLabel, color: entry.kindColor)
+                    }
+
+                    HStack(spacing: AnvilSpacing.sm) {
+                        if let subtitle = entry.subtitle {
+                            Text(subtitle)
+                                .font(AnvilFont.label)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+
+                        if let ticket = entry.linkedTicket {
+                            Text(ticket)
+                                .font(AnvilFont.code)
+                                .foregroundStyle(AnvilColor.accentBlue)
+                        }
+                    }
+
+                    if !entry.attendees.isEmpty {
+                        HStack(spacing: AnvilSpacing.xxs) {
+                            Image(systemName: "person.2")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.tertiary)
+                                .accessibilityHidden(true)
+                            Text(entry.attendees.joined(separator: ", "))
+                                .font(AnvilFont.label)
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(1)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Attendees: \(entry.attendees.joined(separator: ", "))")
+                    }
+                }
+            }
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .listRowBackground(viewModel.selectedEntryID == entry.id ? Color.accentColor.opacity(0.14) : Color.clear)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(entry.title), \(timeFormatter.string(from: entry.start)), \(entry.duration), \(entry.kindLabel)")
         .accessibilityAddTraits(.isButton)

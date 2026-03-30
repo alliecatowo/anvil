@@ -97,40 +97,42 @@ struct DocBrowser: View {
         let isExpanded = viewModel.expandedFolderIds.contains(node.id)
         let isSelected = viewModel.selectedDocId == node.id
 
-        return HStack(spacing: AnvilSpacing.xxs) {
-            Spacer().frame(width: CGFloat(entry.depth) * 16)
-
-            if node.isFolder {
-                Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .frame(width: 12)
-            } else {
-                Spacer().frame(width: 12)
-            }
-
-            Image(systemName: node.isFolder ? (isExpanded ? "folder.fill" : "folder") : "doc.richtext")
-                .font(.system(size: 12))
-                .foregroundStyle(node.isFolder ? AnvilColor.accentAmber : AnvilColor.accentBlue)
-                .frame(width: 16)
-
-            Text(node.name)
-                .font(AnvilFont.code)
-                .foregroundStyle(isSelected ? .primary : .secondary)
-                .lineLimit(1)
-
-            Spacer()
-        }
-        .frame(height: 24)
-        .background(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
-        .contentShape(Rectangle())
-        .onTapGesture {
+        return Button {
             if node.isFolder {
                 viewModel.toggleFolder(node.id)
             } else {
                 viewModel.selectDoc(node.id)
             }
+        } label: {
+            HStack(spacing: AnvilSpacing.xxs) {
+                Spacer().frame(width: CGFloat(entry.depth) * 16)
+
+                if node.isFolder {
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(AnvilColor.textTertiary)
+                        .frame(width: 12)
+                } else {
+                    Spacer().frame(width: 12)
+                }
+
+                Image(systemName: node.isFolder ? (isExpanded ? "folder.fill" : "folder") : "doc.richtext")
+                    .font(.system(size: 12))
+                    .foregroundStyle(node.isFolder ? AnvilColor.accentAmber : AnvilColor.accentBlue)
+                    .frame(width: 16)
+
+                Text(node.name)
+                    .font(AnvilFont.code)
+                    .foregroundStyle(isSelected ? .primary : .secondary)
+                    .lineLimit(1)
+
+                Spacer()
+            }
+            .frame(height: 24)
+            .background(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(node.isFolder ? "Folder: \(node.name)" : "Document: \(node.name)")
         .accessibilityAddTraits(.isButton)

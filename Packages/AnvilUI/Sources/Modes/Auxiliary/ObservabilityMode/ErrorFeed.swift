@@ -121,63 +121,65 @@ struct ErrorFeed: View {
     // MARK: - Error Row
 
     private func errorRow(_ item: ErrorItem) -> some View {
-        HStack(spacing: AnvilSpacing.md) {
-            // Severity icon
-            Image(systemName: item.severity.icon)
-                .font(.system(size: 14))
-                .foregroundStyle(item.severity.color)
-                .frame(width: 20)
-                .accessibilityHidden(true)
+        Button {
+            viewModel.selectedErrorID = item.id
+        } label: {
+            HStack(spacing: AnvilSpacing.md) {
+                // Severity icon
+                Image(systemName: item.severity.icon)
+                    .font(.system(size: 14))
+                    .foregroundStyle(item.severity.color)
+                    .frame(width: 20)
+                    .accessibilityHidden(true)
 
-            // Content
-            VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
-                HStack {
-                    Text(item.event.title)
-                        .font(AnvilFont.sidebarItem)
-                        .lineLimit(1)
+                // Content
+                VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
+                    HStack {
+                        Text(item.event.title)
+                            .font(AnvilFont.sidebarItem)
+                            .lineLimit(1)
 
-                    Spacer()
+                        Spacer()
 
-                    // Count badge
-                    AnvilBadge(
-                        text: "\(item.event.occurrences)",
-                        color: item.severity.color
-                    )
-                }
-
-                HStack(spacing: AnvilSpacing.sm) {
-                    // Service tag
-                    if let service = item.event.tags["service"] {
-                        Text(service)
-                            .font(AnvilFont.code)
-                            .foregroundStyle(.tertiary)
+                        // Count badge
+                        AnvilBadge(
+                            text: "\(item.event.occurrences)",
+                            color: item.severity.color
+                        )
                     }
 
-                    Text("·")
-                        .foregroundStyle(.tertiary)
+                    HStack(spacing: AnvilSpacing.sm) {
+                        // Service tag
+                        if let service = item.event.tags["service"] {
+                            Text(service)
+                                .font(AnvilFont.code)
+                                .foregroundStyle(.tertiary)
+                        }
 
-                    // First seen
-                    Text("First: \(timeFormatter.localizedString(for: item.event.firstSeen, relativeTo: .now))")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(.tertiary)
+                        Text("·")
+                            .foregroundStyle(.tertiary)
 
-                    Text("·")
-                        .foregroundStyle(.tertiary)
+                        // First seen
+                        Text("First: \(timeFormatter.localizedString(for: item.event.firstSeen, relativeTo: .now))")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(.tertiary)
 
-                    // Last seen
-                    Text("Last: \(timeFormatter.localizedString(for: item.event.lastSeen, relativeTo: .now))")
-                        .font(AnvilFont.label)
-                        .foregroundStyle(.tertiary)
+                        Text("·")
+                            .foregroundStyle(.tertiary)
+
+                        // Last seen
+                        Text("Last: \(timeFormatter.localizedString(for: item.event.lastSeen, relativeTo: .now))")
+                            .font(AnvilFont.label)
+                            .foregroundStyle(.tertiary)
+                    }
                 }
             }
+            .contentShape(Rectangle())
         }
-        .contentShape(Rectangle())
+        .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(item.event.title), \(item.severity.rawValue), \(item.event.occurrences) occurrences")
         .accessibilityAddTraits(.isButton)
         .listRowBackground(viewModel.selectedErrorID == item.id ? Color.accentColor.opacity(0.14) : Color.clear)
-        .onTapGesture {
-            viewModel.selectedErrorID = item.id
-        }
     }
 }
