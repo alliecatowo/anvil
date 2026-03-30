@@ -35,32 +35,38 @@ struct LibrarySidebar: View {
 
     // MARK: - Compact Notifications List
 
+    @State private var selectedNotificationID: String?
+
     private var notificationsList: some View {
         let viewModel = appState.notificationsViewModel
         return Group {
             if viewModel.inboxItems.isEmpty {
-                Text("No notifications")
-                    .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textTertiary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                AnvilSidebarEmptyState(
+                    icon: "bell.slash",
+                    title: "No notifications",
+                    message: "Notifications will appear here when received."
+                )
             } else {
-                List {
+                List(selection: $selectedNotificationID) {
                     ForEach(viewModel.inboxItems) { item in
-                        Button {
-                            viewModel.selectedItemID = item.id
-                            viewModel.markAsRead(item.id)
-                        } label: {
-                            notificationRow(item, viewModel: viewModel)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel("\(item.notification.isRead ? "" : "Unread, ")\(item.notification.title), \(item.notification.body)")
-                        .accessibilityAddTraits(.isButton)
-                        .listRowInsets(EdgeInsets(top: 2, leading: 4, bottom: 2, trailing: 4))
-                        .listRowSeparator(.hidden)
+                        notificationRow(item, viewModel: viewModel)
+                            .tag(item.id)
+                            .listRowInsets(EdgeInsets(top: 2, leading: 4, bottom: 2, trailing: 4))
+                            .listRowSeparator(.hidden)
                     }
                 }
                 .listStyle(.sidebar)
+                .onChange(of: selectedNotificationID) { _, newId in
+                    guard let id = newId else { return }
+                    viewModel.selectedItemID = id
+                    viewModel.markAsRead(id)
+                }
+                .onChange(of: viewModel.selectedItemID) { _, newId in
+                    selectedNotificationID = newId
+                }
+                .onAppear {
+                    selectedNotificationID = viewModel.selectedItemID
+                }
             }
         }
     }
@@ -72,9 +78,11 @@ struct LibrarySidebar: View {
             subtitle: item.notification.body,
             tag: item.notification.isRead ? nil : "Unread",
             tagColor: AnvilColor.accentBlue,
-            isSelected: viewModel.selectedItemID == item.id,
+            isSelected: selectedNotificationID == item.id,
             isCompact: false
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(item.notification.isRead ? "" : "Unread, ")\(item.notification.title), \(item.notification.body)")
     }
 
     // MARK: - Rules Sidebar
@@ -114,66 +122,66 @@ struct LibrarySidebar: View {
     }
     // MARK: - Compact Schedule List
 
+    @State private var selectedScheduleEntryID: String?
+
     private var scheduleSidebarList: some View {
         let viewModel = appState.scheduleViewModel
         return Group {
             if viewModel.entries.isEmpty {
-                VStack(spacing: AnvilSpacing.md) {
-                    Text("No events today")
-                        .font(AnvilFont.body)
-                        .foregroundStyle(AnvilColor.textTertiary)
-
-                    Button {
-                        viewModel.loadSampleData()
-                    } label: {
-                        Label("Load Demo Data", systemImage: "tray.and.arrow.down")
-                            .font(AnvilFont.body)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                AnvilSidebarEmptyState(
+                    icon: "calendar",
+                    title: "No events today",
+                    message: "Scheduled events will appear here.",
+                    actions: [
+                        EmptyStateAction("Load Demo Data", icon: "tray.and.arrow.down") {
+                            viewModel.loadSampleData()
+                        }
+                    ]
+                )
             } else {
-                List {
+                List(selection: $selectedScheduleEntryID) {
                     AnvilSidebarSection(title: "Schedule", icon: "calendar", count: viewModel.entries.count) {
                         ForEach(viewModel.entries) { entry in
-                            scheduleEntryRow(entry, viewModel: viewModel)
+                            scheduleEntryRow(entry)
+                                .tag(entry.id)
+                                .listRowInsets(EdgeInsets(top: 2, leading: 4, bottom: 2, trailing: 4))
+                                .listRowSeparator(.hidden)
                         }
                     }
                 }
                 .listStyle(.sidebar)
+                .onChange(of: selectedScheduleEntryID) { _, newId in
+                    viewModel.selectedEntryID = newId
+                }
+                .onChange(of: viewModel.selectedEntryID) { _, newId in
+                    selectedScheduleEntryID = newId
+                }
+                .onAppear {
+                    selectedScheduleEntryID = viewModel.selectedEntryID
+                }
             }
         }
     }
 
-    private func scheduleEntryRow(_ entry: ScheduleEntry, viewModel: ScheduleViewModel) -> some View {
-        let isSelected = viewModel.selectedEntryID == entry.id
+    private func scheduleEntryRow(_ entry: ScheduleEntry) -> some View {
         let timeFormatter: DateFormatter = {
             let f = DateFormatter()
             f.dateFormat = "h:mm a"
             return f
         }()
 
-        return Button {
-            viewModel.selectedEntryID = entry.id
-        } label: {
-            AnvilListItem(
-                icon: entry.kindIcon,
-                title: entry.title,
-                subtitle: entry.duration,
-                tag: entry.kindLabel,
-                tagColor: entry.kindColor,
-                timestamp: timeFormatter.string(from: entry.start),
-                isSelected: isSelected,
-                isCompact: false
-            )
-        }
-        .buttonStyle(.plain)
+        return AnvilListItem(
+            icon: entry.kindIcon,
+            title: entry.title,
+            subtitle: entry.duration,
+            tag: entry.kindLabel,
+            tagColor: entry.kindColor,
+            timestamp: timeFormatter.string(from: entry.start),
+            isSelected: selectedScheduleEntryID == entry.id,
+            isCompact: false
+        )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(entry.title), \(timeFormatter.string(from: entry.start))")
-        .accessibilityAddTraits(.isButton)
-        .listRowInsets(EdgeInsets(top: 2, leading: 4, bottom: 2, trailing: 4))
-        .listRowSeparator(.hidden)
     }
 }
 
@@ -181,48 +189,46 @@ struct LibrarySidebar: View {
 
 struct ExtensionsSidebarView: View {
     @ObservedObject var viewModel: PluginMarketplaceViewModel
+    @State private var selectedPluginID: String?
 
     var body: some View {
         VStack(spacing: 0) {
             if viewModel.installedPlugins.isEmpty && viewModel.plugins.isEmpty {
-                // Not yet loaded
-                VStack(spacing: AnvilSpacing.md) {
-                    Text("No extensions installed")
-                        .font(AnvilFont.body)
-                        .foregroundStyle(AnvilColor.textTertiary)
-
-                    Button {
-                        viewModel.viewMode = .browse
-                    } label: {
-                        Label("Browse Marketplace", systemImage: "puzzlepiece.extension")
-                            .font(AnvilFont.body)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                AnvilSidebarEmptyState(
+                    icon: "puzzlepiece.extension",
+                    title: "No extensions installed",
+                    message: "Browse the marketplace to discover extensions.",
+                    actions: [
+                        EmptyStateAction("Browse Marketplace", icon: "puzzlepiece.extension") {
+                            viewModel.viewMode = .browse
+                        }
+                    ]
+                )
             } else {
-                List {
+                List(selection: $selectedPluginID) {
                     if !viewModel.installedPlugins.isEmpty {
                         AnvilSidebarSection(title: "Installed", icon: "puzzlepiece.extension", count: viewModel.installedPlugins.count) {
                             ForEach(viewModel.installedPlugins) { plugin in
                                 extensionRow(plugin)
+                                    .tag(plugin.id)
                             }
                         }
                     }
 
                     AnvilSidebarSection(title: "Browse", icon: "square.grid.2x2", count: nil) {
-                        Button {
+                        AnvilSidebarRowButton(
+                            title: "Browse Marketplace",
+                            icon: "puzzlepiece.extension"
+                        ) {
                             viewModel.viewMode = .browse
-                        } label: {
-                            Label("Browse Marketplace", systemImage: "puzzlepiece.extension")
-                                .font(AnvilFont.sidebarItem)
-                                .foregroundStyle(AnvilColor.accentBlue)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
                 .listStyle(.sidebar)
+                .onChange(of: selectedPluginID) { _, newId in
+                    guard let id = newId else { return }
+                    viewModel.selectPlugin(id)
+                }
             }
         }
         .onAppear {
@@ -233,20 +239,15 @@ struct ExtensionsSidebarView: View {
     }
 
     private func extensionRow(_ plugin: MarketplacePlugin) -> some View {
-        Button {
-            viewModel.selectPlugin(plugin.id)
-        } label: {
-            AnvilListItem(
-                icon: plugin.icon,
-                title: plugin.name,
-                subtitle: plugin.author,
-                tag: plugin.isEnabled ? "Enabled" : "Disabled",
-                tagColor: plugin.isEnabled ? AnvilColor.accentGreen : AnvilColor.textTertiary
-            )
-        }
-        .buttonStyle(.plain)
+        AnvilListItem(
+            icon: plugin.icon,
+            title: plugin.name,
+            subtitle: plugin.author,
+            tag: plugin.isEnabled ? "Enabled" : "Disabled",
+            tagColor: plugin.isEnabled ? AnvilColor.accentGreen : AnvilColor.textTertiary,
+            isSelected: selectedPluginID == plugin.id
+        )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(plugin.name), \(plugin.isEnabled ? "Enabled" : "Disabled")")
-        .accessibilityAddTraits(.isButton)
     }
 }
