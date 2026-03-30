@@ -6,6 +6,7 @@ struct IntentSidebar: View {
     @EnvironmentObject private var appState: AppState
     @State private var quickAddText = ""
     @State private var isQuickAdding = false
+    @State private var expandedGroups: Set<String> = []
     @FocusState private var isQuickAddFocused: Bool
 
     var body: some View {
@@ -54,6 +55,20 @@ struct IntentSidebar: View {
                     quickAddField
                 }
 
+                // MARK: - Pinned Section
+
+                if !viewModel.sidebarPins.isEmpty {
+                    AnvilSidebarSection(title: "Pinned", icon: "pin.fill") {
+                        ForEach(viewModel.pinnedFilters, id: \.rawValue) { filter in
+                            pinnedFilterRow(filter)
+                        }
+
+                        ForEach(viewModel.pinnedTickets) { ticket in
+                            pinnedTicketRow(ticket)
+                        }
+                    }
+                }
+
                 AnvilSidebarSection(title: "Sprint", icon: "arrow.triangle.2.circlepath") {
                     Button {
                         viewModel.viewMode = .board
@@ -68,7 +83,8 @@ struct IntentSidebar: View {
                     savedFilterRow(
                         title: "My Tickets",
                         icon: "person.fill",
-                        count: viewModel.myTickets.count
+                        count: viewModel.myTickets.count,
+                        filter: .myTickets
                     ) {
                         applySavedFilter {
                             viewModel.applyFilterMine()
@@ -78,7 +94,8 @@ struct IntentSidebar: View {
                     savedFilterRow(
                         title: "Blocked",
                         icon: "exclamationmark.triangle",
-                        count: viewModel.blockedTickets.count
+                        count: viewModel.blockedTickets.count,
+                        filter: .blocked
                     ) {
                         applySavedFilter {
                             viewModel.applyFilterBlocked()
@@ -88,7 +105,8 @@ struct IntentSidebar: View {
                     savedFilterRow(
                         title: "Due Soon",
                         icon: "clock.badge.exclamationmark",
-                        count: viewModel.dueSoonTickets.count
+                        count: viewModel.dueSoonTickets.count,
+                        filter: .dueSoon
                     ) {
                         applySavedFilter {
                             viewModel.applyFilterDueSoon()
@@ -97,7 +115,12 @@ struct IntentSidebar: View {
                 }
 
                 ForEach(viewModel.groupedTickets, id: \.0) { group, tickets in
-                    AnvilSidebarSection(title: group, icon: "line.3.horizontal.decrease.circle", count: tickets.count) {
+                    AnvilSidebarDisclosureSection(
+                        title: group,
+                        icon: "line.3.horizontal.decrease.circle",
+                        count: tickets.count,
+                        isExpanded: expandedBinding(for: group)
+                    ) {
                         ForEach(tickets) { ticket in
                             ticketRow(ticket)
                                 .contextMenu {
@@ -109,7 +132,28 @@ struct IntentSidebar: View {
                 }
             }
             .listStyle(.sidebar)
+            .onAppear {
+                // Expand the first group by default
+                if let firstGroup = viewModel.groupedTickets.first?.0 {
+                    expandedGroups.insert(firstGroup)
+                }
+            }
         }
+    }
+
+    // MARK: - Expanded Binding
+
+    private func expandedBinding(for group: String) -> Binding<Bool> {
+        Binding<Bool>(
+            get: { expandedGroups.contains(group) },
+            set: { isExpanded in
+                if isExpanded {
+                    expandedGroups.insert(group)
+                } else {
+                    expandedGroups.remove(group)
+                }
+            }
+        )
     }
 
     // MARK: - Quick Add Field
@@ -248,18 +292,75 @@ struct IntentSidebar: View {
         )
     }
 
+    // MARK: - Pinned Rows
+
+    private func pinnedFilterRow(_ filter: PlanSidebarFilter) -> some View {
+        Button {
+            applySavedFilter {
+                switch filter {
+                case .myTickets: viewModel.applyFilterMine()
+                case .blocked: viewModel.applyFilterBlocked()
+                case .dueSoon: viewModel.applyFilterDueSoon()
+                }
+            }
+        } label: {
+            AnvilListItem(
+                icon: filter.icon,
+                title: filter.title,
+                isCompact: true
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                viewModel.togglePin(filter: filter)
+            } label: {
+                Label("Unpin", systemImage: "pin.slash")
+            }
+        }
+    }
+
+    private func pinnedTicketRow(_ ticket: Ticket) -> some View {
+        Button {
+            viewModel.selectTicket(ticket.id, openInMainPane: true)
+        } label: {
+            AnvilListItem(
+                icon: IntentViewModel.statusIcon(ticket.status),
+                title: ticket.title,
+                isCompact: true
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                viewModel.togglePin(ticketId: ticket.id)
+            } label: {
+                Label("Unpin", systemImage: "pin.slash")
+            }
+        }
+    }
+
     // MARK: - Saved Filter Row
 
-    private func savedFilterRow(title: String, icon: String, count: Int, action: @escaping () -> Void) -> some View {
+    private func savedFilterRow(title: String, icon: String, count: Int, filter: PlanSidebarFilter, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            AnvilListItem(
-                icon: icon,
-                title: title,
-                subtitle: "Saved filter",
-                tag: count > 0 ? "\(count)" : nil,
-                tagColor: AnvilColor.accentBlue,
-                isCompact: false
-            )
+            HStack {
+                AnvilListItem(
+                    icon: icon,
+                    title: title,
+                    subtitle: nil,
+                    tag: count > 0 ? "\(count)" : nil,
+                    tagColor: AnvilColor.accentBlue,
+                    isCompact: false
+                )
+
+                PinButton(
+                    isPinned: viewModel.isPinned(filter: filter),
+                    action: { viewModel.togglePin(filter: filter) }
+                )
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -271,16 +372,20 @@ struct IntentSidebar: View {
     // MARK: - Ticket Row
 
     private func ticketRow(_ ticket: Ticket) -> some View {
-        Button {
+        let selected = viewModel.selectedTicketId == ticket.id
+        return Button {
             viewModel.selectTicket(ticket.id, openInMainPane: true)
         } label: {
             TicketRowContent(
                 ticket: ticket,
-                isSelected: viewModel.selectedTicketId == ticket.id
+                isSelected: selected
             )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .listRowBackground(
+            selected ? Color.accentColor.opacity(0.14) : Color.clear
+        )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(ticket.title), \(ticket.id)")
         .accessibilityAddTraits(.isButton)
@@ -298,12 +403,36 @@ struct IntentSidebar: View {
     }
 }
 
+// MARK: - Pin Button
+
+private struct PinButton: View {
+    let isPinned: Bool
+    let action: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        Button {
+            action()
+        } label: {
+            Image(systemName: isPinned ? "pin.fill" : "pin")
+                .font(.system(size: 11))
+                .foregroundStyle(isPinned ? Color.accentColor : .secondary)
+        }
+        .buttonStyle(.plain)
+        .opacity(isPinned || isHovered ? 1.0 : 0.0)
+        .onHover { isHovered = $0 }
+        .accessibilityLabel(isPinned ? "Unpin" : "Pin")
+    }
+}
+
+// MARK: - Ticket Row Content
+
 private struct TicketRowContent: View {
     let ticket: Ticket
     let isSelected: Bool
 
     @State private var isHovered = false
-    @GestureState private var isPressed = false
 
     var body: some View {
         HStack(spacing: AnvilSpacing.sm) {
@@ -355,18 +484,6 @@ private struct TicketRowContent: View {
         }
         .padding(.horizontal, AnvilSpacing.md)
         .padding(.vertical, AnvilSpacing.sm)
-        .background(
-            isSelected
-                ? Color.accentColor.opacity(0.14)
-                : (isHovered ? Color.primary.opacity(0.06) : .clear)
-        )
-        .scaleEffect(isPressed ? 0.97 : 1.0)
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
-        .animation(.easeInOut(duration: 0.15), value: isHovered)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .updating($isPressed) { _, pressed, _ in pressed = true }
-        )
         .onHover { isHovered = $0 }
     }
 }
