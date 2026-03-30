@@ -567,7 +567,7 @@ public class AppState: ObservableObject {
     // MARK: - Demo Data
 
     public func loadDemoData() {
-        // Agent: sample conversation
+        // Build: sample conversation
         let sampleMessages = [
             AgentMessage(role: .user, content: "Fix the authentication bug in the login flow"),
             AgentMessage(role: .assistant, content: "I'll start by examining the auth module to understand the current login flow.\n\nLet me read the relevant files...", toolCalls: [
@@ -579,13 +579,13 @@ public class AppState: ObservableObject {
         agentViewModel.sessions = [session]
         agentViewModel.selectedSessionId = session.id
 
-        // Intent: reinitialize with demo data (already loaded on init, this resets to defaults)
+        // Plan: reinitialize with demo data (already loaded on init, this resets to defaults)
         intentViewModel = IntentViewModel()
 
         // Review: sample reviews
         reviewViewModel.reviews = ReviewViewModel.makeSampleReviews()
 
-        // Ship: load demo data
+        // Operate: load demo data
         shipViewModel = ShipViewModel()
         shipViewModel.loadSampleData()
 
