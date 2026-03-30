@@ -33,13 +33,13 @@ struct BoardView: View {
         HStack {
             Text(viewModel.board.name)
                 .font(AnvilFont.subheading)
-                .foregroundStyle(AnvilColor.textPrimary)
+                .foregroundStyle(.primary)
 
             Spacer()
 
             Text(viewModel.currentCycle.name)
                 .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.tertiary)
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.md)
@@ -60,12 +60,12 @@ struct BoardView: View {
 
                 Text("\(tickets.count)")
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
 
                 if let limit = column.wipLimit {
                     Text("/ \(limit)")
                         .font(AnvilFont.label)
-                        .foregroundStyle(overWip ? AnvilColor.accentRed : AnvilColor.textTertiary)
+                        .foregroundStyle(overWip ? .red : .tertiary)
                 }
 
                 Spacer()
@@ -81,7 +81,7 @@ struct BoardView: View {
                     Text("Over WIP limit")
                         .font(AnvilFont.label)
                 }
-                .foregroundStyle(AnvilColor.accentRed)
+                .foregroundStyle(.red)
                 .padding(.horizontal, AnvilSpacing.sm)
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("Warning: Over WIP limit")
@@ -121,14 +121,13 @@ struct BoardView: View {
                     HStack(spacing: AnvilSpacing.xs) {
                         Text("Enter to create")
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
                         Spacer()
                         Button("Cancel") {
                             newTicketTitle = ""
                             creatingInColumnId = nil
                         }
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textSecondary)
                         .buttonStyle(.plain)
                     }
                 }
@@ -145,14 +144,14 @@ struct BoardView: View {
                         Text("Add ticket")
                             .font(AnvilFont.label)
                     }
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity, minHeight: 32)
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("intent.board.add-ticket.\(column.id)")
                 .background(
                     RoundedRectangle(cornerRadius: AnvilSpacing.cardCornerRadius)
-                        .strokeBorder(AnvilColor.borderSubtle, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                        .strokeBorder(Color.secondary.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
                 )
             }
         }
@@ -274,10 +273,10 @@ struct BoardView: View {
                 .accessibilityHidden(true)
             Text(ticket.id)
                 .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.tertiary)
             Text(ticket.title)
                 .font(AnvilFont.sidebarItem)
-                .foregroundStyle(AnvilColor.textPrimary)
+                .foregroundStyle(.primary)
                 .lineLimit(1)
         }
         .padding(AnvilSpacing.sm)

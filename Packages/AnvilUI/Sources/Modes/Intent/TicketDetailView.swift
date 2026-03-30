@@ -44,9 +44,12 @@ struct TicketDetailView: View {
 
     private func backBar(_ ticket: Ticket) -> some View {
         HStack(spacing: AnvilSpacing.sm) {
-            AnvilButton("Back", icon: "chevron.left", style: .ghost) {
+            Button {
                 viewModel.closeTicketDetailInMainPane()
+            } label: {
+                Label("Back", systemImage: "chevron.left")
             }
+            .buttonStyle(.plain)
             .accessibilityIdentifier("intent.ticket-detail.back")
 
             Spacer()
@@ -55,27 +58,31 @@ struct TicketDetailView: View {
                 HStack(spacing: AnvilSpacing.xxs) {
                     Image(systemName: "arrow.triangle.branch")
                         .font(.system(size: 11))
-                        .foregroundStyle(AnvilColor.accentGreen)
+                        .foregroundStyle(.green)
                     Text(created)
                         .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.accentGreen)
+                        .foregroundStyle(.green)
                 }
             }
 
-            AnvilButton(
-                isDispatching ? "Starting..." : "Start Work",
-                icon: "bolt.fill",
-                style: .primary
-            ) {
+            Button {
                 startWork(ticket)
+            } label: {
+                Label(isDispatching ? "Starting..." : "Start Work", systemImage: "bolt.fill")
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
             .disabled(isDispatching)
             .accessibilityIdentifier("intent.ticket-detail.start-work")
 
             if branchCreated == nil {
-                AnvilButton("Branch Only", icon: "arrow.triangle.branch", style: .ghost) {
+                Button {
                     createBranchForTicket(ticket)
+                } label: {
+                    Label("Branch Only", systemImage: "arrow.triangle.branch")
                 }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
                 .accessibilityIdentifier("intent.ticket-detail.branch-only")
             }
 
@@ -86,7 +93,6 @@ struct TicketDetailView: View {
             } label: {
                 Image(systemName: "trash")
                     .font(.system(size: 12))
-                    .foregroundStyle(AnvilColor.accentRed.opacity(0.7))
             }
             .buttonStyle(.plain)
             .help("Delete ticket")
@@ -94,7 +100,7 @@ struct TicketDetailView: View {
 
             Text(ticket.id)
                 .font(AnvilFont.code)
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.tertiary)
         }
         .padding(.horizontal, AnvilSpacing.lg)
         .padding(.vertical, AnvilSpacing.sm)
@@ -163,7 +169,7 @@ struct TicketDetailView: View {
             })
             .textFieldStyle(.roundedBorder)
             .font(AnvilFont.heading)
-            .foregroundStyle(AnvilColor.textPrimary)
+            .foregroundStyle(.primary)
             .accessibilityLabel("Ticket title")
             .accessibilityIdentifier("intent.ticket-detail.title")
 
@@ -206,10 +212,10 @@ struct TicketDetailView: View {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Image(systemName: "diamond")
                             .font(.system(size: 10))
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
                         Text("\(sp) pts")
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textSecondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
 
@@ -217,10 +223,10 @@ struct TicketDetailView: View {
                     HStack(spacing: AnvilSpacing.xxs) {
                         Image(systemName: "calendar")
                             .font(.system(size: 10))
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
                         Text(due, style: .date)
                             .font(AnvilFont.label)
-                            .foregroundStyle(AnvilColor.textSecondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
 
@@ -305,15 +311,14 @@ struct TicketDetailView: View {
                 } label: {
                     Text(isEditingDescription ? "Done" : "Edit")
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.accentBlue)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
             }
 
             if isEditingDescription {
                 TextEditor(text: $viewModel.editingDescription)
                     .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textSecondary)
+                    .foregroundStyle(.secondary)
                     .scrollContentBackground(.hidden)
                     .frame(minHeight: 120)
                     .padding(AnvilSpacing.sm)
@@ -328,12 +333,12 @@ struct TicketDetailView: View {
             } else if ticket.description.isEmpty {
                 Text("No description provided.")
                     .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
                     .italic()
             } else {
                 Text(ticket.description)
                     .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textSecondary)
+                    .foregroundStyle(.secondary)
                     .textSelection(.enabled)
                     .lineSpacing(4)
             }
@@ -355,7 +360,7 @@ struct TicketDetailView: View {
                 if progress.total > 0 {
                     Text("\(progress.completed)/\(progress.total)")
                         .font(AnvilFont.label)
-                        .foregroundStyle(progress.completed == progress.total ? AnvilColor.accentGreen : AnvilColor.textTertiary)
+                        .foregroundStyle(progress.completed == progress.total ? Color.green : Color.secondary)
                 }
 
                 Spacer()
@@ -365,7 +370,7 @@ struct TicketDetailView: View {
             if progress.total > 0 {
                 ProgressView(value: Double(progress.completed), total: Double(progress.total))
                     .progressViewStyle(.linear)
-                    .tint(progress.completed == progress.total ? AnvilColor.accentGreen : AnvilColor.accentBlue)
+                    .tint(progress.completed == progress.total ? .green : Color.accentColor)
             }
 
             // Subtask items
@@ -378,13 +383,13 @@ struct TicketDetailView: View {
                     } label: {
                         Image(systemName: subtask.isCompleted ? "checkmark.circle.fill" : "circle")
                             .font(.system(size: 14))
-                            .foregroundStyle(subtask.isCompleted ? AnvilColor.accentGreen : AnvilColor.textTertiary)
+                            .foregroundStyle(subtask.isCompleted ? .green : .tertiary)
                     }
                     .buttonStyle(.plain)
 
                     Text(subtask.title)
                         .font(AnvilFont.body)
-                        .foregroundStyle(subtask.isCompleted ? AnvilColor.textTertiary : AnvilColor.textPrimary)
+                        .foregroundStyle(subtask.isCompleted ? .tertiary : .primary)
                         .strikethrough(subtask.isCompleted)
 
                     Spacer()
@@ -394,7 +399,7 @@ struct TicketDetailView: View {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
                     }
                     .buttonStyle(.plain)
                     .opacity(0.5)
@@ -406,12 +411,11 @@ struct TicketDetailView: View {
             HStack(spacing: AnvilSpacing.sm) {
                 Image(systemName: "plus.circle")
                     .font(.system(size: 14))
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
 
                 TextField("Add subtask...", text: $viewModel.newSubtaskTitle)
                     .textFieldStyle(.roundedBorder)
                     .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textPrimary)
                     .onSubmit {
                         viewModel.addSubtask(to: ticket.id, title: viewModel.newSubtaskTitle)
                         viewModel.newSubtaskTitle = ""
@@ -453,9 +457,12 @@ struct TicketDetailView: View {
 
                 Spacer()
 
-                AnvilButton("Link Ticket", icon: "link.badge.plus", style: .ghost) {
+                Button {
                     showingLinkPopover.toggle()
+                } label: {
+                    Label("Link Ticket", systemImage: "link.badge.plus")
                 }
+                .buttonStyle(.borderless)
                 .popover(isPresented: $showingLinkPopover) {
                     linkTicketPopover(ticket)
                 }
@@ -464,7 +471,7 @@ struct TicketDetailView: View {
             if relations.isEmpty {
                 Text("No linked tickets")
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
                     .italic()
             } else {
                 ForEach(relations) { relation in
@@ -481,16 +488,16 @@ struct TicketDetailView: View {
 
         return VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
             HStack {
-                Text("ACTIVITY")
+                Text("Activity")
                     .font(.headline)
                     .foregroundStyle(.primary)
 
                 Text("\(ticketComments.count)")
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
                     .padding(.horizontal, 5)
                     .padding(.vertical, 1)
-                    .background(Color.secondary.opacity(0.2))
+                    .background(Color.secondary.opacity(0.15))
                     .clipShape(Capsule())
             }
 
@@ -501,28 +508,31 @@ struct TicketDetailView: View {
             // New comment input
             HStack(alignment: .top, spacing: AnvilSpacing.sm) {
                 Circle()
-                    .fill(AnvilColor.accentBlue.opacity(0.2))
+                    .fill(Color.accentColor.opacity(0.2))
                     .frame(width: 24, height: 24)
                     .overlay(
                         Text("Y")
                             .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(AnvilColor.accentBlue)
+                            .foregroundStyle(Color.accentColor)
                     )
 
                 VStack(alignment: .leading, spacing: AnvilSpacing.xs) {
                     TextField("Add a comment...", text: $viewModel.newCommentText, axis: .vertical)
                         .textFieldStyle(.roundedBorder)
                         .font(AnvilFont.body)
-                        .foregroundStyle(AnvilColor.textPrimary)
                         .lineLimit(1...5)
 
                     if !viewModel.newCommentText.isEmpty {
                         HStack {
                             Spacer()
-                            AnvilButton("Comment", icon: "paperplane", style: .primary) {
+                            Button {
                                 viewModel.addComment(to: ticket.id, body: viewModel.newCommentText)
                                 viewModel.newCommentText = ""
+                            } label: {
+                                Label("Comment", systemImage: "paperplane")
                             }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
                         }
                     }
                 }
@@ -540,18 +550,18 @@ struct TicketDetailView: View {
                 .overlay(
                     Text(String(comment.author.prefix(1)).uppercased())
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(AnvilColor.textSecondary)
+                        .foregroundStyle(.secondary)
                 )
 
             VStack(alignment: .leading, spacing: AnvilSpacing.xxs) {
                 HStack {
                     Text(comment.author)
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textPrimary)
+                        .foregroundStyle(.primary)
 
                     Text(comment.createdAt, style: .relative)
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
 
                     Spacer()
 
@@ -560,7 +570,7 @@ struct TicketDetailView: View {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 8, weight: .medium))
-                            .foregroundStyle(AnvilColor.textTertiary)
+                            .foregroundStyle(.tertiary)
                     }
                     .buttonStyle(.plain)
                     .opacity(0.5)
@@ -568,7 +578,7 @@ struct TicketDetailView: View {
 
                 Text(comment.body)
                     .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textSecondary)
+                    .foregroundStyle(.secondary)
                     .textSelection(.enabled)
                     .lineSpacing(3)
             }
@@ -590,7 +600,7 @@ struct TicketDetailView: View {
         return VStack(alignment: .leading, spacing: AnvilSpacing.sm) {
             Text("Link Ticket")
                 .font(AnvilFont.subheading)
-                .foregroundStyle(AnvilColor.textPrimary)
+                .foregroundStyle(.primary)
 
             Picker("Relation Type", selection: $linkRelationType) {
                 ForEach([TicketRelationType.blocks, .blockedBy, .parent, .child, .related, .duplicate], id: \.rawValue) { type in
@@ -602,7 +612,6 @@ struct TicketDetailView: View {
             TextField("Search tickets...", text: $linkTargetSearch)
                 .textFieldStyle(.roundedBorder)
                 .font(AnvilFont.body)
-                .foregroundStyle(AnvilColor.textPrimary)
 
             ScrollView {
                 LazyVStack(spacing: 0) {
@@ -615,10 +624,10 @@ struct TicketDetailView: View {
                             HStack(spacing: AnvilSpacing.sm) {
                                 Text(candidate.id)
                                     .font(AnvilFont.code)
-                                    .foregroundStyle(AnvilColor.accentBlue)
+                                    .foregroundStyle(Color.accentColor)
                                 Text(candidate.title)
                                     .font(AnvilFont.body)
-                                    .foregroundStyle(AnvilColor.textSecondary)
+                                    .foregroundStyle(.secondary)
                                     .lineLimit(1)
                                 Spacer()
                             }
@@ -651,7 +660,7 @@ struct TicketDetailView: View {
 
             Text(label)
                 .font(AnvilFont.label)
-                .foregroundStyle(AnvilColor.textTertiary)
+                .foregroundStyle(.tertiary)
 
             if let other = otherTicket {
                 Button {
@@ -659,18 +668,18 @@ struct TicketDetailView: View {
                 } label: {
                     Text(other.id)
                         .font(AnvilFont.code)
-                        .foregroundStyle(AnvilColor.accentBlue)
+                        .foregroundStyle(Color.accentColor)
                 }
                 .buttonStyle(.plain)
 
                 Text(other.title)
                     .font(AnvilFont.body)
-                    .foregroundStyle(AnvilColor.textSecondary)
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
             } else {
                 Text(otherId)
                     .font(AnvilFont.code)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
             }
 
             Spacer()
@@ -680,7 +689,7 @@ struct TicketDetailView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
             }
             .buttonStyle(.plain)
             .help("Remove link")
@@ -736,7 +745,7 @@ struct TicketDetailView: View {
         case .blocks, .blockedBy: AnvilColor.accentRed
         case .parent, .child:     AnvilColor.accentBlue
         case .duplicate:          AnvilColor.accentAmber
-        case .related:            AnvilColor.textSecondary
+        case .related:            Color.secondary
         }
     }
 }

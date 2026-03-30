@@ -24,30 +24,30 @@ struct KanbanCard: View {
 
                 Text(ticket.id)
                     .font(AnvilFont.label)
-                    .foregroundStyle(AnvilColor.textTertiary)
+                    .foregroundStyle(.tertiary)
 
                 Spacer()
 
                 if let sp = ticket.storyPoints {
                     Text("\(sp)")
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textTertiary)
+                        .foregroundStyle(.tertiary)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 1)
-                        .background(Color.secondary.opacity(0.2))
+                        .background(Color.secondary.opacity(0.15))
                         .clipShape(RoundedRectangle(cornerRadius: 3))
                 }
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(isSelected ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                    .foregroundStyle(isSelected ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
                     .accessibilityHidden(true)
             }
 
             // Title
             Text(ticket.title)
                 .font(AnvilFont.sidebarItem)
-                .foregroundStyle(AnvilColor.textPrimary)
+                .foregroundStyle(.primary)
                 .lineLimit(2)
 
             // Subtask progress
@@ -59,7 +59,7 @@ struct KanbanCard: View {
                     Text("\(progress.completed)/\(progress.total)")
                         .font(AnvilFont.label)
                 }
-                .foregroundStyle(progress.completed == progress.total ? AnvilColor.accentGreen : AnvilColor.textTertiary)
+                .foregroundStyle(progress.completed == progress.total ? .green : .tertiary)
             }
 
             // Assignee + due date
@@ -68,7 +68,7 @@ struct KanbanCard: View {
                     assigneeBubble(assignee)
                     Text(assignee)
                         .font(AnvilFont.label)
-                        .foregroundStyle(AnvilColor.textSecondary)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .accessibilityLabel("Assigned to \(assignee)")
                 }
@@ -109,7 +109,7 @@ struct KanbanCard: View {
             .overlay(
                 Text(String(name.prefix(1)).uppercased())
                     .font(.system(size: 8, weight: .medium))
-                    .foregroundStyle(AnvilColor.textSecondary)
+                    .foregroundStyle(.secondary)
             )
             .accessibilityHidden(true)
     }

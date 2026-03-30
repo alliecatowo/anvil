@@ -131,7 +131,7 @@ struct TicketListView: View {
 
                     Image(systemName: "chevron.right")
                         .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(ticket.id == viewModel.selectedTicketId ? AnvilColor.accentBlue : AnvilColor.textTertiary)
+                        .foregroundStyle(ticket.id == viewModel.selectedTicketId ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
                         .accessibilityHidden(true)
                 }
                 .accessibilityElement(children: .combine)
@@ -316,11 +316,14 @@ struct TicketListView: View {
                 .font(AnvilFont.body)
                 .foregroundStyle(.secondary)
 
-            AnvilButton("Clear Filters", icon: "xmark", style: .ghost) {
+            Button {
                 viewModel.clearFilters()
+            } label: {
+                Label("Clear Filters", systemImage: "xmark")
             }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
             .accessibilityLabel("Clear all filters")
-            .accessibilityAddTraits(.isButton)
             Spacer()
         }
     }
