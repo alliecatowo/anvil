@@ -118,22 +118,6 @@ public struct StatusBar: View {
             .accessibilityElement(children: .combine)
             .accessibilityLabel("Session cost \(formatCost(appState.sessionCost)), today \(formatCost(appState.todayCost))")
 
-            Circle()
-                .fill(AnvilColor.textTertiary.opacity(0.3))
-                .frame(width: 3, height: 3)
-                .accessibilityHidden(true)
-
-            // Settings gear
-            Button {
-                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-            } label: {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 11))
-                    .foregroundStyle(AnvilColor.textSecondary)
-            }
-            .buttonStyle(.borderless)
-            .accessibilityLabel("Settings")
-            .help("Settings")
         }
         .padding(.horizontal, AnvilSpacing.md)
         .frame(height: AnvilSpacing.statusBarHeight)

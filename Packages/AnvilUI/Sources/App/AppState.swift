@@ -30,6 +30,9 @@ public enum AnvilSpace: String, CaseIterable, Identifiable, Sendable {
 
     public var id: String { rawValue }
 
+    /// Human-readable name for display in toolbar and UI chrome.
+    public var displayName: String { rawValue }
+
     public var icon: String {
         switch self {
         case .plan:    "target"

@@ -62,6 +62,7 @@ public struct MainWindow: View {
         }
         .background(.regularMaterial)
         .toolbar {
+            // Left: sidebar toggle
             ToolbarItem(placement: .navigation) {
                 Button("Toggle Sidebar", systemImage: "sidebar.left") {
                     appState.toggleSidebar()
@@ -71,6 +72,14 @@ public struct MainWindow: View {
                 .accessibilityAddTraits(.isButton)
             }
 
+            // Center: current space name
+            ToolbarItem(placement: .principal) {
+                Text(appState.currentSpace.displayName)
+                    .font(.headline)
+                    .accessibilityLabel("Current space: \(appState.currentSpace.displayName)")
+            }
+
+            // Right: actions
             ToolbarItemGroup(placement: .primaryAction) {
                 Button("Command Palette", systemImage: "magnifyingglass") {
                     appState.toggleCommandPalette()
@@ -83,19 +92,8 @@ public struct MainWindow: View {
                 Button {
                     isNotificationsPopoverVisible.toggle()
                 } label: {
-                    Image(systemName: "bell")
-                        .overlay(alignment: .topTrailing) {
-                            let count = appState.notificationsViewModel.unreadCount
-                            if count > 0 {
-                                Text(count < 10 ? "\(count)" : "9+")
-                                    .font(.system(size: 8, weight: .bold))
-                                    .foregroundStyle(.white)
-                                    .padding(.horizontal, 3)
-                                    .padding(.vertical, 1)
-                                    .background(Color.red, in: Capsule())
-                                    .offset(x: 6, y: -6)
-                            }
-                        }
+                    let unreadCount = appState.notificationsViewModel.unreadCount
+                    Image(systemName: unreadCount > 0 ? "bell.badge" : "bell")
                 }
                 .help("Notifications")
                 .accessibilityLabel("Notifications")
@@ -107,14 +105,6 @@ public struct MainWindow: View {
                         .environmentObject(container)
                 }
 
-                Button("Agent Sidebar", systemImage: "sidebar.right") {
-                    appState.toggleAgentPanel()
-                }
-                .help("Toggle Agent Sidebar")
-                .accessibilityLabel("Toggle Agent Sidebar")
-                .accessibilityIdentifier("toolbar.toggle-agent-sidebar")
-                .accessibilityAddTraits(.isButton)
-
                 Button("Inspector", systemImage: "info.circle") {
                     appState.toggleInspector()
                 }
@@ -123,11 +113,13 @@ public struct MainWindow: View {
                 .accessibilityIdentifier("toolbar.toggle-inspector")
                 .accessibilityAddTraits(.isButton)
 
-                SettingsLink {
-                    Image(systemName: "gearshape")
+                Button("Agent Sidebar", systemImage: "sidebar.right") {
+                    appState.toggleAgentPanel()
                 }
-                .accessibilityLabel("Settings")
-                .help("Settings")
+                .help("Toggle Agent Sidebar")
+                .accessibilityLabel("Toggle Agent Sidebar")
+                .accessibilityIdentifier("toolbar.toggle-agent-sidebar")
+                .accessibilityAddTraits(.isButton)
             }
         }
         .toolbarBackground(.visible, for: .windowToolbar)
