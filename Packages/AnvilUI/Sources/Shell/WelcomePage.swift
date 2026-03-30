@@ -76,29 +76,26 @@ public struct WelcomePage: View {
     private var headerSection: some View {
         VStack(spacing: AnvilSpacing.sm) {
             // App icon placeholder — square with anvil icon
-            ZStack {
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                AnvilColor.accentPurple.opacity(0.3),
-                                AnvilColor.accentBlue.opacity(0.2)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 72, height: 72)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(AnvilColor.accentPurple.opacity(0.3), lineWidth: 1)
-                    )
-
-                Image(systemName: "hammer.fill")
-                    .font(.system(size: 30, weight: .medium))
-                    .foregroundStyle(AnvilColor.accentPurple)
-                    .accessibilityHidden(true)
-            }
+            Image(systemName: "hammer.fill")
+                .font(.system(size: 30, weight: .medium))
+                .foregroundStyle(AnvilColor.accentPurple)
+                .frame(width: 72, height: 72)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            AnvilColor.accentPurple.opacity(0.3),
+                            AnvilColor.accentBlue.opacity(0.2)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    in: RoundedRectangle(cornerRadius: 20)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(AnvilColor.accentPurple.opacity(0.3), lineWidth: 1)
+                )
+                .accessibilityHidden(true)
 
             Spacer().frame(height: AnvilSpacing.sm)
 
@@ -307,15 +304,11 @@ private struct RecentProjectRow: View {
         Button(action: action) {
             HStack(spacing: AnvilSpacing.md) {
                 // Project icon
-                ZStack {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(projectColor.opacity(0.15))
-                        .frame(width: 32, height: 32)
-
-                    Text(project.name.prefix(1).uppercased())
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(projectColor)
-                }
+                Text(project.name.prefix(1).uppercased())
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(projectColor)
+                    .frame(width: 32, height: 32)
+                    .background(projectColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
 
                 // Name + path
                 VStack(alignment: .leading, spacing: 2) {

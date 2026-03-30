@@ -129,7 +129,7 @@ struct TerminalPanel: View {
                 .foregroundStyle(isSelected ? AnvilColor.textPrimary : AnvilColor.textTertiary)
                 .padding(.horizontal, AnvilSpacing.sm)
                 .padding(.vertical, AnvilSpacing.xxs)
-                .background(isSelected ? AnvilColor.backgroundPrimary : Color.clear)
+                .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
                 .clipShape(RoundedRectangle(cornerRadius: 4))
                 .contentShape(Rectangle())
             }

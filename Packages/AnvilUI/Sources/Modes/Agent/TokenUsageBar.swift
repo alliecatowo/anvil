@@ -55,7 +55,7 @@ struct TokenUsageBar: View {
                     ZStack(alignment: .leading) {
                         // Background track
                         RoundedRectangle(cornerRadius: 3)
-                            .fill(AnvilColor.backgroundPrimary)
+                            .fill(.quaternary)
 
                         // Stacked segments
                         HStack(spacing: 0) {

@@ -353,12 +353,9 @@ private struct PlanStepRow: View {
                 .stroke(AnvilColor.textTertiary, lineWidth: 1.5)
                 .frame(width: 16, height: 16)
         case .active:
-            ZStack {
-                Circle()
-                    .fill(AnvilColor.accentPurple.opacity(0.2))
-                    .frame(width: 16, height: 16)
-                AnvilLoadingIndicator(size: 12)
-            }
+            AnvilLoadingIndicator(size: 12)
+                .frame(width: 16, height: 16)
+                .background(AnvilColor.accentPurple.opacity(0.2), in: Circle())
         case .completed:
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 16))
