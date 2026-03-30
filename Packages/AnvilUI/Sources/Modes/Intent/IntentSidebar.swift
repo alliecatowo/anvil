@@ -130,8 +130,12 @@ struct IntentSidebar: View {
                 .foregroundStyle(AnvilColor.accentBlue)
 
             TextField("New ticket title...", text: $quickAddText)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(.plain)
                 .font(AnvilFont.sidebarItem)
+                .padding(.horizontal, AnvilSpacing.sm)
+                .padding(.vertical, AnvilSpacing.xs)
+                .background(Color.primary.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                 .focused($isQuickAddFocused)
                 .accessibilityIdentifier("intent.sidebar.quick-add-title")
                 .onSubmit {
