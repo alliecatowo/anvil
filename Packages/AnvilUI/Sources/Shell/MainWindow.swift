@@ -3,6 +3,7 @@ import SwiftUI
 public struct MainWindow: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var container: DependencyContainer
+    @State private var isNotificationsPopoverVisible = false
 
     public init() {}
 
@@ -78,6 +79,33 @@ public struct MainWindow: View {
                 .keyboardShortcut("k", modifiers: .command)
                 .accessibilityLabel("Command Palette")
                 .accessibilityAddTraits(.isButton)
+
+                Button {
+                    isNotificationsPopoverVisible.toggle()
+                } label: {
+                    Image(systemName: "bell")
+                        .overlay(alignment: .topTrailing) {
+                            let count = appState.notificationsViewModel.unreadCount
+                            if count > 0 {
+                                Text(count < 10 ? "\(count)" : "9+")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 3)
+                                    .padding(.vertical, 1)
+                                    .background(Color.red, in: Capsule())
+                                    .offset(x: 6, y: -6)
+                            }
+                        }
+                }
+                .help("Notifications")
+                .accessibilityLabel("Notifications")
+                .accessibilityIdentifier("toolbar.notifications")
+                .popover(isPresented: $isNotificationsPopoverVisible, arrowEdge: .top) {
+                    NotificationsMode()
+                        .frame(width: 400, height: 520)
+                        .environmentObject(appState)
+                        .environmentObject(container)
+                }
 
                 Button("Agent Sidebar", systemImage: "sidebar.right") {
                     appState.toggleAgentPanel()

@@ -322,7 +322,13 @@ struct ReviewModeContent: View {
             AnvilEmptyState(
                 icon: "checkmark.circle",
                 title: "Review inbox is empty",
-                message: "Select a changed file or branch to review diffs."
+                message: "Select a changed file or branch to review diffs.",
+                actions: [
+                    EmptyStateAction("Load Demo Data", icon: "tray.and.arrow.down", style: .secondary) {
+                        appState.loadDemoData()
+                        appState.currentSpace = .review
+                    }
+                ]
             )
         } else {
             ReviewInboxView(viewModel: viewModel)

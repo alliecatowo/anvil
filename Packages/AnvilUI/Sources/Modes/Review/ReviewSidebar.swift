@@ -43,6 +43,19 @@ struct ReviewSidebar: View {
                 viewModel.loadReviews()
                 if let adapter = container.getOrCreateGitAdapter() {
                     viewModel.loadSourceControlData(using: adapter)
+                } else if appState.unstagedChanges.isEmpty && appState.stagedChanges.isEmpty {
+                    // No real git project — seed demo working-tree changes so sidebar rows exist to click
+                    appState.unstagedChanges = [
+                        GitFileChange(filePath: "src/auth/handler.ts", status: .modified, staged: false),
+                        GitFileChange(filePath: "src/config/database.ts", status: .modified, staged: false),
+                    ]
+                    appState.stagedChanges = [
+                        GitFileChange(filePath: "src/api/routes.ts", status: .added, staged: true),
+                    ]
+                    appState.uncommittedFileCount = appState.unstagedChanges.count + appState.stagedChanges.count
+                    if viewModel.reviews.isEmpty {
+                        viewModel.reviews = ReviewViewModel.makeSampleReviews()
+                    }
                 }
             }
         }
