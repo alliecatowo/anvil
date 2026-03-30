@@ -386,14 +386,14 @@ This registry is additive — completed tasks from `TASKS.md` are not re-listed.
 
 ---
 
-## Messaging
+## Chat
 
 | # | Task | Description | Priority |
 |---|---|---|---|
 | MS-01 | Real Slack integration | Wire SlackMessagingAdapter to real Slack API. Read channels, DMs, threads. Send messages. | P1 |
 | MS-02 | Thread view with replies | Click a message to open its thread. Reply inline. Collapse threads. | P1 |
 | MS-03 | Read/unread tracking | Track read state per channel and message. Unread badge on sidebar rows. Mark all read action. | P1 |
-| MS-04 | Channel creation and management | Create, archive, and rename channels from Messaging mode (for providers that support it). | P2 |
+| MS-04 | Channel creation and management | Create, archive, and rename channels from Chat mode (for providers that support it). | P2 |
 | MS-05 | Direct messages | DM list. Open a DM. Send and receive messages. Presence indicator. | P1 |
 | MS-06 | Message search | Search message history across channels. Filter by date, channel, or sender. | P1 |
 | MS-07 | @mention autocomplete | Type `@` in message compose to autocomplete team member names. | P1 |
@@ -403,7 +403,7 @@ This registry is additive — completed tasks from `TASKS.md` are not re-listed.
 | MS-11 | Message pinning | Pin important messages in a channel. Pinned messages panel accessible from channel header. | P2 |
 | MS-12 | Turn message into ticket | Right-click a message to create a ticket with the message content pre-filled. | P1 |
 | MS-13 | Presence indicators | Show online/away/offline status for team members in DM list and @mention picker. | P2 |
-| MS-14 | Notification integration | Incoming messages surface as Anvil notifications. Click to open message in Messaging mode. | P1 |
+| MS-14 | Notification integration | Incoming messages surface as Anvil notifications. Click to open message in Chat mode. | P1 |
 
 ---
 
@@ -516,7 +516,7 @@ This registry is additive — completed tasks from `TASKS.md` are not re-listed.
 | Performance | 10 | 0 | 10 | 0 |
 | Plugin SDK | 15 | 0 | 9 | 6 |
 | Database | 18 | 1 | 12 | 5 |
-| Messaging | 14 | 0 | 8 | 6 |
+| Chat | 14 | 0 | 8 | 6 |
 | Notifications | 8 | 0 | 7 | 1 |
 | Docs | 15 | 0 | 9 | 6 |
 | Security | 8 | 1 | 4 | 3 |

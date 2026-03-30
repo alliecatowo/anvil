@@ -7,7 +7,7 @@ public actor InMemoryMessagingService: MessagingPort {
     private var messages: [String: [Message]] = [:]  // channelId -> messages
 
     public let providerId = "in-memory-messaging"
-    public let providerName = "In-Memory Messaging"
+    public let providerName = "In-Memory Chat"
 
     public init() {
         let general = Channel(name: "general", topic: "General discussion", memberCount: 5, unreadCount: 2)

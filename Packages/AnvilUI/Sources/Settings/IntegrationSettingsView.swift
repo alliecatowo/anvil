@@ -23,7 +23,7 @@ struct IntegrationSettingsView: View {
     @State private var linearTeamId: String = ""
     @State private var linearStatus: IntegrationConnectionStatus = .disconnected
 
-    // Slack (external messaging provider)
+    // Slack (external chat provider)
     @State private var slackBotToken: String = ""
     @State private var slackStatus: IntegrationConnectionStatus = .disconnected
 
@@ -103,7 +103,7 @@ struct IntegrationSettingsView: View {
     private var slackSection: some View {
         Section("Chat — Slack") {
             SecureField("Bot Token", text: $slackBotToken)
-            Text("Anvil supports multiple messaging providers. Slack is one external provider option; local in-memory messaging remains available as a fallback.")
+            Text("Anvil supports multiple chat providers. Slack is one external provider option; local in-memory chat remains available as a fallback.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             HStack {

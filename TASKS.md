@@ -142,8 +142,8 @@
 - [ ] #102 Implement send note to agent context action
 - [ ] #104 Add assignee picker with team member list on tickets
 - [ ] #106 Add ticket search across all projects
-- [ ] #107 Implement real Slack integration for messaging mode
-- [ ] #108 Add thread view for messaging with replies
+- [ ] #107 Implement real Slack integration for Chat mode
+- [ ] #108 Add thread view for Chat with replies
 - [ ] #109 Implement read/unread tracking for messages and channels
 - [ ] #110 Add "Turn this into a ticket" from message action
 - [ ] #111 Add voice input integration for agent conversations
@@ -197,8 +197,8 @@
 - [ ] #163 Build calendar week and month views
 - [ ] #164 Add focus mode with distraction blocking
 - [ ] #165 Add code block sharing with syntax highlighting in messages
-- [ ] #166 Implement @mention autocomplete in messaging
-- [ ] #167 Add reactions support in messaging
+- [ ] #166 Implement @mention autocomplete in Chat
+- [ ] #167 Add reactions support in Chat
 - [ ] #168 Build extension/plugin marketplace browser
 - [ ] #171 Build search results with preview pane in command palette
 - [ ] #172 Add parameter input for commands in command palette
@@ -210,8 +210,8 @@
 - [ ] #178 Add AI-powered refactoring suggestions
 - [ ] #179 Implement document export (PDF, HTML) in docs mode
 - [ ] #180 Build API documentation auto-generation from code
-- [ ] #181 Add message search in messaging mode
-- [ ] #182 Add presence indicators (online/offline) in messaging
+- [ ] #181 Add message search in Chat mode
+- [ ] #182 Add presence indicators (online/offline) in Chat
 - [ ] #183 Build alert configuration for observability
 - [ ] #184 Add service health map in observability
 - [ ] #185 Implement drag-to-create time blocks in schedule
@@ -224,7 +224,7 @@
 - Latest completed wave on `shell-vocabulary-migration`: `9e945c9`, `3d66db7`.
 - That wave tightened Review navigation and unified Build inspector/sidebar interactions, while leaving the raw smoke / visual baseline rerun and the remaining visible workspace rename cleanup as the next execution slice.
 - Shared sidebar migration has landed across the native shell, Agent, Intent, Review, Ship, and auxiliary workspaces.
-- Multi-provider plumbing has landed, including Codex ACP support and provider-aware messaging/provider selection.
+- Multi-provider plumbing has landed, including Codex ACP support and provider-aware chat/provider selection.
 - Chat now lives as a real Library toolspace instead of an orphaned chat client, and the shell contract treats it as sidebar + canvas + inspector, not a peer workspace.
 - Deterministic UI-test launch scenarios and a visual regression suite now exist, but several seeded canonical screens still need a clean rerun after the latest routing fixes.
 - Next concrete UI gaps are the remaining double-sidebar/secondary-pane coupling, Ship and Review native polish, markdown code highlighting consistency, and making the seeded scenarios render their canonical headings without manual clicks.
@@ -322,14 +322,14 @@
 - [ ] #243 Add personal vs team vs external doc sections
 - [ ] #244 Add file sharing in messages
 - [ ] #245 Build agent work-in-progress timeline panel showing all active agents and their current steps
-- [ ] #246 Add channel creation and management in messaging
-- [ ] #247 Add message pinning in messaging
+- [ ] #246 Add channel creation and management in Chat
+- [ ] #247 Add message pinning in Chat
 - [ ] #248 Build agent synthesis room — shared canvas where multiple agents post findings and one orchestrator agent consolidates
 - [ ] #249 Build conflict detection for concurrent agent edits — warn when two agents modify the same file
-- [ ] #250 Add DM (direct message) conversations in messaging
-- [ ] #251 Add notification preferences per channel in messaging
+- [ ] #250 Add DM (direct message) conversations in Chat
+- [ ] #251 Add notification preferences per channel in Chat
 - [ ] #252 Build predictive next-action suggestions — AI proposes "what to do next" after each agent session
-- [ ] #253 Add message formatting toolbar in messaging
+- [ ] #253 Add message formatting toolbar in Chat
 - [ ] #255 Add snooze functionality for notifications
 - [ ] #256 Build AI documentation generator — one-click doc generation for selected functions or entire files
 - [ ] #257 Add batch actions for notifications (mark all read, archive)
@@ -437,7 +437,7 @@
 - [ ] #372 Build global search mode (Primitive 23) — ⌘K everything search across all primitives with full-text index
 - [ ] #373 Build agent launch sheet — new session configuration sheet with model picker, context injection, worktree setup
 - [ ] #374 Build AnvilGitHubPlugin first-party plugin — GitHub as Source Control Cloud provider using plugin SDK
-- [ ] #375 Build AnvilSlackPlugin first-party plugin — Slack as Messaging provider
+- [ ] #375 Build AnvilSlackPlugin first-party plugin — Slack as Chat provider
 - [ ] #376 Build AnvilVercelPlugin first-party plugin — Vercel as Hosting provider
 - [ ] #377 Build AnvilSentryPlugin first-party plugin — Sentry as Observability provider
 - [ ] #378 Build AnvilDockerPlugin first-party plugin — Docker as Containers provider

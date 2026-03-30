@@ -64,7 +64,7 @@ final class MessagingViewModel: ObservableObject {
     @Published var inputText: String = ""
     @Published var providerOptions: [ProviderOption] = []
     @Published var selectedProviderId: String?
-    @Published var activeProviderName: String = "In-Memory Messaging"
+    @Published var activeProviderName: String = "In-Memory Chat"
 
     /// Per-channel message storage
     private var channelMessages: [UUID: [ChatMessage]] = [:]

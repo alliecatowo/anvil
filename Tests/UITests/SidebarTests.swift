@@ -140,13 +140,13 @@ final class SidebarTests: XCTestCase {
         XCTAssertTrue(hasContent, "Database sidebar must render content")
     }
 
-    // MARK: - Messaging Sidebar
+    // MARK: - Chat Sidebar
 
-    func testMessagingSidebarHasContent() throws {
+    func testChatSidebarHasContent() throws {
         app.typeKey("9", modifierFlags: .command)
 
         let hasContent = app.scrollViews.firstMatch.waitForExistence(timeout: 5)
-        XCTAssertTrue(hasContent, "Messaging sidebar must render content")
+        XCTAssertTrue(hasContent, "Chat sidebar must render content")
     }
 
     // MARK: - Notifications Sidebar
