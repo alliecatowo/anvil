@@ -20,6 +20,29 @@ extension View {
     }
 }
 
+// MARK: - Spotlight Glass (for floating panels like Command Palette)
+
+/// Clear Liquid Glass like Spotlight/Dock — more transparent, more refraction.
+/// Falls back to ultraThinMaterial on pre-Tahoe.
+struct SpotlightGlass: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 26, *) {
+            content.glassEffect(.clear, in: .rect(cornerRadius: 16))
+        } else {
+            content
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(color: .black.opacity(0.2), radius: 24, y: 8)
+        }
+    }
+}
+
+extension View {
+    func spotlightGlass() -> some View {
+        modifier(SpotlightGlass())
+    }
+}
+
 // MARK: - Unified Sidebar Panel (Rail + Content as one glass surface)
 
 /// The sidebar is ONE unified glass panel containing the icon rail and content sidebar.

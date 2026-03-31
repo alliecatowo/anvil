@@ -27,9 +27,7 @@ public struct CommandPalette: View {
                 resultsArea
             }
             .frame(width: AnvilSpacing.commandPaletteWidth)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .shadow(color: .black.opacity(0.15), radius: 20)
+            .modifier(SpotlightGlass())
             .padding(.top, 100)
             .frame(maxHeight: .infinity, alignment: .top)
         }
