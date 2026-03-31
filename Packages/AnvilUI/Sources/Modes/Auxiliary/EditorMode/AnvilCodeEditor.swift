@@ -111,8 +111,14 @@ struct AnvilCodeEditor: View {
     @State private var editorState = SourceEditorState(
         cursorPositions: [CursorPosition(line: 1, column: 1)]
     )
-    @State private var textContent: String = ""
+    @State private var textContent: String
     @State private var coordinator: AnvilEditorCoordinator?
+
+    init(viewModel: EditorViewModel, file: EditorFile) {
+        self.viewModel = viewModel
+        self.file = file
+        _textContent = State(initialValue: file.content)
+    }
 
     private var language: CodeLanguage {
         CodeLanguage.detectLanguageFrom(
