@@ -62,34 +62,8 @@ struct EditorView: View {
     // MARK: - Code View
 
     private func codeView(for file: EditorFile) -> some View {
-        let lines = file.content.components(separatedBy: "\n")
-        let selectedRange: ClosedRange<Int>? = viewModel.inlineEditPhase != .hidden
-            ? viewModel.inlineEditSelectedRange
-            : nil
-        let foldRegions = viewModel.foldRegions(for: lines)
-
-        let scrollAxes: Axis.Set = viewModel.isWordWrapEnabled ? [.vertical] : [.horizontal, .vertical]
-
-        return ZStack(alignment: .topLeading) {
-            ScrollView(scrollAxes) {
-                HStack(alignment: .top, spacing: 0) {
-                    // Line numbers gutter
-                    lineNumberGutter(lines: lines, selectedRange: selectedRange, foldRegions: foldRegions)
-
-                    // Blame annotations gutter (shown when enabled)
-                    if viewModel.isBlameVisible {
-                        blameGutter(lines: lines, foldRegions: foldRegions)
-                    }
-
-                    // Divider between gutter and code
-                    Rectangle()
-                        .fill(AnvilColor.borderSubtle)
-                        .frame(width: 1)
-
-                    // Code content
-                    codeContent(lines: lines, selectedRange: selectedRange, foldRegions: foldRegions)
-                }
-            }
+        ZStack(alignment: .topLeading) {
+            AnvilCodeEditor(viewModel: viewModel, file: file)
 
             // Inline edit overlay (positioned over the selected lines)
             InlineEditOverlay(viewModel: viewModel)
@@ -114,100 +88,9 @@ struct EditorView: View {
                 .frame(maxWidth: .infinity)
                 .allowsHitTesting(false)
             }
-
-            // LSP Hover documentation popover
-            if let hover = viewModel.hoverResult {
-                HoverPopover(result: hover)
-                    .offset(
-                        x: hoverPopoverX(lines: lines),
-                        y: hoverPopoverY
-                    )
-                    .transition(.opacity)
-                    .animation(.easeOut(duration: 0.15), value: viewModel.hoverResult)
-            }
-
-            // LSP Completion popup (positioned below cursor)
-            if viewModel.isCompletionPopupVisible, !viewModel.completionItems.isEmpty {
-                CompletionPopup(viewModel: viewModel)
-                    .offset(
-                        x: completionPopupX(lines: lines),
-                        y: completionPopupY
-                    )
-                    .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
-                    .animation(.easeOut(duration: 0.12), value: viewModel.isCompletionPopupVisible)
-            }
-        }
-        .background(AnvilColor.backgroundPrimary)
-        .onKeyPress(.upArrow) {
-            if viewModel.isCompletionPopupVisible {
-                viewModel.completionMoveUp()
-                return .handled
-            }
-            return .ignored
-        }
-        .onKeyPress(.downArrow) {
-            if viewModel.isCompletionPopupVisible {
-                viewModel.completionMoveDown()
-                return .handled
-            }
-            return .ignored
-        }
-        .onKeyPress(.tab) {
-            if viewModel.isCompletionPopupVisible, let text = viewModel.acceptCompletion() {
-                insertCompletionText(text, lines: lines)
-                return .handled
-            }
-            if let completion = viewModel.acceptGhostCompletion() {
-                insertGhostText(completion, lines: lines)
-                return .handled
-            }
-            return .ignored
-        }
-        .onKeyPress(.return) {
-            if viewModel.isCompletionPopupVisible, let text = viewModel.acceptCompletion() {
-                insertCompletionText(text, lines: lines)
-                return .handled
-            }
-            return .ignored
-        }
-        .onKeyPress(.escape) {
-            if viewModel.isCompletionPopupVisible {
-                viewModel.dismissCompletionPopup()
-                return .handled
-            }
-            if viewModel.ghostCompletion != nil {
-                viewModel.dismissGhostCompletion()
-                return .handled
-            }
-            return .ignored
-        }
-        .onKeyPress(KeyEquivalent(Character(UnicodeScalar(0xF70F)!))) {
-            // F12 — go to definition
-            viewModel.goToDefinition(line: viewModel.cursorLine, column: viewModel.cursorColumn)
-            return .handled
-        }
-        .onKeyPress(characters: .init(charactersIn: "([{\"'")) { press in
-            // Auto-close brackets and quotes
-            guard let char = press.characters.first else { return .ignored }
-            let selectedText = currentSelectionText(lines: lines)
-            if viewModel.insertWithAutoClose(char: char, selectedText: selectedText) {
-                return .handled
-            }
-            return .ignored
-        }
-        .onKeyPress(.delete) {
-            // Backspace: delete empty bracket/quote pair
-            if viewModel.deleteEmptyPairAtCursor() {
-                return .handled
-            }
-            return .ignored
         }
         .onChange(of: viewModel.cursorLine) { _, _ in
             viewModel.dismissCompletionPopup()
-            triggerGhostCompletion(fileContent: file.content)
-        }
-        .onChange(of: viewModel.cursorColumn) { _, _ in
-            viewModel.triggerCompletionPopup(fileContent: file.content)
         }
         .onChange(of: viewModel.selectedFileId) { _, _ in
             viewModel.loadBlameForSelectedFile()
