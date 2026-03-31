@@ -55,15 +55,9 @@ struct EditorPaneView: View {
                 ReadOnlyBanner(viewModel: viewModel)
             }
 
-            HStack(spacing: 0) {
-                EditorView(viewModel: viewModel)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                if viewModel.isMinimapVisible, viewModel.selectedFile != nil {
-                    Divider()
-                    EditorMinimap(viewModel: viewModel)
-                }
-            }
+            // CodeEditSourceEditor handles minimap natively
+            EditorView(viewModel: viewModel)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(.background)
         .overlay(

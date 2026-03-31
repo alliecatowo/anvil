@@ -20,7 +20,7 @@ private func makeAnvilEditorTheme() -> EditorTheme {
     let blue      = NSColor(srgbRed: 0x81 / 255.0, green: 0xA1 / 255.0, blue: 0xC1 / 255.0, alpha: 1) // nord9
     let teal      = NSColor(srgbRed: 0x8F / 255.0, green: 0xBC / 255.0, blue: 0xBB / 255.0, alpha: 1) // nord7
     let amber     = NSColor(srgbRed: 0xEB / 255.0, green: 0xCB / 255.0, blue: 0x8B / 255.0, alpha: 1) // nord13
-    let red       = NSColor(srgbRed: 0xBF / 255.0, green: 0x61 / 255.0, blue: 0x6A / 255.0, alpha: 1) // nord11
+    let _         = NSColor(srgbRed: 0xBF / 255.0, green: 0x61 / 255.0, blue: 0x6A / 255.0, alpha: 1) // nord11 (reserved for errors)
     let orange    = NSColor(srgbRed: 0xD0 / 255.0, green: 0x87 / 255.0, blue: 0x70 / 255.0, alpha: 1) // nord12
 
     return EditorTheme(
@@ -64,9 +64,9 @@ final class AnvilEditorCoordinator: TextViewCoordinator, @unchecked Sendable {
     }
 
     func textViewDidChangeText(controller: TextViewController) {
-        let newText = controller.text
         let path = filePath
         Task { @MainActor [weak self] in
+            let newText = controller.text
             guard let self, let viewModel = self.viewModel else { return }
             if let index = viewModel.openFiles.firstIndex(where: { $0.path == path }) {
                 let file = viewModel.openFiles[index]
