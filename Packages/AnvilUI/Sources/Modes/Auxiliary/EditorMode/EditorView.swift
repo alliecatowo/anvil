@@ -64,6 +64,7 @@ struct EditorView: View {
     private func codeView(for file: EditorFile) -> some View {
         ZStack(alignment: .topLeading) {
             AnvilCodeEditor(viewModel: viewModel, file: file)
+                .clipped()
 
             // Inline edit overlay (positioned over the selected lines)
             InlineEditOverlay(viewModel: viewModel)
