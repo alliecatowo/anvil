@@ -16,7 +16,7 @@ struct EditorTabBar: View {
             Spacer()
         }
         .frame(height: 34)
-        .background(AnvilColor.backgroundSecondary)
+        .background(.bar)
     }
 
     // MARK: - Tab Item

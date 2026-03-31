@@ -156,11 +156,31 @@ final class SourceControlViewModel: ObservableObject {
         isLoading = true
         Task { @MainActor in
             defer { isLoading = false }
-            if let changes = try? await adapter.workingTreeChanges() {
+            do {
+                let changes = try await withTimeout(seconds: 5) {
+                    try await adapter.workingTreeChanges()
+                }
                 stagedFiles = changes.staged
                 unstagedFiles = changes.unstaged
                 untrackedFiles = changes.untracked
+            } catch {
+                // Timeout or git error — just clear loading state
+                syncError = "Could not load git status"
             }
+        }
+    }
+
+    /// Run an async operation with a timeout.
+    private func withTimeout<T: Sendable>(seconds: Double, operation: @escaping @Sendable () async throws -> T) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask { try await operation() }
+            group.addTask {
+                try await Task.sleep(for: .seconds(seconds))
+                throw CancellationError()
+            }
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
         }
     }
 
