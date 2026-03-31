@@ -25,11 +25,6 @@ struct EditorMode: View {
             }
         }
         .background(AnvilColor.backgroundPrimary)
-        .task {
-            if let path = deps.currentProjectPath {
-                await viewModel.lspViewModel.start(workspacePath: path)
-            }
-        }
         .onAppear {
             viewModel.container = deps
             if viewModel.fileTree.isEmpty, let path = deps.currentProjectPath {

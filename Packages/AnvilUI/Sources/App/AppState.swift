@@ -521,8 +521,6 @@ public class AppState: ObservableObject {
     public func toggleAgentPanel() {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
             if !isAgentPanelVisible {
-                currentSpace = .build
-                buildActiveSource = .sessions
                 isInspectorVisible = false
             }
             isAgentPanelVisible.toggle()

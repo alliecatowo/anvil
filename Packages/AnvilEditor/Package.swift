@@ -8,9 +8,17 @@ let package = Package(
     products: [
         .library(name: "AnvilEditor", targets: ["AnvilEditor"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/CodeEditApp/CodeEditSourceEditor.git", from: "0.15.0"),
+        .package(url: "https://github.com/CodeEditApp/CodeEditLanguages.git", from: "0.1.20"),
+    ],
     targets: [
         .target(
             name: "AnvilEditor",
+            dependencies: [
+                .product(name: "CodeEditSourceEditor", package: "CodeEditSourceEditor"),
+                .product(name: "CodeEditLanguages", package: "CodeEditLanguages"),
+            ],
             path: "Sources"
         ),
         .testTarget(
