@@ -37,13 +37,16 @@ struct ConversationView: View {
     var onAddPlanStep: ((String, String?) -> Void)?
     var onRemovePlanStep: ((String) -> Void)?
     var onSendToBackground: (() -> Void)?
-    var onToggleAgentPanel: (() -> Void)?
-    var isAgentPanelVisible: Bool = false
     var autoContextFiles: [AutoContextChipData] = []
     var onDismissAutoContext: ((String) -> Void)?
     var onAcceptAutoContext: ((String) -> Void)?
     var contextResolver: ContextSlashResolver = .empty
     var onForkFromMessage: ((Int) -> Void)?
+
+    private func sendQuickPrompt(_ prompt: String) {
+        inputText = prompt
+        onSend()
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -57,9 +60,7 @@ struct ConversationView: View {
                 onSetBudget: onSetBudget,
                 guardrailCount: guardrailCount,
                 onCreatePR: onCreatePR,
-                onSendToBackground: onSendToBackground,
-                onToggleAgentPanel: onToggleAgentPanel,
-                isAgentPanelVisible: isAgentPanelVisible
+                onSendToBackground: onSendToBackground
             )
 
             Divider()
@@ -67,19 +68,19 @@ struct ConversationView: View {
             // Canvas action strip
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AnvilSpacing.sm) {
-                    Button { } label: {
+                    Button { sendQuickPrompt("Review the current branch changes and suggest improvements") } label: {
                         Label("Review Branch", systemImage: "arrow.triangle.branch")
                     }
-                    Button { } label: {
+                    Button { sendQuickPrompt("Explain the current code context") } label: {
                         Label("Explain", systemImage: "questionmark.circle")
                     }
-                    Button { } label: {
+                    Button { sendQuickPrompt("Identify and fix the current error") } label: {
                         Label("Fix Error", systemImage: "exclamationmark.triangle")
                     }
-                    Button { } label: {
+                    Button { sendQuickPrompt("Generate comprehensive tests for the current code") } label: {
                         Label("Tests", systemImage: "testtube.2")
                     }
-                    Button { } label: {
+                    Button { sendQuickPrompt("Create a commit with an appropriate message for the staged changes") } label: {
                         Label("Commit", systemImage: "checkmark.circle")
                     }
                 }
@@ -225,8 +226,6 @@ struct SessionHeader: View {
     let guardrailCount: Int
     var onCreatePR: (() -> Void)?
     var onSendToBackground: (() -> Void)?
-    var onToggleAgentPanel: (() -> Void)?
-    var isAgentPanelVisible: Bool = false
 
     @State private var isEditing = false
     @State private var editName = ""
@@ -332,20 +331,6 @@ struct SessionHeader: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Token usage")
-
-                if let onToggleAgentPanel {
-                    Button {
-                        onToggleAgentPanel()
-                    } label: {
-                        Label("Agent Sidebar", systemImage: "sidebar.right")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .help(isAgentPanelVisible ? "Hide Build Inspector" : "Show Build Inspector")
-                    .accessibilityLabel(isAgentPanelVisible ? "Hide Build Inspector" : "Show Build Inspector")
-                    .accessibilityIdentifier("agent.conversation.toggle-sidebar")
-                    .accessibilityAddTraits(.isButton)
-                }
 
             // Session actions menu
             Menu {

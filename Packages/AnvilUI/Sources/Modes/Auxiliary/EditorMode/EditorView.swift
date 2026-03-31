@@ -528,8 +528,8 @@ struct EditorView: View {
                                 .accessibilityLabel("Ghost completion: \(ghost)")
                         }
                     }
+                        .fixedSize(horizontal: true, vertical: false)
                         .frame(height: 20, alignment: .leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.leading, AnvilSpacing.md)
                         .padding(.trailing, AnvilSpacing.xxl)
                         .overlay(alignment: .leading) {
@@ -573,13 +573,6 @@ struct EditorView: View {
                                     }
                                 }
                         )
-                        .onHover { hovering in
-                            if hovering {
-                                viewModel.triggerHover(line: lineNumber, column: viewModel.cursorColumn)
-                            } else {
-                                viewModel.dismissHover()
-                            }
-                        }
                         .accessibilityLabel("Line \(lineNumber)")
                         .accessibilityAddTraits(.isButton)
 
