@@ -47,7 +47,6 @@ private func makeAnvilEditorTheme() -> EditorTheme {
 
 /// A ``TextViewCoordinator`` that bridges cursor position and text changes
 /// from the CodeEditSourceEditor back into the Anvil ``EditorViewModel``.
-@MainActor
 final class AnvilEditorCoordinator: TextViewCoordinator, @unchecked Sendable {
     private weak var viewModel: EditorViewModel?
     private let fileId: UUID
@@ -65,32 +64,36 @@ final class AnvilEditorCoordinator: TextViewCoordinator, @unchecked Sendable {
     }
 
     func textViewDidChangeText(controller: TextViewController) {
-        guard let viewModel else { return }
         let newText = controller.text
-        // Find the file by path since EditorFile.id changes on every content update
-        if let index = viewModel.openFiles.firstIndex(where: { $0.path == filePath }) {
-            let file = viewModel.openFiles[index]
-            if file.content != newText {
-                let updated = EditorFile(
-                    name: file.name,
-                    path: file.path,
-                    content: newText,
-                    language: file.language,
-                    relativePath: file.relativePath
-                )
-                viewModel.openFiles[index] = updated
-                viewModel.selectedFileId = updated.id
-                viewModel.markDirty(updated.id)
+        let path = filePath
+        Task { @MainActor [weak self] in
+            guard let self, let viewModel = self.viewModel else { return }
+            if let index = viewModel.openFiles.firstIndex(where: { $0.path == path }) {
+                let file = viewModel.openFiles[index]
+                if file.content != newText {
+                    let updated = EditorFile(
+                        name: file.name,
+                        path: file.path,
+                        content: newText,
+                        language: file.language,
+                        relativePath: file.relativePath
+                    )
+                    viewModel.openFiles[index] = updated
+                    viewModel.selectedFileId = updated.id
+                    viewModel.markDirty(updated.id)
+                }
             }
         }
     }
 
     func textViewDidChangeSelection(controller: TextViewController, newPositions: [CursorPosition]) {
-        guard let viewModel, let first = newPositions.first else { return }
-        let line = first.start.line
-        let col = first.start.column
-        if line > 0 { viewModel.cursorLine = line }
-        if col > 0 { viewModel.cursorColumn = col }
+        Task { @MainActor [weak self] in
+            guard let self, let viewModel = self.viewModel, let first = newPositions.first else { return }
+            let line = first.start.line
+            let col = first.start.column
+            if line > 0 { viewModel.cursorLine = line }
+            if col > 0 { viewModel.cursorColumn = col }
+        }
     }
 
     func destroy() {
