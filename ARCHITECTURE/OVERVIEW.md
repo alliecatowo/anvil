@@ -12,7 +12,7 @@ Anvil is a native macOS development environment built for the post-IDE era. It i
 
 **The core premise:** AI is ambient infrastructure, not a bolted-on feature. Every surface in Anvil is AI-capable via the Agent Communication Protocol (ACP). Plugins inherit AI for free. There is no per-feature API key setup.
 
-**The opinionated workflow:** Plan → Build → Review → Operate → Library. Five first-class spaces, keyboard-navigable throughout. `Intent`, `Agent`, and `Ship` remain transitional/internal identifiers during migration, not the canonical shell vocabulary. `Ship` is the legacy label for `Operate`. See [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md) for the canonical shell language and grouping model.
+**The opinionated workflow:** Plan → Build → Review → Operate → Library. Five first-class spaces, keyboard-navigable throughout. `Intent`, `Agent`, and `Ship` remain transitional/internal identifiers during migration, not the canonical shell vocabulary. `Ship` is the legacy label for `Operate`. See [`ARCHITECTURE/SHELL_VOCABULARY.md`](../ARCHITECTURE/SHELL_VOCABULARY.md) for the canonical shell language and grouping model.
 
 **The native moat:** None of the AI-first competitors — Cursor, Windsurf, Zed — are native macOS apps. Anvil is Swift 6, SwiftUI, AppKit interop, targeting macOS 15+ (Sequoia). The native shell is the product differentiator.
 
@@ -277,7 +277,7 @@ Spaces: Plan, Build, Review, Operate, Library (core) + Editor, Database, Termina
 ```bash
 xcode-select -p                    # verify Xcode is active developer dir
 xcodegen --version                 # verify XcodeGen 2.40+
-cd /Users/allie/Develop/anvil
+cd <repo>
 ./scripts/dev                      # generate Anvil.xcodeproj and open in Xcode
 ```
 

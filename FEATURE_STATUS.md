@@ -3,7 +3,7 @@
 > [!WARNING]
 > This file is a point-in-time generated audit and may be stale.
 > It is not a release gate and it is not the canonical source of truth.
-> Use [`ROADMAP_NATIVE_2026.md`](/Users/allie/Develop/anvil/ROADMAP_NATIVE_2026.md) for order, [`TRUTH_MATRIX.md`](/Users/allie/Develop/anvil/TRUTH_MATRIX.md) for visible affordances, and [`UI_IMPLEMENTATION_GOVERNANCE.md`](/Users/allie/Develop/anvil/UI_IMPLEMENTATION_GOVERNANCE.md) for rules.
+> Use [`ROADMAP_NATIVE_2026.md`](ROADMAP_NATIVE_2026.md) for order, [`TRUTH_MATRIX.md`](TRUTH_MATRIX.md) for visible affordances, and [`UI_IMPLEMENTATION_GOVERNANCE.md`](UI_IMPLEMENTATION_GOVERNANCE.md) for rules.
 
 *Generated 2026-03-27. Based on static analysis of all packages: AnvilUI, AnvilDomain, AnvilApplication, AnvilACP, AnvilInfrastructure, AnvilGit.*
 

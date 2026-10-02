@@ -48,8 +48,8 @@ This policy covers every user-facing surface:
 - Feature work may not add a new custom top bar, fake segmented header, or embedded navigation surface to avoid dealing with shell structure.
 - If the app needs a new concept in a sidebar, the concept model must be defined before the pixels.
 - If the shell cannot represent the concept cleanly, the concept needs a shell design pass before feature work continues.
-- If the app changes the shell vocabulary or workspace hierarchy, [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md) must be updated in the same change.
-- New shell concepts must match [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md) before they are implemented or renamed in UI.
+- If the app changes the shell vocabulary or workspace hierarchy, [`ARCHITECTURE/SHELL_VOCABULARY.md`](ARCHITECTURE/SHELL_VOCABULARY.md) must be updated in the same change.
+- New shell concepts must match [`ARCHITECTURE/SHELL_VOCABULARY.md`](ARCHITECTURE/SHELL_VOCABULARY.md) before they are implemented or renamed in UI.
 
 ## Interaction Truth
 

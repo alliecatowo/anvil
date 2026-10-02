@@ -5,7 +5,7 @@
 **Date:** 2026-03-27
 **Scope:** Top-level navigation, semantic hierarchy, naming conventions, tab model, provider naming
 
-**Note:** This is historical research and proposal material. The canonical shell vocabulary and current naming decisions now live in [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md).
+**Note:** This is historical research and proposal material. The canonical shell vocabulary and current naming decisions now live in [`ARCHITECTURE/SHELL_VOCABULARY.md`](../ARCHITECTURE/SHELL_VOCABULARY.md).
 
 ---
 

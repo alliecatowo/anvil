@@ -23,7 +23,7 @@ Hexagonal architecture (ports and adapters) with DDD:
 - **Primitives** = Ports (abstract contracts). 25 total defined in SPEC.md.
 - **Providers** = Adapters (concrete implementations). Swappable at runtime.
 - **ACP** = Agent Communication Protocol. Every AI feature flows through ACP. Plugins get AI for free.
-- **Shell vocabulary** = Plan, Build, Review, Operate, Library, plus canonical shell regions `Workspace Rail`, `Sidebar`, `Canvas`, `Inspector`, `Utility Deck`, `Toolbar`, and `Status Bar`. See [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md).
+- **Shell vocabulary** = Plan, Build, Review, Operate, Library, plus canonical shell regions `Workspace Rail`, `Sidebar`, `Canvas`, `Inspector`, `Utility Deck`, `Toolbar`, and `Status Bar`. See [`ARCHITECTURE/SHELL_VOCABULARY.md`](ARCHITECTURE/SHELL_VOCABULARY.md).
 
 ## Build
 

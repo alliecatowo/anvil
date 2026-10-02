@@ -1,6 +1,6 @@
 # UX Shell
 
-Canonical shell vocabulary lives in [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md). This document defines the shell contract that implements that vocabulary.
+Canonical shell vocabulary lives in [`ARCHITECTURE/SHELL_VOCABULARY.md`](../ARCHITECTURE/SHELL_VOCABULARY.md). This document defines the shell contract that implements that vocabulary.
 
 This document defines the shell contract for the entire app.
 The shell is the outer structure that holds spaces, sources, detail panes, utilities, and provider setup.
