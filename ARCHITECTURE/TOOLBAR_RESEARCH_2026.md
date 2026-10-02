@@ -351,12 +351,12 @@ These changes should be sequenced:
 
 ## Files Referenced
 
-Current toolbar implementation: `/Users/allie/Develop/anvil/Packages/AnvilUI/Sources/Shell/MainWindow.swift`
-Current agent activity indicator: `/Users/allie/Develop/anvil/Packages/AnvilUI/Sources/Shell/StatusBar.swift`
-Source picker: `/Users/allie/Develop/anvil/Packages/AnvilUI/Sources/Shell/ToolbarSourcePicker.swift`
-Shell vocabulary canon: `/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md`
-North star shell: `/Users/allie/Develop/anvil/ARCHITECTURE/NORTH_STAR_SHELL.md`
-UX shell contract: `/Users/allie/Develop/anvil/ARCHITECTURE/UX_SHELL.md`
+Current toolbar implementation: `<repo>/Packages/AnvilUI/Sources/Shell/MainWindow.swift`
+Current agent activity indicator: `<repo>/Packages/AnvilUI/Sources/Shell/StatusBar.swift`
+Source picker: `<repo>/Packages/AnvilUI/Sources/Shell/ToolbarSourcePicker.swift`
+Shell vocabulary canon: `<repo>/ARCHITECTURE/SHELL_VOCABULARY.md`
+North star shell: `<repo>/ARCHITECTURE/NORTH_STAR_SHELL.md`
+UX shell contract: `<repo>/ARCHITECTURE/UX_SHELL.md`
 
 ---
 

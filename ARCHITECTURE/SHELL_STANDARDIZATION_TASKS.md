@@ -2,7 +2,7 @@
 
 **Status:** Draft
 **Approximate Task Count:** 266
-**North Star:** [`ARCHITECTURE/SHELL_VOCABULARY.md`](/Users/allie/Develop/anvil/ARCHITECTURE/SHELL_VOCABULARY.md)
+**North Star:** [`ARCHITECTURE/SHELL_VOCABULARY.md`](../ARCHITECTURE/SHELL_VOCABULARY.md)
 
 This backlog is the migration plan from the current mixed shell vocabulary to the canonical shell model.
 The live user-facing shell already uses `Plan / Build / Review / Operate / Library`; `Intent`, `Agent`, and `Ship` are transitional/internal labels only.
