@@ -33,7 +33,7 @@ final class ContextCommandProviderTests: XCTestCase {
         let ticket = makeTicket(id: "T-1", title: "Fix the crash")
         appState.intentViewModel.tickets = [ticket]
         appState.intentViewModel.selectedTicketId = "T-1"
-        appState.focusedEntity = .ticket(id: "T-1", title: "Fix the crash")
+        appState.focusedEntityOverride = .ticket(id: "T-1", title: "Fix the crash")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertTrue(commands.contains { $0.title == "Start Work" }, "Expected 'Start Work' command for ticket entity")
@@ -43,7 +43,7 @@ final class ContextCommandProviderTests: XCTestCase {
         let ticket = makeTicket(id: "T-2", title: "Refactor")
         appState.intentViewModel.tickets = [ticket]
         appState.intentViewModel.selectedTicketId = "T-2"
-        appState.focusedEntity = .ticket(id: "T-2", title: "Refactor")
+        appState.focusedEntityOverride = .ticket(id: "T-2", title: "Refactor")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertTrue(commands.contains { $0.title == "Edit Ticket" })
@@ -53,7 +53,7 @@ final class ContextCommandProviderTests: XCTestCase {
         let ticket = makeTicket(id: "T-3", title: "Remove feature")
         appState.intentViewModel.tickets = [ticket]
         appState.intentViewModel.selectedTicketId = "T-3"
-        appState.focusedEntity = .ticket(id: "T-3", title: "Remove feature")
+        appState.focusedEntityOverride = .ticket(id: "T-3", title: "Remove feature")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertTrue(commands.contains { $0.title == "Delete Ticket" })
@@ -63,7 +63,7 @@ final class ContextCommandProviderTests: XCTestCase {
         let ticket = makeTicket(id: "T-4", title: "Status change")
         appState.intentViewModel.tickets = [ticket]
         appState.intentViewModel.selectedTicketId = "T-4"
-        appState.focusedEntity = .ticket(id: "T-4", title: "Status change")
+        appState.focusedEntityOverride = .ticket(id: "T-4", title: "Status change")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertTrue(commands.contains { $0.title == "Change Status" })
@@ -73,7 +73,7 @@ final class ContextCommandProviderTests: XCTestCase {
         let ticket = makeTicket(id: "T-5", title: "Context check")
         appState.intentViewModel.tickets = [ticket]
         appState.intentViewModel.selectedTicketId = "T-5"
-        appState.focusedEntity = .ticket(id: "T-5", title: "Context check")
+        appState.focusedEntityOverride = .ticket(id: "T-5", title: "Context check")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertTrue(commands.allSatisfy { $0.category == .entityContext })
@@ -82,7 +82,7 @@ final class ContextCommandProviderTests: XCTestCase {
     func testTicketEntityFallsBackToBasicCommandWhenNoSelectedTicket() {
         appState.intentViewModel.tickets = []
         appState.intentViewModel.selectedTicketId = nil
-        appState.focusedEntity = .ticket(id: "T-99", title: "Unknown")
+        appState.focusedEntityOverride = .ticket(id: "T-99", title: "Unknown")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertFalse(commands.isEmpty, "Should return at least basic edit command")
@@ -92,35 +92,35 @@ final class ContextCommandProviderTests: XCTestCase {
     // MARK: - File entity commands
 
     func testFileEntityProvidesOpenFileCommand() {
-        appState.focusedEntity = .file(path: "/src/main.swift", name: "main.swift")
+        appState.focusedEntityOverride = .file(path: "/src/main.swift", name: "main.swift")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertTrue(commands.contains { $0.title == "Open File" })
     }
 
     func testFileEntityProvidesCopyPathCommand() {
-        appState.focusedEntity = .file(path: "/src/main.swift", name: "main.swift")
+        appState.focusedEntityOverride = .file(path: "/src/main.swift", name: "main.swift")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertTrue(commands.contains { $0.title == "Copy Path" })
     }
 
     func testFileEntityProvidesRenameFileCommand() {
-        appState.focusedEntity = .file(path: "/src/utils.swift", name: "utils.swift")
+        appState.focusedEntityOverride = .file(path: "/src/utils.swift", name: "utils.swift")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertTrue(commands.contains { $0.title == "Rename File" })
     }
 
     func testFileEntityProvidesRunTestsCommand() {
-        appState.focusedEntity = .file(path: "/Tests/MyTest.swift", name: "MyTest.swift")
+        appState.focusedEntityOverride = .file(path: "/Tests/MyTest.swift", name: "MyTest.swift")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertTrue(commands.contains { $0.title == "Run Tests for File" })
     }
 
     func testFileCommandsSubtitleContainsName() {
-        appState.focusedEntity = .file(path: "/src/app.swift", name: "app.swift")
+        appState.focusedEntityOverride = .file(path: "/src/app.swift", name: "app.swift")
 
         let commands = ContextCommandProvider.commands(for: appState)
         let openCmd = commands.first { $0.title == "Open File" }
@@ -128,7 +128,7 @@ final class ContextCommandProviderTests: XCTestCase {
     }
 
     func testCopyPathCommandSubtitleIsPath() {
-        appState.focusedEntity = .file(path: "/src/app.swift", name: "app.swift")
+        appState.focusedEntityOverride = .file(path: "/src/app.swift", name: "app.swift")
 
         let commands = ContextCommandProvider.commands(for: appState)
         let copyCmd = commands.first { $0.title == "Copy Path" }
@@ -141,7 +141,7 @@ final class ContextCommandProviderTests: XCTestCase {
         let session = AgentSession(id: "s1", providerId: "test", model: "test-model", status: .idle)
         appState.agentViewModel.sessions = [session]
         appState.agentViewModel.selectedSessionId = "s1"
-        appState.focusedEntity = .agentSession(id: "s1", name: "My Session")
+        appState.focusedEntityOverride = .agentSession(id: "s1", name: "My Session")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertTrue(commands.contains { $0.title == "Open Session" })
@@ -151,7 +151,7 @@ final class ContextCommandProviderTests: XCTestCase {
         let session = AgentSession(id: "s2", providerId: "test", model: "test-model", status: .running)
         appState.agentViewModel.sessions = [session]
         appState.agentViewModel.selectedSessionId = "s2"
-        appState.focusedEntity = .agentSession(id: "s2", name: "Running Session")
+        appState.focusedEntityOverride = .agentSession(id: "s2", name: "Running Session")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertTrue(commands.contains { $0.title == "Stop Session" }, "Stop command should appear for running session")
@@ -161,7 +161,7 @@ final class ContextCommandProviderTests: XCTestCase {
         let session = AgentSession(id: "s3", providerId: "test", model: "test-model", status: .paused)
         appState.agentViewModel.sessions = [session]
         appState.agentViewModel.selectedSessionId = "s3"
-        appState.focusedEntity = .agentSession(id: "s3", name: "Paused Session")
+        appState.focusedEntityOverride = .agentSession(id: "s3", name: "Paused Session")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertTrue(commands.contains { $0.title == "Stop Session" }, "Stop command should appear for paused session")
@@ -171,7 +171,7 @@ final class ContextCommandProviderTests: XCTestCase {
         let session = AgentSession(id: "s4", providerId: "test", model: "test-model", status: .completed)
         appState.agentViewModel.sessions = [session]
         appState.agentViewModel.selectedSessionId = "s4"
-        appState.focusedEntity = .agentSession(id: "s4", name: "Done Session")
+        appState.focusedEntityOverride = .agentSession(id: "s4", name: "Done Session")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertFalse(commands.contains { $0.title == "Stop Session" }, "Stop command should NOT appear for completed session")
@@ -181,7 +181,7 @@ final class ContextCommandProviderTests: XCTestCase {
         let session = AgentSession(id: "s5", providerId: "test", model: "test-model", status: .failed)
         appState.agentViewModel.sessions = [session]
         appState.agentViewModel.selectedSessionId = "s5"
-        appState.focusedEntity = .agentSession(id: "s5", name: "Failed Session")
+        appState.focusedEntityOverride = .agentSession(id: "s5", name: "Failed Session")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertFalse(commands.contains { $0.title == "Stop Session" }, "Stop command should NOT appear for failed session")
@@ -191,7 +191,7 @@ final class ContextCommandProviderTests: XCTestCase {
         let session = AgentSession(id: "s6", providerId: "test", model: "test-model", status: .idle)
         appState.agentViewModel.sessions = [session]
         appState.agentViewModel.selectedSessionId = "s6"
-        appState.focusedEntity = .agentSession(id: "s6", name: "Idle Session")
+        appState.focusedEntityOverride = .agentSession(id: "s6", name: "Idle Session")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertFalse(commands.contains { $0.title == "Stop Session" })
@@ -201,7 +201,7 @@ final class ContextCommandProviderTests: XCTestCase {
         let session = AgentSession(id: "s7", providerId: "test", model: "test-model", status: .completed)
         appState.agentViewModel.sessions = [session]
         appState.agentViewModel.selectedSessionId = "s7"
-        appState.focusedEntity = .agentSession(id: "s7", name: "Export me")
+        appState.focusedEntityOverride = .agentSession(id: "s7", name: "Export me")
 
         let commands = ContextCommandProvider.commands(for: appState)
         XCTAssertTrue(commands.contains { $0.title == "Export Session" })
@@ -210,7 +210,7 @@ final class ContextCommandProviderTests: XCTestCase {
     // MARK: - nil entity fallback
 
     func testNilEntityInBuildSpaceReturnsFallbackCommands() {
-        appState.focusedEntity = nil
+        appState.focusedEntityOverride = nil
         appState.currentSpace = .build
 
         let commands = ContextCommandProvider.commands(for: appState)
@@ -218,7 +218,7 @@ final class ContextCommandProviderTests: XCTestCase {
     }
 
     func testNilEntityInBuildSpaceContainsFindInFiles() {
-        appState.focusedEntity = nil
+        appState.focusedEntityOverride = nil
         appState.currentSpace = .build
 
         let commands = ContextCommandProvider.commands(for: appState)
@@ -226,7 +226,7 @@ final class ContextCommandProviderTests: XCTestCase {
     }
 
     func testNilEntityInBuildSpaceContainsOpenTerminal() {
-        appState.focusedEntity = nil
+        appState.focusedEntityOverride = nil
         appState.currentSpace = .build
 
         let commands = ContextCommandProvider.commands(for: appState)
@@ -234,7 +234,7 @@ final class ContextCommandProviderTests: XCTestCase {
     }
 
     func testNilEntityInBuildSpaceContainsGoToLine() {
-        appState.focusedEntity = nil
+        appState.focusedEntityOverride = nil
         appState.currentSpace = .build
 
         let commands = ContextCommandProvider.commands(for: appState)
@@ -242,7 +242,7 @@ final class ContextCommandProviderTests: XCTestCase {
     }
 
     func testNilEntityInPlanSpaceReturnsEmpty() {
-        appState.focusedEntity = nil
+        appState.focusedEntityOverride = nil
         appState.currentSpace = .plan
 
         let commands = ContextCommandProvider.commands(for: appState)
@@ -250,7 +250,7 @@ final class ContextCommandProviderTests: XCTestCase {
     }
 
     func testNilEntityInReviewSpaceReturnsEmpty() {
-        appState.focusedEntity = nil
+        appState.focusedEntityOverride = nil
         appState.currentSpace = .review
 
         let commands = ContextCommandProvider.commands(for: appState)
@@ -258,7 +258,7 @@ final class ContextCommandProviderTests: XCTestCase {
     }
 
     func testNilEntityInOperateSpaceReturnsEmpty() {
-        appState.focusedEntity = nil
+        appState.focusedEntityOverride = nil
         appState.currentSpace = .operate
 
         let commands = ContextCommandProvider.commands(for: appState)

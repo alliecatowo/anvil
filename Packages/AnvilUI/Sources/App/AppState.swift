@@ -302,9 +302,14 @@ public class AppState: ObservableObject {
 
     // MARK: - Focused Entity
 
+    /// Forces `focusedEntity` to a fixed value. Used by tests to drive the command palette
+    /// without building the whole selection state each entity is derived from.
+    var focusedEntityOverride: FocusedEntity?
+
     /// The currently focused entity, derived from the active space and its selection state.
     /// Used by the command palette to show entity-specific actions via Cmd+K.
     public var focusedEntity: FocusedEntity? {
+        if let focusedEntityOverride { return focusedEntityOverride }
         switch currentSpace {
         case .plan:
             if let ticket = intentViewModel.selectedTicket {

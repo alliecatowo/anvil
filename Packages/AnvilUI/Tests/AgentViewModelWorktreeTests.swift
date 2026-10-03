@@ -231,7 +231,7 @@ final class MockSourceControlPort: SourceControlPort, @unchecked Sendable {
     func switchBranch(name: String) async throws {}
     func commits(branch: String, limit: Int) async throws -> [Commit] { [] }
     func commit(message: String, amend: Bool) async throws -> Commit {
-        Commit(hash: "abc1234", shortHash: "abc1234", message: message, author: "test", email: "", date: .now, parents: [])
+        Commit(id: "abc1234", shortHash: "abc1234", author: "test", authorEmail: "", date: .now, message: message, parents: [])
     }
     func stage(paths: [String]) async throws {}
     func unstage(paths: [String]) async throws {}

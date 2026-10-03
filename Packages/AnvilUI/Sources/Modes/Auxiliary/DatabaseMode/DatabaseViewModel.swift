@@ -117,6 +117,10 @@ final class DatabaseViewModel: ObservableObject {
         availableProviders.first { $0.id == selectedProviderId }
     }
 
+    var selectedTable: DatabaseTable? {
+        tables.first { $0.id == selectedTableId }
+    }
+
     var selectedObject: DatabaseObject? {
         if let table = tables.first(where: { $0.id == selectedTableId }) {
             return DatabaseObject(kind: .table, name: table.name, columns: table.columns, rowCount: table.rowCount)

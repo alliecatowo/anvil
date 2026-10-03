@@ -217,14 +217,14 @@ final class AgentViewModelTests: XCTestCase {
 
     func testAddAttachmentIncreasesCount() {
         let vm = AgentViewModel()
-        let att = ContextAttachment(id: "att-1", type: .file, title: "main.swift", content: "let x = 1")
+        let att = ContextAttachment.file(path: "/src/main.swift")
         vm.addAttachment(att)
         XCTAssertEqual(vm.contextAttachments.count, 1, "addAttachment must add one attachment")
     }
 
     func testAddAttachmentIgnoresDuplicates() {
         let vm = AgentViewModel()
-        let att = ContextAttachment(id: "att-1", type: .file, title: "main.swift", content: "let x = 1")
+        let att = ContextAttachment.file(path: "/src/main.swift")
         vm.addAttachment(att)
         vm.addAttachment(att)
         XCTAssertEqual(vm.contextAttachments.count, 1, "addAttachment must not add duplicate attachments")
@@ -232,16 +232,16 @@ final class AgentViewModelTests: XCTestCase {
 
     func testRemoveAttachmentDecreasesCount() {
         let vm = AgentViewModel()
-        let att = ContextAttachment(id: "att-1", type: .file, title: "file.swift", content: "")
+        let att = ContextAttachment.file(path: "/src/file.swift")
         vm.addAttachment(att)
-        vm.removeAttachment(id: "att-1")
+        vm.removeAttachment(id: att.id)
         XCTAssertTrue(vm.contextAttachments.isEmpty, "removeAttachment must remove the attachment")
     }
 
     func testClearAttachmentsRemovesAll() {
         let vm = AgentViewModel()
-        vm.addAttachment(ContextAttachment(id: "a1", type: .file, title: "f1.swift", content: ""))
-        vm.addAttachment(ContextAttachment(id: "a2", type: .file, title: "f2.swift", content: ""))
+        vm.addAttachment(ContextAttachment.file(path: "/src/f1.swift"))
+        vm.addAttachment(ContextAttachment.file(path: "/src/f2.swift"))
         vm.clearAttachments()
         XCTAssertTrue(vm.contextAttachments.isEmpty, "clearAttachments must remove all attachments")
     }
