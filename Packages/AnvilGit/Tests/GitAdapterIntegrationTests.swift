@@ -261,8 +261,13 @@ final class GitAdapterOutputParsingTests: XCTestCase {
 /// They verify that the adapter integrates correctly with git CLI output.
 final class GitAdapterLiveTests: XCTestCase {
 
-    /// The Anvil repo path — always exists in CI and dev machines.
-    private let repoPath = "/Users/allie/Develop/anvil"
+    /// The enclosing Anvil checkout, derived from this file's location
+    /// (Packages/AnvilGit/Tests/<file> -> repo root) so it works in CI and on any machine.
+    private let repoPath: String = {
+        var url = URL(fileURLWithPath: #filePath)
+        for _ in 0..<4 { url.deleteLastPathComponent() }
+        return url.path
+    }()
 
     var adapter: GitSourceControlAdapter!
 

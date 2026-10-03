@@ -32,4 +32,15 @@ jobs:
           - AnvilUI
     steps:
       - uses: actions/checkout@v7
-      - run: swift test --package-path "Packages/${{ matrix.package }}"
+        with:
+          # AnvilGit's live adapter tests read this repo's own history.
+          fetch-depth: 0
+      # CodeEditSymbols (via AnvilEditor/AnvilUI) ships an asset catalog, which
+      # `swift test` cannot compile (no Bundle.module); xcodebuild can.
+      - name: Test (xcodebuild)
+        if: matrix.package == 'AnvilEditor' || matrix.package == 'AnvilUI'
+        working-directory: Packages/${{ matrix.package }}
+        run: xcodebuild test -scheme "${{ matrix.package }}-Package" -destination 'platform=macOS' -skipPackagePluginValidation -skipMacroValidation
+      - name: Test (swift test)
+        if: matrix.package != 'AnvilEditor' && matrix.package != 'AnvilUI'
+        run: swift test --package-path "Packages/${{ matrix.package }}"
