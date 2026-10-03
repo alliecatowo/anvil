@@ -13,13 +13,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
+  test:
+    name: swift test (${{ matrix.package }})
     runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - AnvilACP
+          - AnvilApplication
+          - AnvilDomain
+          - AnvilEditor
+          - AnvilGit
+          - AnvilGitHub
+          - AnvilInfrastructure
+          - AnvilPluginSDK
+          - AnvilTerminal
+          - AnvilUI
     steps:
       - uses: actions/checkout@v7
-      # AnvilApplication, AnvilEditor, AnvilGit and AnvilUI tests do not build/pass on master today; add them back once fixed.
-      - run: |
-          for p in AnvilACP AnvilDomain AnvilGitHub AnvilInfrastructure AnvilPluginSDK AnvilTerminal; do
-            echo "==> swift test $p"
-            swift test --package-path "Packages/$p"
-          done
+      - run: swift test --package-path "Packages/${{ matrix.package }}"
