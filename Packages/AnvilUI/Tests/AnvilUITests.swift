@@ -1622,18 +1622,21 @@ struct ProjectSearchViewModelBehaviorTests {
 @Suite("TerminalViewModel")
 struct TerminalViewModelTests {
 
-    @Test("init creates one session automatically")
+    @Test("init starts empty; the first session is created lazily by addTab")
     @MainActor
-    func initCreatesOneSession() {
+    func initCreatesNoSessionUntilOpened() {
         let vm = TerminalViewModel()
-        #expect(vm.sessions.count == 1)
+        #expect(vm.sessions.isEmpty)
+        #expect(vm.selectedSession == nil)
     }
 
-    @Test("init selects the initial session")
+    @Test("the first addTab selects the new session")
     @MainActor
-    func initSelectsInitialSession() {
+    func firstTabIsSelected() {
         let vm = TerminalViewModel()
-        #expect(vm.selectedSessionId != nil)
+        let first = vm.addTab()
+        #expect(vm.sessions.count == 1)
+        #expect(vm.selectedSessionId == first.id)
         #expect(vm.selectedSession != nil)
     }
 
@@ -1641,6 +1644,7 @@ struct TerminalViewModelTests {
     @MainActor
     func addTabCreatesSecondSession() {
         let vm = TerminalViewModel()
+        vm.addTab()
         let newSession = vm.addTab()
         #expect(vm.sessions.count == 2)
         #expect(vm.sessions.contains { $0.id == newSession.id })
@@ -1660,6 +1664,7 @@ struct TerminalViewModelTests {
     @MainActor
     func closeTabRemovesSession() {
         let vm = TerminalViewModel()
+        vm.addTab()
         let second = vm.addTab()
         #expect(vm.sessions.count == 2)
         vm.closeTab(second.id)
