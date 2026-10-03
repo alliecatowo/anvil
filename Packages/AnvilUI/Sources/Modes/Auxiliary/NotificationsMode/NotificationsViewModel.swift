@@ -268,7 +268,7 @@ final class NotificationsViewModel: ObservableObject {
     /// Update the dock tile badge to reflect unread inbox count.
     func updateBadgeCount() {
         let count = unreadCount
-        NSApp.dockTile.badgeLabel = count > 0 ? "\(count)" : nil
+        NSApp?.dockTile.badgeLabel = count > 0 ? "\(count)" : nil
     }
 
     // MARK: - Sample Data

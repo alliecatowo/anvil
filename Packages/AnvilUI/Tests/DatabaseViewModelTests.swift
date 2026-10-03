@@ -305,8 +305,16 @@ final class DatabaseViewModelTests: XCTestCase {
 
     // MARK: - sortBy
 
-    func testSortByNewColumnSetsAscending() {
+    /// A view model showing a browsed table, the only state in which sorting is allowed.
+    private func makeBrowsingVM() -> DatabaseViewModel {
         let vm = DatabaseViewModel()
+        vm.resultContext = .object(name: "users")
+        vm.queryResult = QueryResult(columns: ["name", "email"], rows: [["a", "b"]])
+        return vm
+    }
+
+    func testSortByNewColumnSetsAscending() {
+        let vm = makeBrowsingVM()
         vm.sortColumn = nil
         vm.sortBy(column: "name")
         XCTAssertEqual(vm.sortColumn, "name", "sortBy must set sortColumn")
@@ -314,7 +322,7 @@ final class DatabaseViewModelTests: XCTestCase {
     }
 
     func testSortBySameColumnTogglesSortDirection() {
-        let vm = DatabaseViewModel()
+        let vm = makeBrowsingVM()
         vm.sortColumn = "name"
         vm.sortAscending = true
         vm.sortBy(column: "name")
@@ -322,7 +330,7 @@ final class DatabaseViewModelTests: XCTestCase {
     }
 
     func testSortBySameColumnDescendingTogglesAscending() {
-        let vm = DatabaseViewModel()
+        let vm = makeBrowsingVM()
         vm.sortColumn = "name"
         vm.sortAscending = false
         vm.sortBy(column: "name")
@@ -330,7 +338,7 @@ final class DatabaseViewModelTests: XCTestCase {
     }
 
     func testSortByNewColumnResetsPagination() {
-        let vm = DatabaseViewModel()
+        let vm = makeBrowsingVM()
         vm.currentPage = 3
         vm.sortBy(column: "email")
         XCTAssertEqual(vm.currentPage, 0, "sortBy must reset currentPage to 0")
