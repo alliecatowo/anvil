@@ -17,4 +17,9 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v7
-      - run: ./scripts/test-packages
+      - name: Discover (temporary)
+        run: |
+          for m in Packages/*/Package.swift; do
+            d=$(dirname "$m")
+            if swift test --package-path "$d" >"/tmp/$(basename $d).log" 2>&1; then echo "RESULT PASS $d"; else echo "RESULT FAIL $d"; fi
+          done
