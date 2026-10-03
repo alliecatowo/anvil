@@ -831,9 +831,9 @@ struct AppStateBuildSourceTests {
         }
     }
 
-    @Test("BuildSource has exactly four cases")
-    func buildSourceHasFourCases() {
-        #expect(AppState.BuildSource.allCases.count == 4)
+    @Test("BuildSource has exactly six cases")
+    func buildSourceHasSixCases() {
+        #expect(AppState.BuildSource.allCases.count == 6)
     }
 }
 
@@ -872,9 +872,9 @@ struct AppStateOperateSourceTests {
         }
     }
 
-    @Test("OperateSource has exactly three cases")
-    func operateSourceHasThreeCases() {
-        #expect(AppState.OperateSource.allCases.count == 3)
+    @Test("OperateSource has exactly two cases")
+    func operateSourceHasTwoCases() {
+        #expect(AppState.OperateSource.allCases.count == 2)
     }
 }
 
@@ -937,9 +937,9 @@ struct AppStateLibrarySourceTests {
         }
     }
 
-    @Test("LibrarySource has exactly five cases")
-    func librarySourceHasFiveCases() {
-        #expect(AppState.LibrarySource.allCases.count == 5)
+    @Test("LibrarySource has exactly six cases")
+    func librarySourceHasSixCases() {
+        #expect(AppState.LibrarySource.allCases.count == 6)
     }
 
     @Test("notifications case has rawValue Inbox")
