@@ -41,3 +41,13 @@ jobs:
       - name: Test (swift test)
         if: matrix.package != 'AnvilEditor' && matrix.package != 'AnvilUI'
         run: swift test --package-path "Packages/${{ matrix.package }}"
+
+  # Stable required-check name for the `require-ci` ruleset: green only when every
+  # package job in the matrix above is green.
+  check:
+    name: check
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - run: test "${{ needs.test.result }}" = "success"
