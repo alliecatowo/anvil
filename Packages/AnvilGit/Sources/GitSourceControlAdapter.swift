@@ -595,7 +595,7 @@ public actor GitSourceControlAdapter: SourceControlPort {
             let lineNumber = Int(String(headerParts[2])) ?? 0
 
             var author = ""
-            var date = Date()
+            var date = Date(timeIntervalSince1970: 0)  // epoch until an author-time line says otherwise
             var content = ""
             i += 1
 

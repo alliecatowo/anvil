@@ -87,7 +87,9 @@ public final class AutoContextService: ObservableObject {
         }
 
         // 3. Recently edited files
-        for (index, path) in recentlyEditedPaths.prefix(10).enumerated() {
+        // Only files that belong to the project are suggested.
+        let projectFileSet = Set(projectFiles)
+        for (index, path) in recentlyEditedPaths.prefix(10).enumerated() where projectFileSet.contains(path) {
             let recencyBonus = Double(10 - index) * 3.0
             addScore(&scored, path: path, score: 25 + recencyBonus, reason: .recentlyEdited)
         }
