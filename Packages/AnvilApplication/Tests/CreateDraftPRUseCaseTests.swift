@@ -59,6 +59,11 @@ private final class MockCloudPort: SourceControlCloudPort, @unchecked Sendable {
     func fetch(remote: String) async throws {}
 }
 
+/// Sendable box so an event-bus handler can hand the event back to the test.
+private final class CapturedEvent: @unchecked Sendable {
+    var event: DraftPRCreatedEvent?
+}
+
 // MARK: - CreateDraftPRUseCaseTests
 
 final class CreateDraftPRUseCaseTests: XCTestCase {
@@ -69,7 +74,7 @@ final class CreateDraftPRUseCaseTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        eventBus = EventBus()
+        eventBus = EventBus.shared
         useCase = CreateDraftPRUseCase(eventBus: eventBus)
         cloudPort = MockCloudPort()
     }
@@ -330,8 +335,10 @@ final class CreateDraftPRUseCaseTests: XCTestCase {
         let received = expectation(description: "event received")
         received.assertForOverFulfill = false
 
-        await eventBus.subscribe(to: "sourceControl") { event in
-            if let action = event.payload["action"], action == "draftPRCreated" {
+        // EventBus routes by the event's type name; filter on the session id because
+        // the shared bus also carries other tests' events.
+        await eventBus.subscribe(to: "DraftPRCreatedEvent") { event in
+            if let created = event as? DraftPRCreatedEvent, created.sessionId == "my-session" {
                 received.fulfill()
             }
         }
@@ -349,13 +356,13 @@ final class CreateDraftPRUseCaseTests: XCTestCase {
             id: "pr-1", number: 3, title: "T", sourceBranch: "feat", targetBranch: "main", author: "a"
         )
 
-        var capturedSessionId: String?
+        let captured = CapturedEvent()
         let received = expectation(description: "event received")
         received.assertForOverFulfill = false
 
-        await eventBus.subscribe(to: "sourceControl") { event in
-            if event.payload["action"] == "draftPRCreated" {
-                capturedSessionId = event.payload["sessionId"]
+        await eventBus.subscribe(to: "DraftPRCreatedEvent") { event in
+            if let created = event as? DraftPRCreatedEvent, created.sessionId == "event-test-session" {
+                captured.event = created
                 received.fulfill()
             }
         }
@@ -365,7 +372,9 @@ final class CreateDraftPRUseCaseTests: XCTestCase {
         )
 
         await fulfillment(of: [received], timeout: 2.0)
-        XCTAssertEqual(capturedSessionId, "event-test-session")
+        XCTAssertEqual(captured.event?.sessionId, "event-test-session")
+        XCTAssertEqual(captured.event?.prNumber, 3)
+        XCTAssertEqual(captured.event?.url, "https://github.com/owner/repo/pull/3")
     }
 
     func testExecuteThrowsWhenCloudPortThrows() async throws {

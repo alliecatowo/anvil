@@ -156,7 +156,7 @@ final class ReviewViewModelSourceControlTests: XCTestCase {
     // MARK: - GitRemote domain type
 
     func testGitRemoteNameStored() {
-        let remote = GitRemote(name: "origin", fetchURL: "https://example.com/repo.git", pushURL: nil)
+        let remote = GitRemote(name: "origin", fetchURL: "https://example.com/repo.git", pushURL: "https://example.com/repo.git")
         XCTAssertEqual(remote.name, "origin")
     }
 

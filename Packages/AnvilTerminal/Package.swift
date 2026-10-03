@@ -9,7 +9,7 @@ let package = Package(
         .library(name: "AnvilTerminal", targets: ["AnvilTerminal"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/migueldeicaza/SwiftTerm", from: "1.2.0"),
+        .package(url: "https://github.com/migueldeicaza/SwiftTerm", from: "1.19.0"),
     ],
     targets: [
         .target(

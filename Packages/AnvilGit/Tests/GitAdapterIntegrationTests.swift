@@ -255,23 +255,51 @@ final class GitAdapterOutputParsingTests: XCTestCase {
     }
 }
 
-// MARK: - Live adapter tests against real Anvil repo
+// MARK: - Live adapter tests against a temporary repo
 
-/// These tests spawn real git processes against the Anvil project repo.
+/// These tests spawn real git processes against a throwaway repository.
 /// They verify that the adapter integrates correctly with git CLI output.
 final class GitAdapterLiveTests: XCTestCase {
 
-    /// The Anvil repo path — always exists in CI and dev machines.
-    private let repoPath = "/Users/allie/Develop/anvil"
+    /// A throwaway repository with two commits on `master`, so the tests neither depend on the
+    /// developer's checkout nor on CI's detached-HEAD merge ref.
+    private var repoPath = ""
 
     var adapter: GitSourceControlAdapter!
 
+    private func git(_ args: [String], in dir: String) throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = ["git"] + args
+        process.currentDirectoryURL = URL(fileURLWithPath: dir)
+        process.environment = ProcessInfo.processInfo.environment.merging([
+            "GIT_AUTHOR_NAME": "Anvil Test", "GIT_AUTHOR_EMAIL": "test@example.com",
+            "GIT_COMMITTER_NAME": "Anvil Test", "GIT_COMMITTER_EMAIL": "test@example.com",
+            "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null",
+        ]) { _, new in new }
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        try process.run()
+        process.waitUntilExit()
+        XCTAssertEqual(process.terminationStatus, 0, "git \(args.joined(separator: " ")) failed")
+    }
+
     override func setUp() async throws {
+        let dir = NSTemporaryDirectory() + "anvil-git-live-\(UUID().uuidString)"
+        try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        try git(["init", "-q", "-b", "master"], in: dir)
+        try "one\n".write(toFile: dir + "/a.txt", atomically: true, encoding: .utf8)
+        try git(["add", "a.txt"], in: dir)
+        try git(["commit", "-q", "-m", "first commit"], in: dir)
+        try "two\n".write(toFile: dir + "/a.txt", atomically: true, encoding: .utf8)
+        try git(["commit", "-q", "-am", "second commit"], in: dir)
+        repoPath = dir
         adapter = GitSourceControlAdapter(workingDirectory: repoPath)
     }
 
     override func tearDown() async throws {
         adapter = nil
+        try? FileManager.default.removeItem(atPath: repoPath)
     }
 
     // MARK: - validateConnection

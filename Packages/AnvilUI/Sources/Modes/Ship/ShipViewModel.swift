@@ -97,7 +97,7 @@ struct EnvironmentCard: Identifiable {
     }
 }
 
-struct EnvVar: Identifiable {
+struct EnvVar: Identifiable, Equatable {
     let id: String
     var key: String
     var value: String

@@ -13,13 +13,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
+  test:
+    name: swift test (${{ matrix.package }})
     runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - AnvilACP
+          - AnvilApplication
+          - AnvilDomain
+          - AnvilEditor
+          - AnvilGit
+          - AnvilGitHub
+          - AnvilInfrastructure
+          - AnvilPluginSDK
+          - AnvilTerminal
+          - AnvilUI
     steps:
       - uses: actions/checkout@v7
-      # AnvilApplication, AnvilEditor, AnvilGit and AnvilUI tests do not build/pass on master today; add them back once fixed.
-      - run: |
-          for p in AnvilACP AnvilDomain AnvilGitHub AnvilInfrastructure AnvilPluginSDK AnvilTerminal; do
-            echo "==> swift test $p"
-            swift test --package-path "Packages/$p"
-          done
+      # CodeEditSymbols (via AnvilEditor/AnvilUI) ships an asset catalog, which
+      # `swift test` cannot compile (no Bundle.module); xcodebuild can.
+      - name: Test (xcodebuild)
+        if: matrix.package == 'AnvilEditor' || matrix.package == 'AnvilUI'
+        working-directory: Packages/${{ matrix.package }}
+        run: xcodebuild test -scheme "${{ matrix.package }}" -destination 'platform=macOS' -skipPackagePluginValidation -skipMacroValidation
+      - name: Test (swift test)
+        if: matrix.package != 'AnvilEditor' && matrix.package != 'AnvilUI'
+        run: swift test --package-path "Packages/${{ matrix.package }}"
+
+  # Stable required-check name for the `require-ci` ruleset: green only when every
+  # package job in the matrix above is green.
+  check:
+    name: check
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - run: test "${{ needs.test.result }}" = "success"

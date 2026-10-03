@@ -130,9 +130,9 @@ public actor MemoryService {
             }
         }
 
-        // Deduplicate by summary
-        let existingSummaries = Set(entries.map(\.summary))
-        let unique = newEntries.filter { !existingSummaries.contains($0.summary) }
+        // Deduplicate by summary, against stored entries and within this scan
+        var seenSummaries = Set(entries.map(\.summary))
+        let unique = newEntries.filter { seenSummaries.insert($0.summary).inserted }
 
         entries.append(contentsOf: unique)
         try saveEntries()

@@ -538,12 +538,14 @@ struct ReviewViewModelTests {
     }
 
     @Test("makeSampleReviews returns non-empty array")
+    @MainActor
     func makeSampleReviewsReturnsReviews() {
         let reviews = ReviewViewModel.makeSampleReviews()
         #expect(!reviews.isEmpty)
     }
 
     @Test("makeSampleReviews produces reviews with unique IDs")
+    @MainActor
     func makeSampleReviewsHaveUniqueIDs() {
         let reviews = ReviewViewModel.makeSampleReviews()
         let ids = reviews.map(\.id)
@@ -829,9 +831,9 @@ struct AppStateBuildSourceTests {
         }
     }
 
-    @Test("BuildSource has exactly four cases")
-    func buildSourceHasFourCases() {
-        #expect(AppState.BuildSource.allCases.count == 4)
+    @Test("BuildSource has exactly six cases")
+    func buildSourceHasSixCases() {
+        #expect(AppState.BuildSource.allCases.count == 6)
     }
 }
 
@@ -843,14 +845,6 @@ struct AppStateOperateSourceTests {
     func operateActiveSourceDefaultsToDeploy() {
         let state = AppState()
         #expect(state.operateActiveSource == .deploy)
-    }
-
-    @Test("operateActiveSource can be set to terminal")
-    @MainActor
-    func operateSourceSwitchesToTerminal() {
-        let state = AppState()
-        state.operateActiveSource = .terminal
-        #expect(state.operateActiveSource == .terminal)
     }
 
     @Test("operateActiveSource can be set to monitor")
@@ -878,9 +872,9 @@ struct AppStateOperateSourceTests {
         }
     }
 
-    @Test("OperateSource has exactly three cases")
-    func operateSourceHasThreeCases() {
-        #expect(AppState.OperateSource.allCases.count == 3)
+    @Test("OperateSource has exactly two cases")
+    func operateSourceHasTwoCases() {
+        #expect(AppState.OperateSource.allCases.count == 2)
     }
 }
 
@@ -943,9 +937,9 @@ struct AppStateLibrarySourceTests {
         }
     }
 
-    @Test("LibrarySource has exactly five cases")
-    func librarySourceHasFiveCases() {
-        #expect(AppState.LibrarySource.allCases.count == 5)
+    @Test("LibrarySource has exactly six cases")
+    func librarySourceHasSixCases() {
+        #expect(AppState.LibrarySource.allCases.count == 6)
     }
 
     @Test("notifications case has rawValue Inbox")
@@ -1112,7 +1106,7 @@ struct MessagingViewModelActionTests {
     @MainActor
     func directMessagesAreFlaggedIsDirect() {
         let vm = MessagingViewModel()
-        #expect(vm.directMessages.allSatisfy(\.isDirect))
+        #expect(vm.directMessages.allSatisfy { $0.isDirect })
     }
 
     @Test("all channels are flagged isDirect false")
@@ -1232,6 +1226,7 @@ struct ScheduleViewModelDataTests {
     }
 
     @Test("makeSampleData entries have unique IDs")
+    @MainActor
     func makeSampleDataEntriesHaveUniqueIDs() {
         let entries = ScheduleViewModel.makeSampleData()
         let ids = entries.map(\.id)
@@ -1398,7 +1393,7 @@ struct NotificationsViewModelActionTests {
         let vm = NotificationsViewModel()
         vm.loadSampleData()
         vm.markAllAsRead()
-        #expect(vm.inboxItems.allSatisfy(\.notification.isRead))
+        #expect(vm.inboxItems.allSatisfy { $0.notification.isRead })
     }
 
     @Test("unreadCount decreases after markAsRead")
@@ -1627,18 +1622,21 @@ struct ProjectSearchViewModelBehaviorTests {
 @Suite("TerminalViewModel")
 struct TerminalViewModelTests {
 
-    @Test("init creates one session automatically")
+    @Test("init starts empty; the first session is created lazily by addTab")
     @MainActor
-    func initCreatesOneSession() {
+    func initCreatesNoSessionUntilOpened() {
         let vm = TerminalViewModel()
-        #expect(vm.sessions.count == 1)
+        #expect(vm.sessions.isEmpty)
+        #expect(vm.selectedSession == nil)
     }
 
-    @Test("init selects the initial session")
+    @Test("the first addTab selects the new session")
     @MainActor
-    func initSelectsInitialSession() {
+    func firstTabIsSelected() {
         let vm = TerminalViewModel()
-        #expect(vm.selectedSessionId != nil)
+        let first = vm.addTab()
+        #expect(vm.sessions.count == 1)
+        #expect(vm.selectedSessionId == first.id)
         #expect(vm.selectedSession != nil)
     }
 
@@ -1646,6 +1644,7 @@ struct TerminalViewModelTests {
     @MainActor
     func addTabCreatesSecondSession() {
         let vm = TerminalViewModel()
+        vm.addTab()
         let newSession = vm.addTab()
         #expect(vm.sessions.count == 2)
         #expect(vm.sessions.contains { $0.id == newSession.id })
@@ -1665,6 +1664,7 @@ struct TerminalViewModelTests {
     @MainActor
     func closeTabRemovesSession() {
         let vm = TerminalViewModel()
+        vm.addTab()
         let second = vm.addTab()
         #expect(vm.sessions.count == 2)
         vm.closeTab(second.id)
@@ -2358,12 +2358,14 @@ struct ShipViewModelRollbackTests {
     }
 
     @Test("makeSampleData returns three environments")
+    @MainActor
     func makeSampleDataReturnsThreeEnvironments() {
         let (envs, _, _, _, _) = ShipViewModel.makeSampleData()
         #expect(envs.count == 3)
     }
 
     @Test("makeSampleData environments have unique IDs")
+    @MainActor
     func makeSampleDataEnvironmentsHaveUniqueIDs() {
         let (envs, _, _, _, _) = ShipViewModel.makeSampleData()
         let ids = envs.map(\.id)
@@ -2371,6 +2373,7 @@ struct ShipViewModelRollbackTests {
     }
 
     @Test("makeSampleData deployments are non-empty")
+    @MainActor
     func makeSampleDataDeploymentsNonEmpty() {
         let (_, deploys, _, _, _) = ShipViewModel.makeSampleData()
         #expect(!deploys.isEmpty)
@@ -2768,11 +2771,11 @@ struct GitHubPRViewModelComputedTests {
             id: id,
             number: number,
             title: "PR \(number)",
+            status: status,
             sourceBranch: "feature/x",
             targetBranch: "main",
             author: "alice",
-            isDraft: isDraft,
-            status: status
+            isDraft: isDraft
         )
     }
 
@@ -3028,6 +3031,7 @@ struct ObservabilityViewModelDataTests {
     }
 
     @Test("makeSampleData returns non-empty errors and metrics")
+    @MainActor
     func makeSampleDataNonEmpty() {
         let (errors, metrics) = ObservabilityViewModel.makeSampleData()
         #expect(!errors.isEmpty)
@@ -3035,6 +3039,7 @@ struct ObservabilityViewModelDataTests {
     }
 
     @Test("makeSampleTrend returns exactly 24 data points")
+    @MainActor
     func makeSampleTrendReturns24Points() {
         let trend = ObservabilityViewModel.makeSampleTrend()
         #expect(trend.count == 24)

@@ -79,7 +79,7 @@ struct DatabaseResultRow: Identifiable {
     }
 }
 
-private enum DatabaseResultContext: Equatable {
+enum DatabaseResultContext: Equatable {
     case object(name: String)
     case query
 }
@@ -111,10 +111,15 @@ final class DatabaseViewModel: ObservableObject {
     @Published var sortAscending: Bool = true
 
     private weak var databaseService: DatabaseService?
-    private var resultContext: DatabaseResultContext?
+    /// What produced `queryResult`. Internal (not private) so tests can stage a browsed object.
+    var resultContext: DatabaseResultContext?
 
     var selectedProvider: DatabaseProviderOption? {
         availableProviders.first { $0.id == selectedProviderId }
+    }
+
+    var selectedTable: DatabaseTable? {
+        tables.first { $0.id == selectedTableId }
     }
 
     var selectedObject: DatabaseObject? {

@@ -386,15 +386,29 @@ extension SyntaxHighlighter {
             let char = line[current]
 
             if char == "<" {
-                // Consume tag
+                // Consume a tag, splitting out quoted attribute values as strings so
+                // `<a href="x">` highlights the value separately from the tag syntax.
                 var end = line.index(after: current)
+                var run = current
                 while end < line.endIndex && line[end] != ">" {
-                    end = line.index(after: end)
+                    if line[end] == "\"" {
+                        if run < end {
+                            tokens.append(SyntaxToken(text: String(line[run..<end]), kind: .keyword))
+                        }
+                        let result = consumeString(line, from: end)
+                        tokens.append(SyntaxToken(text: result.text, kind: .string))
+                        end = result.end
+                        run = end
+                    } else {
+                        end = line.index(after: end)
+                    }
                 }
                 if end < line.endIndex {
                     end = line.index(after: end)
                 }
-                tokens.append(SyntaxToken(text: String(line[current..<end]), kind: .keyword))
+                if run < end {
+                    tokens.append(SyntaxToken(text: String(line[run..<end]), kind: .keyword))
+                }
                 current = end
             } else if char == "\"" {
                 let result = consumeString(line, from: current)
