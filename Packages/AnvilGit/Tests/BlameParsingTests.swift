@@ -28,7 +28,7 @@ final class BlameParsingTests: XCTestCase {
             let lineNumber = Int(String(headerParts[2])) ?? 0
 
             var author = ""
-            var date = Date()
+            var date = Date(timeIntervalSince1970: 0)
             var content = ""
             i += 1
 

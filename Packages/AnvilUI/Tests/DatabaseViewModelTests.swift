@@ -6,7 +6,7 @@ import AnvilApplication
 // MARK: - Mock DatabasePort
 
 /// A controllable in-memory database adapter for testing.
-final class MockDatabasePort: DatabasePort {
+final class MockDatabasePort: DatabasePort, @unchecked Sendable {
     let providerId: String = "sqlite-local"
     let providerName: String = "SQLite"
     let providerKind: DatabaseProviderKind = .sqlite
