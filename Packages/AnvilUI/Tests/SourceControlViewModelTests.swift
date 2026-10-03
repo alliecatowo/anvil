@@ -69,7 +69,7 @@ final class SourceControlViewModelTests: XCTestCase {
         let hunkLine1 = DiffLine(type: .context, content: "let x = 1", oldLineNumber: 1, newLineNumber: 1)
         let hunkLine2 = DiffLine(type: .added, content: "let y = 2", oldLineNumber: nil, newLineNumber: 2)
         let hunkLine3 = DiffLine(type: .removed, content: "let z = 3", oldLineNumber: 2, newLineNumber: nil)
-        let hunk = DiffHunk(oldStart: 1, oldCount: 2, newStart: 1, newCount: 2, lines: [hunkLine1, hunkLine2, hunkLine3])
+        let hunk = DiffHunk(oldStart: 1, oldCount: 2, newStart: 1, newCount: 2, header: "", lines: [hunkLine1, hunkLine2, hunkLine3])
         let file = FileDiff(filePath: "Sources/main.swift", status: .modified, hunks: [hunk])
         let result = SourceControlViewModel.renderDiff([file])
         XCTAssertTrue(result.contains("--- a/Sources/main.swift"), "renderDiff must include --- a/ header")
@@ -85,7 +85,7 @@ final class SourceControlViewModelTests: XCTestCase {
     }
 
     func testRenderDiffWithMultipleFilesContainsBothPaths() {
-        let hunk = DiffHunk(oldStart: 1, oldCount: 1, newStart: 1, newCount: 1, lines: [])
+        let hunk = DiffHunk(oldStart: 1, oldCount: 1, newStart: 1, newCount: 1, header: "", lines: [])
         let file1 = FileDiff(filePath: "Sources/Auth.swift", status: .modified, hunks: [hunk])
         let file2 = FileDiff(filePath: "Sources/Token.swift", status: .added, hunks: [hunk])
         let result = SourceControlViewModel.renderDiff([file1, file2])
@@ -94,7 +94,7 @@ final class SourceControlViewModelTests: XCTestCase {
     }
 
     func testRenderDiffWithRenamedFileUsesOldPath() {
-        let hunk = DiffHunk(oldStart: 1, oldCount: 1, newStart: 1, newCount: 1, lines: [])
+        let hunk = DiffHunk(oldStart: 1, oldCount: 1, newStart: 1, newCount: 1, header: "", lines: [])
         let file = FileDiff(filePath: "Sources/NewName.swift", oldPath: "Sources/OldName.swift", status: .renamed, hunks: [hunk])
         let result = SourceControlViewModel.renderDiff([file])
         XCTAssertTrue(result.contains("OldName.swift"), "renderDiff must use oldPath for --- header on renamed files")
@@ -102,7 +102,7 @@ final class SourceControlViewModelTests: XCTestCase {
     }
 
     func testRenderDiffHunkHeaderContainsLineNumbers() {
-        let hunk = DiffHunk(oldStart: 5, oldCount: 3, newStart: 5, newCount: 4, lines: [])
+        let hunk = DiffHunk(oldStart: 5, oldCount: 3, newStart: 5, newCount: 4, header: "", lines: [])
         let file = FileDiff(filePath: "main.swift", status: .modified, hunks: [hunk])
         let result = SourceControlViewModel.renderDiff([file])
         XCTAssertTrue(result.contains("@@ -5,3 +5,4 @@"), "renderDiff hunk header must include correct line ranges")
